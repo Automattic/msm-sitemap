@@ -3,7 +3,7 @@
 Plugin Name: Metro Google Sitemap
 Plugin URI: 
 Description: Metro Google Sitemap
-Author: Artur Synowiec
+Author: Artur Synowiec & Paul Kevan
 Author URI: 
 Version: 0.1
 Stable tag: 0.1
@@ -410,12 +410,15 @@ function mgs_update_sitemap_from_modified_posts() {
 }
 
 function msg_queue_nginx_cache_invalidation( $sitemap_id, $year, $month, $day ) {
-	$metro_uk_sitemap_urls = array(
-		"http://metro.co.uk/sitemap.xml?yyyy=$year",
-		"http://metro.co.uk/sitemap.xml?yyyy=$year&mm=$month",
-		"http://metro.co.uk/sitemap.xml?yyyy=$year&mm=$month&dd=$day",
+
+	$site_url = site_url();
+
+	$sitemap_urls = array(
+		$site_url . "/sitemap.xml?yyyy=$year",
+		$site_url . "/sitemap.xml?yyyy=$year&mm=$month",
+		$site_url . "/sitemap.xml?yyyy=$year&mm=$month&dd=$day",
 	);
-	queue_async_job( array( 'output_cache' => array( 'url' => $metro_uk_sitemap_urls ) ), 'wpcom_invalidate_output_cache_job', -16 );
+	queue_async_job( array( 'output_cache' => array( 'url' => $sitemap_urls ) ), 'wpcom_invalidate_output_cache_job', -16 );
 }
 
 function msg_handle_redirect() {
