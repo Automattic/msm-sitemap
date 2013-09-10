@@ -417,3 +417,14 @@ function msg_queue_nginx_cache_invalidation( $sitemap_id, $year, $month, $day ) 
 	);
 	queue_async_job( array( 'output_cache' => array( 'url' => $metro_uk_sitemap_urls ) ), 'wpcom_invalidate_output_cache_job', -16 );
 }
+
+function msg_handle_redirect() {
+
+	if ( get_query_var( 'google-sitemap' ) === 'true' ) {
+		get_template_part( 'templates/full-sitemaps' );
+		exit;
+	}
+	return;
+}
+
+add_action( 'template_redirect', 'msg_handle_redirect' );
