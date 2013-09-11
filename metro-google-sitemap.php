@@ -1,8 +1,8 @@
 <?php
 /*
-Plugin Name: Metro Google Sitemap
+Plugin Name: Metro Sitemap
 Plugin URI: 
-Description: Metro Google Sitemap
+Description: Metro News Sitemap - Create dyamic Google Sitemaps
 Author: Artur Synowiec & Paul Kevan
 Author URI: 
 Version: 0.1
@@ -61,10 +61,10 @@ add_action('init', 'mgs_add_google_sitemap_endpoint');
 add_action('admin_menu', 'mgs_google_sitemap_menu');
 
 function mgs_google_sitemap_menu() {
-	add_options_page('Metro Google Sitemap Options', 'Create Google Sitemap', 'manage_options', 'metro-google-sitemap', 'mgs_google_sitemap_options');
+	add_options_page('Metro Sitemap Options', 'Create Sitemap', 'manage_options', 'metro-sitemap', 'mgs_sitemap_options');
 }
 
-function mgs_google_sitemap_options() {
+function mgs_sitemap_options() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( __('You do not have sufficient permissions to access this page.') );
 	}
@@ -108,7 +108,7 @@ function mgs_google_sitemap_options() {
 		}
 
 		echo '<form action="options-general.php">';
-		echo ' <input type="hidden" name="page" value="metro-google-sitemap">';
+		echo ' <input type="hidden" name="page" value="metro-sitemap">';
 		echo ' <input type="submit" value="Back">';
 		echo '</form>';
 	} else {
@@ -117,7 +117,7 @@ function mgs_google_sitemap_options() {
 		<p><strong>Last updated:</strong> <?php echo human_time_diff( $sitemap_update_last_run ); ?> ago</p>
 		<p><strong>Next update:</strong> <?php echo $modified_posts_count . ' ' . $modified_posts_label; ?> will be updated in <?php echo human_time_diff( $sitemap_update_next_run ); ?></p>
 		<?php
-		echo '<form action="'. menu_page_url( 'metro-google-sitemap', false ) .'" method="post" style="float: left;">';
+		echo '<form action="'. menu_page_url( 'metro-sitemap', false ) .'" method="post" style="float: left;">';
 		echo ' <input type="hidden" name="action" value="generate-google-sitemap">';
 		wp_nonce_field( 'generate-google-sitemap' );
 		
@@ -133,7 +133,7 @@ function mgs_google_sitemap_options() {
 		echo ' <input type="submit" value="Generate from all articles">';
 		echo '</form>';
 
-		echo '<form action="'. menu_page_url( 'metro-google-sitemap', false ) .'" method="post">';
+		echo '<form action="'. menu_page_url( 'metro-sitemap', false ) .'" method="post">';
 		echo ' <input type="hidden" name="action" value="generate-latest-google-sitemap">';
 		wp_nonce_field( 'generate-latest-google-sitemap' );
 		echo ' <input type="submit" value="Generate from latest articles">';
@@ -424,7 +424,7 @@ function msg_queue_nginx_cache_invalidation( $sitemap_id, $year, $month, $day ) 
 function msg_handle_redirect() {
 
 	if ( get_query_var( 'google-sitemap' ) === 'true' ) {
-		get_template_part( 'templates/full-sitemaps' );
+		include( plugin_dir_path( __FILE__ ) . 'templates/full-sitemaps.php' );
 		exit;
 	}
 	return;
