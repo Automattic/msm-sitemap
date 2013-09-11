@@ -2,7 +2,7 @@
 /*
 Plugin Name: Metro Sitemap
 Plugin URI: 
-Description: Metro News Sitemap - Create dyamic Google Sitemaps
+Description: Comprehensive sitemaps for your WordPress site. Joint collaboration between Metro.co.uk, MAKE and WordPress.com VIP.
 Author: Artur Synowiec & Paul Kevan
 Author URI: 
 Version: 0.1
