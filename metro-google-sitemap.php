@@ -155,28 +155,6 @@ function mgs_sitemap_options() {
 		<p><strong>Last updated:</strong> <?php echo human_time_diff( $sitemap_update_last_run ); ?> ago</p>
 		<p><strong>Next update:</strong> <?php echo $modified_posts_count . ' ' . $modified_posts_label; ?> will be updated in <?php echo human_time_diff( $sitemap_update_next_run ); ?></p>
 		<?php
-<<<<<<< HEAD
-		echo '<form action="'. menu_page_url( 'metro-sitemap', false ) .'" method="post" style="float: left;">';
-		echo ' <input type="hidden" name="action" value="generate-google-sitemap">';
-		wp_nonce_field( 'generate-google-sitemap' );
-		
-		$post_year_range = mgs_get_post_year_range();
-		$post_year_range = array_reverse($post_year_range);
-		
-		echo ' <select name="year">';
-		foreach ( $post_year_range as $year ) {
-			echo ' <option value="'.$year.'">'.$year.'</option>';
-		}
-		echo ' </select>';
-		
-		echo ' <input type="submit" value="Generate from all articles">';
-		echo '</form>';
-
-		echo '<form action="'. menu_page_url( 'metro-sitemap', false ) .'" method="post">';
-		echo ' <input type="hidden" name="action" value="generate-latest-google-sitemap">';
-		wp_nonce_field( 'generate-latest-google-sitemap' );
-		echo ' <input type="submit" value="Generate from latest articles">';
-=======
 		echo '<form action="'. menu_page_url( 'metro-google-sitemap', false ) .'" method="post" style="float: left;">';
 		wp_nonce_field( 'mgs-action' );
 		$disabled = ( $sitemap_create_in_progress ) ? ' disabled="disabled" ' : '';
@@ -184,8 +162,6 @@ function mgs_sitemap_options() {
 		echo ' <input type="submit" name="action" value="Generate from latest articles">';
 		echo ' <input type="submit" name="action" value="Halt Sitemap Generation">';
 		echo ' <input type="submit" name="action" value="Reset Sitemap Data">';
-
->>>>>>> b02b8bb83f8ba17d441759490806e842010a6281
 		echo '</form>';
 	}
 	echo '</div>';
@@ -569,13 +545,9 @@ function mgs_queue_nginx_cache_invalidation( $sitemap_id, $year, $month, $day ) 
 		$site_url . "/sitemap.xml?yyyy=$year&mm=$month",
 		$site_url . "/sitemap.xml?yyyy=$year&mm=$month&dd=$day",
 	);
-<<<<<<< HEAD
-	queue_async_job( array( 'output_cache' => array( 'url' => $sitemap_urls ) ), 'wpcom_invalidate_output_cache_job', -16 );
-=======
 	if ( function_exists( 'queue_async_job' ) ) {
 		queue_async_job( array( 'output_cache' => array( 'url' => $metro_uk_sitemap_urls ) ), 'wpcom_invalidate_output_cache_job', -16 );
 	}
->>>>>>> b02b8bb83f8ba17d441759490806e842010a6281
 }
 
 function mgs_handle_redirect() {
