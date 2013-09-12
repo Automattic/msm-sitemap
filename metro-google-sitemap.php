@@ -410,6 +410,8 @@ function mgs_update_sitemap_from_modified_posts() {
 }
 
 function msg_queue_nginx_cache_invalidation( $sitemap_id, $year, $month, $day ) {
+	if ( ! function_exists( 'queue_async_job' ) )
+		return;
 
 	$site_url = site_url();
 
