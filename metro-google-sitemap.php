@@ -78,7 +78,7 @@ function mgs_sitemap_options() {
 
 	echo '<div class="wrap">';
 	screen_icon();
-	echo '<h2>Metro Google sitemap</h2>';
+	echo '<h2>Metro Sitemap</h2>';
 	
 	if ( isset( $_POST['action'] ) ) {
 		$action = $_POST['action'];
@@ -149,6 +149,7 @@ function mgs_sitemap_options() {
 			$current_month = count( $months_to_process ) - 1;
 			$current_year = count( $years_to_process ) - 1;
 			printf( 'Day: %s Month: %s Year: %s</p>', $days_to_process[$current_day], $months_to_process[$current_month], $years_to_process[$current_year] );
+			$years_to_process = ( $current_year == 0 ) ? array( 1 ) : $years_to_process;
 			printf( '<p><b>Years to process:</b> %s </p>', implode( ',', $years_to_process ) );
 		}
 		?>
@@ -481,8 +482,8 @@ function mgs_create_post_type() {
 		'mgs_sitemap',
 		array(
 			'labels' => array(
-				'name' => __( 'Google Sitemap' ),
-				'singular_name' => __( 'Google Sitemap' )
+				'name' => __( 'Sitemaps' ),
+				'singular_name' => __( 'Sitemap' )
 			),
 			'public' => false,
 			'has_archive' => true,
