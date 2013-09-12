@@ -69,8 +69,7 @@ function mgs_google_sitemap_options() {
 		wp_die( __('You do not have sufficient permissions to access this page.') );
 	}
 
-	$sitemap_create_last_run = get_option( 'mgs_sitemap_create_last_run' );
-	$sitemap_create_last_run_today = $sitemap_create_last_run && date( 'Y-m-d' ) == date( 'Y-m-d', $sitemap_create_last_run );
+	$sitemap_create_in_progress = get_option( 'mgs_sitemap_create_in_progress' );
 	$sitemap_update_last_run = get_option( 'mgs_sitemap_update_last_run' );
 	$sitemap_update_next_run = $sitemap_update_last_run + 900;
 	$modified_posts = mgs_get_last_modified_posts();
@@ -82,28 +81,50 @@ function mgs_google_sitemap_options() {
 	echo '<h2>Metro Google sitemap</h2>';
 	
 	if ( isset( $_POST['action'] ) ) {
+		$action = $_POST['action'];
 
-		if ($_POST['action'] == 'generate-latest-google-sitemap') {
-			check_admin_referer( 'generate-latest-google-sitemap' );
-		
-			$last_modified = mgs_get_last_modified_posts();
-			if(count($last_modified) > 0) {
-				echo "<p>Updating sitemap...</p>";
-				mgs_update_sitemap_from_modified_posts();				
-			} else {
-				echo "<p>No posts updated lately.</p>";
-			}
-		} else if($_POST['action'] == 'generate-google-sitemap') {
-			check_admin_referer( 'generate-google-sitemap' );
-			$year = (int)$_POST['year'];
+		check_admin_referer( 'mgs-action' );
 
-			// Only allow running it after 'MGS_INTERVAL_PER_YEAR_GENERATION' time span; arbitrary protection since create is a pretty intensive process
-			if(time() > $sitemap_create_last_run + MGS_INTERVAL_PER_YEAR_GENERATION) {
-				mgs_generate_full_sitemap($year);
-				echo '<p>Creating sitemap...</p>';
-			} else {
-				echo '<p>Sorry, you can run it again in '.human_time_diff($sitemap_create_last_run + MGS_INTERVAL_PER_YEAR_GENERATION).'</p>';
-			}
+		switch ( $action ) {
+			case 'Generate from all articles':
+				mgs_generate_full_sitemap();
+				update_option( 'mgs_sitemap_create_in_progress', true );
+
+				if ( empty( $sitemap_create_in_progress ) ) {
+					echo '<p>Creating sitemap...</p>';
+				} else {
+					echo '<p>Resuming sitemap creation</p>';
+				}
+			break;
+
+			case 'Generate from latest articles':
+				$last_modified = mgs_get_last_modified_posts();
+				if ( count( $last_modified ) > 0 ) {
+					echo '<p>Updating sitemap...</p>';
+					mgs_update_sitemap_from_modified_posts();				
+				} else {
+					echo '<p>No posts updated lately.</p>';
+				}
+			break;
+
+			case 'Halt Sitemap Generation':
+				update_option( 'mgs_stop_processing', true );
+				echo '<p>Stopping Sitemap generation</p>';
+			break;
+
+			case 'Reset Sitemap Data':
+				// Do the same as when we finish then tell use to delete manuallyrather than remove all data
+				delete_option( 'mgs_days_to_process' );
+				delete_option( 'mgs_months_to_process' );
+				delete_option( 'mgs_years_to_process' );
+				update_option( 'mgs_stop_processing', true );
+				delete_option( 'mgs_sitemap_create_in_progress' );
+				echo '<p>If you want to remove the data you must do so manually</p>';
+			break;
+
+			default:
+				echo '<p>Unknown action</p>';
+			break;
 
 		}
 
@@ -112,31 +133,36 @@ function mgs_google_sitemap_options() {
 		echo ' <input type="submit" value="Back">';
 		echo '</form>';
 	} else {
+
+		$days_to_process = get_option( 'mgs_days_to_process' );
+
 		?>
-		<p><strong>Last created:</strong> <?php echo human_time_diff( $sitemap_create_last_run ); ?> ago</p>
+		<p><strong>Sitemap Create Status:</strong> <?php echo ( empty( $sitemap_create_in_progress ) ) ? ' Not Running</p>' : ' Running</p><p><b>Current position:</b>'; ?>
+		<?php
+		if ( $days_to_process ) {
+			$years_to_process = get_option( 'mgs_years_to_process' );
+			$months_to_process = get_option( 'mgs_months_to_process' );
+			if ( ! $sitemap_create_in_progress ) {
+				echo '<p><b>Restart position:</b>';
+			}
+			$current_day = count( $days_to_process ) - 1;
+			$current_month = count( $months_to_process ) - 1;
+			$current_year = count( $years_to_process ) - 1;
+			printf( 'Day: %s Month: %s Year: %s</p>', $days_to_process[$current_day], $months_to_process[$current_month], $years_to_process[$current_year] );
+			printf( '<p><b>Years to process:</b> %s </p>', implode( ',', $years_to_process ) );
+		}
+		?>
 		<p><strong>Last updated:</strong> <?php echo human_time_diff( $sitemap_update_last_run ); ?> ago</p>
 		<p><strong>Next update:</strong> <?php echo $modified_posts_count . ' ' . $modified_posts_label; ?> will be updated in <?php echo human_time_diff( $sitemap_update_next_run ); ?></p>
 		<?php
 		echo '<form action="'. menu_page_url( 'metro-google-sitemap', false ) .'" method="post" style="float: left;">';
-		echo ' <input type="hidden" name="action" value="generate-google-sitemap">';
-		wp_nonce_field( 'generate-google-sitemap' );
-		
-		$post_year_range = mgs_get_post_year_range();
-		$post_year_range = array_reverse($post_year_range);
-		
-		echo ' <select name="year">';
-		foreach ( $post_year_range as $year ) {
-			echo ' <option value="'.$year.'">'.$year.'</option>';
-		}
-		echo ' </select>';
-		
-		echo ' <input type="submit" value="Generate from all articles">';
-		echo '</form>';
+		wp_nonce_field( 'mgs-action' );
+		$disabled = ( $sitemap_create_in_progress ) ? ' disabled="disabled" ' : '';
+		echo ' <input type="submit" name="action" value="Generate from all articles"' . $disabled . '>';
+		echo ' <input type="submit" name="action" value="Generate from latest articles">';
+		echo ' <input type="submit" name="action" value="Halt Sitemap Generation">';
+		echo ' <input type="submit" name="action" value="Reset Sitemap Data">';
 
-		echo '<form action="'. menu_page_url( 'metro-google-sitemap', false ) .'" method="post">';
-		echo ' <input type="hidden" name="action" value="generate-latest-google-sitemap">';
-		wp_nonce_field( 'generate-latest-google-sitemap' );
-		echo ' <input type="submit" value="Generate from latest articles">';
 		echo '</form>';
 	}
 	echo '</div>';
@@ -151,6 +177,20 @@ function mgs_get_post_year_range() {
 	$current_year = date( 'Y' );
 
 	return range( $oldest_post_year, $current_year );
+}
+
+function mgs_check_year_has_posts() {
+
+	$all_years = mgs_get_post_year_range();
+
+	$years_with_posts = array();
+	foreach ( $all_years as $year ) {
+		if ( mgs_date_range_has_posts( mgs_get_date_stamp( $year, 1, 1 ), mgs_get_date_stamp( $year, 12, 31 ) ) ) {
+			$years_with_posts[] = $year;
+		}
+	}
+	return $years_with_posts;
+
 }
 
 function mgs_get_date_stamp( $year, $month, $day ) {
@@ -183,73 +223,108 @@ function mgs_date_range_has_posts( $start_date, $end_date ) {
  * CHANGED TO RUN ONE YEAR AT A TIME DUE TO HEAVY LOAD - each all articles update can be done within 3 hours span
  *  
  */
-function mgs_generate_full_sitemap($year) {
+function mgs_generate_full_sitemap() {
 	global $wpdb;
 
-	$time = time();
-	update_option( 'mgs_sitemap_create_last_run', $time );
+	$is_partial_or_running = get_option( 'mgs_years_to_process' );
 
-	$time += MGS_INTERVAL_PER_GENERATION_EVENT;
-	if (  mgs_date_range_has_posts( mgs_get_date_stamp( $year, 1, 1 ), mgs_get_date_stamp( $year, 12, 31 ) ) ) {
-		wp_schedule_single_event( $time, 'mgs_cron_generate_sitemap_for_year', array(
-			array(
-				'year' => $year,
-			)
-		) );
+	if ( empty( $is_partial_or_running ) ) {
+		$all_years_with_posts = mgs_check_year_has_posts();
+		update_option( 'mgs_years_to_process', $all_years_with_posts );
+	} else {
+		$all_years_with_posts = $is_partial_or_running;
 	}
+
+	$time = time();
+	$next_year = $all_years_with_posts[count( $all_years_with_posts ) - 1];
+
+//	update_option( 'mgs_sitemap_create_last_run', $time );
+
+	wp_schedule_single_event(
+		$time, 
+		'mgs_cron_generate_sitemap_for_year', 
+		array(
+			array(
+				'year' => $next_year,
+			),
+		)
+	);
 	
 }
 
 
 function mgs_generate_sitemap_for_year( $args ) {
+	
+	$is_partial_or_running = get_option( 'mgs_months_to_process' );
+
 	$year = $args['year'];
-	$months = range( 1, 12 );
+	$max_month = 12;
+	if ( $year == date( 'Y' ) ) {
+		$max_month = date( 'n' );
+	}
+
+	if ( empty( $is_partial_or_running ) ) {
+		$months = range( 1, $max_month );
+		update_option( 'mgs_months_to_process', $months );
+	} else {
+		$months = $is_partial_or_running;
+	}
+
+
 	$time = time();
+	$next_month = $months[count( $months ) - 1];
 
-	foreach ( $months as $month ) {
-		$month_start =  mgs_get_date_stamp( $year, $month, 1 );
-		if ( ! mgs_date_range_has_posts( $month_start, mgs_get_date_stamp( $year, $month, date( 't', strtotime( $month_start ) ) ) ) )
-			continue;
-
-		$time += MGS_INTERVAL_PER_GENERATION_EVENT;
-		wp_schedule_single_event( $time, 'mgs_cron_generate_sitemap_for_year_month', array(
+	wp_schedule_single_event(
+		$time,
+		'mgs_cron_generate_sitemap_for_year_month',
+		array(
 			array(
 				'year' => $year,
-				'month' => $month,
-			)
-		) );
-	}
+				'month' => $next_month,
+			),
+		)
+	);
 }
 
 function mgs_generate_sitemap_for_year_month( $args ) {
+
+
+	$is_partial_or_running = get_option( 'mgs_days_to_process' );
+
 	$year = $args['year'];
 	$month = $args['month'];
-	$days = range( 1, 31 );
+
+	$max_days = cal_days_in_month( CAL_GREGORIAN, $month, $year );
+
+	if ( $month == date( 'n' ) ) {
+		$max_days = date( 'j' );
+	}
+
+	if ( empty( $is_partial_or_running ) ) {
+		$days = range( 1, $max_days );
+		update_option( 'mgs_days_to_process', $days );
+	} else {
+		$days = $is_partial_or_running;
+	}
+
+	$next_element = count( $days ) - 1;
+	$next_day = $days[$next_element];
+
+
 	$time = time();
 
-	foreach ( $days as $day ) {
-		$date = mgs_get_date_stamp( $year, $month, $day );
-		$is_date = strtotime( $date );
-		
-		if ( ! $is_date )
-			continue;
-
-		if ( ! mgs_date_range_has_posts( mgs_get_date_stamp( $year, $month, $day ), mgs_get_date_stamp( $year, $month, $day ) ) )
-			continue;
-
-		$time += MGS_INTERVAL_PER_GENERATION_EVENT;
-		mgs_schedule_sitemap_for_year_month_day( $time, $year, $month, $day );
-	}
-}
-
-function mgs_schedule_sitemap_for_year_month_day( $time, $year, $month, $day ) {
-	wp_schedule_single_event( $time, 'mgs_cron_generate_sitemap_for_year_month_day', array(
+	wp_schedule_single_event(
+		$time,
+		'mgs_cron_generate_sitemap_for_year_month_day',
+		array(
 			array(
 				'year' => $year,
 				'month' => $month,
-				'day' => $day,
-			)
-		) );
+				'day' => $next_day,
+			),
+		)
+	);
+	
 }
 
 function mgs_generate_sitemap_for_year_month_day( $args ) {
@@ -257,9 +332,12 @@ function mgs_generate_sitemap_for_year_month_day( $args ) {
 	$month = $args['month'];
 	$day = $args['day'];
 
-	$date = mgs_get_date_stamp( $year, $month, $day );
+	if ( mgs_date_range_has_posts( mgs_get_date_stamp( $year, $month, $day ), mgs_get_date_stamp( $year, $month, $day ) ) ) {
+		$date = mgs_get_date_stamp( $year, $month, $day );
+		mgs_generate_sitemap_for_date( $date );
+	}
 
-	mgs_generate_sitemap_for_date( $date );
+	mgs_find_next_day_to_process( $year, $month, $day );
 }
 
 function mgs_generate_sitemap_for_date( $sitemap_date ) {
@@ -348,6 +426,54 @@ function mgs_generate_sitemap_for_date( $sitemap_date ) {
 	wp_reset_postdata();
 }
 
+function mgs_find_next_day_to_process( $year, $month, $day ) {
+
+	$halt = get_option( 'mgs_stop_processing' );
+	if ( $halt ) {
+		// Allow user to bail out of the current process, doesn't remove where the job got up to
+		delete_option( 'mgs_stop_processing' );
+		delete_option( 'mgs_sitemap_create_in_progress' );
+		return;
+	}
+
+	update_option( 'mgs_sitemap_create_in_progress', true );
+
+	$days_being_processed = get_option( 'mgs_days_to_process' );
+	$months_being_processed = get_option( 'mgs_months_to_process' );
+	$years_being_processed = get_option( 'mgs_years_to_process' );
+
+	$total_days = count( $days_being_processed );
+	$total_months = count( $months_being_processed );
+	$total_years = count( $years_being_processed );
+
+	if ( $total_days && $day > 1 ) {
+		// Day has finished
+		unset( $days_being_processed[$total_days - 1] );
+		update_option( 'mgs_days_to_process', $days_being_processed );
+		mgs_generate_sitemap_for_year_month( array( 'year' => $year, 'month' => $month ) );
+	} else if ( $total_months and $month > 1 ) {
+		// Month has finished
+		unset( $months_being_processed[ $total_months - 1] );
+		delete_option( 'mgs_days_to_process' );
+		update_option( 'mgs_months_to_process', $months_being_processed );
+		mgs_generate_sitemap_for_year( array( 'year' => $year ) );
+	} else if ( $total_years ) {
+		// Year has finished
+		unset( $years_being_processed[ $total_years - 1] );
+		delete_option( 'mgs_days_to_process' );
+		delete_option( 'mgs_months_to_process' );
+		update_option( 'mgs_years_to_process', $years_being_processed );
+		mgs_generate_full_sitemap();
+	} else {
+		// We've finished - remove all options
+		delete_option( 'mgs_days_to_process' );
+		delete_option( 'mgs_months_to_process' );
+		delete_option( 'mgs_years_to_process' );
+		delete_option( 'mgs_sitemap_create_in_progress' );
+	}
+
+}
+
 add_action( 'init', 'mgs_create_post_type' );
 
 
@@ -415,7 +541,9 @@ function msg_queue_nginx_cache_invalidation( $sitemap_id, $year, $month, $day ) 
 		"http://metro.co.uk/sitemap.xml?yyyy=$year&mm=$month",
 		"http://metro.co.uk/sitemap.xml?yyyy=$year&mm=$month&dd=$day",
 	);
-	queue_async_job( array( 'output_cache' => array( 'url' => $metro_uk_sitemap_urls ) ), 'wpcom_invalidate_output_cache_job', -16 );
+	if ( function_exists( 'queue_async_job' ) ) {
+		queue_async_job( array( 'output_cache' => array( 'url' => $metro_uk_sitemap_urls ) ), 'wpcom_invalidate_output_cache_job', -16 );
+	}
 }
 
 function msg_handle_redirect() {
