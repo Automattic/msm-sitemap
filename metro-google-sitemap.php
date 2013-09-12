@@ -413,7 +413,7 @@ function msg_queue_nginx_cache_invalidation( $sitemap_id, $year, $month, $day ) 
 	if ( ! function_exists( 'queue_async_job' ) )
 		return;
 
-	$site_url = site_url();
+	$site_url = home_url();
 
 	$sitemap_urls = array(
 		$site_url . "/sitemap.xml?yyyy=$year",
