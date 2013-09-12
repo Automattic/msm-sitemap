@@ -36,9 +36,9 @@ function mgs_sitemap_init_cron() {
 	add_action( 'mgs_cron_generate_sitemap_for_year_month', 'mgs_generate_sitemap_for_year_month' );
 	add_action( 'mgs_cron_generate_sitemap_for_year_month_day', 'mgs_generate_sitemap_for_year_month_day' );
 
-	add_action( 'mgs_insert_sitemap_post', 'msg_queue_nginx_cache_invalidation', 10, 4 );
-	add_action( 'mgs_delete_sitemap_post', 'msg_queue_nginx_cache_invalidation', 10, 4 );
-	add_action( 'mgs_update_sitemap_post', 'msg_queue_nginx_cache_invalidation', 10, 4 );
+	add_action( 'mgs_insert_sitemap_post', 'mgs_queue_nginx_cache_invalidation', 10, 4 );
+	add_action( 'mgs_delete_sitemap_post', 'mgs_queue_nginx_cache_invalidation', 10, 4 );
+	add_action( 'mgs_update_sitemap_post', 'mgs_queue_nginx_cache_invalidation', 10, 4 );
 }
 
 function mgs_disable_canonical_redirects_for_sitemap_xml($redirect_url, $requested_url) { 
@@ -558,9 +558,11 @@ function mgs_update_sitemap_from_modified_posts() {
 	update_option( 'mgs_sitemap_update_last_run', time() );
 }
 
-function msg_queue_nginx_cache_invalidation( $sitemap_id, $year, $month, $day ) {
+function mgs_queue_nginx_cache_invalidation( $sitemap_id, $year, $month, $day ) {
+	if ( ! function_exists( 'queue_async_job' ) )
+		return;
 
-	$site_url = site_url();
+	$site_url = home_url();
 
 	$sitemap_urls = array(
 		$site_url . "/sitemap.xml?yyyy=$year",
@@ -576,7 +578,7 @@ function msg_queue_nginx_cache_invalidation( $sitemap_id, $year, $month, $day ) 
 >>>>>>> b02b8bb83f8ba17d441759490806e842010a6281
 }
 
-function msg_handle_redirect() {
+function mgs_handle_redirect() {
 
 	if ( get_query_var( 'google-sitemap' ) === 'true' ) {
 		include( plugin_dir_path( __FILE__ ) . 'templates/full-sitemaps.php' );
@@ -585,4 +587,4 @@ function msg_handle_redirect() {
 	return;
 }
 
-add_action( 'template_redirect', 'msg_handle_redirect' );
+add_action( 'template_redirect', 'mgs_handle_redirect' );
