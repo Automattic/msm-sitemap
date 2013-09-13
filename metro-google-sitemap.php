@@ -532,8 +532,18 @@ class Metro_Sitemap {
 
 		foreach ( $dates as $date ) {
 			list( $year, $month, $day ) = explode( '-', $date );
-			$time += MGS_INTERVAL_PER_GENERATION_EVENT;
-			self::schedule_sitemap_for_year_month_day( $time, $year, $month, $day );
+
+			wp_schedule_single_event(
+				$time, 
+				'mgs_cron_generate_sitemap_for_year_month_day',
+				array(
+					array(
+						'year' => $year,
+						'month' => $month,
+						'day' => $day,
+					),
+				)
+			);
 		}
 		update_option( 'mgs_sitemap_update_last_run', time() );
 	}
