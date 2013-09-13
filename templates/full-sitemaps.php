@@ -1,8 +1,8 @@
 <?php
 
-	$req_year = intval( $_GET['yyyy'] );
-	$req_month = intval( $_GET['mm'] );
-	$req_day = intval( $_GET['dd'] );
+	$req_year = ( isset( $_GET['yyyy'] ) ) ? intval( $_GET['yyyy'] ) : '';
+	$req_month = ( isset( $_GET['mm'] ) ) ? intval( $_GET['mm'] ) : '';
+	$req_day = ( isset( $_GET['dd'] ) ) ? intval( $_GET['dd'] ) : '';
 
 	$this_year = date( 'Y' );
 	$all_posts = get_posts( array( 'post_status' => 'publish', 'order' => 'ASC', 'posts_per_page' => 1 ) );
