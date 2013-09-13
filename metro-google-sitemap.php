@@ -38,8 +38,8 @@ class Metro_Sitemap {
 	}
 
 	function sitemap_init_cron() {
-		if ( ! wp_next_scheduled( array( __CLASS__, 'cron_update_sitemap' ) ) ) {
-			wp_schedule_event( time(), 'mgs-sitemap-15-min-cron-interval', array( __CLASS__, 'cron_update_sitemap' ) );
+		if ( ! wp_next_scheduled( 'mgs_cron_update_sitemap' ) ) {
+			wp_schedule_event( time(), 'mgs-sitemap-15-min-cron-interval', 'mgs_cron_update_sitemap' );
 		}
 		add_action( 'mgs_cron_update_sitemap', array( __CLASS__, 'update_sitemap_from_modified_posts' ) );
 
