@@ -66,7 +66,8 @@ class Metro_Sitemap {
 
 
 	function google_sitemap_menu() {
-		add_options_page( 'Metro Sitemap Options', 'Create Sitemap', 'manage_options', 'metro-sitemap', array( __CLASS__, 'sitemap_options' ) );
+		add_menu_page( __( 'Sitemaps', 'metro-sitemaps' ), __( 'Sitemaps', 'metro-sitemaps' ), 'manage_options', 'edit.php?post_type=mgs_sitemap', '', '', 31 );
+		add_management_page( 'Metro Sitemap Options', 'Create Sitemap', 'manage_options', 'metro-sitemap', array( __CLASS__, 'sitemap_options' ) );
 	}
 
 	function sitemap_options() {
@@ -488,7 +489,7 @@ class Metro_Sitemap {
 				'supports' => array(
 					'title',
 				),
-				'show_ui' => true, // debugging, so we can see the sitemaps that are generated
+				//'show_ui' => true, // debugging, so we can see the sitemaps that are generated
 			)
 		);
 	}
