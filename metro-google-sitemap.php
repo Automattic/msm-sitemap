@@ -489,7 +489,6 @@ class Metro_Sitemap {
 				'supports' => array(
 					'title',
 				),
-				//'show_ui' => true, // debugging, so we can see the sitemaps that are generated
 			)
 		);
 	}
