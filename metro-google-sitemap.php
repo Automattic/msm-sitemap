@@ -14,7 +14,6 @@ class Metro_Sitemap {
 
 	function __construct() {
 		define( 'MGS_INTERVAL_PER_GENERATION_EVENT', 60 ); // how far apart should full cron generation events be spaced
-		define( 'MGS_INTERVAL_PER_YEAR_GENERATION', 10800 ); // 3 hrs minimum time span between each whole update run
 
 		add_filter( 'cron_schedules', array( __CLASS__, 'sitemap_15_min_cron_interval' ) );
 
@@ -212,20 +211,16 @@ class Metro_Sitemap {
 	}
 
 	/*
-	 * We want to generate the entire sitemap catalogue async to avoid running into timeouta and memory issues.
+	 * We want to generate the entire sitemap catalogue async to avoid running into timeout and memory issues.
 	 *
 	 * Here's how it all works:
 	 *
 	 * -- Get year range for content
-	 * -- Create cron event for each year: generate_sitemap_for_year
-	 * -- generate_sitemap_for_year creates cron events for each month: generate_sitemap_for_year_month
-	 * -- generate_sitemap_for_year_month creates cron events for each day: generate_sitemap_for_year_month_day
-	 * -- generate_sitemap_for_year_month_day gets recent posts and adds sitemap via create_sitemap
+	 * -- Store these years in options table
+	 * -- Cascade through all months and days in reverse order i.e. newest first
+	 * -- Generate cron event for each individual day and when finished queue up the cron for the next one
+	 * -- Add each post from that day to the custom post
 	 *
-	 * We could alternatively do a cascading approach, where one year queues the next but this would require more code :)
-	 * 
-	 * CHANGED TO RUN ONE YEAR AT A TIME DUE TO HEAVY LOAD - each all articles update can be done within 3 hours span
-	 *  
 	 */
 	function generate_full_sitemap() {
 		global $wpdb;
@@ -532,6 +527,8 @@ class Metro_Sitemap {
 
 		foreach ( $dates as $date ) {
 			list( $year, $month, $day ) = explode( '-', $date );
+
+			$time += MGS_INTERVAL_PER_GENERATION_EVENT;
 
 			wp_schedule_single_event(
 				$time, 
