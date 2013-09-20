@@ -18,7 +18,7 @@
 	if ( ( $req_year == 0 ) && ( $req_month == 0 ) && ( $req_day == 0 ) ) {
 		echo '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 		foreach ( $years as $year ) {
-			$query = new WP_Query( array( 'year' => $year, 'post_type' => 'mgs_sitemap' ) );
+			$query = new WP_Query( array( 'year' => $year, 'post_type' => Metro_Sitemap::$sitemap_cpt ) );
 			if ( $query->have_posts() ) {
 				echo '<sitemap>';
 				echo '<loc>'. home_url( '/sitemap.xml?yyyy=' . $year ) . '</loc>';
@@ -35,13 +35,13 @@
 			'orderby' => 'ID',
 			'order' => 'ASC',
 			'posts_per_page' => 1,
-			'post_type' => 'mgs_sitemap',
+			'post_type' => Metro_Sitemap::$sitemap_cpt,
 		);
 		$sitemap_query = new WP_Query( $sitemap_args );
 		if ( $sitemap_query->have_posts() ) {
 		   while ( $sitemap_query->have_posts() ) : 
 		   		$sitemap_query->the_post();
-				$sitemap_content = get_post_meta( get_the_ID(), 'mgs_sitemap_xml', true );
+				$sitemap_content = get_post_meta( get_the_ID(), 'msm_sitemap_xml', true );
 		   		echo $sitemap_content;
 		   endwhile;
 		} else {
@@ -64,7 +64,7 @@
 						'monthnum' => $m,
 						'day' => $d,
 						'post_type' => 'DESC',
-						'post_type' => 'mgs_sitemap',
+						'post_type' => Metro_Sitemap::$sitemap_cpt,
 					);
 					$query = new WP_Query( $sitemap_args );
 					if ( $query->have_posts() ) {
