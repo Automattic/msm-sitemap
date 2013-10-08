@@ -420,10 +420,22 @@ class Metro_Sitemap {
 		$sitemap_name = $sitemap_date;
 		$sitemap_exists = false;
 
+		$sitemap_data = array(
+			'post_name' => $sitemap_name,
+			'post_title' => $sitemap_name,
+			'post_type' => self::$sitemap_cpt,
+			'post_status' => 'publish',
+			'post_date' => $sitemap_date,
+		);
+
 		$sitemap_id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", self::$sitemap_cpt, $sitemap_name ) );
 
-		if ( $sitemap_id )
+		if ( $sitemap_id ) {
 			$sitemap_exists = true;
+		} else {
+			$sitemap_id = wp_insert_post( $sitemap_data );
+			$sitemap_exists = true;
+		}
 
 		$query_args = array(
 			'year' => $year,
@@ -483,13 +495,7 @@ class Metro_Sitemap {
 			update_post_meta( $sitemap_id, 'msm_sitemap_xml', $xml );
 			do_action( 'msm_update_sitemap_post', $sitemap_id, $year, $month, $day );
 		} else {
-			$sitemap_data = array(
-				'post_name' => $sitemap_name,
-				'post_title' => $sitemap_name,
-				'post_type' => self::$sitemap_cpt,
-				'post_status' => 'publish',
-				'post_date' => $sitemap_date,
-			);
+			/* Should no longer hit this */
 			$sitemap_id = wp_insert_post( $sitemap_data );
 			add_post_meta( $sitemap_id, 'msm_sitemap_xml', $xml );
 			do_action( 'msm_insert_sitemap_post', $sitemap_id, $year, $month, $day );
@@ -675,11 +681,3 @@ class Metro_Sitemap {
 }
 
 $metro_sitemap_class = new Metro_Sitemap();
-
-
-
-
-
-
-
-
