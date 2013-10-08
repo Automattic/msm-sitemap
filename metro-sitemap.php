@@ -156,7 +156,7 @@ class Metro_Sitemap {
 				break;
 			}
 
-			echo '<form action="options-general.php">';
+			echo '<form action="tools.php">';
 			echo ' <input type="hidden" name="page" value="metro-sitemap">';
 			echo ' <input type="submit" value="Back">';
 			echo '</form>';
