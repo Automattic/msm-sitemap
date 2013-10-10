@@ -24,7 +24,7 @@ class Metro_Sitemap {
 
 		// A cron schedule for creating/updating sitemap posts based on updated content since the last run
 		add_action( 'init', array( __CLASS__, 'sitemap_init_cron' ) );
-		add_action( 'redirect_canonical', array( __CLASS__, 'disable_canonical_redirects_for_sitemap_xml', 10, 2 ) );
+		add_action( 'redirect_canonical', array( __CLASS__, 'disable_canonical_redirects_for_sitemap_xml' ), 10, 2 );
 		add_action( 'init', array( __CLASS__, 'add_metro_sitemap_endpoint' ) );
 		add_action( 'admin_menu', array( __CLASS__, 'metro_sitemap_menu' ) );
 		add_action( 'init', array( __CLASS__, 'create_post_type' ) );
