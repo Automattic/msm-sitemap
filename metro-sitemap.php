@@ -357,7 +357,12 @@ class Metro_Sitemap {
 		$year = $args['year'];
 		$month = $args['month'];
 
-		$max_days = cal_days_in_month( CAL_GREGORIAN, (int) $month, (int) $year );
+		// cal_days_in_month doesn't exist on WP.com so set it to a possible max. Will skip invalid dates as no posts will be found
+		if ( ! function_exists( 'cal_days_in_month' ) ) {
+			$max_days = 31;
+		} else {
+			$max_days = cal_days_in_month( CAL_GREGORIAN, (int) $month, (int) $year );
+		}
 
 		if ( $month == date( 'n' ) ) {
 			$max_days = date( 'j' );
