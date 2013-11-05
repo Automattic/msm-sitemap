@@ -23,9 +23,9 @@ class Metro_Sitemap {
 		add_filter( 'cron_schedules', array( __CLASS__, 'sitemap_15_min_cron_interval' ) );
 
 		// A cron schedule for creating/updating sitemap posts based on updated content since the last run
-		add_action( 'init', array( __CLASS__, 'sitemap_init_cron' ) );
+		add_action( 'init', array( __CLASS__, 'sitemap_init' ) );
+		add_action( 'admin_init', array( __CLASS__, 'sitemap_init_cron' ) );
 		add_action( 'redirect_canonical', array( __CLASS__, 'disable_canonical_redirects_for_sitemap_xml' ), 10, 2 );
-		add_action( 'init', array( __CLASS__, 'add_metro_sitemap_endpoint' ) );
 		add_action( 'admin_menu', array( __CLASS__, 'metro_sitemap_menu' ) );
 		add_action( 'init', array( __CLASS__, 'create_post_type' ) );
 		add_action( 'template_redirect', array( __CLASS__, 'handle_redirect' ) );
@@ -46,12 +46,13 @@ class Metro_Sitemap {
 	}
 
 	/**
-	 * Add cron jobs required to generate these sitemaps
+	 * Register endpoint for sitemap and other hooks
 	 */
-	function sitemap_init_cron() {
-		if ( ! wp_next_scheduled( 'msm_cron_update_sitemap' ) ) {
-			wp_schedule_event( time(), 'ms-sitemap-15-min-cron-interval', 'msm_cron_update_sitemap' );
-		}
+	function sitemap_init() {
+		define( 'WPCOM_SKIP_DEFAULT_SITEMAP', true );
+		add_rewrite_tag( '%metro-sitemap%', 'true' ); // allow 'metro-sitemap=true' parameter
+		add_rewrite_rule( '^sitemap.xml$','index.php?metro-sitemap=true','top' );
+
 		add_action( 'msm_cron_update_sitemap', array( __CLASS__, 'update_sitemap_from_modified_posts' ) );
 
 		add_action( 'msm_cron_generate_sitemap_for_year', array( __CLASS__, 'generate_sitemap_for_year' ) );
@@ -61,6 +62,15 @@ class Metro_Sitemap {
 		add_action( 'msm_insert_sitemap_post', array( __CLASS__, 'queue_nginx_cache_invalidation' ), 10, 4 );
 		add_action( 'msm_delete_sitemap_post', array( __CLASS__, 'queue_nginx_cache_invalidation' ), 10, 4 );
 		add_action( 'msm_update_sitemap_post', array( __CLASS__, 'queue_nginx_cache_invalidation' ), 10, 4 );
+	}
+
+	/**
+	 * Add cron jobs required to generate these sitemaps
+	 */
+	function sitemap_init_cron() {
+		if ( ! wp_next_scheduled( 'msm_cron_update_sitemap' ) ) {
+			wp_schedule_event( time(), 'ms-sitemap-15-min-cron-interval', 'msm_cron_update_sitemap' );
+		}
 	}
 
 	/**
@@ -75,15 +85,6 @@ class Metro_Sitemap {
 			return $requested_url; 
 		}
 		return $redirect_url; 
-	}
-
-	/**
-	 * Register endpoint for sitemap
-	 */
-	function add_metro_sitemap_endpoint() {
-		define( 'WPCOM_SKIP_DEFAULT_SITEMAP', true );
-		add_rewrite_tag( '%metro-sitemap%', 'true' ); // allow 'metro-sitemap=true' parameter
-		add_rewrite_rule( '^sitemap.xml$','index.php?metro-sitemap=true','top' );
 	}
 
 	/**
