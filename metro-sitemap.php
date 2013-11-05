@@ -40,7 +40,7 @@ class Metro_Sitemap {
 	function sitemap_15_min_cron_interval( $schedules ) {
 		$schedules[ 'ms-sitemap-15-min-cron-interval' ] = array(
 			'interval' => 900,
-			'display' => __( 'Every 15 minutes' ),
+			'display' => __( 'Every 15 minutes', 'metro-sitemaps' ),
 		);
 		return $schedules;
 	}
@@ -92,7 +92,7 @@ class Metro_Sitemap {
 	 */
 	function metro_sitemap_menu() {
 		add_menu_page( __( 'Sitemaps', 'metro-sitemaps' ), __( 'Sitemaps', 'metro-sitemaps' ), 'manage_options', 'edit.php?post_type=' . self::$sitemap_cpt, '', '', 31 );
-		add_management_page( 'Metro Sitemap Options', 'Create Sitemap', 'manage_options', 'metro-sitemap', array( __CLASS__, 'sitemap_options' ) );
+		add_management_page( __( 'Sitemap Options', 'metro-sitemaps' ), __( 'Create Sitemap', 'metro-sitemaps' ), 'manage_options', 'metro-sitemap', array( __CLASS__, 'sitemap_options' ) );
 	}
 
 	/**
@@ -100,7 +100,7 @@ class Metro_Sitemap {
 	 */
 	function sitemap_options() {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
+			wp_die( __( 'You do not have sufficient permissions to access this page.', 'metro-sitemaps' ) );
 		}
 
 		$sitemap_create_in_progress = get_option( 'msm_sitemap_create_in_progress' );
@@ -112,7 +112,7 @@ class Metro_Sitemap {
 
 		echo '<div class="wrap">';
 		screen_icon();
-		echo '<h2>Metro Sitemap</h2>';
+		echo '<h2>' . _e( 'Metro Sitemap', 'metro-sitemaps' ) . '</h2>';
 		
 		if ( isset( $_POST['action'] ) ) {
 			$action = $_POST['action'];
@@ -125,35 +125,35 @@ class Metro_Sitemap {
 					update_option( 'msm_sitemap_create_in_progress', true );
 
 					if ( empty( $sitemap_create_in_progress ) ) {
-						echo '<p>Creating sitemap...</p>';
+						echo '<p>' . _e( 'Creating sitemap...', 'metro-sitemaps' ) . '</p>';
 					} else {
-						echo '<p>Resuming sitemap creation</p>';
+						echo '<p>' . _e( 'Resuming sitemap creation', 'metro-sitemaps' ) . '</p>';
 					}
 				break;
 
 				case 'Generate from latest articles':
 					$last_modified = self::get_last_modified_posts();
 					if ( count( $last_modified ) > 0 ) {
-						echo '<p>Updating sitemap...</p>';
+						echo '<p>' . _e( 'Updating sitemap...', 'metro-sitemaps' ) . '</p>';
 						self::update_sitemap_from_modified_posts();				
 					} else {
-						echo '<p>No posts updated lately.</p>';
+						echo '<p>' . _e( 'No posts updated lately.', 'metro-sitemaps' ) . '</p>';
 					}
 				break;
 
 				case 'Halt Sitemap Generation':
 					update_option( 'msm_stop_processing', true );
-					echo '<p>Stopping Sitemap generation</p>';
+					echo '<p>' . _e( 'Stopping Sitemap generation', 'metro-sitemaps' ) . '</p>';
 				break;
 
 				case 'Reset Sitemap Data':
 					// Do the same as when we finish then tell use to delete manuallyrather than remove all data
 					self::reset_sitemap_data();
-					echo '<p>If you want to remove the data you must do so manually</p>';
+					echo '<p>' . _e( 'If you want to remove the data you must do so manually', 'metro-sitemaps' ) . '</p>';
 				break;
 
 				default:
-					echo '<p>Unknown action</p>';
+					echo '<p>' . _e( 'Unknown action', 'metro-sitemaps' ) . '</p>';
 				break;
 			}
 
@@ -171,7 +171,7 @@ class Metro_Sitemap {
 				$years_to_process = get_option( 'msm_years_to_process' );
 				$months_to_process = get_option( 'msm_months_to_process' );
 				if ( ! $sitemap_create_in_progress ) {
-					echo '<p><b>Restart position:</b>';
+					echo '<p><b>' . _e( 'Restart position:', 'metro-sitemaps' ) . '</b>';
 				}
 				$current_day = count( $days_to_process ) - 1;
 				$current_month = count( $months_to_process ) - 1;
@@ -181,8 +181,8 @@ class Metro_Sitemap {
 				printf( '<p><b>Years to process:</b> %s </p>', implode( ',', $years_to_process ) );
 			}
 			?>
-			<p><strong>Last updated:</strong> <?php echo human_time_diff( $sitemap_update_last_run ); ?> ago</p>
-			<p><strong>Next update:</strong> <?php echo $modified_posts_count . ' ' . $modified_posts_label; ?> will be updated in <?php echo human_time_diff( $sitemap_update_next_run ); ?></p>
+			<p><strong><?php _e( 'Last updated:', 'metro-sitemaps' ); ?></strong> <?php echo human_time_diff( $sitemap_update_last_run ); ?> ago</p>
+			<p><strong><?php _e( 'Next update:', 'metro-sitemaps' ); ?></strong> <?php echo $modified_posts_count . ' ' . $modified_posts_label; ?> will be updated in <?php echo human_time_diff( $sitemap_update_next_run ); ?></p>
 			<?php
 			echo '<form action="'. menu_page_url( 'metro-sitemap', false ) .'" method="post" style="float: left;">';
 			wp_nonce_field( 'ms-action' );
