@@ -365,7 +365,7 @@ class Metro_Sitemap {
 			$max_days = cal_days_in_month( CAL_GREGORIAN, (int) $month, (int) $year );
 		}
 
-		if ( $month == date( 'n' ) ) {
+		if ( date( 'Y' ) == $year && $month == date( 'n' ) ) {
 			$max_days = date( 'j' );
 		}
 
