@@ -1,13 +1,11 @@
 <?php
 /*
 Plugin Name: Metro Sitemap
-Plugin URI: 
-Description: Comprehensive sitemaps for your WordPress site. Joint collaboration between Metro.co.uk, MAKE and WordPress.com VIP.
-Author: Artur Synowiec & Paul Kevan
-Author URI: 
+Description: Comprehensive sitemaps for your WordPress site. Joint collaboration between Metro.co.uk, MAKE, Alley Interactive, and WordPress.com VIP.
+Author: Artur Synowiec, Paul Kevan, and others
 Version: 0.1
 Stable tag: 0.1
-License: Metro
+License: GPLv2
 */
 
 if ( defined( 'WP_CLI' ) && true === WP_CLI )
@@ -301,7 +299,6 @@ class Metro_Sitemap {
 		$time = time();
 		$next_year = $all_years_with_posts[count( $all_years_with_posts ) - 1];
 
-	//	update_option( 'msm_sitemap_create_last_run', $time );
 		wp_schedule_single_event(
 			$time, 
 			'msm_cron_generate_sitemap_for_year', 
@@ -368,7 +365,7 @@ class Metro_Sitemap {
 			$max_days = cal_days_in_month( CAL_GREGORIAN, (int) $month, (int) $year );
 		}
 
-		if ( $month == date( 'n' ) ) {
+		if ( date( 'Y' ) == $year && $month == date( 'n' ) ) {
 			$max_days = date( 'j' );
 		}
 
@@ -408,9 +405,9 @@ class Metro_Sitemap {
 		$month = $args['month'];
 		$day = $args['day'];
 
-		if ( self::date_range_has_posts( self::get_date_stamp( $year, $month, $day ), self::get_date_stamp( $year, $month, $day ) ) ) {
-			$date = self::get_date_stamp( $year, $month, $day );
-			self::generate_sitemap_for_date( $date );
+		$date_stamp = self::get_date_stamp( $year, $month, $day );
+		if ( self::date_range_has_posts( $date_stamp, $date_stamp ) ) {
+			self::generate_sitemap_for_date( $date_stamp );
 		}
 
 		self::find_next_day_to_process( $year, $month, $day );
@@ -464,7 +461,7 @@ class Metro_Sitemap {
 			// If no entries - delete the whole sitemap post
 			if ( $sitemap_exists ) {
 				wp_delete_post( $sitemap_id, true );
-				do_action( array( __CLASS__, 'msm_delete_sitemap_post' ), $sitemap_id, $year, $month, $day );
+				do_action( 'msm_delete_sitemap_post', $sitemap_id, $year, $month, $day );
 			}
 			return;
 		}
@@ -579,7 +576,9 @@ class Metro_Sitemap {
 					'singular_name' => __( 'Sitemap' ),
 				),
 				'public' => false,
-				'has_archive' => true,
+				'has_archive' => false,
+				'rewrite' => false,
+				'show_ui' => true, // TODO: should probably have some sort of custom UI
 				'supports' => array(
 					'title',
 				),
