@@ -405,9 +405,9 @@ class Metro_Sitemap {
 		$month = $args['month'];
 		$day = $args['day'];
 
-		if ( self::date_range_has_posts( self::get_date_stamp( $year, $month, $day ), self::get_date_stamp( $year, $month, $day ) ) ) {
-			$date = self::get_date_stamp( $year, $month, $day );
-			self::generate_sitemap_for_date( $date );
+		$date_stamp = self::get_date_stamp( $year, $month, $day );
+		if ( self::date_range_has_posts( $date_stamp, $date_stamp ) ) {
+			self::generate_sitemap_for_date( $date_stamp );
 		}
 
 		self::find_next_day_to_process( $year, $month, $day );
