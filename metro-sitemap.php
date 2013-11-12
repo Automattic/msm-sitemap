@@ -461,7 +461,7 @@ class Metro_Sitemap {
 			// If no entries - delete the whole sitemap post
 			if ( $sitemap_exists ) {
 				wp_delete_post( $sitemap_id, true );
-				do_action( array( __CLASS__, 'msm_delete_sitemap_post' ), $sitemap_id, $year, $month, $day );
+				do_action( 'msm_delete_sitemap_post', $sitemap_id, $year, $month, $day );
 			}
 			return;
 		}
