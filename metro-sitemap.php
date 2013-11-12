@@ -10,6 +10,9 @@ Stable tag: 0.1
 License: Metro
 */
 
+if ( defined( 'WP_CLI' ) && true === WP_CLI )
+	require dirname( __FILE__ ) . '/includes/wp-cli.php';
+
 class Metro_Sitemap {
 
 	public static $sitemap_cpt = 'mgs_sitemap';
