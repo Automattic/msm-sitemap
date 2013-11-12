@@ -576,7 +576,9 @@ class Metro_Sitemap {
 					'singular_name' => __( 'Sitemap' ),
 				),
 				'public' => false,
-				'has_archive' => true,
+				'has_archive' => false,
+				'rewrite' => false,
+				'show_ui' => true, // TODO: should probably have some sort of custom UI
 				'supports' => array(
 					'title',
 				),
