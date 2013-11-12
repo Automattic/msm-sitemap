@@ -296,7 +296,6 @@ class Metro_Sitemap {
 		$time = time();
 		$next_year = $all_years_with_posts[count( $all_years_with_posts ) - 1];
 
-	//	update_option( 'msm_sitemap_create_last_run', $time );
 		wp_schedule_single_event(
 			$time, 
 			'msm_cron_generate_sitemap_for_year', 
