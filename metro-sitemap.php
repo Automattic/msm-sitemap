@@ -1,13 +1,11 @@
 <?php
 /*
 Plugin Name: Metro Sitemap
-Plugin URI: 
-Description: Comprehensive sitemaps for your WordPress site. Joint collaboration between Metro.co.uk, MAKE and WordPress.com VIP.
-Author: Artur Synowiec & Paul Kevan
-Author URI: 
+Description: Comprehensive sitemaps for your WordPress site. Joint collaboration between Metro.co.uk, MAKE, Alley Interactive, and WordPress.com VIP.
+Author: Artur Synowiec, Paul Kevan, and others
 Version: 0.1
 Stable tag: 0.1
-License: Metro
+License: GPLv2
 */
 
 class Metro_Sitemap {
