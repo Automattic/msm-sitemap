@@ -15,7 +15,7 @@ class Metro_Sitemap {
 
 	const DEFAULT_POSTS_PER_SITEMAP_PAGE = 200;
 
-	public static $sitemap_cpt = 'mgs_sitemap';
+	const SITEMAP_CPT = 'mgs_sitemap';
 
 	/**
 	 * Register actions for our hook
@@ -90,7 +90,7 @@ class Metro_Sitemap {
 	 * Register admin menu for sitemap
 	 */
 	function metro_sitemap_menu() {
-		add_menu_page( __( 'Sitemaps', 'metro-sitemaps' ), __( 'Sitemaps', 'metro-sitemaps' ), 'manage_options', 'edit.php?post_type=' . self::$sitemap_cpt, '', '', 31 );
+		add_menu_page( __( 'Sitemaps', 'metro-sitemaps' ), __( 'Sitemaps', 'metro-sitemaps' ), 'manage_options', 'edit.php?post_type=' . self::SITEMAP_CPT, '', '', 31 );
 		add_management_page( __( 'Sitemap Options', 'metro-sitemaps' ), __( 'Create Sitemap', 'metro-sitemaps' ), 'manage_options', 'metro-sitemap', array( __CLASS__, 'sitemap_options' ) );
 	}
 
@@ -427,12 +427,12 @@ class Metro_Sitemap {
 		$sitemap_data = array(
 			'post_name' => $sitemap_name,
 			'post_title' => $sitemap_name,
-			'post_type' => self::$sitemap_cpt,
+			'post_type' => self::SITEMAP_CPT,
 			'post_status' => 'publish',
 			'post_date' => $sitemap_date,
 		);
 
-		$sitemap_id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", self::$sitemap_cpt, $sitemap_name ) );
+		$sitemap_id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", self::SITEMAP_CPT, $sitemap_name ) );
 
 		if ( $sitemap_id ) {
 			$sitemap_exists = true;
@@ -567,7 +567,7 @@ class Metro_Sitemap {
 	 */
 	function create_post_type() {
 		register_post_type(
-			self::$sitemap_cpt,
+			self::SITEMAP_CPT,
 			array(
 				'labels' => array(
 					'name' => __( 'Sitemaps' ),
