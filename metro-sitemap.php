@@ -59,10 +59,6 @@ class Metro_Sitemap {
 		add_action( 'msm_cron_generate_sitemap_for_year', array( __CLASS__, 'generate_sitemap_for_year' ) );
 		add_action( 'msm_cron_generate_sitemap_for_year_month', array( __CLASS__, 'generate_sitemap_for_year_month' ) );
 		add_action( 'msm_cron_generate_sitemap_for_year_month_day', array( __CLASS__, 'generate_sitemap_for_year_month_day' ) );
-
-		add_action( 'msm_insert_sitemap_post', array( __CLASS__, 'queue_nginx_cache_invalidation' ), 10, 4 );
-		add_action( 'msm_delete_sitemap_post', array( __CLASS__, 'queue_nginx_cache_invalidation' ), 10, 4 );
-		add_action( 'msm_update_sitemap_post', array( __CLASS__, 'queue_nginx_cache_invalidation' ), 10, 4 );
 	}
 
 	/**
@@ -648,29 +644,6 @@ class Metro_Sitemap {
 			);
 		}
 		update_option( 'msm_sitemap_update_last_run', time() );
-	}
-
-	/**
-	 * Queue action to invalidate nginx cache if on WPCOM
-	 * @param int $sitemap_id
-	 * @param string $year
-	 * @param string $month
-	 * @param string $day
-	 */
-	function queue_nginx_cache_invalidation( $sitemap_id, $year, $month, $day ) {
-		if ( ! function_exists( 'queue_async_job' ) )
-			return;
-
-		$site_url = home_url();
-
-		$sitemap_urls = array(
-			$site_url . "/sitemap.xml?yyyy=$year",
-			$site_url . "/sitemap.xml?yyyy=$year&mm=$month",
-			$site_url . "/sitemap.xml?yyyy=$year&mm=$month&dd=$day",
-		);
-		if ( function_exists( 'queue_async_job' ) ) {
-			queue_async_job( array( 'output_cache' => array( 'url' => $sitemap_urls ) ), 'wpcom_invalidate_output_cache_job', -16 );
-		}
 	}
 
 	/**
