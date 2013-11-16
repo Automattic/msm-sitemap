@@ -13,6 +13,8 @@ if ( defined( 'WP_CLI' ) && true === WP_CLI )
 
 class Metro_Sitemap {
 
+	const DEFAULT_POSTS_PER_SITEMAP_PAGE = 200;
+
 	public static $sitemap_cpt = 'mgs_sitemap';
 
 	/**
@@ -446,7 +448,7 @@ class Metro_Sitemap {
 			'order' => 'DESC',
 			'post_status' => 'publish',
 			'post_type' => apply_filters( 'msm_sitemap_entry_post_type', 'post' ),
-			'posts_per_page' => apply_filters( 'msm_sitemap_entry_posts_per_page', 200 ),
+			'posts_per_page' => apply_filters( 'msm_sitemap_entry_posts_per_page', self::DEFAULT_POSTS_PER_SITEMAP_PAGE ),
 			'no_found_rows' => true,
 		);
 
