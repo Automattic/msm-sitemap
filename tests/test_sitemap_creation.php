@@ -31,7 +31,7 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 	 */
 	function teardown() {
 		$sitemaps = get_posts( array(
-			'post_type' => Metro_Sitemap::$sitemap_cpt,
+			'post_type' => Metro_Sitemap::SITEMAP_CPT,
 			'fields' => 'ids',
 			'posts_per_page' => -1,
 		) );
@@ -44,7 +44,7 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 	function test_sitemap_posts_were_created() {
 		global $post;
 		$sitemaps = get_posts( array(
-			'post_type' => Metro_Sitemap::$sitemap_cpt,
+			'post_type' => Metro_Sitemap::SITEMAP_CPT,
 			'fields' => 'ids',
 			'posts_per_page' => -1,
 		) );
