@@ -116,7 +116,7 @@ class Metro_Sitemap {
 		if ( isset( $_POST['action'] ) ) {
 			$action = $_POST['action'];
 
-			check_admin_referer( 'ms-action' );
+			check_admin_referer( 'msm-sitemap-action' );
 
 			switch ( $action ) {
 				case 'Generate from all articles':
@@ -184,7 +184,7 @@ class Metro_Sitemap {
 			<p><strong><?php _e( 'Next update:', 'metro-sitemaps' ); ?></strong> <?php echo $modified_posts_count . ' ' . $modified_posts_label; ?> will be updated in <?php echo human_time_diff( $sitemap_update_next_run ); ?></p>
 			<?php
 			echo '<form action="'. menu_page_url( 'metro-sitemap', false ) .'" method="post" style="float: left;">';
-			wp_nonce_field( 'ms-action' );
+			wp_nonce_field( 'msm-sitemap-action' );
 			$disabled = ( $sitemap_create_in_progress ) ? ' disabled="disabled" ' : '';
 			echo ' <input type="submit" name="action" value="Generate from all articles"' . $disabled . '>';
 			echo ' <input type="submit" name="action" value="Generate from latest articles">';
