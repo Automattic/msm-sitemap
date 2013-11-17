@@ -31,7 +31,7 @@ class Metro_Sitemap {
 		add_action( 'redirect_canonical', array( __CLASS__, 'disable_canonical_redirects_for_sitemap_xml' ), 10, 2 );
 		add_action( 'admin_menu', array( __CLASS__, 'metro_sitemap_menu' ) );
 		add_action( 'init', array( __CLASS__, 'create_post_type' ) );
-		add_action( 'template_redirect', array( __CLASS__, 'handle_redirect' ) );
+		add_filter( 'template_include', array( __CLASS__, 'load_sitemap_template' ) );
 
 	}
 
@@ -651,13 +651,11 @@ class Metro_Sitemap {
 	/**
 	 * Trigger rendering of the actual sitemap
 	 */
-	function handle_redirect() {
-		global $wp_query;
+	function load_sitemap_template( $template ) {
 		if ( get_query_var( 'metro-sitemap' ) === 'true' ) {
-			include( plugin_dir_path( __FILE__ ) . 'templates/full-sitemaps.php' );
-			exit;
+			$template = dirname( __FILE__ ) . '/templates/full-sitemaps.php';
 		}
-		return;
+		return $template;
 	}
 
 
