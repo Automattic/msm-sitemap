@@ -91,7 +91,7 @@ class Metro_Sitemap {
 	 */
 	public static function metro_sitemap_menu() {
 		add_menu_page( __( 'Sitemaps', 'metro-sitemaps' ), __( 'Sitemaps', 'metro-sitemaps' ), 'manage_options', 'edit.php?post_type=' . self::SITEMAP_CPT, '', '', 31 );
-		add_management_page( __( 'Sitemap Options', 'metro-sitemaps' ), __( 'Create Sitemap', 'metro-sitemaps' ), 'manage_options', 'metro-sitemap', array( __CLASS__, 'sitemap_options' ) );
+		add_management_page( __( 'Sitemap Options', 'metro-sitemaps' ), __( 'Create Sitemaps', 'metro-sitemaps' ), 'manage_options', 'metro-sitemap', array( __CLASS__, 'sitemap_options' ) );
 	}
 
 	/**
