@@ -5,17 +5,33 @@
 WP_CLI::add_command( 'msm-sitemap', 'Metro_Sitemap_CLI' );
 
 class Metro_Sitemap_CLI extends WP_CLI_Command {
-	
+	/**
+	 * @var string Type of command triggered so we can keep track of killswitch cleanup.
+	 */
+	private $command = '';
+
+	/**
+	 * @var bool Flag whether or not execution should be stopped.
+	 */
+	private $halt = false;
+
 	/**
 	 * Generate full sitemap for site
 	 *
 	 * @subcommand generate-sitemap
 	 */
 	function generate_sitemap( $args, $assoc_args ) {
+		$this->command = 'all';
+
 		$all_years_with_posts = Metro_Sitemap::check_year_has_posts();
 
 		$sitemap_args = array();
 		foreach ( $all_years_with_posts as $year ) {
+			if ( $this->halt_execution() ) {
+				delete_option( 'msm_stop_processing' );
+				break;
+			}
+
 			$sitemap_args['year'] = $year;
 			$this->generate_sitemap_for_year( array(), $sitemap_args );
 		}
@@ -27,6 +43,9 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 	 * @subcommand generate-sitemap-for-year
 	 */
 	function generate_sitemap_for_year( $args, $assoc_args ) {
+		if ( empty( $this->command ) )
+			$this->command = 'year';
+
 		$assoc_args = wp_parse_args( $assoc_args, array(
 			'year' => false,
 		) );
@@ -45,6 +64,13 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		$months = range( 1, $max_month );
 
 		foreach ( $months as $month ) {
+			if ( $this->halt_execution() ) {
+				if ( 'year' === $this->command )
+					delete_option( 'msm_stop_processing' );
+
+				break;
+			}
+
 			$assoc_args['month'] = $month;
 			$this->generate_sitemap_for_year_month( $args, $assoc_args );
 		}
@@ -54,6 +80,9 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 	 * @subcommand generate-sitemap-for-year-month
 	 */
 	function generate_sitemap_for_year_month( $args, $assoc_args ) {
+		if ( empty( $this->command ) )
+			$this->command = 'month';
+
 		$assoc_args = wp_parse_args( $assoc_args, array(
 			'year' => false,
 			'month' => false,
@@ -77,6 +106,13 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		$days = range( 1, $max_days );
 
 		foreach ( $days as $day ) {
+			if ( $this->halt_execution() ) {
+				if ( 'month' === $this->command )
+					delete_option( 'msm_stop_processing' );
+
+				break;
+			}
+
 			$assoc_args['day'] = $day;
 			$this->generate_sitemap_for_year_month_day( $args, $assoc_args );
 		}
@@ -87,6 +123,9 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 	 * @subcommand generate-sitemap-for-year-month-day
 	 */
 	function generate_sitemap_for_year_month_day( $args, $assoc_args ) {
+		if ( empty( $this->command ) )
+			$this->command = 'day';
+
 		$assoc_args = wp_parse_args( $assoc_args, array(
 			'year' => false,
 			'month' => false,
@@ -135,5 +174,24 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 			return new WP_Error( 'msm-invalid-day', __( 'Please specify a valid day', 'metro-sitemap' ) );
 
 		return true;
+	}
+
+	/**
+	 * Check if the user has flagged to bail on sitemap generation.
+	 *
+	 * Once `$this->halt` is set, we take advantage of PHP's boolean operator to stop querying the option in hopes of
+	 * limiting database interaction.
+	 *
+	 * @return bool
+	 */
+	private function halt_execution() {
+		if ( $this->halt || get_option( 'msm_stop_processing' ) ) {
+			// Allow user to bail out of the current process, doesn't remove where the job got up to
+			delete_option( 'msm_sitemap_create_in_progress' );
+			$this->halt = true;
+			return true;
+		}
+
+		return false;
 	}
 }
