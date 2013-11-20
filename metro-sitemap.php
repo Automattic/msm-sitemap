@@ -569,15 +569,16 @@ class Metro_Sitemap {
 		register_post_type(
 			self::SITEMAP_CPT,
 			array(
-				'labels' => array(
-					'name' => __( 'Sitemaps' ),
+				'labels'       => array(
+					'name'          => __( 'Sitemaps' ),
 					'singular_name' => __( 'Sitemap' ),
 				),
-				'public' => false,
-				'has_archive' => false,
-				'rewrite' => false,
-				'show_ui' => true, // TODO: should probably have some sort of custom UI
-				'supports' => array(
+				'public'       => false,
+				'has_archive'  => false,
+				'rewrite'      => false,
+				'show_ui'      => true,  // TODO: should probably have some sort of custom UI
+				'show_in_menu' => false, // Since we're manually adding a Sitemaps menu, no need to auto-add one through the CPT.
+				'supports'     => array(
 					'title',
 				),
 			)
