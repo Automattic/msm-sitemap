@@ -53,8 +53,8 @@ class Metro_Sitemap {
 	 */
 	function sitemap_init() {
 		define( 'WPCOM_SKIP_DEFAULT_SITEMAP', true );
-		add_rewrite_tag( '%metro-sitemap%', 'true' ); // allow 'metro-sitemap=true' parameter
-		add_rewrite_rule( '^sitemap.xml$','index.php?metro-sitemap=true','top' );
+		add_rewrite_tag( '%sitemap%', 'true' ); // allow 'metro-sitemap=true' parameter
+		add_rewrite_rule( '^sitemap.xml$','index.php?sitemap=true','top' );
 
 		add_action( 'msm_cron_update_sitemap', array( __CLASS__, 'update_sitemap_from_modified_posts' ) );
 
@@ -652,7 +652,7 @@ class Metro_Sitemap {
 	 * Trigger rendering of the actual sitemap
 	 */
 	function load_sitemap_template( $template ) {
-		if ( get_query_var( 'metro-sitemap' ) === 'true' ) {
+		if ( get_query_var( 'sitemap' ) === 'true' ) {
 			$template = dirname( __FILE__ ) . '/templates/full-sitemaps.php';
 		}
 		return $template;
