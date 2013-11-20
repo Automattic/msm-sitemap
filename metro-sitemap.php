@@ -40,7 +40,7 @@ class Metro_Sitemap {
 	 * @param array[] $schedules
 	 * @return array[] modified schedules
 	 */
-	function sitemap_15_min_cron_interval( $schedules ) {
+	public static function sitemap_15_min_cron_interval( $schedules ) {
 		$schedules[ 'ms-sitemap-15-min-cron-interval' ] = array(
 			'interval' => 900,
 			'display' => __( 'Every 15 minutes', 'metro-sitemaps' ),
@@ -51,7 +51,7 @@ class Metro_Sitemap {
 	/**
 	 * Register endpoint for sitemap and other hooks
 	 */
-	function sitemap_init() {
+	public static function sitemap_init() {
 		define( 'WPCOM_SKIP_DEFAULT_SITEMAP', true );
 		add_rewrite_tag( '%sitemap%', 'true' ); // allow 'metro-sitemap=true' parameter
 		add_rewrite_rule( '^sitemap.xml$','index.php?sitemap=true','top' );
@@ -66,7 +66,7 @@ class Metro_Sitemap {
 	/**
 	 * Add cron jobs required to generate these sitemaps
 	 */
-	function sitemap_init_cron() {
+	public static function sitemap_init_cron() {
 		if ( ! wp_next_scheduled( 'msm_cron_update_sitemap' ) ) {
 			wp_schedule_event( time(), 'ms-sitemap-15-min-cron-interval', 'msm_cron_update_sitemap' );
 		}
@@ -79,7 +79,7 @@ class Metro_Sitemap {
 	 * @param string $requested_url
 	 * @return string URL to redirect
 	 */
-	function disable_canonical_redirects_for_sitemap_xml( $redirect_url, $requested_url ) { 
+	public static function disable_canonical_redirects_for_sitemap_xml( $redirect_url, $requested_url ) {
 		if ( preg_match( '|sitemap\.xml|', $requested_url ) ) { 
 			return $requested_url; 
 		}
@@ -89,7 +89,7 @@ class Metro_Sitemap {
 	/**
 	 * Register admin menu for sitemap
 	 */
-	function metro_sitemap_menu() {
+	public static function metro_sitemap_menu() {
 		add_menu_page( __( 'Sitemaps', 'metro-sitemaps' ), __( 'Sitemaps', 'metro-sitemaps' ), 'manage_options', 'edit.php?post_type=' . self::SITEMAP_CPT, '', '', 31 );
 		add_management_page( __( 'Sitemap Options', 'metro-sitemaps' ), __( 'Create Sitemap', 'metro-sitemaps' ), 'manage_options', 'metro-sitemap', array( __CLASS__, 'sitemap_options' ) );
 	}
@@ -97,7 +97,7 @@ class Metro_Sitemap {
 	/**
 	 * Render admin options page
 	 */
-	function sitemap_options() {
+	public static function sitemap_options() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( __( 'You do not have sufficient permissions to access this page.', 'metro-sitemaps' ) );
 		}
@@ -199,7 +199,7 @@ class Metro_Sitemap {
 	/**
 	 * Reset sitemap options
 	 */
-	function reset_sitemap_data() {
+	public static function reset_sitemap_data() {
 		delete_option( 'msm_days_to_process' );
 		delete_option( 'msm_months_to_process' );
 		delete_option( 'msm_years_to_process' );
@@ -211,7 +211,7 @@ class Metro_Sitemap {
 	 * Return range of years for posts in the database
 	 * @return int[] valid years
 	 */
-	function get_post_year_range() {
+	public static function get_post_year_range() {
 		global $wpdb;
 
 		$oldest_post_date_gmt = $wpdb->get_var( "SELECT post_date FROM $wpdb->posts WHERE post_status = 'publish' ORDER BY post_date ASC LIMIT 1" );
@@ -225,7 +225,7 @@ class Metro_Sitemap {
 	 * Get every year that has valid posts in a range
 	 * @return int[] years with posts
 	 */
-	function check_year_has_posts() {
+	public static function check_year_has_posts() {
 
 		$all_years = self::get_post_year_range();
 
@@ -246,7 +246,7 @@ class Metro_Sitemap {
 	 * @param int $day
 	 * @return string formatted stamp
 	 */
-	function get_date_stamp( $year, $month, $day ) {
+	public static function get_date_stamp( $year, $month, $day ) {
 		return sprintf( '%s-%s-%s', $year, str_pad( $month, 2, '0', STR_PAD_LEFT ), str_pad( $day, 2, '0', STR_PAD_LEFT ) );
 	}
 
@@ -256,7 +256,7 @@ class Metro_Sitemap {
 	 * @param string $end_date
 	 * @return int|false
 	 */
-	function date_range_has_posts( $start_date, $end_date ) {
+	public static function date_range_has_posts( $start_date, $end_date ) {
 		global $wpdb;
 
 		$start_date .= ' 00:00:00';
@@ -282,7 +282,7 @@ class Metro_Sitemap {
 	/**
 	 * Generate full sitemap
 	 */
-	function generate_full_sitemap() {
+	public static function generate_full_sitemap() {
 		global $wpdb;
 
 		$is_partial_or_running = get_option( 'msm_years_to_process' );
@@ -312,7 +312,7 @@ class Metro_Sitemap {
 	 * Generate sitemap for a given year
 	 * @param mixed[] $args
 	 */
-	function generate_sitemap_for_year( $args ) {
+	public static function generate_sitemap_for_year( $args ) {
 
 		$is_partial_or_running = get_option( 'msm_months_to_process' );
 
@@ -348,7 +348,7 @@ class Metro_Sitemap {
 	 * Generate sitemap for a given month in a given year
 	 * @param mixed[] $args
 	 */
-	function generate_sitemap_for_year_month( $args ) {
+	public static function generate_sitemap_for_year_month( $args ) {
 
 
 		$is_partial_or_running = get_option( 'msm_days_to_process' );
@@ -398,7 +398,7 @@ class Metro_Sitemap {
 	 * Generate sitemap for a given year, month, day
 	 * @param mixed[] $args
 	 */
-	function generate_sitemap_for_year_month_day( $args ) {
+	public static function generate_sitemap_for_year_month_day( $args ) {
 		$year = $args['year'];
 		$month = $args['month'];
 		$day = $args['day'];
@@ -415,7 +415,7 @@ class Metro_Sitemap {
 	 * Generate sitemap for a date; this is where XML is rendered.
 	 * @param string $sitemap_date
 	 */
-	function generate_sitemap_for_date( $sitemap_date ) {
+	public static function generate_sitemap_for_date( $sitemap_date ) {
 		global $wpdb;
 
 		$sitemap_time = strtotime( $sitemap_date );
@@ -514,7 +514,7 @@ class Metro_Sitemap {
 	 * @param int $day
 	 * @return void, just updates options.
 	 */
-	function find_next_day_to_process( $year, $month, $day ) {
+	public static function find_next_day_to_process( $year, $month, $day ) {
 
 		$halt = get_option( 'msm_stop_processing' );
 		if ( $halt ) {
@@ -565,7 +565,7 @@ class Metro_Sitemap {
 	/**
 	 * Register our CPT
 	 */
-	function create_post_type() {
+	public static function create_post_type() {
 		register_post_type(
 			self::SITEMAP_CPT,
 			array(
@@ -588,7 +588,7 @@ class Metro_Sitemap {
 	 * Get posts modified within the last hour
 	 * @return object[] modified posts
 	 */
-	function get_last_modified_posts() {
+	public static function get_last_modified_posts() {
 		global $wpdb;
 
 		$sitemap_last_run = get_option( 'msm_sitemap_update_last_run', false );
@@ -610,7 +610,7 @@ class Metro_Sitemap {
 	 * @param object[] $posts
 	 * @return string[] unique dates of each post.
 	 */
-	function get_post_dates( $posts ) {
+	public static function get_post_dates( $posts ) {
 		$dates = array();
 		foreach ( $posts as $post ) {
 		    $dates[] = date( 'Y-m-d', strtotime( $post->post_date ) );
@@ -623,7 +623,7 @@ class Metro_Sitemap {
 	/**
 	 * Update the sitemap with changes from recently modified posts
 	 */
-	function update_sitemap_from_modified_posts() {
+	public static function update_sitemap_from_modified_posts() {
 		$time = time();
 		$last_modified_posts = self::get_last_modified_posts();
 		$dates = self::get_post_dates( $last_modified_posts );
