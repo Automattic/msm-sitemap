@@ -13,7 +13,7 @@
  
  
 $GLOBALS['wp_tests_options'] = array(
-	'active_plugins' => array( 'metro-sitemap/metro-sitemap.php' ),
+	'active_plugins' => array( 'msm-sitemap/msm-sitemap.php' ),
 );
 
 require getenv( 'WP_TESTS_DIR' ) . '/includes/bootstrap.php';
