@@ -73,9 +73,9 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 	 */
 	private function build_sitemaps() {
 		_set_cron_array( array() ); // isolate our cron jobs.
-		Metro_Sitemap::reset_sitemap_data();
+		MSM_Sitemap_Builder_Cron::reset_sitemap_data();
 		delete_option( 'msm_stop_processing' );
-		Metro_Sitemap::generate_full_sitemap();
+		MSM_Sitemap_Builder_Cron::generate_full_sitemap();
 		update_option( 'msm_sitemap_create_in_progress', true );
 		$this->fake_cron(); // this year
 		$this->fake_cron(); // this month
