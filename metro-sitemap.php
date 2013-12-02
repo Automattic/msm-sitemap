@@ -15,7 +15,7 @@ class Metro_Sitemap {
 
 	const DEFAULT_POSTS_PER_SITEMAP_PAGE = 200;
 
-	const SITEMAP_CPT = 'mgs_sitemap';
+	const SITEMAP_CPT = 'msm_sitemap';
 
 	/**
 	 * Register actions for our hook
