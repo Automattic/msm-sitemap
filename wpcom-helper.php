@@ -2,17 +2,14 @@
 
 if ( function_exists( 'queue_async_job' ) ) {
 	add_action( 'msm_update_sitemap_for_year_month_date', array( __CLASS__, 'msm_wpcom_schedule_sitemap_update_for_year_month_date' ), 10, 2 );
+	add_action( 'msm_insert_sitemap_post', 'msm_sitemap_wpcom_queue_cache_invalidation', 10, 4 );
+	add_action( 'msm_delete_sitemap_post', 'msm_sitemap_wpcom_queue_cache_invalidation', 10, 4 );
+	add_action( 'msm_update_sitemap_post', 'msm_sitemap_wpcom_queue_cache_invalidation', 10, 4 );
 }
 
 function msm_wpcom_schedule_sitemap_update_for_year_month_date( $date, $time ) {
 	$data = (object) array( 'date' => $date );
 	queue_async_job( $data, 'vip_async_generate_sitemap' );
-}
-
-if ( function_exists( 'queue_async_job' ) ) {
-	add_action( 'msm_insert_sitemap_post', 'msm_sitemap_wpcom_queue_cache_invalidation', 10, 4 );
-	add_action( 'msm_delete_sitemap_post', 'msm_sitemap_wpcom_queue_cache_invalidation', 10, 4 );
-	add_action( 'msm_update_sitemap_post', 'msm_sitemap_wpcom_queue_cache_invalidation', 10, 4 );
 }
 
 /**
