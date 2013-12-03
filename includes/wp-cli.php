@@ -56,6 +56,8 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		if ( is_wp_error( $valid ) )
 			WP_CLI::error( $valid->get_error_message() );
 
+		WP_CLI::line( sprintf( 'Generating sitemap for %s', $year ) );
+
 		$max_month = 12;
 		if ( date( 'Y' ) == $year ) {
 			$max_month = date( 'n' );
@@ -95,6 +97,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		if ( is_wp_error( $valid ) )
 			WP_CLI::error( $valid->get_error_message() );
 
+		WP_CLI::line( sprintf( 'Generating sitemap for %s-%s', $year, $month ) );
 
 		// Calculate actual number of days in the month since we don't have cal_days_in_month available
 		$max_days = 31;
@@ -139,6 +142,8 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		$valid = $this->validate_year_month_day( $year, $month, $day );
 		if ( is_wp_error( $valid ) )
 			WP_CLI::error( $valid->get_error_message() );
+
+		WP_CLI::line( sprintf( 'Generating sitemap for %s-%s-%s', $year, $month, $day ) );
 
 		$date_stamp = Metro_Sitemap::get_date_stamp( $year, $month, $day );
 		if ( Metro_Sitemap::date_range_has_posts( $date_stamp, $date_stamp ) ) {
