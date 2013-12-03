@@ -3,7 +3,7 @@
 add_filter( 'msm_sitemap_use_cron_builder', '__return_false', 9999 ); // On WP.com we're going to use the jobs system
 
 if ( function_exists( 'queue_async_job' ) ) {
-	add_action( 'msm_update_sitemap_for_year_month_date', array( __CLASS__, 'msm_wpcom_schedule_sitemap_update_for_year_month_date' ), 10, 2 );
+	add_action( 'msm_update_sitemap_for_year_month_date', 'msm_wpcom_schedule_sitemap_update_for_year_month_date', 10, 2 );
 	add_action( 'msm_insert_sitemap_post', 'msm_sitemap_wpcom_queue_cache_invalidation', 10, 4 );
 	add_action( 'msm_delete_sitemap_post', 'msm_sitemap_wpcom_queue_cache_invalidation', 10, 4 );
 	add_action( 'msm_update_sitemap_post', 'msm_sitemap_wpcom_queue_cache_invalidation', 10, 4 );
