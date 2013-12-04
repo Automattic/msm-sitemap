@@ -36,6 +36,8 @@
 			'order' => 'ASC',
 			'posts_per_page' => 1,
 			'post_type' => Metro_Sitemap::SITEMAP_CPT,
+			'no_found_rows' => true,
+			'update_term_cache' => false,
 		);
 		$sitemap_query = new WP_Query( $sitemap_args );
 		if ( $sitemap_query->have_posts() ) {
@@ -63,8 +65,12 @@
 						'year' => $req_year,
 						'monthnum' => $m,
 						'day' => $d,
-						'post_type' => 'DESC',
 						'post_type' => Metro_Sitemap::SITEMAP_CPT,
+						'posts_per_page' => 1,
+						'no_found_rows' => true,
+						'fields' => 'ids',
+						'update_meta_cache' => false,
+						'update_term_cache' => false,
 					);
 					$query = new WP_Query( $sitemap_args );
 					if ( $query->have_posts() ) {
