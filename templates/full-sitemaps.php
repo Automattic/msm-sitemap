@@ -4,18 +4,19 @@
 	$req_month = ( isset( $_GET['mm'] ) ) ? intval( $_GET['mm'] ) : '';
 	$req_day = ( isset( $_GET['dd'] ) ) ? intval( $_GET['dd'] ) : '';
 
-	$this_year = date( 'Y' );
-	$all_posts = get_posts( array( 'post_status' => 'publish', 'order' => 'ASC', 'posts_per_page' => 1 ) );
-	$oldest_post = $all_posts[0];
-	$start_year = substr( $oldest_post->post_date, 0, 4 );
-	$years = range( $start_year, $this_year );	
-
 	header( 'Content-type: application/xml; charset=UTF-8' );
 
 	echo '<?xml version="1.0" encoding="utf-8"?>';
 
 	/** root sitemap */
 	if ( ( $req_year == 0 ) && ( $req_month == 0 ) && ( $req_day == 0 ) ) {
+		
+		$this_year = date( 'Y' );
+		$all_posts = get_posts( array( 'post_status' => 'publish', 'order' => 'ASC', 'posts_per_page' => 1 ) );
+		$oldest_post = $all_posts[0];
+		$start_year = substr( $oldest_post->post_date, 0, 4 );
+		$years = range( $start_year, $this_year );	
+
 		echo '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 		foreach ( $years as $year ) {
 			$query = new WP_Query( array( 'year' => $year, 'post_type' => Metro_Sitemap::SITEMAP_CPT, 'posts_per_page' => 1, 'fields' => 'ids', 'no_found_rows' => true, 'update_meta_cache' => false, 'update_term_cache' => false ) );
