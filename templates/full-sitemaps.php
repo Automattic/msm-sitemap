@@ -18,7 +18,7 @@
 	if ( ( $req_year == 0 ) && ( $req_month == 0 ) && ( $req_day == 0 ) ) {
 		echo '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 		foreach ( $years as $year ) {
-			$query = new WP_Query( array( 'year' => $year, 'post_type' => Metro_Sitemap::SITEMAP_CPT ) );
+			$query = new WP_Query( array( 'year' => $year, 'post_type' => Metro_Sitemap::SITEMAP_CPT, 'posts_per_page' => 1, 'fields' => 'ids', 'no_found_rows' => true, 'update_meta_cache' => false, 'update_term_cache' => false ) );
 			if ( $query->have_posts() ) {
 				echo '<sitemap>';
 				echo '<loc>'. home_url( '/sitemap.xml?yyyy=' . $year ) . '</loc>';
