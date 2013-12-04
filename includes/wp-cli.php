@@ -175,7 +175,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 			return $valid_year_month;
 
 		$date = strtotime( sprintf( '%d-%d-%d', $year, $month, $day ) );
-		if ( ! $date )
+		if ( false === $date )
 			return new WP_Error( 'msm-invalid-day', __( 'Please specify a valid day', 'metro-sitemap' ) );
 
 		return true;
