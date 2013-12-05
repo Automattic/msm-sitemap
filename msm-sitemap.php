@@ -76,10 +76,9 @@ class Metro_Sitemap {
 	public static function robots_txt( $output, $public ) {
 
 		// Make sure the site isn't private
-		if ( '0' !== $public ) {
-			$home_url = get_option( 'siteurl' );
-			$output .= '# Sitemap archive' . "\n";
-			$output .= 'Sitemap: ' . $home_url . '/sitemap.xml' . "\n\n";
+		if ( '1' == $public ) {
+			$output .= '# Sitemap archive' . PHP_EOL;
+			$output .= 'Sitemap: ' . home_url( '/sitemap.xml' ) . PHP_EOL . PHP_EOL;
 		}
 		return $output;
 
