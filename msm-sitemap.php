@@ -61,11 +61,27 @@ class Metro_Sitemap {
 		add_rewrite_tag( '%sitemap%', 'true' ); // allow 'sitemap=true' parameter
 		add_rewrite_rule( '^sitemap.xml$','index.php?sitemap=true','top' );
 
+		add_filter( 'robots_txt', array( __CLASS__, 'robots_txt' ), 10, 2 );
+
 		add_action( 'msm_cron_update_sitemap', array( __CLASS__, 'update_sitemap_from_modified_posts' ) );
 
 		add_action( 'msm_cron_generate_sitemap_for_year', array( __CLASS__, 'generate_sitemap_for_year' ) );
 		add_action( 'msm_cron_generate_sitemap_for_year_month', array( __CLASS__, 'generate_sitemap_for_year_month' ) );
 		add_action( 'msm_cron_generate_sitemap_for_year_month_day', array( __CLASS__, 'generate_sitemap_for_year_month_day' ) );
+	}
+
+	/**
+	 * Add entry to the bottom of robots.txt
+	 */
+	public static function robots_txt( $output, $public ) {
+
+		// Make sure the site isn't private
+		if ( '1' == $public ) {
+			$output .= '# Sitemap archive' . PHP_EOL;
+			$output .= 'Sitemap: ' . home_url( '/sitemap.xml' ) . PHP_EOL . PHP_EOL;
+		}
+		return $output;
+
 	}
 
 	/**
