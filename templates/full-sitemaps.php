@@ -1,15 +1,15 @@
 <?php
 
-	$req_year = ( isset( $_GET['yyyy'] ) ) ? intval( $_GET['yyyy'] ) : '';
-	$req_month = ( isset( $_GET['mm'] ) ) ? intval( $_GET['mm'] ) : '';
-	$req_day = ( isset( $_GET['dd'] ) ) ? intval( $_GET['dd'] ) : '';
+	$req_year = ( isset( $_GET['yyyy'] ) ) ? intval( $_GET['yyyy'] ) : false;
+	$req_month = ( isset( $_GET['mm'] ) ) ? intval( $_GET['mm'] ) : false;
+	$req_day = ( isset( $_GET['dd'] ) ) ? intval( $_GET['dd'] ) : false;
 
 	header( 'Content-type: application/xml; charset=UTF-8' );
 
 	echo '<?xml version="1.0" encoding="utf-8"?>';
 
 	/** root sitemap */
-	if ( ( $req_year == 0 ) && ( $req_month == 0 ) && ( $req_day == 0 ) ) {
+	if ( false === $req_year && false === $req_month && false === $req_day ) {
 		
 		$this_year = date( 'Y' );
 		$all_posts = get_posts( array( 'post_status' => 'publish', 'order' => 'ASC', 'posts_per_page' => 1 ) );
@@ -51,7 +51,7 @@
 		   echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>';
 		}
 	/** sitemap by year */
-	} else if ( $req_year > 0 ){
+	} else if ( $req_year > 0 ) {
 		echo '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 			$months = 12;
 			if ( $req_year == date( 'Y' ) ) $months = date( 'm' );
@@ -84,7 +84,7 @@
 			}
 		echo '</sitemapindex>';
 	} else {
-		echo '<sitemapindex/>';
+		wp_die( __( 'Sorry, no sitemap available here.', 'msm-sitemap' ) );
 	}
 
 ?>
