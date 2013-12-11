@@ -349,6 +349,110 @@ class Metro_Sitemap {
 		return $template;
 	}
 
+	public static function build_xml( $request = array() ) {
+
+		$year = $request['year'];
+		$month = $request['month'];
+		$day = $request['day'];
+
+		$output = '';
+
+		if ( false === $year && false === $month && false === $day ) {
+
+			// Output years with posts
+			$years = self::check_year_has_posts();
+
+			foreach ( $years as $year ) {
+				$output .= '<sitemap>';
+				$output .= '<loc>'. home_url( '/sitemap.xml?yyyy=' . $year ) . '</loc>';
+				$output .= '</sitemap>';
+			}
+		} else if ( $year > 0 && $month > 0 && $day > 0 ) {
+			// Get XML for an individual day. Stored as full xml
+			$sitemap_args = array(
+				'year' => $year,
+				'monthnum' => $month,
+				'day' => $day,
+				'orderby' => 'ID',
+				'order' => 'ASC',
+				'posts_per_page' => 1,
+				'fields' => 'ids',
+				'post_type' => self::SITEMAP_CPT,
+				'no_found_rows' => true,
+				'update_term_cache' => false,
+			);
+			$sitemap_query = new WP_Query( $sitemap_args );
+			if ( $sitemap_query->have_posts() ) {
+				while ( $sitemap_query->have_posts() ) : 
+			   		$sitemap_query->the_post();
+					$sitemap_content = get_post_meta( get_the_ID(), 'msm_sitemap_xml', true );
+			   		$output .= $sitemap_content;
+				endwhile;
+			} else {
+				// There are no posts for this day
+				return '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>';
+			}
+		} else if ( $year > 0 ) {
+			// Print out whole year as links - they may have days without posts against them
+			$months = 12;
+			if ( $year == date( 'Y' ) ) {
+				$months = date( 'm' );
+			}
+			for ( $m = 1; $m <= $months; $m++ ) {
+				if ( strlen( $m ) === 1 ) {
+					$m = '0' . $m;
+				}
+
+				$days = self::find_valid_days( $year );
+
+				for ( $d = 1; $d <= $days; $d++ ) {
+					$sitemap_args = array(
+						'year' => $year,
+						'monthnum' => $m,
+						'day' => $d,
+						'post_type' => self::SITEMAP_CPT,
+						'posts_per_page' => 1,
+						'no_found_rows' => true,
+						'fields' => 'ids',
+						'update_meta_cache' => false,
+						'update_term_cache' => false,
+					);
+					$query = new WP_Query( $sitemap_args );
+					if ( $query->have_posts() ) {
+						if ( strlen( $d ) === 1 ) {
+							$d = '0' . $d;
+						}
+						$output .= '<sitemap>';
+						$output .= '<loc>' . home_url( '/sitemap.xml?yyyy=' . $year . '&amp;mm=' . $m . '&amp;dd=' . $d ) . '</loc>';
+						$output .= '</sitemap>';
+					}
+				}
+			}
+		} else {
+			// Invalid options sent
+			return false;
+		}
+
+		$output = '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . $output . '</sitemapindex>';
+
+		return $output;
+	}
+
+	public static function find_valid_days( $year ) {
+		$days = 31;
+		if ( $m == 2 ) {
+			$days = date( 'L', strtotime( $year . '-01-01' ) ) ? 29 : 28;  // leap year
+		} elseif ( $m == 4 || $m == 6 || $m == 9 || $m == 11 ) {
+			$days = 30;
+		}
+
+		if ( $m == date( 'm' ) ) {
+			$days = date( 'd' );
+		}
+
+		return $days;
+	}
+
 }
 
 add_action( 'after_setup_theme', array( 'Metro_Sitemap', 'setup' ) );
