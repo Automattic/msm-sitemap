@@ -20,7 +20,7 @@ class Metro_Sitemap {
 	/**
 	 * Register actions for our hook
 	 */
-	function setup() {
+	public static function setup() {
 		define( 'MSM_INTERVAL_PER_GENERATION_EVENT', 60 ); // how far apart should full cron generation events be spaced
 
 		add_filter( 'cron_schedules', array( __CLASS__, 'sitemap_15_min_cron_interval' ) );
@@ -342,7 +342,7 @@ class Metro_Sitemap {
 	/**
 	 * Trigger rendering of the actual sitemap
 	 */
-	function load_sitemap_template( $template ) {
+	public static function load_sitemap_template( $template ) {
 		if ( get_query_var( 'sitemap' ) === 'true' ) {
 			$template = dirname( __FILE__ ) . '/templates/full-sitemaps.php';
 		}
