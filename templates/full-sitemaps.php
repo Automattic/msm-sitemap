@@ -1,15 +1,15 @@
 <?php
 
-	$req_year = ( isset( $_GET['yyyy'] ) ) ? intval( $_GET['yyyy'] ) : false;
-	$req_month = ( isset( $_GET['mm'] ) ) ? intval( $_GET['mm'] ) : false;
-	$req_day = ( isset( $_GET['dd'] ) ) ? intval( $_GET['dd'] ) : false;
+	$req_year = get_query_var( 'year' );
+	$req_month = get_query_var( 'monthnum' );
+	$req_day = get_query_var( 'day' );
 
 	header( 'Content-type: application/xml; charset=UTF-8' );
 
 	echo '<?xml version="1.0" encoding="utf-8"?>';
 
 	/** root sitemap */
-	if ( false === $req_year && false === $req_month && false === $req_day ) {
+	if ( empty( $req_year ) && empty( $req_month ) && empty( $req_day ) ) {
 		
 		$this_year = date( 'Y' );
 		$all_posts = get_posts( array( 'post_status' => 'publish', 'order' => 'ASC', 'posts_per_page' => 1 ) );
@@ -22,7 +22,7 @@
 			$query = new WP_Query( array( 'year' => $year, 'post_type' => Metro_Sitemap::SITEMAP_CPT, 'posts_per_page' => 1, 'fields' => 'ids', 'no_found_rows' => true, 'update_meta_cache' => false, 'update_term_cache' => false ) );
 			if ( $query->have_posts() ) {
 				echo '<sitemap>';
-				echo '<loc>'. home_url( '/sitemap.xml?yyyy=' . $year ) . '</loc>';
+				echo '<loc>'. home_url( "/$year/sitemap.xml" ) . '</loc>';
 				echo '</sitemap>';
 			}
 		}
@@ -77,7 +77,7 @@
 					if ( $query->have_posts() ) {
 						if ( strlen( $d ) === 1 ) $d = '0' . $d;
 						echo '<sitemap>';
-						echo '<loc>' . home_url( '/sitemap.xml?yyyy=' . $req_year . '&amp;mm=' . $m . '&amp;dd=' . $d ) . '</loc>';
+						echo '<loc>' . home_url( "/$year/$m/$d/sitemap.xml" ) . '</loc>';
 						echo '</sitemap>';						
 					}
 				}

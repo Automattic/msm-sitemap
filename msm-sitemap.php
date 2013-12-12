@@ -59,7 +59,11 @@ class Metro_Sitemap {
 	public static function sitemap_init() {
 		define( 'WPCOM_SKIP_DEFAULT_SITEMAP', true );
 		add_rewrite_tag( '%sitemap%', 'true' ); // allow 'sitemap=true' parameter
-		add_rewrite_rule( '^sitemap.xml$','index.php?sitemap=true','top' );
+
+		add_rewrite_rule( '^sitemap.xml$',                                     'index.php?sitemap=true',                                                       'top' );
+		add_rewrite_rule( '([0-9]{4})/sitemap.xml$',                           'index.php?sitemap=true&year=$matches[1]',                                      'top' );
+		add_rewrite_rule( '([0-9]{4})/([0-9]{1,2})/sitemap.xml$',              'index.php?sitemap=true&year=$matches[1]&monthnum=$matches[2]',                 'top' );
+		add_rewrite_rule( '([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})/sitemap.xml$', 'index.php?sitemap=true&year=$matches[1]&monthnum=$matches[2]&day=$matches[3]', 'top' );
 
 		add_filter( 'robots_txt', array( __CLASS__, 'robots_txt' ), 10, 2 );
 
