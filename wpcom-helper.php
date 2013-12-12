@@ -22,12 +22,10 @@ function msm_wpcom_schedule_sitemap_update_for_year_month_date( $date, $time ) {
  * @param string $day
  */
 function msm_sitemap_wpcom_queue_cache_invalidation( $sitemap_id, $year, $month, $day ) {
-	$sitemap_url = home_url( '/sitemap.xml' );
-
 	$sitemap_urls = array(
-		add_query_arg( array( 'yyyy' => $year ), $sitemap_url ),
-		add_query_arg( array( 'yyyy' => $year, 'mm' => $month ), $sitemap_url ),
-		add_query_arg( array( 'yyyy' => $year, 'mm' => $month, 'dd' => $day ), $sitemap_url ),
+		home_url( "/$year/sitemap.xml" ),
+		home_url( "/$year/$month/sitemap.xml" ),
+		home_url( "/$year/$month/$day/sitemap.xml" ),
 	);
 
 	queue_async_job( array( 'output_cache' => array( 'url' => $sitemap_urls ) ), 'wpcom_invalidate_output_cache_job', -16 );
