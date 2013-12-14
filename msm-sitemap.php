@@ -202,7 +202,7 @@ class Metro_Sitemap {
 			'day' => $day,
 			'order' => 'DESC',
 			'post_status' => 'publish',
-			'post_type' => apply_filters( 'msm_sitemap_entry_post_type', 'post' ),
+			'post_type' => self::get_supported_post_types(),	
 			'posts_per_page' => apply_filters( 'msm_sitemap_entry_posts_per_page', self::DEFAULT_POSTS_PER_SITEMAP_PAGE ),
 			'no_found_rows' => true,
 		);
@@ -349,6 +349,9 @@ class Metro_Sitemap {
 		return $template;
 	}
 
+	public static function get_supported_post_types() {
+		return apply_filters( 'msm_sitemap_entry_post_type', 'post' )
+	}
 }
 
 add_action( 'after_setup_theme', array( 'Metro_Sitemap', 'setup' ) );

@@ -12,7 +12,7 @@
 	if ( false === $req_year && false === $req_month && false === $req_day ) {
 		
 		$this_year = date( 'Y' );
-		$all_posts = get_posts( array( 'post_status' => 'publish', 'order' => 'ASC', 'posts_per_page' => 1 ) );
+		$all_posts = get_posts( array( 'post_status' => 'publish', 'order' => 'ASC', 'posts_per_page' => 1, 'post_type' => Metro_Sitemap::get_supported_post_types() ) );
 		$oldest_post = $all_posts[0];
 		$start_year = substr( $oldest_post->post_date, 0, 4 );
 		$years = range( $start_year, $this_year );	
