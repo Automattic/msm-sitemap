@@ -350,7 +350,7 @@ class Metro_Sitemap {
 	}
 
 	public static function get_supported_post_types() {
-		return apply_filters( 'msm_sitemap_entry_post_type', 'post' )
+		return apply_filters( 'msm_sitemap_entry_post_type', 'post' );
 	}
 }
 
