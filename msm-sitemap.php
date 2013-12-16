@@ -20,7 +20,7 @@ class Metro_Sitemap {
 	/**
 	 * Register actions for our hook
 	 */
-	function setup() {
+	public static function setup() {
 		define( 'MSM_INTERVAL_PER_GENERATION_EVENT', 60 ); // how far apart should full cron generation events be spaced
 
 		add_filter( 'cron_schedules', array( __CLASS__, 'sitemap_15_min_cron_interval' ) );
@@ -202,7 +202,7 @@ class Metro_Sitemap {
 			'day' => $day,
 			'order' => 'DESC',
 			'post_status' => 'publish',
-			'post_type' => apply_filters( 'msm_sitemap_entry_post_type', 'post' ),
+			'post_type' => self::get_supported_post_types(),	
 			'posts_per_page' => apply_filters( 'msm_sitemap_entry_posts_per_page', self::DEFAULT_POSTS_PER_SITEMAP_PAGE ),
 			'no_found_rows' => true,
 		);
@@ -342,7 +342,7 @@ class Metro_Sitemap {
 	/**
 	 * Trigger rendering of the actual sitemap
 	 */
-	function load_sitemap_template( $template ) {
+	public static function load_sitemap_template( $template ) {
 		if ( get_query_var( 'sitemap' ) === 'true' ) {
 			$template = dirname( __FILE__ ) . '/templates/full-sitemaps.php';
 		}
@@ -359,7 +359,7 @@ class Metro_Sitemap {
 
 		if ( false === $year && false === $month && false === $day ) {
 
-			// Output years with posts
+			/* Output years with posts */
 			$years = self::check_year_has_posts();
 
 			foreach ( $years as $year ) {
@@ -389,11 +389,11 @@ class Metro_Sitemap {
 			   		$output .= $sitemap_content;
 				endwhile;
 			} else {
-				// There are no posts for this day
+				/* There are no posts for this day */
 				return '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>';
 			}
 		} else if ( $year > 0 ) {
-			// Print out whole year as links - they may have days without posts against them
+			/* Print out whole year as links - they may have days without posts against them */
 			$months = 12;
 			if ( $year == date( 'Y' ) ) {
 				$months = date( 'm' );
@@ -429,7 +429,7 @@ class Metro_Sitemap {
 				}
 			}
 		} else {
-			// Invalid options sent
+			/* Invalid options sent */
 			return false;
 		}
 
@@ -453,6 +453,9 @@ class Metro_Sitemap {
 		return $days;
 	}
 
+	public static function get_supported_post_types() {
+		return apply_filters( 'msm_sitemap_entry_post_type', 'post' );
+	}
 }
 
 add_action( 'after_setup_theme', array( 'Metro_Sitemap', 'setup' ) );

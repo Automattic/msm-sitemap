@@ -25,6 +25,7 @@ function msm_sitemap_wpcom_queue_cache_invalidation( $sitemap_id, $year, $month,
 	$sitemap_url = home_url( '/sitemap.xml' );
 
 	$sitemap_urls = array(
+		$sitemap_url,
 		add_query_arg( array( 'yyyy' => $year ), $sitemap_url ),
 		add_query_arg( array( 'yyyy' => $year, 'mm' => $month ), $sitemap_url ),
 		add_query_arg( array( 'yyyy' => $year, 'mm' => $month, 'dd' => $day ), $sitemap_url ),
