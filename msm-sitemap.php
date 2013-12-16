@@ -20,7 +20,7 @@ class Metro_Sitemap {
 	/**
 	 * Register actions for our hook
 	 */
-	function setup() {
+	public static function setup() {
 		define( 'MSM_INTERVAL_PER_GENERATION_EVENT', 60 ); // how far apart should full cron generation events be spaced
 
 		add_filter( 'cron_schedules', array( __CLASS__, 'sitemap_15_min_cron_interval' ) );
@@ -206,7 +206,7 @@ class Metro_Sitemap {
 			'day' => $day,
 			'order' => 'DESC',
 			'post_status' => 'publish',
-			'post_type' => apply_filters( 'msm_sitemap_entry_post_type', 'post' ),
+			'post_type' => self::get_supported_post_types(),	
 			'posts_per_page' => apply_filters( 'msm_sitemap_entry_posts_per_page', self::DEFAULT_POSTS_PER_SITEMAP_PAGE ),
 			'no_found_rows' => true,
 		);
@@ -346,13 +346,16 @@ class Metro_Sitemap {
 	/**
 	 * Trigger rendering of the actual sitemap
 	 */
-	function load_sitemap_template( $template ) {
+	public static function load_sitemap_template( $template ) {
 		if ( get_query_var( 'sitemap' ) === 'true' ) {
 			$template = dirname( __FILE__ ) . '/templates/full-sitemaps.php';
 		}
 		return $template;
 	}
 
+	public static function get_supported_post_types() {
+		return apply_filters( 'msm_sitemap_entry_post_type', 'post' );
+	}
 }
 
 add_action( 'after_setup_theme', array( 'Metro_Sitemap', 'setup' ) );
