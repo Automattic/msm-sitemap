@@ -393,7 +393,7 @@ class Metro_Sitemap {
 				return '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>';
 			}
 		} else if ( $year > 0 ) {
-			/* Print out whole year as links - they may have days without posts against them 		 */
+			/* Print out whole year as links - there shouldn't be any days without posts against them */
 			$all_sitemap_items = get_posts(
 				array(
 					'year' => $year,
