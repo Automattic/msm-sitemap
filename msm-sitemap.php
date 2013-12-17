@@ -393,40 +393,28 @@ class Metro_Sitemap {
 				return '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>';
 			}
 		} else if ( $year > 0 ) {
-			/* Print out whole year as links - they may have days without posts against them */
-			$months = 12;
-			if ( $year == date( 'Y' ) ) {
-				$months = date( 'm' );
-			}
-			for ( $m = 1; $m <= $months; $m++ ) {
-				if ( strlen( $m ) === 1 ) {
-					$m = '0' . $m;
-				}
+			/* Print out whole year as links - they may have days without posts against them 		 */
+			$all_sitemap_items = get_posts(
+				array(
+					'year' => $year,
+					'post_type' => self::SITEMAP_CPT,
+					'no_found_rows' => true,
+					'update_meta_cache' => false,
+					'update_term_cache' => false,
+					'suppress_filters' => false,
+				)
+			);
 
-				$days = self::find_valid_days( $year );
+			foreach ( $all_sitemap_items as $item ) {
 
-				for ( $d = 1; $d <= $days; $d++ ) {
-					$sitemap_args = array(
-						'year' => $year,
-						'monthnum' => $m,
-						'day' => $d,
-						'post_type' => self::SITEMAP_CPT,
-						'posts_per_page' => 1,
-						'no_found_rows' => true,
-						'fields' => 'ids',
-						'update_meta_cache' => false,
-						'update_term_cache' => false,
-					);
-					$query = new WP_Query( $sitemap_args );
-					if ( $query->have_posts() ) {
-						if ( strlen( $d ) === 1 ) {
-							$d = '0' . $d;
-						}
-						$output .= '<sitemap>';
-						$output .= '<loc>' . home_url( '/sitemap.xml?yyyy=' . $year . '&amp;mm=' . $m . '&amp;dd=' . $d ) . '</loc>';
-						$output .= '</sitemap>';
-					}
-				}
+				$title = get_the_title( $item );
+				$date_part = explode( '-', $title );
+				$m = $date_part[1];
+				$d = $date_part[2];
+
+				$output .= '<sitemap>';
+				$output .= '<loc>' . home_url( '/sitemap.xml?yyyy=' . $year . '&amp;mm=' . $m . '&amp;dd=' . $d ) . '</loc>';
+				$output .= '</sitemap>';
 			}
 		} else {
 			/* Invalid options sent */
