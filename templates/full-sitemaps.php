@@ -6,7 +6,7 @@
 
 	header( 'Content-type: application/xml; charset=UTF-8' );
 
-	echo '<?xml version="1.0" encoding="utf-8"?>';
+	$xml_prefix = '<?xml version="1.0" encoding="utf-8"?>';
 
 	/** root sitemap */
 	if ( false === $req_year && false === $req_month && false === $req_day ) {
@@ -17,16 +17,15 @@
 		$start_year = substr( $oldest_post->post_date, 0, 4 );
 		$years = range( $start_year, $this_year );	
 
-		echo '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+		$xml = new SimpleXMLElement( $xml_prefix . '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
 		foreach ( $years as $year ) {
 			$query = new WP_Query( array( 'year' => $year, 'post_type' => Metro_Sitemap::SITEMAP_CPT, 'posts_per_page' => 1, 'fields' => 'ids', 'no_found_rows' => true, 'update_meta_cache' => false, 'update_term_cache' => false ) );
 			if ( $query->have_posts() ) {
-				echo '<sitemap>';
-				echo '<loc>'. home_url( '/sitemap.xml?yyyy=' . $year ) . '</loc>';
-				echo '</sitemap>';
+				$sitemap = $xml->addChild( 'sitemap' );
+				$sitemap->addChild( 'loc', home_url( '/sitemap.xml?yyyy=' . $year ) );
 			}
 		}
-		echo '</sitemapindex>';
+		echo $xml->asXML();
 	/** show sitemap by day */
 	} else if ( $req_year > 0 && $req_month > 0 && $req_day > 0 ) {
 		$sitemap_args = array(
@@ -48,11 +47,12 @@
 		   		echo $sitemap_content;
 		   endwhile;
 		} else {
-		   echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>';
+		   $xml = new SimpleXMLElement( $xml_prefix . '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>' );
+		   echo $xml->asXML();
 		}
 	/** sitemap by year */
 	} else if ( $req_year > 0 ) {
-		echo '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+		$xml = new SimpleXMLElement( $xml_prefix . '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
 			$months = 12;
 			if ( $req_year == date( 'Y' ) ) $months = date( 'm' );
 			for ( $m = 1; $m <= $months; $m++ ) {
@@ -76,13 +76,12 @@
 					$query = new WP_Query( $sitemap_args );
 					if ( $query->have_posts() ) {
 						if ( strlen( $d ) === 1 ) $d = '0' . $d;
-						echo '<sitemap>';
-						echo '<loc>' . home_url( '/sitemap.xml?yyyy=' . $req_year . '&amp;mm=' . $m . '&amp;dd=' . $d ) . '</loc>';
-						echo '</sitemap>';						
+						$sitemap = $xml->addChild( 'sitemap' );
+						$sitemap->addChild( 'loc', home_url( '/sitemap.xml?yyyy=' . $req_year . '&amp;mm=' . $m . '&amp;dd=' . $d ) );				
 					}
 				}
 			}
-		echo '</sitemapindex>';
+		echo $xml->asXML();
 	} else {
 		wp_die( __( 'Sorry, no sitemap available here.', 'msm-sitemap' ) );
 	}

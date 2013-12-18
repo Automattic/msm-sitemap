@@ -220,43 +220,28 @@ class Metro_Sitemap {
 		}
 
 		// Create XML
-		$xml = '<urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:n="http://www.google.com/schemas/sitemap-news/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">';
-		
+		// SimpleXML doesn't allow us to define namespaces using addAttribute, so we need to specify them in the construction instead.
+		$xml = new SimpleXMLElement( '<?xml version="1.0" encoding="utf-8"?><urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:n="http://www.google.com/schemas/sitemap-news/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd"></urlset>' );
+
 		while ( $query->have_posts() ) {
 			$query->the_post();
 
-			$url = '<url>';
-			$loc = '<loc>'.get_permalink().'</loc>';
-			$lastmod = '<lastmod>' . get_the_modified_date( 'Y-m-d' ) . 'T' . get_the_modified_date( 'H:i:s' ) . 'Z</lastmod>';
-			$url .= $loc;
-			$url .= $lastmod;
-			$content = get_the_content();
-			$images_xml = '';
-			/** Include inline images (parse content using DOM parser) */
-			/*  // commented out due to resize errors 
-			$dom = new DOMDocument();
-			$dom->loadHTML($content);
-			$nodes = $dom->getElementsByTagName('img');
-			foreach ($nodes as $img) {
-			  	$images_xml .= "<image:image><image:loc>".str_replace('&', '&amp;', $img->getAttribute('src'))."</image:loc></image:image>";
-			}
-			$url .= $images_xml;
-			*/
-			$url .= '<changefreq>monthly</changefreq>';
-			$url .= '<priority>0.7</priority>';
-			$url .= '</url>';
-			$xml .= $url;
+			$url = $xml->addChild( 'url' );
+			$url->addChild( 'loc', get_permalink() );
+			$url->addChild( 'lastmod', get_the_modified_date( 'Y-m-d' ) . 'T' . get_the_modified_date( 'H:i:s' ) . 'Z' );
+			$url->addChild( 'changefreq', 'monthly' );
+			$url->addChild( 'priority', '0.7' );
+
+			// TODO: add images to sitemap via <image:image> tag
 		}
 		
-		$xml .= '</urlset>';
-		
 		if ( $sitemap_exists ) {
-			update_post_meta( $sitemap_id, 'msm_sitemap_xml', $xml );
+			update_post_meta( $sitemap_id, 'msm_sitemap_xml', $xml->asXML() );
 			do_action( 'msm_update_sitemap_post', $sitemap_id, $year, $month, $day );
 		} else {
 			/* Should no longer hit this */
 			$sitemap_id = wp_insert_post( $sitemap_data );
-			add_post_meta( $sitemap_id, 'msm_sitemap_xml', $xml );
+			add_post_meta( $sitemap_id, 'msm_sitemap_xml', $xml->asXML() );
 			do_action( 'msm_insert_sitemap_post', $sitemap_id, $year, $month, $day );
 		}
 		wp_reset_postdata();
