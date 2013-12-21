@@ -343,7 +343,7 @@ class Metro_Sitemap {
 	 * same index so we need only ping Bing.
 	 */
 	public static function get_sitemap_ping_uris() {
-		return apply_filters( 'sitemap_ping_uris', array(
+		return apply_filters( 'msm_sitemap_ping_uris', array(
 			'www.google.com/webmasters/tools/ping?sitemap=',
 			'http://www.bing.com/webmaster/ping.aspx?siteMap='
 		));
