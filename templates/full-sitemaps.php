@@ -10,20 +10,21 @@
 
 	/** root sitemap */
 	if ( false === $req_year && false === $req_month && false === $req_day ) {
-		
-		$this_year = date( 'Y' );
-		$all_posts = get_posts( array( 'post_status' => 'publish', 'order' => 'ASC', 'posts_per_page' => 1, 'post_type' => Metro_Sitemap::get_supported_post_types() ) );
-		$oldest_post = $all_posts[0];
-		$start_year = substr( $oldest_post->post_date, 0, 4 );
-		$years = range( $start_year, $this_year );	
+		global $wpdb;
+		// Direct query because we just want dates of the sitemap entries and this is much faster than WP_Query
+		$sitemaps = $wpdb->get_col( $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s ORDER BY post_date DESC LIMIT 10000", Metro_Sitemap::SITEMAP_CPT ) );	
 
 		$xml = new SimpleXMLElement( $xml_prefix . '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
-		foreach ( $years as $year ) {
-			$query = new WP_Query( array( 'year' => $year, 'post_type' => Metro_Sitemap::SITEMAP_CPT, 'posts_per_page' => 1, 'fields' => 'ids', 'no_found_rows' => true, 'update_meta_cache' => false, 'update_term_cache' => false ) );
-			if ( $query->have_posts() ) {
-				$sitemap = $xml->addChild( 'sitemap' );
-				$sitemap->addChild( 'loc', home_url( '/sitemap.xml?yyyy=' . $year ) );
-			}
+		foreach ( $sitemaps as $sitemap_date ) {
+			$sitemap_time = strtotime( $sitemap_date );
+			$sitemap_url = add_query_arg( array(
+				'yyyy' => date( 'Y', $sitemap_time ),
+				'mm' => date( 'm', $sitemap_time ),
+				'dd' => date( 'd', $sitemap_time ),	
+			), home_url( '/sitemap.xml' ) ); 
+
+			$sitemap = $xml->addChild( 'sitemap' );
+			$sitemap->loc = $sitemap_url; // manually set the child instead of addChild to prevent "unterminated entity reference" warnings due to encoded ampersands http://stackoverflow.com/a/555039/169478
 		}
 		echo $xml->asXML();
 	/** show sitemap by day */
@@ -50,38 +51,6 @@
 		   $xml = new SimpleXMLElement( $xml_prefix . '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>' );
 		   echo $xml->asXML();
 		}
-	/** sitemap by year */
-	} else if ( $req_year > 0 ) {
-		$xml = new SimpleXMLElement( $xml_prefix . '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
-			$months = 12;
-			if ( $req_year == date( 'Y' ) ) $months = date( 'm' );
-			for ( $m = 1; $m <= $months; $m++ ) {
-				if ( strlen( $m ) === 1 ) $m = '0' . $m;
-				$days = 31;
-				if ( $m == 2) $days = date( 'L', strtotime( $req_year . '-01-01' ) ) ? 29 : 28;  // leap year
-				if ( $m == 4 || $m == 6 || $m == 9 || $m == 11) $days = 30;
-				if ( $m == date( 'm' ) ) $days = date( 'd' );
-				for ( $d = 1; $d <= $days; $d++ ) {
-					$sitemap_args = array(
-						'year' => $req_year,
-						'monthnum' => $m,
-						'day' => $d,
-						'post_type' => Metro_Sitemap::SITEMAP_CPT,
-						'posts_per_page' => 1,
-						'no_found_rows' => true,
-						'fields' => 'ids',
-						'update_meta_cache' => false,
-						'update_term_cache' => false,
-					);
-					$query = new WP_Query( $sitemap_args );
-					if ( $query->have_posts() ) {
-						if ( strlen( $d ) === 1 ) $d = '0' . $d;
-						$sitemap = $xml->addChild( 'sitemap' );
-						$sitemap->addChild( 'loc', home_url( '/sitemap.xml?yyyy=' . $req_year . '&amp;mm=' . $m . '&amp;dd=' . $d ) );				
-					}
-				}
-			}
-		echo $xml->asXML();
 	} else {
 		wp_die( __( 'Sorry, no sitemap available here.', 'msm-sitemap' ) );
 	}
