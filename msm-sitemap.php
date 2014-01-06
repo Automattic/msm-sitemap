@@ -220,43 +220,28 @@ class Metro_Sitemap {
 		}
 
 		// Create XML
-		$xml = '<urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:n="http://www.google.com/schemas/sitemap-news/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">';
-		
+		// SimpleXML doesn't allow us to define namespaces using addAttribute, so we need to specify them in the construction instead.
+		$xml = new SimpleXMLElement( '<?xml version="1.0" encoding="utf-8"?><urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:n="http://www.google.com/schemas/sitemap-news/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd"></urlset>' );
+
 		while ( $query->have_posts() ) {
 			$query->the_post();
 
-			$url = '<url>';
-			$loc = '<loc>'.get_permalink().'</loc>';
-			$lastmod = '<lastmod>' . get_the_modified_date( 'Y-m-d' ) . 'T' . get_the_modified_date( 'H:i:s' ) . 'Z</lastmod>';
-			$url .= $loc;
-			$url .= $lastmod;
-			$content = get_the_content();
-			$images_xml = '';
-			/** Include inline images (parse content using DOM parser) */
-			/*  // commented out due to resize errors 
-			$dom = new DOMDocument();
-			$dom->loadHTML($content);
-			$nodes = $dom->getElementsByTagName('img');
-			foreach ($nodes as $img) {
-			  	$images_xml .= "<image:image><image:loc>".str_replace('&', '&amp;', $img->getAttribute('src'))."</image:loc></image:image>";
-			}
-			$url .= $images_xml;
-			*/
-			$url .= '<changefreq>monthly</changefreq>';
-			$url .= '<priority>0.7</priority>';
-			$url .= '</url>';
-			$xml .= $url;
+			$url = $xml->addChild( 'url' );
+			$url->addChild( 'loc', get_permalink() );
+			$url->addChild( 'lastmod', get_the_modified_date( 'Y-m-d' ) . 'T' . get_the_modified_date( 'H:i:s' ) . 'Z' );
+			$url->addChild( 'changefreq', 'monthly' );
+			$url->addChild( 'priority', '0.7' );
+
+			// TODO: add images to sitemap via <image:image> tag
 		}
 		
-		$xml .= '</urlset>';
-		
 		if ( $sitemap_exists ) {
-			update_post_meta( $sitemap_id, 'msm_sitemap_xml', $xml );
+			update_post_meta( $sitemap_id, 'msm_sitemap_xml', $xml->asXML() );
 			do_action( 'msm_update_sitemap_post', $sitemap_id, $year, $month, $day );
 		} else {
 			/* Should no longer hit this */
 			$sitemap_id = wp_insert_post( $sitemap_data );
-			add_post_meta( $sitemap_id, 'msm_sitemap_xml', $xml );
+			add_post_meta( $sitemap_id, 'msm_sitemap_xml', $xml->asXML() );
 			do_action( 'msm_insert_sitemap_post', $sitemap_id, $year, $month, $day );
 		}
 		wp_reset_postdata();
@@ -355,17 +340,16 @@ class Metro_Sitemap {
 		$month = $request['month'];
 		$day = $request['day'];
 
-		$output = '';
-
 		if ( false === $year && false === $month && false === $day ) {
+		
+			$xml = new SimpleXMLElement( '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
 
 			/* Output years with posts */
 			$years = self::check_year_has_posts();
 
 			foreach ( $years as $year ) {
-				$output .= '<sitemap>';
-				$output .= '<loc>'. home_url( '/sitemap.xml?yyyy=' . $year ) . '</loc>';
-				$output .= '</sitemap>';
+				$sitemap = $xml->addChild( 'sitemap' );
+				$sitemap->addChild( 'loc', home_url( '/sitemap.xml?yyyy=' . $year ) );
 			}
 		} else if ( $year > 0 && $month > 0 && $day > 0 ) {
 			// Get XML for an individual day. Stored as full xml
@@ -388,9 +372,11 @@ class Metro_Sitemap {
 					$sitemap_content = get_post_meta( get_the_ID(), 'msm_sitemap_xml', true );
 			   		$output .= $sitemap_content;
 				endwhile;
+				// Return is now as it should be valid xml!
+				return $output;
 			} else {
 				/* There are no posts for this day */
-				return '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>';
+				return new SimpleXMLElement( '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>' );
 			}
 		} else if ( $year > 0 ) {
 			/* Print out whole year as links - there shouldn't be any days without posts against them */
@@ -405,6 +391,8 @@ class Metro_Sitemap {
 				)
 			);
 
+			$xml = new SimpleXMLElement( '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
+
 			foreach ( $all_sitemap_items as $item ) {
 
 				$title = get_the_title( $item );
@@ -412,18 +400,15 @@ class Metro_Sitemap {
 				$m = $date_part[1];
 				$d = $date_part[2];
 
-				$output .= '<sitemap>';
-				$output .= '<loc>' . home_url( '/sitemap.xml?yyyy=' . $year . '&amp;mm=' . $m . '&amp;dd=' . $d ) . '</loc>';
-				$output .= '</sitemap>';
+				$sitemap = $xml->addChild( 'sitemap' );
+				$sitemap->addChild( 'loc', home_url( '/sitemap.xml?yyyy=' . $req_year . '&amp;mm=' . $m . '&amp;dd=' . $d ) );	
 			}
 		} else {
 			/* Invalid options sent */
 			return false;
 		}
 
-		$output = '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . $output . '</sitemapindex>';
-
-		return $output;
+		return $xml->asXML();
 	}
 
 	public static function find_valid_days( $year ) {

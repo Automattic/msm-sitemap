@@ -6,7 +6,7 @@ $req_day = ( isset( $_GET['dd'] ) ) ? intval( $_GET['dd'] ) : false;
 
 header( 'Content-type: application/xml; charset=UTF-8' );
 
-echo '<?xml version="1.0" encoding="utf-8"?>';
+$xml_prefix = '<?xml version="1.0" encoding="utf-8"?>';
 
 $build_xml = Metro_Sitemap::build_xml( array( 'year' => $req_year, 'month' => $req_month, 'day' => $req_day ) );
 
@@ -15,5 +15,4 @@ if ( $build_xml === false ) {
 } else {
 	echo $build_xml;
 }
-
 ?>
