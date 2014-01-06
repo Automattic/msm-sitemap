@@ -334,6 +334,9 @@ class Metro_Sitemap {
 		return $template;
 	}
 
+	/**
+	 * Build XML for output to clean up the template file
+	 */
 	public static function build_xml( $request = array() ) {
 
 		$year = $request['year'];
@@ -342,15 +345,24 @@ class Metro_Sitemap {
 
 		if ( false === $year && false === $month && false === $day ) {
 		
-			$xml = new SimpleXMLElement( '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
+			global $wpdb;
+			// Direct query because we just want dates of the sitemap entries and this is much faster than WP_Query
+			$sitemaps = $wpdb->get_col( $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s ORDER BY post_date DESC LIMIT 10000", Metro_Sitemap::SITEMAP_CPT ) );        
 
-			/* Output years with posts */
-			$years = self::check_year_has_posts();
+			$xml = new SimpleXMLElement( $xml_prefix . '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
+			foreach ( $sitemaps as $sitemap_date ) {
+				$sitemap_time = strtotime( $sitemap_date );
+				$sitemap_url = add_query_arg( array(
+					'yyyy' => date( 'Y', $sitemap_time ),
+					'mm' => date( 'm', $sitemap_time ),
+					'dd' => date( 'd', $sitemap_time ),        
+				), home_url( '/sitemap.xml' ) ); 
 
-			foreach ( $years as $year ) {
 				$sitemap = $xml->addChild( 'sitemap' );
-				$sitemap->addChild( 'loc', home_url( '/sitemap.xml?yyyy=' . $year ) );
+				$sitemap->loc = $sitemap_url; // manually set the child instead of addChild to prevent "unterminated entity reference" warnings due to encoded ampersands http://stackoverflow.com/a/555039/169478
 			}
+			return $xml->asXML();
+
 		} else if ( $year > 0 && $month > 0 && $day > 0 ) {
 			// Get XML for an individual day. Stored as full xml
 			$sitemap_args = array(
@@ -378,37 +390,11 @@ class Metro_Sitemap {
 				/* There are no posts for this day */
 				return new SimpleXMLElement( '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>' );
 			}
-		} else if ( $year > 0 ) {
-			/* Print out whole year as links - there shouldn't be any days without posts against them */
-			$all_sitemap_items = get_posts(
-				array(
-					'year' => $year,
-					'post_type' => self::SITEMAP_CPT,
-					'no_found_rows' => true,
-					'update_meta_cache' => false,
-					'update_term_cache' => false,
-					'suppress_filters' => false,
-				)
-			);
-
-			$xml = new SimpleXMLElement( '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
-
-			foreach ( $all_sitemap_items as $item ) {
-
-				$title = get_the_title( $item );
-				$date_part = explode( '-', $title );
-				$m = $date_part[1];
-				$d = $date_part[2];
-
-				$sitemap = $xml->addChild( 'sitemap' );
-				$sitemap->addChild( 'loc', home_url( '/sitemap.xml?yyyy=' . $req_year . '&amp;mm=' . $m . '&amp;dd=' . $d ) );	
-			}
 		} else {
 			/* Invalid options sent */
 			return false;
 		}
-
-		return $xml->asXML();
+		
 	}
 
 	public static function find_valid_days( $year ) {
