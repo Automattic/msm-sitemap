@@ -96,7 +96,7 @@ class Metro_Sitemap {
 
 		echo '<div class="wrap">';
 		screen_icon();
-		echo '<h2>' . _e( 'Metro Sitemap', 'metro-sitemaps' ) . '</h2>';
+		echo '<h2>' . __( 'Metro Sitemap', 'metro-sitemaps' ) . '</h2>';
 		
 		if ( isset( $_POST['action'] ) ) {
 			$action = $_POST['action'];
@@ -109,35 +109,35 @@ class Metro_Sitemap {
 					update_option( 'msm_sitemap_create_in_progress', true );
 
 					if ( empty( $sitemap_create_in_progress ) ) {
-						echo '<p>' . _e( 'Creating sitemap...', 'metro-sitemaps' ) . '</p>';
+						echo '<p>' . __( 'Creating sitemap...', 'metro-sitemaps' ) . '</p>';
 					} else {
-						echo '<p>' . _e( 'Resuming sitemap creation', 'metro-sitemaps' ) . '</p>';
+						echo '<p>' . __( 'Resuming sitemap creation', 'metro-sitemaps' ) . '</p>';
 					}
 				break;
 
 				case 'Generate from latest articles':
 					$last_modified = Metro_Sitemap::get_last_modified_posts();
 					if ( count( $last_modified ) > 0 ) {
-						echo '<p>' . _e( 'Updating sitemap...', 'metro-sitemaps' ) . '</p>';
+						echo '<p>' . __( 'Updating sitemap...', 'metro-sitemaps' ) . '</p>';
 						Metro_Sitemap::update_sitemap_from_modified_posts();				
 					} else {
-						echo '<p>' . _e( 'No posts updated lately.', 'metro-sitemaps' ) . '</p>';
+						echo '<p>' . __( 'No posts updated lately.', 'metro-sitemaps' ) . '</p>';
 					}
 				break;
 
 				case 'Halt Sitemap Generation':
 					update_option( 'msm_stop_processing', true );
-					echo '<p>' . _e( 'Stopping Sitemap generation', 'metro-sitemaps' ) . '</p>';
+					echo '<p>' . __( 'Stopping Sitemap generation', 'metro-sitemaps' ) . '</p>';
 				break;
 
 				case 'Reset Sitemap Data':
 					// Do the same as when we finish then tell use to delete manuallyrather than remove all data
 					self::reset_sitemap_data();
-					echo '<p>' . _e( 'If you want to remove the data you must do so manually', 'metro-sitemaps' ) . '</p>';
+					echo '<p>' . __( 'If you want to remove the data you must do so manually', 'metro-sitemaps' ) . '</p>';
 				break;
 
 				default:
-					echo '<p>' . _e( 'Unknown action', 'metro-sitemaps' ) . '</p>';
+					echo '<p>' . __( 'Unknown action', 'metro-sitemaps' ) . '</p>';
 				break;
 			}
 
@@ -155,7 +155,7 @@ class Metro_Sitemap {
 				$years_to_process = get_option( 'msm_years_to_process' );
 				$months_to_process = get_option( 'msm_months_to_process' );
 				if ( ! $sitemap_create_in_progress ) {
-					echo '<p><b>' . _e( 'Restart position:', 'metro-sitemaps' ) . '</b>';
+					echo '<p><b>' . __( 'Restart position:', 'metro-sitemaps' ) . '</b>';
 				}
 				$current_day = count( $days_to_process ) - 1;
 				$current_month = count( $months_to_process ) - 1;
