@@ -86,100 +86,111 @@ class Metro_Sitemap {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( __( 'You do not have sufficient permissions to access this page.', 'metro-sitemaps' ) );
 		}
+                
+                // Array of possible user actions
+                $actions = Array(
+                    'generate' => __( 'Generate from all articles', 'metro-sitemaps' ),
+                    'generate-from-latest' => __( 'Generate from latest articles', 'metro-sitemaps' ),
+                    'halt-generation' => __( 'Halt Sitemap Generation', 'metro-sitemaps' ),
+                    'reset-sitemap-data' => __( 'Reset Sitemap Data', 'metro-sitemaps' ),
+                );
 
+                // Start outputting html
+		echo '<div class="wrap">';
+		screen_icon();
+		echo '<h2>' . __( 'Metro Sitemap', 'metro-sitemaps' ) . '</h2>';
+                
+		if ( isset( $_POST['action'] ) && in_array($_POST['action'], $actions)  ) {
+                        check_admin_referer( 'msm-sitemap-action' );
+			$message = Metro_Sitemap::do_sitemap_action(array_search($_POST['action'], $actions));
+                        echo "<div class='updated settings-error' id='msm-sitemap-updated'><p>$message</p></div>";
+		}
+                
+                // All the settings we need to read to display the page
 		$sitemap_create_in_progress = get_option( 'msm_sitemap_create_in_progress' );
 		$sitemap_update_last_run = get_option( 'msm_sitemap_update_last_run' );
 		$sitemap_update_next_run = $sitemap_update_last_run + 900;
 		$modified_posts = Metro_Sitemap::get_last_modified_posts();
 		$modified_posts_count = count( $modified_posts );
 		$modified_posts_label = $modified_posts_count == 1 ? 'post' : 'posts';
+                $days_to_process = get_option( 'msm_days_to_process' );
 
-		echo '<div class="wrap">';
-		screen_icon();
-		echo '<h2>' . __( 'Metro Sitemap', 'metro-sitemaps' ) . '</h2>';
-		
-		if ( isset( $_POST['action'] ) ) {
-			$action = $_POST['action'];
-
-			check_admin_referer( 'msm-sitemap-action' );
-
-			switch ( $action ) {
-				case 'Generate from all articles':
-					self::generate_full_sitemap();
-					update_option( 'msm_sitemap_create_in_progress', true );
-
-					if ( empty( $sitemap_create_in_progress ) ) {
-						echo '<p>' . __( 'Creating sitemap...', 'metro-sitemaps' ) . '</p>';
-					} else {
-						echo '<p>' . __( 'Resuming sitemap creation', 'metro-sitemaps' ) . '</p>';
-					}
-				break;
-
-				case 'Generate from latest articles':
-					$last_modified = Metro_Sitemap::get_last_modified_posts();
-					if ( count( $last_modified ) > 0 ) {
-						echo '<p>' . __( 'Updating sitemap...', 'metro-sitemaps' ) . '</p>';
-						Metro_Sitemap::update_sitemap_from_modified_posts();				
-					} else {
-						echo '<p>' . __( 'No posts updated lately.', 'metro-sitemaps' ) . '</p>';
-					}
-				break;
-
-				case 'Halt Sitemap Generation':
-					update_option( 'msm_stop_processing', true );
-					echo '<p>' . __( 'Stopping Sitemap generation', 'metro-sitemaps' ) . '</p>';
-				break;
-
-				case 'Reset Sitemap Data':
-					// Do the same as when we finish then tell use to delete manuallyrather than remove all data
-					self::reset_sitemap_data();
-					echo '<p>' . __( 'If you want to remove the data you must do so manually', 'metro-sitemaps' ) . '</p>';
-				break;
-
-				default:
-					echo '<p>' . __( 'Unknown action', 'metro-sitemaps' ) . '</p>';
-				break;
-			}
-
-			echo '<form action="tools.php">';
-			echo ' <input type="hidden" name="page" value="metro-sitemap">';
-			echo ' <input type="submit" value="Back">';
-			echo '</form>';
-		} else {
-			$days_to_process = get_option( 'msm_days_to_process' );
-
-			?>
-			<p><strong>Sitemap Create Status:</strong> <?php echo ( empty( $sitemap_create_in_progress ) ) ? ' Not Running</p>' : ' Running</p><p><b>Current position:</b>'; ?>
-			<?php
-			if ( $days_to_process ) {
-				$years_to_process = get_option( 'msm_years_to_process' );
-				$months_to_process = get_option( 'msm_months_to_process' );
-				if ( ! $sitemap_create_in_progress ) {
-					echo '<p><b>' . __( 'Restart position:', 'metro-sitemaps' ) . '</b>';
-				}
-				$current_day = count( $days_to_process ) - 1;
-				$current_month = count( $months_to_process ) - 1;
-				$current_year = count( $years_to_process ) - 1;
-				printf( 'Day: %s Month: %s Year: %s</p>', $days_to_process[$current_day], $months_to_process[$current_month], $years_to_process[$current_year] );
-				$years_to_process = ( $current_year == 0 ) ? array( 1 ) : $years_to_process;
-				printf( '<p><b>Years to process:</b> %s </p>', implode( ',', $years_to_process ) );
-			}
-			?>
-			<p><strong><?php _e( 'Last updated:', 'metro-sitemaps' ); ?></strong> <?php echo human_time_diff( $sitemap_update_last_run ); ?> ago</p>
-			<p><strong><?php _e( 'Next update:', 'metro-sitemaps' ); ?></strong> <?php echo $modified_posts_count . ' ' . $modified_posts_label; ?> will be updated in <?php echo human_time_diff( $sitemap_update_next_run ); ?></p>
-			<?php
-			echo '<form action="'. menu_page_url( 'metro-sitemap', false ) .'" method="post" style="float: left;">';
-			wp_nonce_field( 'msm-sitemap-action' );
-			$disabled = ( $sitemap_create_in_progress ) ? ' disabled="disabled" ' : '';
-			echo ' <input type="submit" name="action" value="Generate from all articles"' . $disabled . '>';
-			echo ' <input type="submit" name="action" value="Generate from latest articles">';
-			echo ' <input type="submit" name="action" value="Halt Sitemap Generation">';
-			echo ' <input type="submit" name="action" value="Reset Sitemap Data">';
-			echo '</form>';
-		}
-		echo '</div>';
+                echo '<p><strong>Sitemap Create Status:</strong>' . ( empty( $sitemap_create_in_progress )  ? ' Not Running</p>' : ' Running</p><p><b>Current position:</b>' );
+                if ( $days_to_process ) {
+                        $years_to_process = get_option( 'msm_years_to_process' );
+                        $months_to_process = get_option( 'msm_months_to_process' );
+                        if ( ! $sitemap_create_in_progress ) {
+                                echo '<p><b>' . __( 'Restart position:', 'metro-sitemaps' ) . '</b>';
+                        }
+                        $current_day = count( $days_to_process ) - 1;
+                        $current_month = count( $months_to_process ) - 1;
+                        $current_year = count( $years_to_process ) - 1;
+                        printf( __('Day: %s Month: %s Year: %s</p>'), $days_to_process[$current_day], $months_to_process[$current_month], $years_to_process[$current_year] );
+                        $years_to_process = ( $current_year == 0 ) ? array( 1 ) : $years_to_process;
+                        printf( __('<p><b>Years to process:</b> %s </p>'), implode( ',', $years_to_process ) );
+                }
+                
+                ?>
+                <p><strong><?php _e( 'Last updated:', 'metro-sitemaps' ); ?></strong> <?php echo human_time_diff( $sitemap_update_last_run ); ?> ago</p>
+                <p><strong><?php _e( 'Next update:', 'metro-sitemaps' ); ?></strong> <?php echo $modified_posts_count . ' ' . $modified_posts_label; ?> will be updated in <?php echo human_time_diff( $sitemap_update_next_run ); ?></p>
+                
+                <form action="<?php echo menu_page_url( 'metro-sitemap', false ) ?>" method="post" style="float: left;">
+                    <?php wp_nonce_field( 'msm-sitemap-action' ); ?>
+                    <input type="submit" name="action" value="<?php echo $actions['generate']; ?>" <?php echo (( $sitemap_create_in_progress ) ? ' disabled="disabled" ' : '') ?> >
+                    <input type="submit" name="action" value="<?php echo $actions['generate-from-latest']; ?>">
+                    <input type="submit" name="action" value="<?php echo $actions['halt-generation']; ?>">
+                    <input type="submit" name="action" value="<?php echo $actions['reset-sitemap-data']; ?>">
+                </form>
+		</div>
+                <?php
 
 	}
+        
+        /**
+         * 
+         * @param str $action The name of the action to perform
+         * @return str Returns the text describing the action that was performed
+         */
+        public static function do_sitemap_action($action) {
+                switch ( $action ) {
+                        case 'generate':
+                                $sitemap_create_in_progress = get_option( 'msm_sitemap_create_in_progress' );
+                                MSM_Sitemap_Builder_Cron::generate_full_sitemap();
+                                update_option( 'msm_sitemap_create_in_progress', true );
+
+                                if ( empty( $sitemap_create_in_progress ) ) {
+                                        return __( 'Starting sitemap generation...', 'metro-sitemaps' );
+                                } else {
+                                        return __( 'Resuming sitemap creation', 'metro-sitemaps' );
+                                }
+                        break;
+
+                        case 'generate-from-latest':
+                                $last_modified = Metro_Sitemap::get_last_modified_posts();
+                                if ( count( $last_modified ) > 0 ) {
+                                        Metro_Sitemap::update_sitemap_from_modified_posts();
+                                        return __( 'Updating sitemap from latest articles...', 'metro-sitemaps' );			
+                                } else {
+                                        return __( 'Cannot generate from latest articles: no posts updated lately.', 'metro-sitemaps' );
+                                }
+                        break;
+
+                        case 'halt-generation':
+                                update_option( 'msm_stop_processing', true );
+                                return __( 'Stopping Sitemap generation', 'metro-sitemaps' );;
+                        break;
+
+                        case 'reset-sitemap-data':
+                                // Do the same as when we finish then tell use to delete manuallyrather than remove all data
+                                MSM_Sitemap_Builder_Cron::reset_sitemap_data();
+                                return __( 'Sitemap data reset. If you want to remove the data you must do so manually', 'metro-sitemaps' );
+                        break;
+
+                        default:
+                                return __( 'Unknown action', 'metro-sitemaps' );
+                        break;
+                }
+        }
         
 	/**
 	 * Add entry to the bottom of robots.txt
