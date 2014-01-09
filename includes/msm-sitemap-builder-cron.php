@@ -20,11 +20,12 @@ class MSM_Sitemap_Builder_Cron {
 		delete_option( 'msm_years_to_process' );
 		update_option( 'msm_stop_processing', true );
 		delete_option( 'msm_sitemap_create_in_progress' );
+                delete_option( 'msm_sitemap_indexed_url_count' );
 	}
 
 	function schedule_sitemap_update_for_year_month_date( $date, $time ) {
 		list( $year, $month, $day ) = $date;
-
+                
 		wp_schedule_single_event(
 			$time, 
 			'msm_cron_generate_sitemap_for_year_month_day',
@@ -65,7 +66,7 @@ class MSM_Sitemap_Builder_Cron {
 		} else {
 			$all_years_with_posts = $is_partial_or_running;
 		}
-
+                
                 if ( 0 == count($all_years_with_posts) )
                     return; // Cannot generate sitemaps if there are no posts
                 
@@ -105,8 +106,8 @@ class MSM_Sitemap_Builder_Cron {
 		}
 
 		$time = time();
-		$next_month = $months[count( $months ) - 1];
-
+		$next_month = end($months);
+                
 		wp_schedule_single_event(
 			$time,
 			'msm_cron_generate_sitemap_for_year_month',
@@ -179,7 +180,7 @@ class MSM_Sitemap_Builder_Cron {
 		if ( Metro_Sitemap::date_range_has_posts( $date_stamp, $date_stamp ) ) {
 			Metro_Sitemap::generate_sitemap_for_date( $date_stamp );
 		}
-
+                
 		self::find_next_day_to_process( $year, $month, $day );
 	}
 	
@@ -221,7 +222,7 @@ class MSM_Sitemap_Builder_Cron {
 			delete_option( 'msm_days_to_process' );
 			update_option( 'msm_months_to_process', $months_being_processed );
 			self::generate_sitemap_for_year( array( 'year' => $year ) );
-		} else if ( $total_years ) {
+		} else if ( $total_years > 1 ) {
 			// Year has finished
 			unset( $years_being_processed[ $total_years - 1] );
 			delete_option( 'msm_days_to_process' );

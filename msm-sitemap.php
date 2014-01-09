@@ -210,7 +210,7 @@ class Metro_Sitemap {
          * @return int The number of total number URLs indexed
          */
         public static function get_total_indexed_url_count() {
-                $counts = (array) get_option( 'msm_sitemap_indexed_url_count' );
+                $counts = (array) get_option( 'msm_sitemap_indexed_url_count', array() );
                 return array_sum( $counts );
         }
         
@@ -220,7 +220,7 @@ class Metro_Sitemap {
          * @param array $sitemaps The sitemaps to retrieve counts for. If $sitemaps is not given, counts are retrieved for all sitemaps.
          */
         public static function get_indexed_url_count( $sitemaps = null ) {
-                $counts = (array) get_option( 'msm_sitemap_indexed_url_count' );
+                $counts = (array) get_option( 'msm_sitemap_indexed_url_count', array() );
                 $return_vals = array();
 
                 if ( is_null( $sitemaps ) )
@@ -413,7 +413,7 @@ class Metro_Sitemap {
 		}
                 
                 // Update indexed url counts
-                $url_counts = (array) get_option( 'msm_sitemap_indexed_url_count' );
+                $url_counts = (array) get_option( 'msm_sitemap_indexed_url_count', array() );
                 $url_counts[$sitemap_name] = $url_count;
                 update_option( 'msm_sitemap_indexed_url_count' , $url_counts );
                 
