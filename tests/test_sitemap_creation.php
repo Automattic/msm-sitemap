@@ -11,18 +11,27 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 	 * Generate posts and build the sitemap
 	 */
 	function setup() {
-		// add four posts; one each for the last four days.
-		for ( $i = 0; $i < 4; $i++ ) {
+		// Add a post for that last few days
+                $num_days = 4;
+		for ( $i = 0; $i < $num_days; $i++ ) {
 			$post_data = array(
-				'post_title' => uniqid(),
-				'post_content' => uniqid(),
+				'post_title' => (string) uniqid(),
+                                'post_type' => 'post',
+				'post_content' => (string) uniqid(),
 				'post_status' => 'publish',
+                                'post_author' => 1,
 			);
-			$post_data['post_date'] = $post_data['post_modified'] = date( 'Y' ). '-' . date('m') . '-' . ( date('d') - $i ) . ' 12:00:00';
-			$post_data['ID'] = wp_insert_post( $post_data );
+                        
+			$post_data['post_date'] = $post_data['post_modified'] = date( 'Y' ). '-' . date('m') . '-' . ( (int)date('d') - $i - 1 ) . ' 12:00:00';
+			$post_data['ID'] = wp_insert_post( $post_data, true );
+                        if ( is_wp_error($post_data['ID']) || 0 == $post_data['ID'] )
+                                throw new Exception ("Error: WP Error encountered inserting post. {$post_data['ID']->errors}, {$post_data['ID']->error_data}");
+                                
 			$this->posts_created[] = $post_data['ID'];
 			$this->posts[] = $post_data;
 		}
+                
+                $this->assertCount($num_days, $this->posts);
 		$this->build_sitemaps();
 	}
 
@@ -43,12 +52,15 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 	 */
 	function test_sitemap_posts_were_created() {
 		global $post;
+                
 		$sitemaps = get_posts( array(
 			'post_type' => Metro_Sitemap::SITEMAP_CPT,
 			'fields' => 'ids',
 			'posts_per_page' => -1,
 		) );
+                
 		$this->assertCount( 4, $sitemaps );
+                
 		foreach ( $sitemaps as $i => $map_id ) {
 			$xml = get_post_meta( $map_id, 'msm_sitemap_xml', true );
 			$post_id = $this->posts[$i]['ID'];
@@ -77,12 +89,14 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 		delete_option( 'msm_stop_processing' );
 		MSM_Sitemap_Builder_Cron::generate_full_sitemap();
 		update_option( 'msm_sitemap_create_in_progress', true );
+                
 		$this->fake_cron(); // this year
 		$this->fake_cron(); // this month
 		$this->fake_cron(); // today
 		$this->fake_cron(); // yesterday
 		$this->fake_cron(); // two days ago
 		$this->fake_cron(); // three days ago
+                $this->fake_cron();
 	}
 
 	/**
