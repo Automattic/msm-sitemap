@@ -65,10 +65,6 @@ class Metro_Sitemap {
 
                 add_action( 'admin_menu', array( __CLASS__, 'metro_sitemap_menu' ) );
 		add_action( 'msm_cron_update_sitemap', array( __CLASS__, 'update_sitemap_from_modified_posts' ) );
-
-		add_action( 'msm_cron_generate_sitemap_for_year', array( __CLASS__, 'generate_sitemap_for_year' ) );
-		add_action( 'msm_cron_generate_sitemap_for_year_month', array( __CLASS__, 'generate_sitemap_for_year_month' ) );
-		add_action( 'msm_cron_generate_sitemap_for_year_month_day', array( __CLASS__, 'generate_sitemap_for_year_month_day' ) );
 	}
         
         /**
@@ -134,6 +130,12 @@ class Metro_Sitemap {
                 <p><strong><?php _e( 'Last updated:', 'metro-sitemaps' ); ?></strong> <?php echo human_time_diff( $sitemap_update_last_run ); ?> ago</p>
                 <p><strong><?php _e( 'Next update:', 'metro-sitemaps' ); ?></strong> <?php echo $modified_posts_count . ' ' . $modified_posts_label; ?> will be updated in <?php echo human_time_diff( $sitemap_update_next_run ); ?></p>
                 
+                <fieldset>
+                    <label><?php _e('Stats', 'metro-sitemaps') ?></label>
+                    <p><?php printf( __('Currently Metro Sitemap has built %s sitemaps and indexed %s URLs.', 'metro-sitemaps'), 
+                            '<strong>' . (string) Metro_Sitemap::count_sitemaps() . '</strong>', '<strong>' . (string) Metro_Sitemap::get_total_indexed_url_count() . '</strong>' ); ?> </p>
+                </fieldset>
+                
                 <form action="<?php echo menu_page_url( 'metro-sitemap', false ) ?>" method="post" style="float: left;">
                     <?php wp_nonce_field( 'msm-sitemap-action' ); ?>
                     <input type="submit" name="action" value="<?php echo $actions['generate']; ?>" <?php echo (( $sitemap_create_in_progress ) ? ' disabled="disabled" ' : '') ?> >
@@ -190,6 +192,46 @@ class Metro_Sitemap {
                                 return __( 'Unknown action', 'metro-sitemaps' );
                         break;
                 }
+        }
+        
+        /**
+         * Counts the number of sitemaps that have been generated.
+         * 
+         * @return int The number of sitemaps that have been generated
+         */
+        public static function count_sitemaps() {
+                $count = wp_count_posts(Metro_Sitemap::SITEMAP_CPT);
+                return (int) $count->publish;
+        }
+        
+        /**
+         * Gets the current number of URLs indexed by msm-sitemap accross all sitemaps.
+         * 
+         * @return int The number of total number URLs indexed
+         */
+        public static function get_total_indexed_url_count() {
+                $counts = (array) get_option( 'msm_sitemap_indexed_url_count' );
+                return array_sum( $counts );
+        }
+        
+        /**
+         * Gets the number of URLs indexed for the given sitemap.
+         * 
+         * @param array $sitemaps The sitemaps to retrieve counts for. If $sitemaps is not given, counts are retrieved for all sitemaps.
+         */
+        public static function get_indexed_url_count( $sitemaps = null ) {
+                $counts = (array) get_option( 'msm_sitemap_indexed_url_count' );
+                $return_vals = array();
+
+                if ( is_null( $sitemaps ) )
+                    return $counts;
+                
+                foreach ( $sitemaps as $sitemap ) {
+                        if ( in_array( $sitemap, $counts ) ) 
+                                $return_vals[$sitemap] = (int) $counts[$sitemap];
+                }
+                
+                return $return_vals;
         }
         
 	/**
@@ -345,6 +387,7 @@ class Metro_Sitemap {
 		// SimpleXML doesn't allow us to define namespaces using addAttribute, so we need to specify them in the construction instead.
 		$xml = new SimpleXMLElement( '<?xml version="1.0" encoding="utf-8"?><urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:n="http://www.google.com/schemas/sitemap-news/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd"></urlset>' );
 
+                $url_count = 0;
 		while ( $query->have_posts() ) {
 			$query->the_post();
 
@@ -354,9 +397,11 @@ class Metro_Sitemap {
 			$url->addChild( 'changefreq', 'monthly' );
 			$url->addChild( 'priority', '0.7' );
 
+                        ++$url_count;
 			// TODO: add images to sitemap via <image:image> tag
 		}
-		
+                
+                // Save the sitemap
 		if ( $sitemap_exists ) {
 			update_post_meta( $sitemap_id, 'msm_sitemap_xml', $xml->asXML() );
 			do_action( 'msm_update_sitemap_post', $sitemap_id, $year, $month, $day );
@@ -366,6 +411,12 @@ class Metro_Sitemap {
 			add_post_meta( $sitemap_id, 'msm_sitemap_xml', $xml->asXML() );
 			do_action( 'msm_insert_sitemap_post', $sitemap_id, $year, $month, $day );
 		}
+                
+                // Update indexed url counts
+                $url_counts = (array) get_option( 'msm_sitemap_indexed_url_count' );
+                $url_counts[$sitemap_name] = $url_count;
+                update_option( 'msm_sitemap_indexed_url_count' , $url_counts );
+                
 		wp_reset_postdata();
 	}
 
