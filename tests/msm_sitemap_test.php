@@ -6,40 +6,40 @@
  * @author michaelblouin
  */
 class MSM_SiteMap_Test {
-        public $posts = array();
-        public $posts_created = array();
-        
-        /**
-         * Creates a new post for every day in $dates.
-         * 
-         * Does not trigger building of sitemaps.
-         * 
-         * @param array(str) $dates The days to create posts on
-         * @throws Exception
-         */
-        function create_dummy_posts($dates) {
-                // Add a post for the last few days
+	public $posts = array();
+	public $posts_created = array();
+	
+	/**
+	 * Creates a new post for every day in $dates.
+	 * 
+	 * Does not trigger building of sitemaps.
+	 * 
+	 * @param array(str) $dates The days to create posts on
+	 * @throws Exception
+	 */
+	function create_dummy_posts($dates) {
+		// Add a post for the last few days
 		foreach ( $dates as $day ) {
 			$post_data = array(
 				'post_title' => (string) uniqid(),
-                                'post_type' => 'post',
+				'post_type' => 'post',
 				'post_content' => (string) uniqid(),
 				'post_status' => 'publish',
-                                'post_author' => 1,
+				'post_author' => 1,
 			);
-                        
+			
 			$post_data['post_date'] = $post_data['post_modified'] = date_format( new DateTime($day), 'Y-m-d H:i:s' );
 			$post_data['ID'] = wp_insert_post( $post_data, true );
-                        
-                        if ( is_wp_error($post_data['ID']) || 0 == $post_data['ID'] )
-                                throw new Exception ("Error: WP Error encountered inserting post. {$post_data['ID']->errors}, {$post_data['ID']->error_data}");
-                                
+			
+			if ( is_wp_error($post_data['ID']) || 0 == $post_data['ID'] )
+				throw new Exception ("Error: WP Error encountered inserting post. {$post_data['ID']->errors}, {$post_data['ID']->error_data}");
+			
 			$this->posts_created[] = $post_data['ID'];
 			$this->posts[] = $post_data;
 		}
-        }
-        
-        /**
+	}
+		
+	/**
 	 * Generate sitemaps; pretends to run cron six times
 	 */
 	function build_sitemaps() {
@@ -47,21 +47,21 @@ class MSM_SiteMap_Test {
 		delete_option( 'msm_stop_processing' );
 		MSM_Sitemap_Builder_Cron::generate_full_sitemap();
 		update_option( 'msm_sitemap_create_in_progress', true );
-                
-                $days_being_processed = (array) get_option( 'msm_days_to_process', array());
+		
+		$days_being_processed = (array) get_option( 'msm_days_to_process', array());
 		$months_being_processed = (array) get_option( 'msm_months_to_process', array());
 		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
-                
-                while ( count($days_being_processed) || count($months_being_processed) || count($years_being_processed) ) {
-                        $this->fake_cron();
-                        $this->fake_cron();
-                        $this->fake_cron();
+		
+		while ( count($days_being_processed) || count($months_being_processed) || count($years_being_processed) ) {
+			$this->fake_cron();
+			$this->fake_cron();
+			$this->fake_cron();
 
-                        $days_being_processed = (array) get_option( 'msm_days_to_process', array());
-                        $months_being_processed = (array) get_option( 'msm_months_to_process', array());
-                        $years_being_processed = (array) get_option( 'msm_years_to_process', array() );
-                }
-                
+			$days_being_processed = (array) get_option( 'msm_days_to_process', array());
+			$months_being_processed = (array) get_option( 'msm_months_to_process', array());
+			$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
+		}
+		
 	}
 
 	/**

@@ -6,25 +6,25 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 	
 	public $core = null;
 	
-        private $num_days = 4;
+	private $num_days = 4;
 	private $posts = array();
 	private $posts_created = array();
-        private $test_base;
+	private $test_base;
 
 	/**
 	 * Generate posts and build the sitemap
 	 */
 	function setup() {
-                $this->test_base = new MSM_SiteMap_Test();
-                
-                // Create posts for the last num_days days
-                $dates = array();
+		$this->test_base = new MSM_SiteMap_Test();
+		
+		// Create posts for the last num_days days
+		$dates = array();
 		for ( $i = 0; $i < $this->num_days; $i++ )
-                    $dates[] = date( 'Y' ). '-' . date('m') . '-' . ( (int) date('d') - $i - 1 );
-                
-                $this->test_base->create_dummy_posts($dates);
-                
-                $this->assertCount($this->num_days, $this->test_base->posts);
+			$dates[] = date( 'Y' ). '-' . date('m') . '-' . ( (int) date('d') - $i - 1 );
+		
+		$this->test_base->create_dummy_posts($dates);
+		
+		$this->assertCount($this->num_days, $this->test_base->posts);
 		$this->test_base->build_sitemaps();
 	}
 
@@ -32,7 +32,7 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 	 * Remove the sample posts and the sitemap posts
 	 */
 	function teardown() {
-                $this->test_base->posts = array();
+		$this->test_base->posts = array();
 		$sitemaps = get_posts( array(
 			'post_type' => Metro_Sitemap::SITEMAP_CPT,
 			'fields' => 'ids',
@@ -46,15 +46,15 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 	 */
 	function test_sitemap_posts_were_created() {
 		global $post;
-                
+		
 		$sitemaps = get_posts( array(
 			'post_type' => Metro_Sitemap::SITEMAP_CPT,
 			'fields' => 'ids',
 			'posts_per_page' => -1,
 		) );
-                
+		
 		$this->assertCount( $this->num_days, $sitemaps );
-                
+		
 		foreach ( $sitemaps as $i => $map_id ) {
 			$xml = get_post_meta( $map_id, 'msm_sitemap_xml', true );
 			$post_id = $this->test_base->posts[$i]['ID'];

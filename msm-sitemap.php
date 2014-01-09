@@ -49,7 +49,7 @@ class Metro_Sitemap {
 		$schedules[ 'ms-sitemap-15-min-cron-interval' ] = array(
 			'interval' => 900,
 			'display' => __( 'Every 15 minutes', 'metro-sitemaps' ),
-		);
+			);
 		return $schedules;
 	}
 
@@ -62,12 +62,11 @@ class Metro_Sitemap {
 		add_rewrite_rule( '^sitemap.xml$','index.php?sitemap=true','top' );
 
 		add_filter( 'robots_txt', array( __CLASS__, 'robots_txt' ), 10, 2 );
-
-                add_action( 'admin_menu', array( __CLASS__, 'metro_sitemap_menu' ) );
+		add_action( 'admin_menu', array( __CLASS__, 'metro_sitemap_menu' ) );
 		add_action( 'msm_cron_update_sitemap', array( __CLASS__, 'update_sitemap_from_modified_posts' ) );
 	}
-        
-        /**
+
+	/**
 	 * Register admin menu for sitemap
 	 */
 	public static function metro_sitemap_menu() {
@@ -75,165 +74,164 @@ class Metro_Sitemap {
 		add_management_page( __( 'Sitemap Options', 'metro-sitemaps' ), __( 'Create Sitemaps', 'metro-sitemaps' ), 'manage_options', 'metro-sitemap', array( __CLASS__, 'sitemap_options' ) );
 	}
 
-        /**
+	/**
 	 * Render admin options page
 	 */
 	public static function sitemap_options() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( __( 'You do not have sufficient permissions to access this page.', 'metro-sitemaps' ) );
 		}
-                
-                // Array of possible user actions
-                $actions = Array(
-                    'generate' => __( 'Generate from all articles', 'metro-sitemaps' ),
-                    'generate-from-latest' => __( 'Generate from latest articles', 'metro-sitemaps' ),
-                    'halt-generation' => __( 'Halt Sitemap Generation', 'metro-sitemaps' ),
-                    'reset-sitemap-data' => __( 'Reset Sitemap Data', 'metro-sitemaps' ),
-                );
 
-                // Start outputting html
+		// Array of possible user actions
+		$actions = Array(
+			'generate' => __( 'Generate from all articles', 'metro-sitemaps' ),
+			'generate-from-latest' => __( 'Generate from latest articles', 'metro-sitemaps' ),
+			'halt-generation' => __( 'Halt Sitemap Generation', 'metro-sitemaps' ),
+			'reset-sitemap-data' => __( 'Reset Sitemap Data', 'metro-sitemaps' ),
+		);
+
+		// Start outputting html
 		echo '<div class="wrap">';
 		screen_icon();
 		echo '<h2>' . __( 'Metro Sitemap', 'metro-sitemaps' ) . '</h2>';
-                
+
 		if ( isset( $_POST['action'] ) && in_array($_POST['action'], $actions)  ) {
-                        check_admin_referer( 'msm-sitemap-action' );
+			check_admin_referer( 'msm-sitemap-action' );
 			$message = Metro_Sitemap::do_sitemap_action(array_search($_POST['action'], $actions));
-                        echo "<div class='updated settings-error' id='msm-sitemap-updated'><p>$message</p></div>";
+			echo "<div class='updated settings-error' id='msm-sitemap-updated'><p>$message</p></div>";
 		}
-                
-                // All the settings we need to read to display the page
+
+		// All the settings we need to read to display the page
 		$sitemap_create_in_progress = get_option( 'msm_sitemap_create_in_progress' );
 		$sitemap_update_last_run = get_option( 'msm_sitemap_update_last_run' );
 		$sitemap_update_next_run = $sitemap_update_last_run + 900;
 		$modified_posts = Metro_Sitemap::get_last_modified_posts();
 		$modified_posts_count = count( $modified_posts );
 		$modified_posts_label = $modified_posts_count == 1 ? 'post' : 'posts';
-                $days_to_process = get_option( 'msm_days_to_process' );
+		$days_to_process = get_option( 'msm_days_to_process' );
 
-                echo '<p><strong>Sitemap Create Status:</strong>' . ( empty( $sitemap_create_in_progress )  ? ' Not Running</p>' : ' Running</p><p><b>Current position:</b>' );
-                if ( $days_to_process ) {
-                        $years_to_process = get_option( 'msm_years_to_process' );
-                        $months_to_process = get_option( 'msm_months_to_process' );
-                        if ( ! $sitemap_create_in_progress ) {
-                                echo '<p><b>' . __( 'Restart position:', 'metro-sitemaps' ) . '</b>';
-                        }
-                        $current_day = count( $days_to_process ) - 1;
-                        $current_month = count( $months_to_process ) - 1;
-                        $current_year = count( $years_to_process ) - 1;
-                        printf( __('Day: %s Month: %s Year: %s</p>'), $days_to_process[$current_day], $months_to_process[$current_month], $years_to_process[$current_year] );
-                        $years_to_process = ( $current_year == 0 ) ? array( 1 ) : $years_to_process;
-                        printf( __('<p><b>Years to process:</b> %s </p>'), implode( ',', $years_to_process ) );
-                }
-                
-                ?>
-                <p><strong><?php _e( 'Last updated:', 'metro-sitemaps' ); ?></strong> <?php echo human_time_diff( $sitemap_update_last_run ); ?> ago</p>
-                <p><strong><?php _e( 'Next update:', 'metro-sitemaps' ); ?></strong> <?php echo $modified_posts_count . ' ' . $modified_posts_label; ?> will be updated in <?php echo human_time_diff( $sitemap_update_next_run ); ?></p>
-                
-                <fieldset>
-                    <label><?php _e('Stats', 'metro-sitemaps') ?></label>
-                    <p><?php printf( __('Currently Metro Sitemap has built %s sitemaps and indexed %s URLs.', 'metro-sitemaps'), 
-                            '<strong>' . (string) Metro_Sitemap::count_sitemaps() . '</strong>', '<strong>' . (string) Metro_Sitemap::get_total_indexed_url_count() . '</strong>' ); ?> </p>
-                </fieldset>
-                
-                <form action="<?php echo menu_page_url( 'metro-sitemap', false ) ?>" method="post" style="float: left;">
-                    <?php wp_nonce_field( 'msm-sitemap-action' ); ?>
-                    <input type="submit" name="action" value="<?php echo $actions['generate']; ?>" <?php echo (( $sitemap_create_in_progress ) ? ' disabled="disabled" ' : '') ?> >
-                    <input type="submit" name="action" value="<?php echo $actions['generate-from-latest']; ?>">
-                    <input type="submit" name="action" value="<?php echo $actions['halt-generation']; ?>">
-                    <input type="submit" name="action" value="<?php echo $actions['reset-sitemap-data']; ?>">
-                </form>
+		echo '<p><strong>Sitemap Create Status:</strong>' . ( empty( $sitemap_create_in_progress )  ? ' Not Running</p>' : ' Running</p><p><b>Current position:</b>' );
+		if ( $days_to_process ) {
+			$years_to_process = get_option( 'msm_years_to_process' );
+			$months_to_process = get_option( 'msm_months_to_process' );
+			if ( ! $sitemap_create_in_progress ) {
+				echo '<p><b>' . __( 'Restart position:', 'metro-sitemaps' ) . '</b>';
+			}
+			$current_day = count( $days_to_process ) - 1;
+			$current_month = count( $months_to_process ) - 1;
+			$current_year = count( $years_to_process ) - 1;
+			printf( __('Day: %s Month: %s Year: %s</p>'), $days_to_process[$current_day], $months_to_process[$current_month], $years_to_process[$current_year] );
+			$years_to_process = ( $current_year == 0 ) ? array( 1 ) : $years_to_process;
+			printf( __('<p><b>Years to process:</b> %s </p>'), implode( ',', $years_to_process ) );
+		}
+
+		?>
+		<p><strong><?php _e( 'Last updated:', 'metro-sitemaps' ); ?></strong> <?php echo human_time_diff( $sitemap_update_last_run ); ?> ago</p>
+		<p><strong><?php _e( 'Next update:', 'metro-sitemaps' ); ?></strong> <?php echo $modified_posts_count . ' ' . $modified_posts_label; ?> will be updated in <?php echo human_time_diff( $sitemap_update_next_run ); ?></p>
+
+		<fieldset>
+			<label><?php _e('Stats', 'metro-sitemaps') ?></label>
+			<p><?php printf( __('Currently Metro Sitemap has built %s sitemaps and indexed %s URLs.', 'metro-sitemaps'), 
+			'<strong>' . (string) Metro_Sitemap::count_sitemaps() . '</strong>', '<strong>' . (string) Metro_Sitemap::get_total_indexed_url_count() . '</strong>' ); ?> </p>
+		</fieldset>
+
+		<form action="<?php echo menu_page_url( 'metro-sitemap', false ) ?>" method="post" style="float: left;">
+			<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
+			<input type="submit" name="action" value="<?php echo $actions['generate']; ?>" <?php echo (( $sitemap_create_in_progress ) ? ' disabled="disabled" ' : '') ?> >
+			<input type="submit" name="action" value="<?php echo $actions['generate-from-latest']; ?>">
+			<input type="submit" name="action" value="<?php echo $actions['halt-generation']; ?>">
+			<input type="submit" name="action" value="<?php echo $actions['reset-sitemap-data']; ?>">
+		</form>
 		</div>
-                <?php
-
+		<?php
 	}
-        
-        /**
-         * 
-         * @param str $action The name of the action to perform
-         * @return str Returns the text describing the action that was performed
-         */
-        public static function do_sitemap_action($action) {
-                switch ( $action ) {
-                        case 'generate':
-                                $sitemap_create_in_progress = get_option( 'msm_sitemap_create_in_progress' );
-                                MSM_Sitemap_Builder_Cron::generate_full_sitemap();
-                                update_option( 'msm_sitemap_create_in_progress', true );
 
-                                if ( empty( $sitemap_create_in_progress ) ) {
-                                        return __( 'Starting sitemap generation...', 'metro-sitemaps' );
-                                } else {
-                                        return __( 'Resuming sitemap creation', 'metro-sitemaps' );
-                                }
-                        break;
+	/**
+	 * 
+	 * @param str $action The name of the action to perform
+	 * @return str Returns the text describing the action that was performed
+	 */
+	public static function do_sitemap_action($action) {
+		switch ( $action ) {
+			case 'generate':
+				$sitemap_create_in_progress = get_option( 'msm_sitemap_create_in_progress' );
+				MSM_Sitemap_Builder_Cron::generate_full_sitemap();
+				update_option( 'msm_sitemap_create_in_progress', true );
 
-                        case 'generate-from-latest':
-                                $last_modified = Metro_Sitemap::get_last_modified_posts();
-                                if ( count( $last_modified ) > 0 ) {
-                                        Metro_Sitemap::update_sitemap_from_modified_posts();
-                                        return __( 'Updating sitemap from latest articles...', 'metro-sitemaps' );			
-                                } else {
-                                        return __( 'Cannot generate from latest articles: no posts updated lately.', 'metro-sitemaps' );
-                                }
-                        break;
+				if ( empty( $sitemap_create_in_progress ) ) {
+					return __( 'Starting sitemap generation...', 'metro-sitemaps' );
+				} else {
+					return __( 'Resuming sitemap creation', 'metro-sitemaps' );
+				}
+			break;
 
-                        case 'halt-generation':
-                                update_option( 'msm_stop_processing', true );
-                                return __( 'Stopping Sitemap generation', 'metro-sitemaps' );;
-                        break;
+			case 'generate-from-latest':
+				$last_modified = Metro_Sitemap::get_last_modified_posts();
+				if ( count( $last_modified ) > 0 ) {
+					Metro_Sitemap::update_sitemap_from_modified_posts();
+					return __( 'Updating sitemap from latest articles...', 'metro-sitemaps' );			
+				} else {
+					return __( 'Cannot generate from latest articles: no posts updated lately.', 'metro-sitemaps' );
+				}
+			break;
 
-                        case 'reset-sitemap-data':
-                                // Do the same as when we finish then tell use to delete manuallyrather than remove all data
-                                MSM_Sitemap_Builder_Cron::reset_sitemap_data();
-                                return __( 'Sitemap data reset. If you want to remove the data you must do so manually', 'metro-sitemaps' );
-                        break;
+			case 'halt-generation':
+				update_option( 'msm_stop_processing', true );
+				return __( 'Stopping Sitemap generation', 'metro-sitemaps' );;
+			break;
 
-                        default:
-                                return __( 'Unknown action', 'metro-sitemaps' );
-                        break;
-                }
-        }
-        
-        /**
-         * Counts the number of sitemaps that have been generated.
-         * 
-         * @return int The number of sitemaps that have been generated
-         */
-        public static function count_sitemaps() {
-                $count = wp_count_posts(Metro_Sitemap::SITEMAP_CPT);
-                return (int) $count->publish;
-        }
-        
-        /**
-         * Gets the current number of URLs indexed by msm-sitemap accross all sitemaps.
-         * 
-         * @return int The number of total number URLs indexed
-         */
-        public static function get_total_indexed_url_count() {
-                $counts = (array) get_option( 'msm_sitemap_indexed_url_count', array() );
-                return array_sum( $counts );
-        }
-        
-        /**
-         * Gets the number of URLs indexed for the given sitemap.
-         * 
-         * @param array $sitemaps The sitemaps to retrieve counts for. If $sitemaps is not given, counts are retrieved for all sitemaps.
-         */
-        public static function get_indexed_url_count( $sitemaps = null ) {
-                $counts = (array) get_option( 'msm_sitemap_indexed_url_count', array() );
-                $return_vals = array();
+			case 'reset-sitemap-data':
+				// Do the same as when we finish then tell use to delete manuallyrather than remove all data
+				MSM_Sitemap_Builder_Cron::reset_sitemap_data();
+				return __( 'Sitemap data reset. If you want to remove the data you must do so manually', 'metro-sitemaps' );
+			break;
 
-                if ( is_null( $sitemaps ) )
-                    return $counts;
-                
-                foreach ( $sitemaps as $sitemap ) {
-                        if ( in_array( $sitemap, $counts ) ) 
-                                $return_vals[$sitemap] = (int) $counts[$sitemap];
-                }
-                
-                return $return_vals;
-        }
-        
+			default:
+				return __( 'Unknown action', 'metro-sitemaps' );
+			break;
+		}
+	}
+		
+	/**
+	 * Counts the number of sitemaps that have been generated.
+	 * 
+	 * @return int The number of sitemaps that have been generated
+	 */
+	public static function count_sitemaps() {
+		$count = wp_count_posts(Metro_Sitemap::SITEMAP_CPT);
+		return (int) $count->publish;
+	}
+	
+	/**
+	 * Gets the current number of URLs indexed by msm-sitemap accross all sitemaps.
+	 * 
+	 * @return int The number of total number URLs indexed
+	 */
+	public static function get_total_indexed_url_count() {
+		$counts = (array) get_option( 'msm_sitemap_indexed_url_count', array() );
+		return array_sum( $counts );
+	}
+	
+	/**
+	 * Gets the number of URLs indexed for the given sitemap.
+	 * 
+	 * @param array $sitemaps The sitemaps to retrieve counts for. If $sitemaps is not given, counts are retrieved for all sitemaps.
+	 */
+	public static function get_indexed_url_count( $sitemaps = null ) {
+		$counts = (array) get_option( 'msm_sitemap_indexed_url_count', array() );
+		$return_vals = array();
+
+		if ( is_null( $sitemaps ) )
+			return $counts;
+
+		foreach ( $sitemaps as $sitemap ) {
+			if ( in_array( $sitemap, $counts ) ) 
+				$return_vals[$sitemap] = (int) $counts[$sitemap];
+		}
+
+		return $return_vals;
+	}
+		
 	/**
 	 * Add entry to the bottom of robots.txt
 	 */
@@ -349,7 +347,7 @@ class Metro_Sitemap {
 			'post_type' => self::SITEMAP_CPT,
 			'post_status' => 'publish',
 			'post_date' => $sitemap_date,
-		);
+			);
 
 		$sitemap_id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", self::SITEMAP_CPT, $sitemap_name ) );
 
@@ -369,19 +367,19 @@ class Metro_Sitemap {
 			'post_type' => self::get_supported_post_types(),	
 			'posts_per_page' => apply_filters( 'msm_sitemap_entry_posts_per_page', self::DEFAULT_POSTS_PER_SITEMAP_PAGE ),
 			'no_found_rows' => true,
-		);
+			);
 
 		$query = new WP_Query( $query_args );
 		$post_count = $query->post_count;
 
-                $url_counts = (array) get_option( 'msm_sitemap_indexed_url_count', array() );
+		$url_counts = (array) get_option( 'msm_sitemap_indexed_url_count', array() );
 		if ( ! $post_count ) {
 			// If no entries - delete the whole sitemap post
 			if ( $sitemap_exists ) {
 				wp_delete_post( $sitemap_id, true );
 				do_action( 'msm_delete_sitemap_post', $sitemap_id, $year, $month, $day );
-                                unset( $url_counts[$sitemap_name] );
-                                update_option( 'msm_sitemap_indexed_url_count' , $url_counts );
+				unset( $url_counts[$sitemap_name] );
+				update_option( 'msm_sitemap_indexed_url_count' , $url_counts );
 			}
 			return;
 		}
@@ -390,7 +388,7 @@ class Metro_Sitemap {
 		// SimpleXML doesn't allow us to define namespaces using addAttribute, so we need to specify them in the construction instead.
 		$xml = new SimpleXMLElement( '<?xml version="1.0" encoding="utf-8"?><urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:n="http://www.google.com/schemas/sitemap-news/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd"></urlset>' );
 
-                $url_count = 0;
+		$url_count = 0;
 		while ( $query->have_posts() ) {
 			$query->the_post();
 
@@ -400,11 +398,11 @@ class Metro_Sitemap {
 			$url->addChild( 'changefreq', 'monthly' );
 			$url->addChild( 'priority', '0.7' );
 
-                        ++$url_count;
+			++$url_count;
 			// TODO: add images to sitemap via <image:image> tag
 		}
-                
-                // Save the sitemap
+
+				// Save the sitemap
 		if ( $sitemap_exists ) {
 			update_post_meta( $sitemap_id, 'msm_sitemap_xml', $xml->asXML() );
 			do_action( 'msm_update_sitemap_post', $sitemap_id, $year, $month, $day );
@@ -414,11 +412,11 @@ class Metro_Sitemap {
 			add_post_meta( $sitemap_id, 'msm_sitemap_xml', $xml->asXML() );
 			do_action( 'msm_insert_sitemap_post', $sitemap_id, $year, $month, $day );
 		}
-                
-                // Update indexed url counts
-                $url_counts[$sitemap_name] = $url_count;
-                update_option( 'msm_sitemap_indexed_url_count' , $url_counts );
-                
+
+				// Update indexed url counts
+		$url_counts[$sitemap_name] = $url_count;
+		update_option( 'msm_sitemap_indexed_url_count' , $url_counts );
+
 		wp_reset_postdata();
 	}
 
@@ -432,7 +430,7 @@ class Metro_Sitemap {
 				'labels'       => array(
 					'name'          => __( 'Sitemaps' ),
 					'singular_name' => __( 'Sitemap' ),
-				),
+					),
 				'public'       => false,
 				'has_archive'  => false,
 				'rewrite'      => false,
@@ -440,9 +438,9 @@ class Metro_Sitemap {
 				'show_in_menu' => false, // Since we're manually adding a Sitemaps menu, no need to auto-add one through the CPT.
 				'supports'     => array(
 					'title',
-				),
-			)
-		);
+					),
+				)
+			);
 	}
 
 	/**
@@ -474,7 +472,7 @@ class Metro_Sitemap {
 	public static function get_post_dates( $posts ) {
 		$dates = array();
 		foreach ( $posts as $post ) {
-		    $dates[] = date( 'Y-m-d', strtotime( $post->post_date ) );
+			$dates[] = date( 'Y-m-d', strtotime( $post->post_date ) );
 		}
 		$dates = array_unique( $dates );
 
