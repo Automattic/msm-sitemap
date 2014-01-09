@@ -66,8 +66,11 @@ class MSM_Sitemap_Builder_Cron {
 			$all_years_with_posts = $is_partial_or_running;
 		}
 
+                if ( 0 == count($all_years_with_posts) )
+                    return; // Cannot generate sitemaps if there are no posts
+                
 		$time = time();
-		$next_year = $all_years_with_posts[count( $all_years_with_posts ) - 1];
+		$next_year = end($all_years_with_posts);
 
 		wp_schedule_single_event(
 			$time, 
@@ -137,20 +140,18 @@ class MSM_Sitemap_Builder_Cron {
 		if ( date( 'Y' ) == $year && $month == date( 'n' ) ) {
 			$max_days = date( 'j' );
 		}
-
+                
 		if ( empty( $is_partial_or_running ) ) {
 			$days = range( 1, $max_days );
 			update_option( 'msm_days_to_process', $days );
 		} else {
 			$days = $is_partial_or_running;
 		}
-
-		$next_element = count( $days ) - 1;
-		$next_day = $days[$next_element];
-
+                
+		$next_day = end($days);
 
 		$time = time();
-
+                
 		wp_schedule_single_event(
 			$time,
 			'msm_cron_generate_sitemap_for_year_month_day',
@@ -173,7 +174,7 @@ class MSM_Sitemap_Builder_Cron {
 		$year = $args['year'];
 		$month = $args['month'];
 		$day = $args['day'];
-
+                
 		$date_stamp = Metro_Sitemap::get_date_stamp( $year, $month, $day );
 		if ( Metro_Sitemap::date_range_has_posts( $date_stamp, $date_stamp ) ) {
 			Metro_Sitemap::generate_sitemap_for_date( $date_stamp );
@@ -208,7 +209,7 @@ class MSM_Sitemap_Builder_Cron {
 		$total_days = count( $days_being_processed );
 		$total_months = count( $months_being_processed );
 		$total_years = count( $years_being_processed );
-
+                
 		if ( $total_days && $day > 1 ) {
 			// Day has finished
 			unset( $days_being_processed[$total_days - 1] );
