@@ -374,11 +374,14 @@ class Metro_Sitemap {
 		$query = new WP_Query( $query_args );
 		$post_count = $query->post_count;
 
+                $url_counts = (array) get_option( 'msm_sitemap_indexed_url_count', array() );
 		if ( ! $post_count ) {
 			// If no entries - delete the whole sitemap post
 			if ( $sitemap_exists ) {
 				wp_delete_post( $sitemap_id, true );
 				do_action( 'msm_delete_sitemap_post', $sitemap_id, $year, $month, $day );
+                                unset( $url_counts[$sitemap_name] );
+                                update_option( 'msm_sitemap_indexed_url_count' , $url_counts );
 			}
 			return;
 		}
@@ -413,7 +416,6 @@ class Metro_Sitemap {
 		}
                 
                 // Update indexed url counts
-                $url_counts = (array) get_option( 'msm_sitemap_indexed_url_count', array() );
                 $url_counts[$sitemap_name] = $url_count;
                 update_option( 'msm_sitemap_indexed_url_count' , $url_counts );
                 
