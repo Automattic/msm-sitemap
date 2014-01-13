@@ -70,14 +70,13 @@ class Metro_Sitemap {
 	 * Register admin menu for sitemap
 	 */
 	public static function metro_sitemap_menu() {
-		add_menu_page( __( 'Sitemaps', 'metro-sitemaps' ), __( 'Sitemaps', 'metro-sitemaps' ), 'manage_options', 'edit.php?post_type=' . Metro_Sitemap::SITEMAP_CPT, '', '', 31 );
-		add_management_page( __( 'Sitemap Options', 'metro-sitemaps' ), __( 'Create Sitemaps', 'metro-sitemaps' ), 'manage_options', 'metro-sitemap', array( __CLASS__, 'sitemap_options' ) );
+		add_management_page( __( 'Sitemap', 'metro-sitemaps' ), __( 'Sitemap', 'metro-sitemaps' ), 'manage_options', 'metro-sitemap', array( __CLASS__, 'render_sitemap_options_page' ) );
 	}
 
 	/**
 	 * Render admin options page
 	 */
-	public static function sitemap_options() {
+	public static function render_sitemap_options_page() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( __( 'You do not have sufficient permissions to access this page.', 'metro-sitemaps' ) );
 		}
@@ -93,7 +92,7 @@ class Metro_Sitemap {
 		// Start outputting html
 		echo '<div class="wrap">';
 		screen_icon();
-		echo '<h2>' . __( 'Metro Sitemap', 'metro-sitemaps' ) . '</h2>';
+		echo '<h2>' . __( 'Sitemap', 'metro-sitemaps' ) . '</h2>';
 
 		if ( isset( $_POST['action'] ) && in_array($_POST['action'], $actions)  ) {
 			check_admin_referer( 'msm-sitemap-action' );
