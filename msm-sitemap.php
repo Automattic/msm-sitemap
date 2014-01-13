@@ -102,6 +102,7 @@ class Metro_Sitemap {
 
 		// All the settings we need to read to display the page
 		$sitemap_create_in_progress = get_option( 'msm_sitemap_create_in_progress' );
+		$sitemap_halt_in_progress = get_option( 'msm_stop_processing' );
 		$sitemap_update_last_run = get_option( 'msm_sitemap_update_last_run' );
 		$sitemap_update_next_run = $sitemap_update_last_run + 900;
 		$modified_posts = Metro_Sitemap::get_last_modified_posts();
@@ -109,13 +110,19 @@ class Metro_Sitemap {
 		$modified_posts_label = $modified_posts_count == 1 ? 'post' : 'posts';
 		$days_to_process = get_option( 'msm_days_to_process' );
 
-		echo '<p><strong>Sitemap Create Status:</strong>' . ( empty( $sitemap_create_in_progress )  ? ' Not Running</p>' : ' Running</p><p><b>Current position:</b>' );
+		// Determine sitemap status text
+		$sitemap_create_status = __( 'Not Running', 'metro-sitemaps' );
+		if ( $sitemap_halt_in_progress ) {
+			$sitemap_create_status = __( 'Halting', 'metro-sitemaps' );
+		} else if ( $sitemap_create_in_progress ) {
+			$sitemap_create_status = __( 'Running', 'metro-sitemaps' );
+		}
+		
+		echo '<p><strong>' . __( 'Sitemap Create Status:', 'metro-sitemaps' ) . '</strong> ' . esc_html( $sitemap_create_status );
 		if ( $days_to_process ) {
 			$years_to_process = get_option( 'msm_years_to_process' );
 			$months_to_process = get_option( 'msm_months_to_process' );
-			if ( ! $sitemap_create_in_progress ) {
-				echo '<p><b>' . __( 'Restart position:', 'metro-sitemaps' ) . '</b>';
-			}
+			echo '<p><b>' . ( $sitemap_create_in_progress ? __( 'Current position:', 'metro-sitemaps' ) : __( 'Restart position:', 'metro-sitemaps' ) ). '</b>';
 			$current_day = count( $days_to_process ) - 1;
 			$current_month = count( $months_to_process ) - 1;
 			$current_year = count( $years_to_process ) - 1;
@@ -138,7 +145,7 @@ class Metro_Sitemap {
 			<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
 			<input type="submit" name="action" value="<?php echo esc_attr( $actions['generate'] ); ?>" <?php echo (( $sitemap_create_in_progress ) ? ' disabled="disabled" ' : '') ?> >
 			<input type="submit" name="action" value="<?php echo esc_attr( $actions['generate-from-latest'] ); ?>">
-			<input type="submit" name="action" value="<?php echo esc_attr( $actions['halt-generation'] ); ?>">
+			<input type="submit" name="action" value="<?php echo esc_attr( $actions['halt-generation'] ); ?>" <?php echo (( ! $sitemap_create_in_progress ) ? ' disabled="disabled" ' : '') ?>>
 			<input type="submit" name="action" value="<?php echo esc_attr( $actions['reset-sitemap-data'] ); ?>">
 		</form>
 		</div>
@@ -175,8 +182,16 @@ class Metro_Sitemap {
 			break;
 
 			case 'halt-generation':
-				update_option( 'msm_stop_processing', true );
-				return __( 'Stopping Sitemap generation', 'metro-sitemaps' );;
+				// Can only halt generation if sitemap creation is already in process
+				if ( get_option( 'msm_stop_processing' ) ) {
+					return __( 'Cannot stop sitemap generation: sitemap generation is already being halted.', 'metro-sitemaps' );
+				} else if ( get_option( 'msm_sitemap_create_in_progress' ) ) {
+					update_option( 'msm_stop_processing', true );
+					return __( 'Stopping Sitemap generation', 'metro-sitemaps' );
+				} else {
+					return __( 'Cannot stop sitemap generation: sitemap generation not in progress', 'metro-sitemaps' );
+				}
+				
 			break;
 
 			case 'reset-sitemap-data':
