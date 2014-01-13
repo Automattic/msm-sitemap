@@ -96,7 +96,7 @@ class Metro_Sitemap {
 
 		if ( isset( $_POST['action'] ) && in_array($_POST['action'], $actions)  ) {
 			check_admin_referer( 'msm-sitemap-action' );
-			$message = Metro_Sitemap::do_sitemap_action(array_search($_POST['action'], $actions));
+			$message = esc_html( Metro_Sitemap::do_sitemap_action( array_search( $_POST['action'], $actions ) ) );
 			echo "<div class='updated settings-error' id='msm-sitemap-updated'><p>$message</p></div>";
 		}
 
@@ -131,15 +131,15 @@ class Metro_Sitemap {
 		<fieldset>
 			<label><?php _e('Stats', 'metro-sitemaps') ?></label>
 			<p><?php printf( __('Currently Metro Sitemap has built %s sitemaps and indexed %s URLs.', 'metro-sitemaps'), 
-			'<strong>' . (string) Metro_Sitemap::count_sitemaps() . '</strong>', '<strong>' . (string) Metro_Sitemap::get_total_indexed_url_count() . '</strong>' ); ?> </p>
+				'<strong>' . number_format( Metro_Sitemap::count_sitemaps() ) . '</strong>', '<strong>' . number_format( Metro_Sitemap::get_total_indexed_url_count() ) . '</strong>' ); ?> </p>
 		</fieldset>
 
 		<form action="<?php echo menu_page_url( 'metro-sitemap', false ) ?>" method="post" style="float: left;">
 			<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
-			<input type="submit" name="action" value="<?php echo $actions['generate']; ?>" <?php echo (( $sitemap_create_in_progress ) ? ' disabled="disabled" ' : '') ?> >
-			<input type="submit" name="action" value="<?php echo $actions['generate-from-latest']; ?>">
-			<input type="submit" name="action" value="<?php echo $actions['halt-generation']; ?>">
-			<input type="submit" name="action" value="<?php echo $actions['reset-sitemap-data']; ?>">
+			<input type="submit" name="action" value="<?php echo esc_attr( $actions['generate'] ); ?>" <?php echo (( $sitemap_create_in_progress ) ? ' disabled="disabled" ' : '') ?> >
+			<input type="submit" name="action" value="<?php echo esc_attr( $actions['generate-from-latest'] ); ?>">
+			<input type="submit" name="action" value="<?php echo esc_attr( $actions['halt-generation'] ); ?>">
+			<input type="submit" name="action" value="<?php echo esc_attr( $actions['reset-sitemap-data'] ); ?>">
 		</form>
 		</div>
 		<?php

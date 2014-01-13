@@ -67,11 +67,11 @@ class MSM_Sitemap_Builder_Cron {
 			$all_years_with_posts = $is_partial_or_running;
 		}
 
-		if ( 0 == count($all_years_with_posts) )
+		if ( 0 == count( $all_years_with_posts ) )
 			return; // Cannot generate sitemaps if there are no posts
 				
 		$time = time();
-		$next_year = end($all_years_with_posts);
+		$next_year = end( $all_years_with_posts );
 
 		wp_schedule_single_event(
 			$time, 
