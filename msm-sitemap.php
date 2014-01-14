@@ -91,7 +91,7 @@ class Metro_Sitemap {
 	 */
 	public static function sitemap_init_cron() {
 		if ( ! wp_next_scheduled( 'msm_cron_update_sitemap' ) ) {
-			wp_schedule_event( time(), 'ms-sitemap-15-min-cron-interval', 'msm_cron_update_sitemap' );
+			wp_schedule_event( current_time(), 'ms-sitemap-15-min-cron-interval', 'msm_cron_update_sitemap' );
 		}
 	}
 
@@ -312,7 +312,7 @@ class Metro_Sitemap {
 	 * Update the sitemap with changes from recently modified posts
 	 */
 	public static function update_sitemap_from_modified_posts() {
-		$time = time();
+		$time = current_time();
 		$last_modified_posts = self::get_last_modified_posts();
 		$dates = self::get_post_dates( $last_modified_posts );
 
@@ -323,7 +323,7 @@ class Metro_Sitemap {
 
 			do_action( 'msm_update_sitemap_for_year_month_date', array( $year, $month, $day ), $time );
 		}
-		update_option( 'msm_sitemap_update_last_run', time() );
+		update_option( 'msm_sitemap_update_last_run', current_time() );
 	}
 
 	/**
@@ -359,7 +359,7 @@ class Metro_Sitemap {
 	public static function do_sitemap_pings() {
 		$last_ping_time = get_option( 'msm_sitemap_last_ping', false );
 
-		if ( ! $last_ping_time || ( time() - $last_ping_time ) > 3600 ) {
+		if ( ! $last_ping_time || ( current_time() - $last_ping_time ) > HOUR_IN_SECONDS ) {
 			$sitemap_uri_param = urlencode( home_url( '/sitemap.xml' ) );
 			foreach( self::get_sitemap_ping_uris() as $ping_uri ) {
 				$request_params = array(
@@ -370,7 +370,7 @@ class Metro_Sitemap {
 				);
 				wp_remote_head( $ping_uri . $sitemap_uri_param, $request_params );
 			}
-			update_option( 'msm_sitemap_last_ping', time() );
+			update_option( 'msm_sitemap_last_ping', current_time() );
 		}
 	}
 }
