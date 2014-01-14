@@ -430,6 +430,36 @@ class Metro_Sitemap {
 	public static function get_supported_post_types() {
 		return apply_filters( 'msm_sitemap_entry_post_type', 'post' );
 	}
+
+	/**
+	 * Publicly accessible sitemap ping services. Bing and Yahoo! now share the
+	 * same index so we need only ping Bing.
+	 */
+	public static function get_sitemap_ping_uris() {
+		return apply_filters( 'msm_sitemap_ping_uris', array(
+			'www.google.com/webmasters/tools/ping?sitemap=',
+			'http://www.bing.com/webmaster/ping.aspx?siteMap='
+		));
+	}
+
+	/**
+	 * Notify search engine endpoints of sitemap updates. Google and Bing both recommend
+	 * they be notified no more than once every hour. Note that we only need to ping for
+	 * the root sitemap for any change.
+	 */
+	public static function do_sitemap_pings() {
+		$last_ping_time = get_option( 'msm_sitemap_last_ping', false );
+
+		if ( ! $last_ping_time || ( time() - $last_ping_time ) > 3600 ) {
+			$sitemap_uri_param = urlencode( home_url( '/sitemap.xml' ) );
+			foreach( self::get_sitemap_ping_uris() as $ping_uri ) {
+				wp_remote_head( $ping_uri . $sitemap_uri_param, array('httpversion'=>'1.1', 'timeout'=>3, 'blocking'=>false, 'redirection'=>0) );
+			}
+			update_option( 'msm_sitemap_last_ping', time() );
+		}
+	}
 }
 
 add_action( 'after_setup_theme', array( 'Metro_Sitemap', 'setup' ) );
+add_action( 'msm_update_sitemap_post', array( 'Metro_Sitemap', 'do_sitemap_pings'), 10, 0 );
+add_action( 'msm_insert_sitemap_post', array( 'Metro_Sitemap', 'do_sitemap_pings'), 10, 0 );
