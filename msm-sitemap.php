@@ -362,7 +362,13 @@ class Metro_Sitemap {
 		if ( ! $last_ping_time || ( time() - $last_ping_time ) > 3600 ) {
 			$sitemap_uri_param = urlencode( home_url( '/sitemap.xml' ) );
 			foreach( self::get_sitemap_ping_uris() as $ping_uri ) {
-				wp_remote_head( $ping_uri . $sitemap_uri_param, array('httpversion'=>'1.1', 'timeout'=>3, 'blocking'=>false, 'redirection'=>0) );
+				$request_params = array(
+					'httpversion' => '1.1',
+					'timeout' => 0.01,
+					'blocking' => false,
+					'redirection' => 0
+				);
+				wp_remote_head( $ping_uri . $sitemap_uri_param, $request_params );
 			}
 			update_option( 'msm_sitemap_last_ping', time() );
 		}
