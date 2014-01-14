@@ -31,6 +31,8 @@ class Metro_Sitemap {
 		add_action( 'redirect_canonical', array( __CLASS__, 'disable_canonical_redirects_for_sitemap_xml' ), 10, 2 );
 		add_action( 'init', array( __CLASS__, 'create_post_type' ) );
 		add_filter( 'template_include', array( __CLASS__, 'load_sitemap_template' ) );
+		add_action( 'msm_update_sitemap_post', array( __CLASS__, 'do_sitemap_pings'), 10, 0 );
+		add_action( 'msm_insert_sitemap_post', array( __CLASS__, 'do_sitemap_pings'), 10, 0 );
 
 		// By default, we use wp-cron to help generate the full sitemap.
 		// However, this will let us override it, if necessary, like on WP.com
@@ -368,5 +370,3 @@ class Metro_Sitemap {
 }
 
 add_action( 'after_setup_theme', array( 'Metro_Sitemap', 'setup' ) );
-add_action( 'msm_update_sitemap_post', array( 'Metro_Sitemap', 'do_sitemap_pings'), 10, 0 );
-add_action( 'msm_insert_sitemap_post', array( 'Metro_Sitemap', 'do_sitemap_pings'), 10, 0 );
