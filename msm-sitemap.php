@@ -346,7 +346,7 @@ class Metro_Sitemap {
 	 */
 	public static function get_sitemap_ping_uris() {
 		return apply_filters( 'msm_sitemap_ping_uris', array(
-			'www.google.com/webmasters/tools/ping?sitemap=',
+			'http://www.google.com/webmasters/tools/ping?sitemap=',
 			'http://www.bing.com/webmaster/ping.aspx?siteMap='
 		));
 	}
