@@ -279,7 +279,7 @@ class Metro_Sitemap {
 
 		$sitemap_last_run = get_option( 'msm_sitemap_update_last_run', false );
 		
-		$date = date( 'Y-m-d H:i:s', ( time() - 3600 ) ); // posts changed within the last hour
+		$date = date( 'Y-m-d H:i:s', ( current_time() - HOUR_IN_SECONDS ) ); // posts changed within the last hour
 
 		if ( $sitemap_last_run ) {
 			$date = date( 'Y-m-d H:i:s', $sitemap_last_run );
