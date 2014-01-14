@@ -279,7 +279,7 @@ class Metro_Sitemap {
 
 		$sitemap_last_run = get_option( 'msm_sitemap_update_last_run', false );
 		
-		$date = date( 'Y-m-d H:i:s', ( time() - 3600 ) ); // posts changed within the last hour
+		$date = date( 'Y-m-d H:i:s', ( current_time( 'timestamp', 1 ) - 3600 ) ); // posts changed within the last hour
 
 		if ( $sitemap_last_run ) {
 			$date = date( 'Y-m-d H:i:s', $sitemap_last_run );
@@ -287,7 +287,7 @@ class Metro_Sitemap {
 		$post_types = apply_filters( 'msm_sitemap_entry_post_type', 'post' );
 		$post_types_in = sprintf( "'%s'", implode( "','", (array) $post_types ) );
 
-		$modified_posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( $post_types_in ) AND post_modified >= %s ORDER BY post_date LIMIT 1000", $date ) );
+		$modified_posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( $post_types_in ) AND post_modified_gmt >= %s ORDER BY post_date LIMIT 1000", $date ) );
 		return $modified_posts;
 	}
 
@@ -310,7 +310,7 @@ class Metro_Sitemap {
 	 * Update the sitemap with changes from recently modified posts
 	 */
 	public static function update_sitemap_from_modified_posts() {
-		$time = time();
+		$time = current_time( 'timestamp', 1 );
 		$last_modified_posts = self::get_last_modified_posts();
 		$dates = self::get_post_dates( $last_modified_posts );
 
@@ -321,7 +321,7 @@ class Metro_Sitemap {
 
 			do_action( 'msm_update_sitemap_for_year_month_date', array( $year, $month, $day ), $time );
 		}
-		update_option( 'msm_sitemap_update_last_run', time() );
+		update_option( 'msm_sitemap_update_last_run', current_time( 'timestamp', 1 ) );
 	}
 
 	/**
