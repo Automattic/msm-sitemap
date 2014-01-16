@@ -122,7 +122,7 @@ class Metro_Sitemap {
 		if ( $days_to_process ) {
 			$years_to_process = get_option( 'msm_years_to_process' );
 			$months_to_process = get_option( 'msm_months_to_process' );
-			echo '<p><b>' . ( $sitemap_create_in_progress ? __( 'Current position:', 'metro-sitemaps' ) : __( 'Restart position:', 'metro-sitemaps' ) ). '</b>';
+			echo '<p><b>' . ( $sitemap_create_in_progress ? __( 'Current position:', 'metro-sitemaps' ) : __( 'Restart position:', 'metro-sitemaps' ) ). ' </b>';
 			$current_day = count( $days_to_process ) - 1;
 			$current_month = count( $months_to_process ) - 1;
 			$current_year = count( $years_to_process ) - 1;
@@ -135,18 +135,19 @@ class Metro_Sitemap {
 		<p><strong><?php _e( 'Last updated:', 'metro-sitemaps' ); ?></strong> <?php echo human_time_diff( $sitemap_update_last_run ); ?> ago</p>
 		<p><strong><?php _e( 'Next update:', 'metro-sitemaps' ); ?></strong> <?php echo $modified_posts_count . ' ' . $modified_posts_label; ?> will be updated in <?php echo human_time_diff( $sitemap_update_next_run ); ?></p>
 
-		<fieldset>
-			<label><?php _e('Stats', 'metro-sitemaps') ?></label>
-			<p><?php printf( __('Currently Metro Sitemap has built %s sitemaps and indexed %s URLs.', 'metro-sitemaps'), 
-				'<strong>' . number_format( Metro_Sitemap::count_sitemaps() ) . '</strong>', '<strong>' . number_format( Metro_Sitemap::get_total_indexed_url_count() ) . '</strong>' ); ?> </p>
-		</fieldset>
+		<h3><?php _e('Stats', 'metro-sitemaps') ?></h3>
+		<p><?php printf( __('Currently Metro Sitemap has built %s sitemaps and indexed %s URLs.', 'metro-sitemaps'),
+			'<strong>' . number_format( Metro_Sitemap::count_sitemaps() ) . '</strong>', '<strong>' . number_format( Metro_Sitemap::get_total_indexed_url_count() ) . '</strong>' ); ?> </p>
 
 		<form action="<?php echo menu_page_url( 'metro-sitemap', false ) ?>" method="post" style="float: left;">
 			<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
-			<input type="submit" name="action" value="<?php echo esc_attr( $actions['generate'] ); ?>" <?php echo (( $sitemap_create_in_progress ) ? ' disabled="disabled" ' : '') ?> >
-			<input type="submit" name="action" value="<?php echo esc_attr( $actions['generate-from-latest'] ); ?>">
-			<input type="submit" name="action" value="<?php echo esc_attr( $actions['halt-generation'] ); ?>" <?php echo (( ! $sitemap_create_in_progress ) ? ' disabled="disabled" ' : '') ?>>
-			<input type="submit" name="action" value="<?php echo esc_attr( $actions['reset-sitemap-data'] ); ?>">
+			<?php if ( $sitemap_create_in_progress ): ?>
+			<input type="submit" name="action" class="button-secondary" value="<?php echo esc_attr( $actions['halt-generation'] ); ?>">
+			<?php else: ?>
+			<input type="submit" name="action" class="button-secondary" value="<?php echo esc_attr( $actions['generate'] ); ?>">
+			<input type="submit" name="action" class="button-secondary" value="<?php echo esc_attr( $actions['generate-from-latest'] ); ?>">
+			<input type="submit" name="action" class="button-secondary" value="<?php echo esc_attr( $actions['reset-sitemap-data'] ); ?>">
+			<?php endif; ?>
 		</form>
 		</div>
 		<?php
