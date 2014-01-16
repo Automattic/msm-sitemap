@@ -136,7 +136,7 @@ class Metro_Sitemap {
 		<p><strong><?php _e( 'Next update:', 'metro-sitemaps' ); ?></strong> <?php echo $modified_posts_count . ' ' . $modified_posts_label; ?> will be updated in <?php echo human_time_diff( $sitemap_update_next_run ); ?></p>
 
 		<h3><?php _e('Stats', 'metro-sitemaps') ?></h3>
-		<p><?php printf( __('Currently Metro Sitemap has built %s sitemaps and indexed %s URLs.', 'metro-sitemaps'),
+		<p><?php printf( __('Currently your site has %s sitemaps and %s indexed URLs.', 'metro-sitemaps'),
 			'<strong>' . number_format( Metro_Sitemap::count_sitemaps() ) . '</strong>', '<strong>' . number_format( Metro_Sitemap::get_total_indexed_url_count() ) . '</strong>' ); ?> </p>
 
 		<form action="<?php echo menu_page_url( 'metro-sitemap', false ) ?>" method="post" style="float: left;">
