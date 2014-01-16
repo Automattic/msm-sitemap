@@ -102,7 +102,7 @@ class Metro_Sitemap {
 
 		// All the settings we need to read to display the page
 		$sitemap_create_in_progress = get_option( 'msm_sitemap_create_in_progress' );
-		$sitemap_halt_in_progress = get_option( 'msm_stop_processing' );
+		$sitemap_halt_in_progress = get_option( 'msm_stop_processing' ) && ! $sitemap_create_in_progress;
 		$sitemap_update_last_run = get_option( 'msm_sitemap_update_last_run' );
 		$sitemap_update_next_run = $sitemap_update_last_run + 900;
 		$modified_posts = Metro_Sitemap::get_last_modified_posts();

@@ -18,7 +18,7 @@ class MSM_Sitemap_Builder_Cron {
 		delete_option( 'msm_days_to_process' );
 		delete_option( 'msm_months_to_process' );
 		delete_option( 'msm_years_to_process' );
-		update_option( 'msm_stop_processing', true );
+		delete_option( 'msm_stop_processing' );
 		delete_option( 'msm_sitemap_create_in_progress' );
 		delete_option( 'msm_sitemap_indexed_url_count' );
 	}
