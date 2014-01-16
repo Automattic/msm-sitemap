@@ -96,8 +96,8 @@ class Metro_Sitemap {
 
 		if ( isset( $_POST['action'] ) && in_array($_POST['action'], $actions)  ) {
 			check_admin_referer( 'msm-sitemap-action' );
-			$message = esc_html( Metro_Sitemap::do_sitemap_action( array_search( $_POST['action'], $actions ) ) );
-			echo "<div class='updated settings-error' id='msm-sitemap-updated'><p>$message</p></div>";
+			$message = Metro_Sitemap::do_sitemap_action( array_search( $_POST['action'], $actions ) );
+			echo '<div class="updated settings-error" id="msm-sitemap-updated"><p>' . esc_html( $message ) . '</p></div>';
 		}
 
 		// All the settings we need to read to display the page
