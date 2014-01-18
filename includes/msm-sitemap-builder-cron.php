@@ -3,12 +3,117 @@
 class MSM_Sitemap_Builder_Cron {
 
 	function setup() {
-		// TODO: move admin_menu handler to main plugin and work with our jobs builder too
 		add_action( 'msm_update_sitemap_for_year_month_date', array( __CLASS__, 'schedule_sitemap_update_for_year_month_date' ), 10, 2 );
 
 		add_action( 'msm_cron_generate_sitemap_for_year', array( __CLASS__, 'generate_sitemap_for_year' ) );
 		add_action( 'msm_cron_generate_sitemap_for_year_month', array( __CLASS__, 'generate_sitemap_for_year_month' ) );
 		add_action( 'msm_cron_generate_sitemap_for_year_month_day', array( __CLASS__, 'generate_sitemap_for_year_month_day' ) );
+
+		if ( is_admin() ) {
+			add_filter( 'msm_sitemap_actions', array( __CLASS__, 'add_actions' ) );
+			add_filter( 'msm_sitemap_create_status', array( __CLASS__, 'sitemap_create_status' ) );
+
+			add_action( 'msm_sitemap_action-generate', array( __CLASS__, 'action_generate' ) );
+			add_action( 'msm_sitemap_action-generate_from_latest', array( __CLASS__, 'action_generate_from_latest' ) );
+			add_action( 'msm_sitemap_action-halt_generation', array( __CLASS__, 'action_halt' ) );
+			add_action( 'msm_sitemap_action-reset_sitemap_data', array( __CLASS__, 'action_reset_data' ) );
+		}
+	}
+
+	/**
+	 * Adds the builder cron actions to the sitemaps admin page.
+	 *
+	 * Hooked into the msm_sitemap_actions filter.
+	 *
+	 * @param array $actions The actions to show on the admin page.
+	 * @return array
+	 */
+	public static function add_actions( $actions ) {
+		$sitemap_create_in_progress = get_option( 'msm_sitemap_create_in_progress' ) === true;
+		$sitemap_halt_in_progress = get_option( 'msm_stop_processing' ) === true;
+
+		$actions['generate'] = array( 'text' => __( 'Generate from all articles', 'metro-sitemaps' ), 'enabled' => ! $sitemap_create_in_progress && ! $sitemap_halt_in_progress );
+		$actions['generate_from_latest'] = array( 'text' => __( 'Generate from latest articles', 'metro-sitemaps' ), 'enabled' => ! $sitemap_create_in_progress && ! $sitemap_halt_in_progress );
+		$actions['halt_generation'] = array( 'text' => __( 'Halt Sitemap Generation', 'metro-sitemaps' ), 'enabled' => $sitemap_create_in_progress && ! $sitemap_halt_in_progress );
+		$actions['reset_sitemap_data'] = array( 'text' => __( 'Reset Sitemap Data', 'metro-sitemaps' ), 'enabled' => ! $sitemap_create_in_progress && ! $sitemap_halt_in_progress );
+
+		return $actions;
+	}
+
+	/**
+	 * Adds the "Halting" sitemap create status as this status is specific to the
+	 * builder cron.
+	 *
+	 * Hooked into the msm_sitemap_create_status filter.
+	 *
+	 * @param string $status The status text to show the user on the admin page.
+	 * @return string The status text.
+	 */
+	public static function sitemap_create_status( $status ) {
+		if ( get_option( 'msm_stop_processing' ) === true && get_option( 'msm_sitemap_create_in_progress' ) === true )
+			return __( 'Halting', 'metro-sitemaps' );
+
+		return $status;
+	}
+
+	/**
+	 * Generates full sitemaps for the site.
+	 *
+	 * Hooked into the msm_sitemap_actions-generate action.
+	 */
+	public static function action_generate() {
+		$sitemap_create_in_progress = get_option( 'msm_sitemap_create_in_progress' );
+		self::generate_full_sitemap();
+		update_option( 'msm_sitemap_create_in_progress', true );
+
+		if ( empty( $sitemap_create_in_progress ) ) {
+			Metro_Sitemap::show_action_message( __( 'Starting sitemap generation...', 'metro-sitemaps' ) );
+		} else {
+			Metro_Sitemap::show_action_message( __( 'Resuming sitemap creation', 'metro-sitemaps' ) );
+		}
+	}
+
+	/**
+	 * Generates sitemaps from the latest posts.
+	 *
+	 * Hooked into the msm_sitemap_actions-generate_from_latest action
+	 */
+	public static function action_generate_from_latest() {
+		$last_modified = Metro_Sitemap::get_last_modified_posts();
+		if ( count( $last_modified ) > 0 ) {
+			Metro_Sitemap::update_sitemap_from_modified_posts();
+			Metro_Sitemap::show_action_message( __( 'Updating sitemap from latest articles...', 'metro-sitemaps' ) );
+		} else {
+			Metro_Sitemap::show_action_message( __( 'Cannot generate from latest articles: no posts updated lately.', 'metro-sitemaps' ), 'error' );
+		}
+	}
+
+	/**
+	 * Halts sitemap generation on the next cron run. Saves current position for resuming.
+	 *
+	 * Hooked into the msm_sitemap_actions-halt_generation action.
+	 */
+	public static function action_halt() {
+		// Can only halt generation if sitemap creation is already in process
+		if ( get_option( 'msm_stop_processing' ) === true ) {
+			Metro_Sitemap::show_action_message( __( 'Cannot stop sitemap generation: sitemap generation is already being halted.', 'metro-sitemaps' ), 'warning' );
+		} else if ( get_option( 'msm_sitemap_create_in_progress' ) === true ) {
+			update_option( 'msm_stop_processing', true );
+			Metro_Sitemap::show_action_message( __( 'Stopping Sitemap generation', 'metro-sitemaps' ) );
+		} else {
+			Metro_Sitemap::show_action_message( __( 'Cannot stop sitemap generation: sitemap generation not in progress', 'metro-sitemaps' ), 'warning' );
+		}
+	}
+
+	/**
+	 * Resets sitemap data and prints out a message to the user.
+	 *
+	 * Hooked into the msm_sitemap_actions-reset_sitemap_data action.
+	 */
+	public static function action_reset_data() {
+		// Do the same as when we finish then tell use to delete manuallyrather than remove all data
+		self::reset_sitemap_data();
+		Metro_Sitemap::show_action_message( __( 'Sitemap data reset. If you want to remove the data you must do so manually', 'metro-sitemaps' ) );
 	}
 
 	/**
@@ -191,7 +296,7 @@ class MSM_Sitemap_Builder_Cron {
 	 */
 	public static function find_next_day_to_process( $year, $month, $day ) {
 
-		$halt = get_option( 'msm_stop_processing' );
+		$halt = get_option( 'msm_stop_processing' ) === true;
 		if ( $halt ) {
 			// Allow user to bail out of the current process, doesn't remove where the job got up to
 			delete_option( 'msm_stop_processing' );
