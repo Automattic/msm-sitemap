@@ -373,6 +373,9 @@ class Metro_Sitemap {
 		$url_count = 0;
 		while ( $query->have_posts() ) {
 			$query->the_post();
+			
+			if ( apply_filters( 'msm_sitemap_skip_post', false ) )
+				continue;
 
 			$url = $xml->addChild( 'url' );
 			$url->addChild( 'loc', get_permalink() );
