@@ -1,5 +1,9 @@
 <?php
 
+	if ( 1 != get_option( 'blog_public' ) ) {
+		wp_die( __( 'Sorry, this site is not public so sitemaps are not available.', 'msm-sitemap' ) );
+	}
+
 	$req_year = ( isset( $_GET['yyyy'] ) ) ? intval( $_GET['yyyy'] ) : false;
 	$req_month = ( isset( $_GET['mm'] ) ) ? intval( $_GET['mm'] ) : false;
 	$req_day = ( isset( $_GET['dd'] ) ) ? intval( $_GET['dd'] ) : false;
