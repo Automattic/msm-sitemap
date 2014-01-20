@@ -326,7 +326,7 @@ class Metro_Sitemap {
 			$sitemap_exists = true;
 		}
 
-		$query_args = array(
+		$query_args = apply_filteres( 'msm_sitemap_query_args', array(
 			'year' => $year,
 			'monthnum' => $month,
 			'day' => $day,
@@ -335,7 +335,7 @@ class Metro_Sitemap {
 			'post_type' => self::get_supported_post_types(),	
 			'posts_per_page' => apply_filters( 'msm_sitemap_entry_posts_per_page', self::DEFAULT_POSTS_PER_SITEMAP_PAGE ),
 			'no_found_rows' => true,
-			);
+		) );
 
 		$query = new WP_Query( $query_args );
 		$post_count = $query->post_count;
