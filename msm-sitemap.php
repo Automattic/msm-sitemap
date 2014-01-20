@@ -380,6 +380,8 @@ class Metro_Sitemap {
 			$url->addChild( 'changefreq', 'monthly' );
 			$url->addChild( 'priority', '0.7' );
 
+			apply_filters( 'msm_sitemap_entry', $url );
+
 			++$url_count;
 			// TODO: add images to sitemap via <image:image> tag
 		}
