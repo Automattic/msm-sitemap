@@ -352,9 +352,23 @@ class Metro_Sitemap {
 			return;
 		}
 
-		// Create XML
 		// SimpleXML doesn't allow us to define namespaces using addAttribute, so we need to specify them in the construction instead.
-		$xml = new SimpleXMLElement( '<?xml version="1.0" encoding="utf-8"?><urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:n="http://www.google.com/schemas/sitemap-news/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd"></urlset>' );
+		$namespaces = apply_filters( 'msm_sitemap_ns', array(
+			'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
+			'xmlns' => 'http://www.sitemaps.org/schemas/sitemap/0.9',
+			'xmlns:n' => 'http://www.google.com/schemas/sitemap-news/0.9',
+			'xmlns:image' => 'http://www.google.com/schemas/sitemap-image/1.1',
+			'xsi:schemaLocation' => 'http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd',
+		) );
+
+		$namespace_str = '<?xml version="1.0" encoding="utf-8"?><urlset';
+		foreach ( $namespaces as $ns => $value ) {
+			$namespace_str .= printf( ' %s="%s"', esc_attr( $ns ), esc_attr( $value ) );
+		}
+		$namespace_str .= '></urlset>';
+
+		// Create XML
+		$xml = new SimpleXMLElement( $namespace_str );
 
 		$url_count = 0;
 		while ( $query->have_posts() ) {
