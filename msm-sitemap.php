@@ -122,18 +122,17 @@ class Metro_Sitemap {
 			$current_day = count( $days_to_process ) - 1;
 			$current_month = count( $months_to_process ) - 1;
 			$current_year = count( $years_to_process ) - 1;
-			printf( __('Day: %s Month: %s Year: %s</p>'), $days_to_process[$current_day], $months_to_process[$current_month], $years_to_process[$current_year] );
+			printf( __( 'Day: %s Month: %s Year: %s</p>' ), $days_to_process[$current_day], $months_to_process[$current_month], $years_to_process[$current_year] );
 			$years_to_process = ( $current_year == 0 ) ? array( 1 ) : $years_to_process;
-			printf( __('<p><b>Years to process:</b> %s </p>'), implode( ',', $years_to_process ) );
+			printf( __( '<p><b>Years to process:</b> %s </p>' ), implode( ',', $years_to_process ) );
 		}
 
 		?>
 		<p><strong><?php _e( 'Last updated:', 'metro-sitemaps' ); ?></strong> <?php echo human_time_diff( $sitemap_update_last_run ); ?> ago</p>
 		<p><strong><?php _e( 'Next update:', 'metro-sitemaps' ); ?></strong> <?php echo $modified_posts_count . ' ' . $modified_posts_label; ?> will be updated in <?php echo human_time_diff( $sitemap_update_next_run ); ?></p>
 
-		<h3><?php _e('Stats', 'metro-sitemaps') ?></h3>
-		<p><?php printf( __('Currently your site has %s sitemaps and %s indexed URLs.', 'metro-sitemaps'),
-			'<strong>' . number_format( Metro_Sitemap::count_sitemaps() ) . '</strong>', '<strong>' . number_format( Metro_Sitemap::get_total_indexed_url_count() ) . '</strong>' ); ?> </p>
+		<h3><?php _e( 'Stats', 'metro-sitemaps' ) ?></h3>
+		<p><?php printf( __( 'Currently your site has %s sitemaps and %s indexed URLs.', 'metro-sitemaps' ), '<strong>' . number_format( Metro_Sitemap::count_sitemaps() ) . '</strong>', '<strong>' . number_format( Metro_Sitemap::get_total_indexed_url_count() ) . '</strong>' ); ?></p>
 
 		<form action="<?php echo menu_page_url( 'metro-sitemap', false ) ?>" method="post" style="float: left;">
 			<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
@@ -166,7 +165,7 @@ class Metro_Sitemap {
 	 * @return int The number of sitemaps that have been generated
 	 */
 	public static function count_sitemaps() {
-		$count = wp_count_posts(Metro_Sitemap::SITEMAP_CPT);
+		$count = wp_count_posts( Metro_Sitemap::SITEMAP_CPT );
 		return (int) $count->publish;
 	}
 	
@@ -489,11 +488,14 @@ class Metro_Sitemap {
 		$xml = new SimpleXMLElement( $xml_prefix . '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
 		foreach ( $sitemaps as $sitemap_date ) {
 			$sitemap_time = strtotime( $sitemap_date );
-			$sitemap_url = add_query_arg( array(
-				'yyyy' => date( 'Y', $sitemap_time ),
-				'mm' => date( 'm', $sitemap_time ),
-				'dd' => date( 'd', $sitemap_time ),        
-			), home_url( '/sitemap.xml' ) ); 
+			$sitemap_url = add_query_arg(
+				array(
+					'yyyy' => date( 'Y', $sitemap_time ),
+					'mm' => date( 'm', $sitemap_time ),
+					'dd' => date( 'd', $sitemap_time ),
+				),
+				home_url( '/sitemap.xml' )
+			);
 
 			$sitemap = $xml->addChild( 'sitemap' );
 			$sitemap->loc = $sitemap_url; // manually set the child instead of addChild to prevent "unterminated entity reference" warnings due to encoded ampersands http://stackoverflow.com/a/555039/169478
