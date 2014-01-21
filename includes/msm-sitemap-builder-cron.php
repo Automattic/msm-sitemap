@@ -30,8 +30,9 @@ class MSM_Sitemap_Builder_Cron {
 	 */
 	public static function add_actions( $actions ) {
 		// No actions for private blogs
-		if ( Metro_Sitemap::is_blog_private() ) 
+		if ( Metro_Sitemap::is_blog_private() ) {
 			return $actions;
+		}
 
 		$sitemap_create_in_progress = get_option( 'msm_sitemap_create_in_progress' ) === true;
 		$sitemap_halt_in_progress = get_option( 'msm_stop_processing' ) === true;
