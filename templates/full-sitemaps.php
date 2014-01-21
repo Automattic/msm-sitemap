@@ -1,6 +1,6 @@
 <?php
 
-	if ( 1 != get_option( 'blog_public' ) ) {
+	if ( Metro_Sitemap::is_blog_private() ) {
 		wp_die( __( 'Sorry, this site is not public so sitemaps are not available.', 'msm-sitemap' ) );
 	}
 

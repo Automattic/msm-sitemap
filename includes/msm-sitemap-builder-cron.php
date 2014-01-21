@@ -30,7 +30,8 @@ class MSM_Sitemap_Builder_Cron {
 	 */
 	public static function add_actions( $actions ) {
 		// No actions for private blogs
-		if ( 1 != get_option( 'blog_public' ) ) return $actions;
+		if ( Metro_Sitemap::is_blog_private() ) 
+			return $actions;
 
 		$sitemap_create_in_progress = get_option( 'msm_sitemap_create_in_progress' ) === true;
 		$sitemap_halt_in_progress = get_option( 'msm_stop_processing' ) === true;
@@ -300,7 +301,7 @@ class MSM_Sitemap_Builder_Cron {
 	public static function find_next_day_to_process( $year, $month, $day ) {
 
 		$halt = get_option( 'msm_stop_processing' ) === true;
-		if ( $halt || 1 != get_option( 'blog_public' ) ) {
+		if ( $halt || Metro_Sitemap::is_blog_private() ) {
 			// Allow user to bail out of the current process, doesn't remove where the job got up to
 			// or If the blog became private while sitemaps were enabled, stop here.
 			delete_option( 'msm_stop_processing' );
