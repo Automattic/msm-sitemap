@@ -353,7 +353,7 @@ class Metro_Sitemap {
 		}
 
 		// SimpleXML doesn't allow us to define namespaces using addAttribute, so we need to specify them in the construction instead.
-		$namespaces = apply_filters( 'msm_sitemap_ns', array(
+		$namespaces = apply_filters( 'msm_sitemap_namespace', array(
 			'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
 			'xmlns' => 'http://www.sitemaps.org/schemas/sitemap/0.9',
 			'xmlns:n' => 'http://www.google.com/schemas/sitemap-news/0.9',
