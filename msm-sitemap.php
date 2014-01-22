@@ -89,6 +89,12 @@ class Metro_Sitemap {
 		screen_icon();
 		echo '<h2>' . __( 'Sitemap', 'metro-sitemaps' ) . '</h2>';
 
+		if ( ! self::is_blog_public() ) {
+			self::show_action_message( __( 'Oops! Sitemaps are not supported on private blogs. Please make your blog public and try again.', 'metro-sitemaps' ), 'error' );
+			echo '</div>';
+			return;
+		}
+
 		if ( isset( $_POST['action'] ) ) {
 			check_admin_referer( 'msm-sitemap-action' );
 			foreach ( $actions as $slug => $action ) {
@@ -179,6 +185,10 @@ class Metro_Sitemap {
 		return array_sum( $counts );
 	}
 	
+	public static function is_blog_public() {
+		return ( 1 == get_option( 'blog_public' ) );
+	}
+	
 	/**
 	 * Gets the number of URLs indexed for the given sitemap.
 	 * 
@@ -217,7 +227,7 @@ class Metro_Sitemap {
 	 * Add cron jobs required to generate these sitemaps
 	 */
 	public static function sitemap_init_cron() {
-		if ( ! wp_next_scheduled( 'msm_cron_update_sitemap' ) ) {
+		if ( self::is_blog_public() && ! wp_next_scheduled( 'msm_cron_update_sitemap' ) ) {
 			wp_schedule_event( time(), 'ms-sitemap-15-min-cron-interval', 'msm_cron_update_sitemap' );
 		}
 	}
