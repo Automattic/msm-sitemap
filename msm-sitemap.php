@@ -325,7 +325,7 @@ class Metro_Sitemap {
 			$sitemap_exists = true;
 		}
 
-		$query_args = apply_filteres( 'msm_sitemap_query_args', array(
+		$query_args = apply_filters( 'msm_sitemap_query_args', array(
 			'year' => $year,
 			'monthnum' => $month,
 			'day' => $day,
