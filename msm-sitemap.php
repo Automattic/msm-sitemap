@@ -301,8 +301,8 @@ class Metro_Sitemap {
 		$start_date .= ' 00:00:00';
 		$end_date .= ' 23:59:59';
 
-		// TODO: need to incorporate post_type filter from get_last_modified_posts
-		return $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_status = 'publish' AND post_date >= %s AND post_date <= %s LIMIT 1", $start_date, $end_date ) );
+		$post_types_in = self::get_supported_post_types_in();
+		return $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_status = 'publish' AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT 1", $start_date, $end_date ) );
 	}
 
 	/**
@@ -453,10 +453,10 @@ class Metro_Sitemap {
 		if ( $sitemap_last_run ) {
 			$date = date( 'Y-m-d H:i:s', $sitemap_last_run );
 		}
-		$post_types = apply_filters( 'msm_sitemap_entry_post_type', 'post' );
-		$post_types_in = sprintf( "'%s'", implode( "','", (array) $post_types ) );
 
-		$modified_posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( $post_types_in ) AND post_modified_gmt >= %s ORDER BY post_date LIMIT 1000", $date ) );
+		$post_types_in = self::get_supported_post_types_in();
+
+		$modified_posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_modified_gmt >= %s ORDER BY post_date LIMIT 1000", $date ) );
 		return $modified_posts;
 	}
 
@@ -600,7 +600,21 @@ class Metro_Sitemap {
 	}
 
 	public static function get_supported_post_types() {
-		return apply_filters( 'msm_sitemap_entry_post_type', 'post' );
+		return apply_filters( 'msm_sitemap_entry_post_type', array( 'post' ) );
+	}
+
+	private static function get_supported_post_types_in() {
+		global $wpdb;
+
+		$post_types_in = '';
+		$post_types = self::get_supported_post_types();
+		$post_types_prepared = array();
+
+		foreach ( $post_types as $post_type ) {
+			$post_types_prepared[] = $wpdb->prepare( '%s', $post_type );
+		}
+
+		return implode( ', ', $post_types_prepared );
 	}
 }
 
