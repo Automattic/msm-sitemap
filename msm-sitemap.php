@@ -372,7 +372,7 @@ class Metro_Sitemap {
 
 		$namespace_str = '<?xml version="1.0" encoding="utf-8"?><urlset';
 		foreach ( $namespaces as $ns => $value ) {
-			$namespace_str .= printf( ' %s="%s"', esc_attr( $ns ), esc_attr( $value ) );
+			$namespace_str .= sprintf( ' %s="%s"', esc_attr( $ns ), esc_attr( $value ) );
 		}
 		$namespace_str .= '></urlset>';
 
