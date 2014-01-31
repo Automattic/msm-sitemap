@@ -8,6 +8,8 @@ Stable tag: 0.1
 License: GPLv2
 */
 
+if ( defined( 'WP_CLI' ) && true === WP_CLI )
+	require dirname( __FILE__ ) . '/includes/wp-cli.php';
 
 class Metro_Sitemap {
 
@@ -617,7 +619,3 @@ class Metro_Sitemap {
 }
 
 add_action( 'after_setup_theme', array( 'Metro_Sitemap', 'setup' ) );
-
-
-if ( defined( 'WP_CLI' ) && true === WP_CLI )
-	require dirname( __FILE__ ) . '/includes/wp-cli.php';
