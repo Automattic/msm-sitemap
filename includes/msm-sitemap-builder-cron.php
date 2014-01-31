@@ -2,7 +2,7 @@
 
 class MSM_Sitemap_Builder_Cron {
 
-	function setup() {
+	public static function setup() {
 		add_action( 'msm_update_sitemap_for_year_month_date', array( __CLASS__, 'schedule_sitemap_update_for_year_month_date' ), 10, 2 );
 
 		add_action( 'msm_cron_generate_sitemap_for_year', array( __CLASS__, 'generate_sitemap_for_year' ) );
@@ -133,7 +133,7 @@ class MSM_Sitemap_Builder_Cron {
 		delete_option( 'msm_sitemap_indexed_url_count' );
 	}
 
-	function schedule_sitemap_update_for_year_month_date( $date, $time ) {
+	public static function schedule_sitemap_update_for_year_month_date( $date, $time ) {
 		list( $year, $month, $day ) = $date;
 
 		wp_schedule_single_event(
