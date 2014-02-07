@@ -197,23 +197,24 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 			)
 		);
 
-		$count_array = array();
-		$count = 0;
+		$total_count = 0;
+		$sitemap_count = 0;
 
 		foreach ( $all_sitemaps as $sitemap_id ) {
 
-			$title = get_the_title( $sitemap_id );
 			$xml_data = get_post_meta( $sitemap_id, 'msm_sitemap_xml', true );
 
 			$xml = simplexml_load_string( $xml_data );
 			$count = count( $xml->url );
-			$count_array[$title] = $count;
+			update_post_meta( $sitemap_id, 'msm_indexed_url_count', $count );
 
 			$total_count += $count;
+			$sitemap_count += 1;
 		}
 
-		update_option( 'msm_sitemap_indexed_url_count', $count_array );
+		update_option( 'msm_sitemap_indexed_url_count', $total_count );
 		WP_CLI::line( sprintf( 'Total posts found: %s', $total_count ) );
+		WP_CLI::line( sprintf( 'Number of sitemaps found: %s', $sitemap_count ) );
 
 	}
 
