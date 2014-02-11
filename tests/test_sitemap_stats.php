@@ -53,12 +53,8 @@ class WP_Test_Sitemap_Stats extends WP_UnitTestCase {
 		// Check that we've indexed the proper total number of URLs
 		$this->assertEquals( $this->num_years_data, Metro_Sitemap::get_total_indexed_url_count() );
 
-		// Check that each sitemap has indexed only one url
-		$url_counts = Metro_Sitemap::get_indexed_url_count();
-		$this->assertCount( $this->num_years_data, $url_counts );
-		foreach ( Metro_Sitemap::get_indexed_url_count() as $count ) {
-			$this->assertEquals( 1, $count );
-		}
+		// Check specific stats
+		$this->assertTrue( $this->test_base->check_stats_for_created_posts() );
 	}
 	
 	/**
@@ -77,14 +73,8 @@ class WP_Test_Sitemap_Stats extends WP_UnitTestCase {
 		// Check stats
 		$this->assertEquals( $this->num_years_data + 1, Metro_Sitemap::get_total_indexed_url_count() );
 
-		$url_counts = Metro_Sitemap::get_indexed_url_count();
-		$this->assertCount( $this->num_years_data, $url_counts );
-		foreach ( Metro_Sitemap::get_indexed_url_count() as $day => $count ) {
-			if ( $day == $today_str )
-				$this->assertEquals( 2, $count );
-			else
-				$this->assertEquals( 1, $count );
-		}
+		// Check specific stats
+		$this->assertTrue( $this->test_base->check_stats_for_created_posts() );
 	}
 
 	function test_site_stats_for_deleted_post() {
@@ -103,26 +93,21 @@ class WP_Test_Sitemap_Stats extends WP_UnitTestCase {
 			$last_post = array_pop( $this->test_base->posts );
 			wp_delete_post( $last_post['ID'], true );
 			$post_count -= 1;
-			$deleted_dates[] = trim(substr($last_post['post_date'], 0, 10));
+			$deleted_dates[trim( substr( $last_post['post_date'], 0, 10 ) )] = 0;
 
 			// Build sitemaps
 			$this->test_base->build_sitemaps();
 
 			// Check stats
 			$this->assertEquals( $post_count, Metro_Sitemap::get_total_indexed_url_count() );
-			foreach ( Metro_Sitemap::get_indexed_url_count() as $day => $count ) {
-				if ( !in_array($day, $deleted_dates) || $day == $today_str )
-					// If this day is today, or this day has not yet been deleted, it should have 1 post
-					$this->assertEquals( 1, $count );
-				else
-					$this->assertEquals( 0, $count );
-			}
+
+			// Check specific stats
+			$this->assertTrue( $this->test_base->check_stats_for_created_posts() );
 		}
 
 		// Make sure that there is nothing left over
 		$this->assertEquals( 0, Metro_Sitemap::count_sitemaps() );
 		$this->assertEquals( 0, Metro_Sitemap::get_total_indexed_url_count() );
-		$this->assertEmpty( Metro_Sitemap::get_indexed_url_count() );
 	}
 }
 
