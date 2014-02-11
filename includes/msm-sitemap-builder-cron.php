@@ -118,7 +118,11 @@ class MSM_Sitemap_Builder_Cron {
 	public static function action_reset_data() {
 		// Do the same as when we finish then tell use to delete manuallyrather than remove all data
 		self::reset_sitemap_data();
-		Metro_Sitemap::show_action_message( __( 'Sitemap data reset. If you want to remove the data you must do so manually', 'metro-sitemaps' ) );
+		Metro_Sitemap::show_action_message( sprintf(
+				__( '<p>Sitemap data reset. If you want to completely remove the data you must do so manually by deleting all posts with post type <code>%1$s</code>.</p><p>The WP-CLI command to do this is: <code>%2$s</code></p>', 'msm-sitemap' ),
+				Metro_Sitemap::SITEMAP_CPT,
+				'wp post delete $(wp post list --post_type=' . Metro_Sitemap::SITEMAP_CPT . ' --format=ids)'
+		) );
 	}
 
 	/**
