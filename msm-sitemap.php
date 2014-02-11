@@ -210,7 +210,7 @@ class Metro_Sitemap {
 		$sitemap_query = get_posts( $sitemap_args );
 
 		if ( ! empty( $sitemap_query ) ) {
-			return get_post_meta( $sitemap_query[0], 'msm_sitemap_indexed_url_count', 0 );
+			return intval( get_post_meta( $sitemap_query[0], 'msm_indexed_url_count', true ) );
 		}
 
 		return 0;
