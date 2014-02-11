@@ -367,7 +367,7 @@ class Metro_Sitemap {
 		if ( ! $post_count ) {
 			// If no entries - delete the whole sitemap post
 			if ( $sitemap_exists ) {
-				$total_url_count -= get_post_meta( $sitemap_id, 'msm_indexed_url_count', 0 );
+				$total_url_count -= intval( get_post_meta( $sitemap_id, 'msm_indexed_url_count', true ) );
 				update_option( 'msm_sitemap_indexed_url_count' , $total_url_count );
 				wp_delete_post( $sitemap_id, true );
 				do_action( 'msm_delete_sitemap_post', $sitemap_id, $year, $month, $day );
@@ -415,7 +415,7 @@ class Metro_Sitemap {
 				// Save the sitemap
 		if ( $sitemap_exists ) {
 			// Get the previous post count
-			$previous_url_count = intval( get_post_meta( $sitemap_id, 'msm_indexed_url_count', 0 ) );
+			$previous_url_count = intval( get_post_meta( $sitemap_id, 'msm_indexed_url_count', true ) );
 
 			// Update the total post count with the difference
 			$total_url_count += $url_count - $previous_url_count;
