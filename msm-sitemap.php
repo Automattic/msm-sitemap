@@ -162,7 +162,7 @@ class Metro_Sitemap {
 		elseif ( $level === 'error' )
 			$class = 'error';
 
-		echo '<div class="' . esc_attr( $class ) . ' msm-sitemap-message"><p>' . esc_html( $message ) . '</p></div>';
+		echo '<div class="' . esc_attr( $class ) . ' msm-sitemap-message"><p>' . wp_kses( $message, wp_kses_allowed_html( 'post' ) ) . '</p></div>';
 	}
 		
 	/**
