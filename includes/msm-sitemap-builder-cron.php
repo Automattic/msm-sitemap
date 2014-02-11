@@ -125,11 +125,20 @@ class MSM_Sitemap_Builder_Cron {
 	 * Reset sitemap options
 	 */
 	public static function reset_sitemap_data() {
+		// Remove the stats meta information
+		delete_post_meta_by_key( 'msm_indexed_url_count' );
+
+		// Remove the XML sitemap data
+		delete_post_meta_by_key( 'msm_sitemap_xml' );
+
+		// Delete state options
 		delete_option( 'msm_days_to_process' );
 		delete_option( 'msm_months_to_process' );
 		delete_option( 'msm_years_to_process' );
 		delete_option( 'msm_stop_processing' );
 		delete_option( 'msm_sitemap_create_in_progress' );
+
+		// Delete stats options
 		delete_option( 'msm_sitemap_indexed_url_count' );
 	}
 
