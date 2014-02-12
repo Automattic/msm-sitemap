@@ -34,3 +34,29 @@
 	text-align: center;
 	width: 100%;
 }
+
+.stats-footer span {
+	vertical-align: middle;
+}
+
+.stats-placeholder {
+	background: #fff;
+	border: 1px solid #ddd;
+	height: 250px;
+	width: 600px;
+}
+
+#stats-graph-summary {
+	color: #999999;
+	display: none;
+	font-style: italic;
+}
+
+#tooltip {
+	position: absolute;
+	display: none;
+	border: 1px solid #ddd;
+	padding: 2px;
+	background-color: #f5f5f5;
+	opacity: 0.80;
+}
