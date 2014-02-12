@@ -194,23 +194,10 @@ class Metro_Sitemap {
 	 * @param array $sitemaps The sitemaps to retrieve counts for.
 	 */
 	public static function get_indexed_url_count( $year, $month, $day ) {
-		$sitemap_args = array(
-			'year' => $year,
-			'monthnum' => $month,
-			'day' => $day,
-			'orderby' => 'ID',
-			'order' => 'ASC',
-			'posts_per_page' => 1,
-			'fields' => 'ids',
-			'post_type' => self::SITEMAP_CPT,
-			'no_found_rows' => true,
-			'update_term_cache' => false,
-			'suppress_filters' => false,
-		);
-		$sitemap_query = get_posts( $sitemap_args );
+		$sitemap_id = self::get_sitemap_post_id( $year, $month, $day );
 
-		if ( ! empty( $sitemap_query ) ) {
-			return intval( get_post_meta( $sitemap_query[0], 'msm_indexed_url_count', true ) );
+		if ( 0 != $sitemap_id ) {
+			return intval( get_post_meta( $sitemap_id, 'msm_indexed_url_count', true ) );
 		}
 
 		return 0;
@@ -556,12 +543,7 @@ class Metro_Sitemap {
 		return $xml->asXML();
 	}
 
-	/**
-	 * Get XML for individual day
-	 */
-	public static function build_individual_sitemap_xml( $year, $month, $day ) {
-			
-		// Get XML for an individual day. Stored as full xml
+	public static function get_sitemap_post_id( $year, $month, $day ) {
 		$sitemap_args = array(
 			'year' => $year,
 			'monthnum' => $month,
@@ -575,9 +557,26 @@ class Metro_Sitemap {
 			'update_term_cache' => false,
 			'suppress_filters' => false,
 		);
+
 		$sitemap_query = get_posts( $sitemap_args );
+
 		if ( ! empty( $sitemap_query ) ) {
-			$sitemap_content = get_post_meta( $sitemap_query[0], 'msm_sitemap_xml', true );
+			return $sitemap_query[0];
+		}
+
+		return 0;
+	}
+
+	/**
+	 * Get XML for individual day
+	 */
+	public static function build_individual_sitemap_xml( $year, $month, $day ) {
+		
+		// Get XML for an individual day. Stored as full xml
+		$sitemap_id = self::get_sitemap_post_id( $year, $month, $day );
+
+		if ( 0 != $sitemap_id ) {
+			$sitemap_content = get_post_meta( $sitemap_id, 'msm_sitemap_xml', true );
 			// Return is now as it should be valid xml!
 			return $sitemap_content;
 		} else {
