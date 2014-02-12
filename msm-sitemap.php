@@ -142,11 +142,6 @@ class Metro_Sitemap {
 		// All the settings we need to read to display the page
 		$sitemap_create_in_progress = get_option( 'msm_sitemap_create_in_progress' ) === true;
 		$sitemap_update_last_run = get_option( 'msm_sitemap_update_last_run' );
-		$sitemap_update_next_run = $sitemap_update_last_run + 900;
-		$modified_posts = Metro_Sitemap::get_last_modified_posts();
-		$modified_posts_count = count( $modified_posts );
-		$modified_posts_label = $modified_posts_count == 1 ? 'post' : 'posts';
-		$days_to_process = get_option( 'msm_days_to_process' );
 
 		// Determine sitemap status text
 		$sitemap_create_status = apply_filters(
@@ -154,21 +149,6 @@ class Metro_Sitemap {
 			$sitemap_create_in_progress ? __( 'Running', 'metro-sitemaps' ) : __( 'Not Running', 'metro-sitemaps' )
 		);
 		
-		echo '<p><strong>' . __( 'Sitemap Create Status:', 'metro-sitemaps' ) . '</strong> ' . esc_html( $sitemap_create_status );
-		if ( $days_to_process ) {
-			$years_to_process = get_option( 'msm_years_to_process' );
-			$months_to_process = get_option( 'msm_months_to_process' );
-			echo '<p><b>' . ( $sitemap_create_in_progress ? __( 'Current position:', 'metro-sitemaps' ) : __( 'Restart position:', 'metro-sitemaps' ) ). ' </b>';
-			$current_day = count( $days_to_process ) - 1;
-			$current_month = count( $months_to_process ) - 1;
-			$current_year = count( $years_to_process ) - 1;
-			printf( __( 'Day: %s Month: %s Year: %s</p>' ), $days_to_process[$current_day], $months_to_process[$current_month], $years_to_process[$current_year] );
-			$years_to_process = ( $current_year == 0 ) ? array( 1 ) : $years_to_process;
-			printf( __( '<p><b>Years to process:</b> %s </p>' ), implode( ',', $years_to_process ) );
-		}
-
-		// $sitemap_update_next_run
-		//<div><em><?php printf( __( 'Sitemaps will be updated in %s.', 'metro-sitemaps' ), human_time_diff( $sitemap_update_next_run ) ); </em></div>
 		?>
 		<div class="stats-container">
 			<div class="stats-box"><strong id="sitemap-count"><?php echo number_format( Metro_Sitemap::count_sitemaps() ); ?></strong><?php _e( 'Sitemaps', 'metro-sitemaps' ); ?></div>
@@ -181,6 +161,7 @@ class Metro_Sitemap {
 		<div id="stats-graph-summary"><?php printf( __( 'Max: %s on %s. Showing the last %s days.', 'metro-sitemaps' ), '<span id="stats-graph-max"></span>', '<span id="stats-graph-max-date"></span>', '<span id="stats-graph-num-days"></span>' ); ?></div>
 
 		<h3><?php _e( 'Generate', 'metro-sitemaps' ); ?></h3>
+		<p><strong><?php _e( 'Sitemap Create Status:', 'metro-sitemaps' ) ?></strong> <?php echo esc_html( $sitemap_create_status ); ?></p>
 		<form action="<?php echo menu_page_url( 'metro-sitemap', false ) ?>" method="post" style="float: left;">
 			<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
 			<?php foreach ( $actions as $action ):
