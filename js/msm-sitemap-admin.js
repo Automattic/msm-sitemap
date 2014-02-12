@@ -77,6 +77,9 @@ jQuery( document ).ready( function() {
 		jQuery( '#sitemap-count' ).html( response['total_sitemaps'] );
 		jQuery( '#sitemap-indexed-url-count' ).html( response['total_indexed_urls'] );
 
+		// Make the maximum get calculated from the current dataset
+		max.count = -1;
+
 		var formatted_data = [];
 		for ( var e in response['sitemap_indexed_urls'] ) {
 			formatted_data.push( [ new Date(e).getTime(), response['sitemap_indexed_urls'][e], e ] );
