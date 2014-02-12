@@ -64,13 +64,22 @@ class Metro_Sitemap {
 		add_filter( 'robots_txt', array( __CLASS__, 'robots_txt' ), 10, 2 );
 		add_action( 'admin_menu', array( __CLASS__, 'metro_sitemap_menu' ) );
 		add_action( 'msm_cron_update_sitemap', array( __CLASS__, 'update_sitemap_from_modified_posts' ) );
+		
+		wp_register_script( 'flot', plugins_url( '/js/flot/jquery.flot.js', __FILE__ ), array( 'jquery' ) );
+		wp_register_style( 'msm-sitemap-css', plugins_url( 'css/style.css', __FILE__ ) );
 	}
 
 	/**
 	 * Register admin menu for sitemap
 	 */
 	public static function metro_sitemap_menu() {
-		add_management_page( __( 'Sitemap', 'metro-sitemaps' ), __( 'Sitemap', 'metro-sitemaps' ), 'manage_options', 'metro-sitemap', array( __CLASS__, 'render_sitemap_options_page' ) );
+		$page_hook = add_management_page( __( 'Sitemap', 'metro-sitemaps' ), __( 'Sitemap', 'metro-sitemaps' ), 'manage_options', 'metro-sitemap', array( __CLASS__, 'render_sitemap_options_page' ) );
+		add_action( 'admin_print_scripts-' . $page_hook, array( __CLASS__, 'add_admin_scripts' ) );
+	}
+
+	public static function add_admin_scripts() {
+		wp_enqueue_script( 'flot' );
+		wp_enqueue_style( 'msm-sitemap-css' );
 	}
 
 	/**
@@ -137,8 +146,11 @@ class Metro_Sitemap {
 		<p><strong><?php _e( 'Last updated:', 'metro-sitemaps' ); ?></strong> <?php echo human_time_diff( $sitemap_update_last_run ); ?> ago</p>
 		<p><strong><?php _e( 'Next update:', 'metro-sitemaps' ); ?></strong> <?php echo $modified_posts_count . ' ' . $modified_posts_label; ?> will be updated in <?php echo human_time_diff( $sitemap_update_next_run ); ?></p>
 
-		<h3><?php _e( 'Stats', 'metro-sitemaps' ) ?></h3>
-		<p><?php printf( __( 'Currently your site has %s sitemaps and %s indexed URLs.', 'metro-sitemaps' ), '<strong>' . number_format( Metro_Sitemap::count_sitemaps() ) . '</strong>', '<strong>' . number_format( Metro_Sitemap::get_total_indexed_url_count() ) . '</strong>' ); ?></p>
+		<div class="stats-container">
+			<div class="stats-box"><strong><?php echo number_format( Metro_Sitemap::count_sitemaps() ); ?></strong><?php _e( 'Sitemaps', 'metro-sitemaps' ); ?></div>
+			<div class="stats-box"><strong><?php echo number_format( Metro_Sitemap::get_total_indexed_url_count() ); ?></strong><?php _e( 'Indexed URLs', 'metro-sitemaps' ); ?></div>
+			<div class="stats-footer"><?php _e( 'Updated', 'metro-sitemaps' ); ?> <strong><?php echo human_time_diff( $sitemap_update_last_run ); ?> <?php _e( 'ago', 'metro-sitemaps' ) ?></strong></div>
+		</div>
 
 		<form action="<?php echo menu_page_url( 'metro-sitemap', false ) ?>" method="post" style="float: left;">
 			<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
