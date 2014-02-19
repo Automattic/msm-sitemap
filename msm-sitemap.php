@@ -196,7 +196,7 @@ class Metro_Sitemap {
 	public static function get_indexed_url_count( $year, $month, $day ) {
 		$sitemap_id = self::get_sitemap_post_id( $year, $month, $day );
 
-		if ( 0 != $sitemap_id ) {
+		if ( $sitemap_id ) {
 			return intval( get_post_meta( $sitemap_id, 'msm_indexed_url_count', true ) );
 		}
 
@@ -575,7 +575,7 @@ class Metro_Sitemap {
 		// Get XML for an individual day. Stored as full xml
 		$sitemap_id = self::get_sitemap_post_id( $year, $month, $day );
 
-		if ( 0 != $sitemap_id ) {
+		if ( $sitemap_id ) {
 			$sitemap_content = get_post_meta( $sitemap_id, 'msm_sitemap_xml', true );
 			// Return is now as it should be valid xml!
 			return $sitemap_content;
