@@ -200,7 +200,7 @@ class Metro_Sitemap {
 			return intval( get_post_meta( $sitemap_id, 'msm_indexed_url_count', true ) );
 		}
 
-		return 0;
+		return false;
 	}
 		
 	/**
@@ -564,7 +564,7 @@ class Metro_Sitemap {
 			return $sitemap_query[0];
 		}
 
-		return 0;
+		return false;
 	}
 
 	/**
