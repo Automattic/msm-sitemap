@@ -102,7 +102,7 @@ class Metro_Sitemap {
 			'sitemap_indexed_urls' => self::get_recent_sitemap_url_counts( $n ),
 		);
 
-		die( json_encode( $data ) );
+		wp_send_json( $data );
 	}
 
 	/**
