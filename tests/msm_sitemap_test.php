@@ -38,6 +38,37 @@ class MSM_SiteMap_Test {
 			$this->posts[] = $post_data;
 		}
 	}
+
+	/**
+	 * Checks that the stats are correct for each individual created post
+	 */
+	function check_stats_for_created_posts() {
+		$dates = array();
+
+		// Count the number of posts for each date
+		foreach ( $this->posts as $post ) {
+			$date = date_format( new DateTime( $post['post_date'] ), 'Y-m-d' );
+
+			if ( isset( $dates[$date] ) ) {
+				$dates[$date]++;
+			} else {
+				$dates[$date] = 1;
+			}
+		}
+
+		// Check counts for each date
+		foreach ( $dates as $date => $count ) {
+			list( $year, $month, $day ) = explode( '-', $date, 3 );
+
+			$indexed_url_count = Metro_Sitemap::get_indexed_url_count( $year, $month, $day );
+			if ( $indexed_url_count != $count ) {
+				echo "\nExpected url count of $indexed_url_count but had count of $count on $year-$month-$day\n";
+				return false;
+			}
+		}
+
+		return true;
+	}
 		
 	/**
 	 * Generate sitemaps; pretends to run cron six times

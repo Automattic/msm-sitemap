@@ -181,8 +181,7 @@ class Metro_Sitemap {
 	 * @return int The number of total number URLs indexed
 	 */
 	public static function get_total_indexed_url_count() {
-		$counts = (array) get_option( 'msm_sitemap_indexed_url_count', array() );
-		return array_sum( $counts );
+		return intval( get_option( 'msm_sitemap_indexed_url_count', 0 ) );
 	}
 	
 	public static function is_blog_public() {
@@ -191,22 +190,17 @@ class Metro_Sitemap {
 	
 	/**
 	 * Gets the number of URLs indexed for the given sitemap.
-	 * 
-	 * @param array $sitemaps The sitemaps to retrieve counts for. If $sitemaps is not given, counts are retrieved for all sitemaps.
+	 *
+	 * @param array $sitemaps The sitemaps to retrieve counts for.
 	 */
-	public static function get_indexed_url_count( $sitemaps = null ) {
-		$counts = (array) get_option( 'msm_sitemap_indexed_url_count', array() );
-		$return_vals = array();
+	public static function get_indexed_url_count( $year, $month, $day ) {
+		$sitemap_id = self::get_sitemap_post_id( $year, $month, $day );
 
-		if ( is_null( $sitemaps ) )
-			return $counts;
-
-		foreach ( $sitemaps as $sitemap ) {
-			if ( in_array( $sitemap, $counts ) ) 
-				$return_vals[$sitemap] = (int) $counts[$sitemap];
+		if ( $sitemap_id ) {
+			return intval( get_post_meta( $sitemap_id, 'msm_indexed_url_count', true ) );
 		}
 
-		return $return_vals;
+		return false;
 	}
 		
 	/**
@@ -240,10 +234,10 @@ class Metro_Sitemap {
 	 * @return string URL to redirect
 	 */
 	public static function disable_canonical_redirects_for_sitemap_xml( $redirect_url, $requested_url ) {
-		if ( preg_match( '|sitemap\.xml|', $requested_url ) ) { 
-			return $requested_url; 
+		if ( preg_match( '|sitemap\.xml|', $requested_url ) ) {
+			return $requested_url;
 		}
-		return $redirect_url; 
+		return $redirect_url;
 	}
 
 	/**
@@ -349,14 +343,21 @@ class Metro_Sitemap {
 		$query = new WP_Query( $query_args );
 		$post_count = $query->post_count;
 
-		$url_counts = (array) get_option( 'msm_sitemap_indexed_url_count', array() );
+		$total_url_count = self::get_total_indexed_url_count();
+
+		// For migration: in case the previous version used an array for this option
+		if ( is_array( $total_url_count ) ) {
+			$total_url_count = array_sum( $total_url_count );
+			update_option( 'msm_sitemap_indexed_url_count', $total_url_count );
+		}
+
 		if ( ! $post_count ) {
 			// If no entries - delete the whole sitemap post
 			if ( $sitemap_exists ) {
+				$total_url_count -= intval( get_post_meta( $sitemap_id, 'msm_indexed_url_count', true ) );
+				update_option( 'msm_sitemap_indexed_url_count' , $total_url_count );
 				wp_delete_post( $sitemap_id, true );
 				do_action( 'msm_delete_sitemap_post', $sitemap_id, $year, $month, $day );
-				unset( $url_counts[$sitemap_name] );
-				update_option( 'msm_sitemap_indexed_url_count' , $url_counts );
 			}
 			return;
 		}
@@ -400,18 +401,28 @@ class Metro_Sitemap {
 
 				// Save the sitemap
 		if ( $sitemap_exists ) {
+			// Get the previous post count
+			$previous_url_count = intval( get_post_meta( $sitemap_id, 'msm_indexed_url_count', true ) );
+
+			// Update the total post count with the difference
+			$total_url_count += $url_count - $previous_url_count;
+
 			update_post_meta( $sitemap_id, 'msm_sitemap_xml', $xml->asXML() );
+			update_post_meta( $sitemap_id, 'msm_indexed_url_count', $url_count );
 			do_action( 'msm_update_sitemap_post', $sitemap_id, $year, $month, $day );
 		} else {
 			/* Should no longer hit this */
 			$sitemap_id = wp_insert_post( $sitemap_data );
 			add_post_meta( $sitemap_id, 'msm_sitemap_xml', $xml->asXML() );
+			add_post_meta( $sitemap_id, 'msm_indexed_url_count', $url_count );
 			do_action( 'msm_insert_sitemap_post', $sitemap_id, $year, $month, $day );
+
+			// Update the total url count
+			$total_url_count += $url_count;
 		}
 
-				// Update indexed url counts
-		$url_counts[$sitemap_name] = $url_count;
-		update_option( 'msm_sitemap_indexed_url_count' , $url_counts );
+		// Update indexed url counts
+		update_option( 'msm_sitemap_indexed_url_count' , $total_url_count );
 
 		wp_reset_postdata();
 	}
@@ -512,7 +523,7 @@ class Metro_Sitemap {
 		$xml_prefix = '<?xml version="1.0" encoding="utf-8"?>';
 		global $wpdb;
 		// Direct query because we just want dates of the sitemap entries and this is much faster than WP_Query
-		$sitemaps = $wpdb->get_col( $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s ORDER BY post_date DESC LIMIT 10000", Metro_Sitemap::SITEMAP_CPT ) );        
+		$sitemaps = $wpdb->get_col( $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s ORDER BY post_date DESC LIMIT 10000", Metro_Sitemap::SITEMAP_CPT ) );
 
 		$xml = new SimpleXMLElement( $xml_prefix . '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
 		foreach ( $sitemaps as $sitemap_date ) {
@@ -532,12 +543,7 @@ class Metro_Sitemap {
 		return $xml->asXML();
 	}
 
-	/**
-	 * Get XML for individual day
-	 */
-	public static function build_individual_sitemap_xml( $year, $month, $day ) {
-			
-		// Get XML for an individual day. Stored as full xml
+	public static function get_sitemap_post_id( $year, $month, $day ) {
 		$sitemap_args = array(
 			'year' => $year,
 			'monthnum' => $month,
@@ -551,12 +557,28 @@ class Metro_Sitemap {
 			'update_term_cache' => false,
 			'suppress_filters' => false,
 		);
+
 		$sitemap_query = get_posts( $sitemap_args );
+
 		if ( ! empty( $sitemap_query ) ) {
-			$sitemap_content = get_post_meta( $sitemap_query[0], 'msm_sitemap_xml', true );
-	   		$output .= $sitemap_content;
+			return $sitemap_query[0];
+		}
+
+		return false;
+	}
+
+	/**
+	 * Get XML for individual day
+	 */
+	public static function build_individual_sitemap_xml( $year, $month, $day ) {
+		
+		// Get XML for an individual day. Stored as full xml
+		$sitemap_id = self::get_sitemap_post_id( $year, $month, $day );
+
+		if ( $sitemap_id ) {
+			$sitemap_content = get_post_meta( $sitemap_id, 'msm_sitemap_xml', true );
 			// Return is now as it should be valid xml!
-			return $output;
+			return $sitemap_content;
 		} else {
 			/* There are no posts for this day */
 			$xml = new SimpleXMLElement( '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>' );
