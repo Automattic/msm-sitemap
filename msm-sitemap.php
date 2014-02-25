@@ -93,6 +93,10 @@ class Metro_Sitemap {
 	public static function ajax_get_sitemap_counts() {
 		check_admin_referer( 'msm-sitemap-action' );
 
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( __( 'You do not have sufficient permissions to access this page.', 'metro-sitemaps' ) );
+		}
+
 		$n = 10;
 		if ( isset( $_REQUEST['num_days'] ) ) {
 			$n = intval( $_REQUEST['num_days'] );
