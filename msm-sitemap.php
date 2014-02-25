@@ -65,13 +65,6 @@ class Metro_Sitemap {
 		add_action( 'admin_menu', array( __CLASS__, 'metro_sitemap_menu' ) );
 		add_action( 'msm_cron_update_sitemap', array( __CLASS__, 'update_sitemap_from_modified_posts' ) );
 		add_action( 'wp_ajax_msm-sitemap-get-sitemap-counts', array( __CLASS__, 'ajax_get_sitemap_counts' ) );
-
-		wp_register_script( 'msm-sitemap-admin', plugins_url( '/js/msm-sitemap-admin.js', __FILE__ ), array( 'jquery', 'flot' ) );
-		wp_register_script( 'flot-time', plugins_url( '/js/flot/jquery.flot.time.js', __FILE__ ), array( 'jquery', 'flot' ) );
-		wp_register_script( 'flot', plugins_url( '/js/flot/jquery.flot.js', __FILE__ ), array( 'jquery' ) );
-
-		wp_register_style( 'msm-sitemap-css', plugins_url( 'css/style.css', __FILE__ ) );
-		wp_register_style( 'noticons', '//s0.wordpress.com/i/noticons/noticons.css' );
 	}
 
 	/**
@@ -83,11 +76,12 @@ class Metro_Sitemap {
 	}
 
 	public static function add_admin_scripts() {
-		wp_enqueue_script( 'msm-sitemap-admin' );
-		wp_enqueue_script( 'flot-time' );
+		wp_enqueue_script( 'flot', plugins_url( '/js/flot/jquery.flot.js', __FILE__ ), array( 'jquery' ) );
+		wp_enqueue_script( 'msm-sitemap-admin', plugins_url( '/js/msm-sitemap-admin.js', __FILE__ ), array( 'jquery', 'flot' ) );
+		wp_enqueue_script( 'flot-time', plugins_url( '/js/flot/jquery.flot.time.js', __FILE__ ), array( 'jquery', 'flot' ) );
 
-		wp_enqueue_style( 'msm-sitemap-css' );
-		wp_enqueue_style( 'noticons' );
+		wp_enqueue_style( 'msm-sitemap-css', plugins_url( 'css/style.css', __FILE__ ) );
+		wp_enqueue_style( 'noticons', '//s0.wordpress.com/i/noticons/noticons.css' );
 	}
 
 	public static function ajax_get_sitemap_counts() {
