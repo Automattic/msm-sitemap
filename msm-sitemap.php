@@ -13,7 +13,7 @@ if ( defined( 'WP_CLI' ) && true === WP_CLI )
 
 class Metro_Sitemap {
 
-	const DEFAULT_POSTS_PER_SITEMAP_PAGE = 200;
+	const DEFAULT_POSTS_PER_SITEMAP_PAGE = 500;
 
 	const SITEMAP_CPT = 'msm_sitemap';
 
