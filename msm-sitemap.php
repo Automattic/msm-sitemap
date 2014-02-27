@@ -64,13 +64,45 @@ class Metro_Sitemap {
 		add_filter( 'robots_txt', array( __CLASS__, 'robots_txt' ), 10, 2 );
 		add_action( 'admin_menu', array( __CLASS__, 'metro_sitemap_menu' ) );
 		add_action( 'msm_cron_update_sitemap', array( __CLASS__, 'update_sitemap_from_modified_posts' ) );
+		add_action( 'wp_ajax_msm-sitemap-get-sitemap-counts', array( __CLASS__, 'ajax_get_sitemap_counts' ) );
 	}
 
 	/**
 	 * Register admin menu for sitemap
 	 */
 	public static function metro_sitemap_menu() {
-		add_management_page( __( 'Sitemap', 'metro-sitemaps' ), __( 'Sitemap', 'metro-sitemaps' ), 'manage_options', 'metro-sitemap', array( __CLASS__, 'render_sitemap_options_page' ) );
+		$page_hook = add_management_page( __( 'Sitemap', 'metro-sitemaps' ), __( 'Sitemap', 'metro-sitemaps' ), 'manage_options', 'metro-sitemap', array( __CLASS__, 'render_sitemap_options_page' ) );
+		add_action( 'admin_print_scripts-' . $page_hook, array( __CLASS__, 'add_admin_scripts' ) );
+	}
+
+	public static function add_admin_scripts() {
+		wp_enqueue_script( 'flot', plugins_url( '/js/flot/jquery.flot.js', __FILE__ ), array( 'jquery' ) );
+		wp_enqueue_script( 'msm-sitemap-admin', plugins_url( '/js/msm-sitemap-admin.js', __FILE__ ), array( 'jquery', 'flot' ) );
+		wp_enqueue_script( 'flot-time', plugins_url( '/js/flot/jquery.flot.time.js', __FILE__ ), array( 'jquery', 'flot' ) );
+
+		wp_enqueue_style( 'msm-sitemap-css', plugins_url( 'css/style.css', __FILE__ ) );
+		wp_enqueue_style( 'noticons', '//s0.wordpress.com/i/noticons/noticons.css' );
+	}
+
+	public static function ajax_get_sitemap_counts() {
+		check_admin_referer( 'msm-sitemap-action' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( __( 'You do not have sufficient permissions to access this page.', 'metro-sitemaps' ) );
+		}
+
+		$n = 10;
+		if ( isset( $_REQUEST['num_days'] ) ) {
+			$n = intval( $_REQUEST['num_days'] );
+		}
+
+		$data = array(
+			'total_indexed_urls'   => number_format( Metro_Sitemap::get_total_indexed_url_count() ),
+			'total_sitemaps'	   => number_format( Metro_Sitemap::count_sitemaps() ),
+			'sitemap_indexed_urls' => self::get_recent_sitemap_url_counts( $n ),
+		);
+
+		wp_send_json( $data );
 	}
 
 	/**
@@ -108,11 +140,6 @@ class Metro_Sitemap {
 		// All the settings we need to read to display the page
 		$sitemap_create_in_progress = get_option( 'msm_sitemap_create_in_progress' ) === true;
 		$sitemap_update_last_run = get_option( 'msm_sitemap_update_last_run' );
-		$sitemap_update_next_run = $sitemap_update_last_run + 900;
-		$modified_posts = Metro_Sitemap::get_last_modified_posts();
-		$modified_posts_count = count( $modified_posts );
-		$modified_posts_label = $modified_posts_count == 1 ? 'post' : 'posts';
-		$days_to_process = get_option( 'msm_days_to_process' );
 
 		// Determine sitemap status text
 		$sitemap_create_status = apply_filters(
@@ -120,26 +147,19 @@ class Metro_Sitemap {
 			$sitemap_create_in_progress ? __( 'Running', 'metro-sitemaps' ) : __( 'Not Running', 'metro-sitemaps' )
 		);
 		
-		echo '<p><strong>' . __( 'Sitemap Create Status:', 'metro-sitemaps' ) . '</strong> ' . esc_html( $sitemap_create_status );
-		if ( $days_to_process ) {
-			$years_to_process = get_option( 'msm_years_to_process' );
-			$months_to_process = get_option( 'msm_months_to_process' );
-			echo '<p><b>' . ( $sitemap_create_in_progress ? __( 'Current position:', 'metro-sitemaps' ) : __( 'Restart position:', 'metro-sitemaps' ) ). ' </b>';
-			$current_day = count( $days_to_process ) - 1;
-			$current_month = count( $months_to_process ) - 1;
-			$current_year = count( $years_to_process ) - 1;
-			printf( __( 'Day: %s Month: %s Year: %s</p>' ), $days_to_process[$current_day], $months_to_process[$current_month], $years_to_process[$current_year] );
-			$years_to_process = ( $current_year == 0 ) ? array( 1 ) : $years_to_process;
-			printf( __( '<p><b>Years to process:</b> %s </p>' ), implode( ',', $years_to_process ) );
-		}
-
 		?>
-		<p><strong><?php _e( 'Last updated:', 'metro-sitemaps' ); ?></strong> <?php echo human_time_diff( $sitemap_update_last_run ); ?> ago</p>
-		<p><strong><?php _e( 'Next update:', 'metro-sitemaps' ); ?></strong> <?php echo $modified_posts_count . ' ' . $modified_posts_label; ?> will be updated in <?php echo human_time_diff( $sitemap_update_next_run ); ?></p>
+		<div class="stats-container">
+			<div class="stats-box"><strong id="sitemap-count"><?php echo number_format( Metro_Sitemap::count_sitemaps() ); ?></strong><?php _e( 'Sitemaps', 'metro-sitemaps' ); ?></div>
+			<div class="stats-box"><strong id="sitemap-indexed-url-count"><?php echo number_format( Metro_Sitemap::get_total_indexed_url_count() ); ?></strong><?php _e( 'Indexed URLs', 'metro-sitemaps' ); ?></div>
+			<div class="stats-footer"><span><span class="noticon noticon-time"></span><?php _e( 'Updated', 'metro-sitemaps' ); ?> <strong><?php echo human_time_diff( $sitemap_update_last_run ); ?> <?php _e( 'ago', 'metro-sitemaps' ) ?></strong></span></div>
+		</div>
 
-		<h3><?php _e( 'Stats', 'metro-sitemaps' ) ?></h3>
-		<p><?php printf( __( 'Currently your site has %s sitemaps and %s indexed URLs.', 'metro-sitemaps' ), '<strong>' . number_format( Metro_Sitemap::count_sitemaps() ) . '</strong>', '<strong>' . number_format( Metro_Sitemap::get_total_indexed_url_count() ) . '</strong>' ); ?></p>
+		<h3><?php _e( 'Latest Sitemaps', 'metro-sitemaps' ); ?></h3>
+		<div class="stats-container stats-placeholder"></div>
+		<div id="stats-graph-summary"><?php printf( __( 'Max: %s on %s. Showing the last %s days.', 'metro-sitemaps' ), '<span id="stats-graph-max"></span>', '<span id="stats-graph-max-date"></span>', '<span id="stats-graph-num-days"></span>' ); ?></div>
 
+		<h3><?php _e( 'Generate', 'metro-sitemaps' ); ?></h3>
+		<p><strong><?php _e( 'Sitemap Create Status:', 'metro-sitemaps' ) ?></strong> <?php echo esc_html( $sitemap_create_status ); ?></p>
 		<form action="<?php echo menu_page_url( 'metro-sitemap', false ) ?>" method="post" style="float: left;">
 			<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
 			<?php foreach ( $actions as $action ):
@@ -148,6 +168,7 @@ class Metro_Sitemap {
 			<?php endforeach; ?>
 		</form>
 		</div>
+		<div id="tooltip"><strong class="content"></strong> <?php _e( 'indexed urls', 'metro-sitemaps' ); ?></div>
 		<?php
 	}
 
@@ -183,7 +204,27 @@ class Metro_Sitemap {
 	public static function get_total_indexed_url_count() {
 		return intval( get_option( 'msm_sitemap_indexed_url_count', 0 ) );
 	}
-	
+
+	/**
+	 * Returns the $n most recent sitemap indexed url counts.
+	 *
+	 * @param int $n The number of days of sitemap stats to grab.
+	 * @return array An array of sitemap stats
+	 */
+	public static function get_recent_sitemap_url_counts( $n = 7 ) {
+		$stats = array();
+
+		for ( $i = 0; $i < $n; $i++ ) {
+			$date = date( 'Y-m-d', strtotime( "-$i days" ) );
+
+			list( $year, $month, $day ) = explode( '-', $date );
+
+			$stats[$date] = self::get_indexed_url_count( $year, $month, $day );
+		}
+
+		return $stats;
+	}
+
 	public static function is_blog_public() {
 		return ( 1 == get_option( 'blog_public' ) );
 	}
