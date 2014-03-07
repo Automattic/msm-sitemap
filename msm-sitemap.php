@@ -215,7 +215,7 @@ class Metro_Sitemap {
 		$stats = array();
 
 		for ( $i = 0; $i < $n; $i++ ) {
-			$date = date( 'Y-m-d', strtotime( "-$i days" ) );
+			$date = date( get_option( 'date_format', 'Y-m-d' ), strtotime( "-$i days" ) );
 
 			list( $year, $month, $day ) = explode( '-', $date );
 
