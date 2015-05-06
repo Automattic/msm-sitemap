@@ -559,7 +559,7 @@ class Metro_Sitemap {
 	/**
 	 * Build Root sitemap XML - currently all days
 	 */
-	public static function build_root_sitemap_xml() {
+	public static function build_root_sitemap_xml( $year = false ) {
 
 		$xml_prefix = '<?xml version="1.0" encoding="utf-8"?>';
 		global $wpdb;
@@ -567,19 +567,36 @@ class Metro_Sitemap {
 		$sitemaps = $wpdb->get_col( $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s ORDER BY post_date DESC LIMIT 10000", Metro_Sitemap::SITEMAP_CPT ) );
 
 		$xml = new SimpleXMLElement( $xml_prefix . '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
+		$years_processed = array();
 		foreach ( $sitemaps as $sitemap_date ) {
 			$sitemap_time = strtotime( $sitemap_date );
-			$sitemap_url = add_query_arg(
-				array(
-					'yyyy' => date( 'Y', $sitemap_time ),
-					'mm' => date( 'm', $sitemap_time ),
-					'dd' => date( 'd', $sitemap_time ),
-				),
-				home_url( '/sitemap.xml' )
-			);
-
-			$sitemap = $xml->addChild( 'sitemap' );
-			$sitemap->loc = $sitemap_url; // manually set the child instead of addChild to prevent "unterminated entity reference" warnings due to encoded ampersands http://stackoverflow.com/a/555039/169478
+			if ( $year === false ) {
+				$year_to_process = date( 'Y', $sitemap_time );
+				if ( ! in_array( $year_to_process, $years_processed ) ) {
+					$sitemap_url  = add_query_arg(
+						array(
+							'yyyy' => $year_to_process,
+						),
+						home_url( '/sitemap.xml' )
+					);
+					$sitemap      = $xml->addChild( 'sitemap' );
+					$sitemap->loc = $sitemap_url; // manually set the child instead of addChild to prevent "unterminated entity reference" warnings due to encoded ampersands http://stackoverflow.com/a/555039/169478
+					$years_processed[] = $year_to_process;
+				}
+			} else {
+				if ( $year == date( 'Y', $sitemap_time ) ) {
+					$sitemap_url  = add_query_arg(
+						array(
+							'yyyy' => date( 'Y', $sitemap_time ),
+							'mm'   => date( 'm', $sitemap_time ),
+							'dd'   => date( 'd', $sitemap_time ),
+						),
+						home_url( '/sitemap.xml' )
+					);
+					$sitemap      = $xml->addChild( 'sitemap' );
+					$sitemap->loc = $sitemap_url; // manually set the child instead of addChild to prevent "unterminated entity reference" warnings due to encoded ampersands http://stackoverflow.com/a/555039/169478
+				}
+			}
 		}
 		return $xml->asXML();
 	}
@@ -628,17 +645,36 @@ class Metro_Sitemap {
 	}
 
 	/**
+	 * simple checks for the year parameter since opening it up as a valid parameter
+	 * @param $maybe_year
+	 */
+	public static function is_valid_year( $maybe_year ) {
+
+		$valid = false;
+
+		if ( strlen( $maybe_year ) == 4 && ( $maybe_year > 0 ) ) {
+			if ( $maybe_year <= date( 'Y' ) ) {
+				$valid = true;
+			}
+		}
+
+		return $valid;
+	}
+
+	/**
 	 * Build XML for output to clean up the template file
 	 */
 	public static function build_xml( $request = array() ) {
 
-		$year = $request['year'];
+		$year  = $request['year'];
 		$month = $request['month'];
-		$day = $request['day'];
+		$day   = $request['day'];
 
 		if ( false === $year && false === $month && false === $day ) {
 			$xml = self::build_root_sitemap_xml();
-		} else if ( $year > 0 && $month > 0 && $day > 0 ) {
+		} else if ( self::is_valid_year( $year ) && false === $month && false == $day ) {
+			$xml = self::build_root_sitemap_xml( $year );
+		} else if ( self::is_valid_year( $year ) && $month > 0 && $day > 0 ) {
 			$xml = self::build_individual_sitemap_xml( $year, $month, $day );
 		} else {
 			/* Invalid options sent */
