@@ -69,7 +69,12 @@ class MSM_Sitemap_Builder_Cron {
 	public static function action_generate() {
 		$sitemap_create_in_progress = get_option( 'msm_sitemap_create_in_progress' );
 		self::generate_full_sitemap();
-		update_option( 'msm_sitemap_create_in_progress', true );
+
+		if ( false !== get_option( 'msm_sitemap_create_in_progress', false ) ) {
+			update_option( 'msm_sitemap_create_in_progress', true );
+		} else {
+			add_option( 'msm_sitemap_create_in_progress', true, '', 'no' );
+		}
 
 		if ( empty( $sitemap_create_in_progress ) ) {
 			Metro_Sitemap::show_action_message( __( 'Starting sitemap generation...', 'metro-sitemaps' ) );
