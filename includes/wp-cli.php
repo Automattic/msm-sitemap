@@ -219,6 +219,68 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 	}
 
 	/**
+	 * @param $args
+	 * @param $assoc_args
+	 *
+	 * @subcommand cron
+	 */
+	public function cron( $args, $assoc_args ) {
+		$action = '';
+
+		if ( isset( $assoc_args['disable'] ) ) {
+			$action = 'disable';
+		} else if ( $assoc_args['enable'] ) {
+			$action = 'enable';
+		}
+
+		if ( empty( $action ) ) {
+			WP_CLI::error( 'specify a cron action - `--enable` or `--disable`' );
+		}
+
+		if ( method_exists( __CLASS__, $action . '_cron' ) ) {
+			$result      = call_user_func( array( __CLASS__, $action . '_cron' ) );
+			$action_past = $action . 'd';
+			$action_verb = trim( $action, 'e' ) . 'ing';
+
+			if ( $result ) {
+				WP_CLI::success( 'cron ' . $action_past );
+			} else {
+				WP_CLI::error( 'error ' . $action_verb . ' cron' );
+			}
+		}
+	}
+
+	private function disable_cron() {
+		$crons = _get_cron_array();
+
+		if ( empty( $crons ) ) {
+			return false ;
+		}
+
+		$hook = 'msm_cron_generate_sitemap_for_year_month_day';
+
+		foreach ( $crons as $timestamp => $cron ) {
+			foreach ( $cron[ $hook ] as $key => $data ) {
+				wp_unschedule_event( $timestamp, $hook, $data['args'] );
+			}
+		}
+
+		$disabled = get_option( 'msm_disable_cron', false );
+
+		if ( 'yes' === $disabled ) {
+			return true;
+		} else if ( false === $disabled ) {
+			return add_option( 'msm_disable_cron', 'yes', '', 'no' );
+		} else {
+			return update_option( 'msm_disable_cron', 'yes' );
+		}
+	}
+
+	private function enable_cron() {
+		return delete_option( 'msm_disable_cron' );
+	}
+
+	/**
 	 * Check if the user has flagged to bail on sitemap generation.
 	 *
 	 * Once `$this->halt` is set, we take advantage of PHP's boolean operator to stop querying the option in hopes of
