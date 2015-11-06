@@ -260,8 +260,10 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		$hook = 'msm_cron_generate_sitemap_for_year_month_day';
 
 		foreach ( $crons as $timestamp => $cron ) {
-			foreach ( $cron[ $hook ] as $key => $data ) {
-				wp_unschedule_event( $timestamp, $hook, $data['args'] );
+			if ( isset( $cron[ $hook ] ) ) {
+				foreach ( $cron[ $hook ] as $key => $data ) {
+					wp_unschedule_event( $timestamp, $hook, $data['args'] );
+				}
 			}
 		}
 
