@@ -240,7 +240,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		if ( method_exists( __CLASS__, $action . '_cron' ) ) {
 			$result      = call_user_func( array( __CLASS__, $action . '_cron' ) );
 			$action_past = $action . 'd';
-			$action_verb = trim( $action, 'e' ) . 'ing';
+			$action_verb = rtrim( $action, 'e' ) . 'ing';
 
 			if ( $result ) {
 				WP_CLI::success( 'cron ' . $action_past );
