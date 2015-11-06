@@ -669,7 +669,7 @@ class Metro_Sitemap {
 		return apply_filters( 'msm_sitemap_entry_post_type', array( 'post' ) );
 	}
 
-	public function maybe_use_cron( $enable ) {
+	public static function maybe_use_cron( $enable ) {
 		return ( 'yes' === get_option( 'msm_disable_cron', false ) ) ? false : $enable;
 	}
 
