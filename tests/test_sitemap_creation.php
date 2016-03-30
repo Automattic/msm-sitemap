@@ -15,6 +15,11 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 	 * Generate posts and build the sitemap
 	 */
 	function setup() {
+		if ( ! class_exists( 'MSM_Sitemap_Builder_Cron' ) ) {
+			require dirname( dirname( __FILE__ ) ) . '/includes/msm-sitemap-builder-cron.php';
+			MSM_Sitemap_Builder_Cron::setup();
+		}
+
 		$this->test_base = new MSM_SiteMap_Test();
 		
 		// Create posts for the last num_days days
@@ -72,5 +77,41 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 			$this->assertSame( $mod_date, (string) $xml_struct->url->lastmod );
 			wp_reset_postdata();
 		}
+	}
+
+	/**
+	 * This is a long and convoluted test.
+	 *
+	 * Checks to see that a sitemap for a day is deleted when all posts for that day are deleted too.
+	 */
+	function test_delete_empty_sitemap() {
+		global $wpdb;
+
+		list( $sitemap ) = get_posts( array(
+			'post_type' => Metro_Sitemap::SITEMAP_CPT,
+			'posts_per_page' => 1,
+		) );
+
+		$sitemap_date = date( 'Y-m-d', strtotime( $sitemap->post_date ) );
+		list( $year, $month, $day ) = explode( '-', $sitemap_date );
+		$start_date = $sitemap_date . ' 00:00:00';
+		$end_date = $sitemap_date . ' 23:59:59';
+		$post_ids = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_status = 'publish' AND post_date >= %s AND post_date <= %s AND post_type = 'post' LIMIT 1", $start_date, $end_date ) );
+
+		$expected_total_urls = Metro_Sitemap::get_total_indexed_url_count() - count( $post_ids );
+
+		foreach ( $post_ids as $post_id ) {
+			wp_delete_post( $post_id, true );
+		}
+
+		MSM_Sitemap_Builder_Cron::generate_sitemap_for_year_month_day( array(
+			'year' => $year,
+			'month' => $month,
+			'day' => $day,
+		) );
+
+		$this->assertEmpty( get_post( $sitemap->ID ), 'Sitemap with no posts was not deleted' );
+		$this->assertEquals( $expected_total_urls, Metro_Sitemap::get_total_indexed_url_count(), 'Mismatch in total indexed URLs' );
+		$this->assertEquals( 1, did_action( 'msm_delete_sitemap_post' ), 'msm_delete_sitemap_post action did not fire' );
 	}
 }
