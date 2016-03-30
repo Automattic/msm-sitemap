@@ -305,6 +305,8 @@ class MSM_Sitemap_Builder_Cron {
 		$date_stamp = Metro_Sitemap::get_date_stamp( $year, $month, $day );
 		if ( Metro_Sitemap::date_range_has_posts( $date_stamp, $date_stamp ) ) {
 			Metro_Sitemap::generate_sitemap_for_date( $date_stamp );
+		} else {
+			Metro_Sitemap::delete_sitemap_for_date( $date_stamp );
 		}
 
 		self::find_next_day_to_process( $year, $month, $day );
