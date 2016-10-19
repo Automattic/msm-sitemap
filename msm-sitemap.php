@@ -561,6 +561,11 @@ class Metro_Sitemap {
 		foreach ( $dates as $date ) {
 			list( $year, $month, $day ) = explode( '-', $date );
 
+			// Do not allow non-existant or future dates to be queued
+			if ( false === checkdate( $month, $day, $year ) || $time <= mktime( 0, 0, 0, $month, $day, $year ) ) {
+				continue;
+			}
+
 			$time += MSM_INTERVAL_PER_GENERATION_EVENT;
 
 			do_action( 'msm_update_sitemap_for_year_month_date', array( $year, $month, $day ), $time );
