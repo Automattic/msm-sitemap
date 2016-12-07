@@ -15,9 +15,9 @@ function vipgo_schedule_sitemap_update_for_year_month_date( $date, $time ) {
 		'msm_vipgo_cron_generate_sitemap_for_year_month_day',
 		array(
 			array(
-				'year' => $year,
-				'month' => $month,
-				'day' => $day,
+				'year' => (int) $year,
+				'month' => (int) $month,
+				'day' => (int) $day,
 			),
 		)
 	);
