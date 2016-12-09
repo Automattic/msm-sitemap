@@ -398,6 +398,7 @@ class Metro_Sitemap {
 			return;
 		}
 
+		// We need to get a WP_Query object for back-compat as we run a Loop when building
 		$query = new WP_Query( array(
 			'post__in' => $post_ids,
 			'no_found_rows' => true,
