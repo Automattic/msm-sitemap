@@ -17,7 +17,7 @@ header( 'Content-type: application/xml; charset=UTF-8' );
 $build_xml = Metro_Sitemap::build_xml( array( 'year' => $req_year, 'month' => $req_month, 'day' => $req_day ) );
 
 if ( $build_xml === false ) {
-	wp_die( __( 'Sorry, no sitemap available here.', 'msm-sitemap' ) );
+	wp_die( __( 'Sorry, no sitemap available here.', 'msm-sitemap' ), '', array ( 'response' => 404 ) );
 } else {
 	echo $build_xml;
 }
