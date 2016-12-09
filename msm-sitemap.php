@@ -3,8 +3,8 @@
 Plugin Name: Metro Sitemap
 Description: Comprehensive sitemaps for your WordPress site. Joint collaboration between Metro.co.uk, MAKE, Alley Interactive, and WordPress.com VIP.
 Author: Artur Synowiec, Paul Kevan, and others
-Version: 0.1
-Stable tag: 0.1
+Version: 1.0
+Stable tag: 1.0
 License: GPLv2
 */
 
