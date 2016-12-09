@@ -341,6 +341,23 @@ class Metro_Sitemap {
 	}
 
 	/**
+	 * Get a list of support post_type IDs for a given date
+	 *
+	 * @param string $sitemap_date Date in Y-m-d
+	 * @param int Number of post IDs to return
+	 * @return array IDs of posts
+	 */
+	public static function get_post_ids_for_date( $sitemap_date, $limit = 500 ) {
+		global $wpdb;
+
+		$start_date = $sitemap_date . ' 00:00:00';
+		$end_date = $sitemap_date . ' 23:59:59';
+		$post_types_in = self::get_supported_post_types_in();
+
+		return $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_status = 'publish' AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) ORDER BY post_date LIMIT %d", $start_date, $end_date, $limit ) );
+	}
+
+	/**
 	 * Generate sitemap for a date; this is where XML is rendered.
 	 * @param string $sitemap_date
 	 */
@@ -370,18 +387,22 @@ class Metro_Sitemap {
 			$sitemap_exists = true;
 		}
 
-		$query_args = apply_filters( 'msm_sitemap_query_args', array(
-			'year' => $year,
-			'monthnum' => $month,
-			'day' => $day,
-			'order' => 'DESC',
-			'post_status' => 'publish',
-			'post_type' => self::get_supported_post_types(),	
-			'posts_per_page' => apply_filters( 'msm_sitemap_entry_posts_per_page', self::DEFAULT_POSTS_PER_SITEMAP_PAGE ),
-			'no_found_rows' => true,
-		) );
+		$per_page = apply_filters( 'msm_sitemap_entry_posts_per_page', self::DEFAULT_POSTS_PER_SITEMAP_PAGE );
+		$post_ids = self::get_post_ids_for_date( $sitemap_date, $per_page );
 
-		$query = new WP_Query( $query_args );
+		if ( empty( $post_ids ) ) {
+			// If no entries - delete the whole sitemap post
+			if ( $sitemap_exists ) {
+				self::delete_sitemap_by_id( $sitemap_id );
+			}
+			return;
+		}
+
+		$query = new WP_Query( array(
+			'post__in' => $post_ids,
+			'no_found_rows' => true,
+			'ignore_sticky_posts' => true,
+		) );
 		$post_count = $query->post_count;
 
 		$total_url_count = self::get_total_indexed_url_count();
@@ -390,14 +411,6 @@ class Metro_Sitemap {
 		if ( is_array( $total_url_count ) ) {
 			$total_url_count = array_sum( $total_url_count );
 			update_option( 'msm_sitemap_indexed_url_count', $total_url_count );
-		}
-
-		if ( ! $post_count ) {
-			// If no entries - delete the whole sitemap post
-			if ( $sitemap_exists ) {
-				self::delete_sitemap_by_id( $sitemap_id );
-			}
-			return;
 		}
 
 		// SimpleXML doesn't allow us to define namespaces using addAttribute, so we need to specify them in the construction instead.
