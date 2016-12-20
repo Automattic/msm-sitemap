@@ -627,10 +627,16 @@ class Metro_Sitemap {
 	}
 
 	public static function get_sitemap_post_id( $year, $month, $day ) {
+		$ymd = self::get_date_stamp( $year, $month, $day );
+
 		$sitemap_args = array(
-			'year' => $year,
-			'monthnum' => $month,
-			'day' => $day,
+			'date_query' => array(
+				array(
+					'before' => sprintf( '%s 00:00:00', $ymd ),
+					'after' => sprintf( '%s 00:00:00', $ymd ),
+					'inclusive' => true,
+				),
+			),
 			'orderby' => 'ID',
 			'order' => 'ASC',
 			'posts_per_page' => 1,
