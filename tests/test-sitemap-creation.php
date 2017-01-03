@@ -43,12 +43,14 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 		// Create posts for the last num_days days.
 		$dates = array();
 		$build_dates = array();
+		$date = time();
 		for ( $i = 0; $i < $this->num_days; $i++ ) {
-			$dates[] = date( 'Y' ) . '-' . date( 'm' ) . '-' . ( (int) date( 'd' ) - $i - 1 );
+			$date = strtotime( "-1 day", $date );
+			$dates[] = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date );
 			$build_dates[] = array(
-				'year' => (int) date( 'Y' ),
-				'month' => (int) date( 'm' ),
-				'day' => ( (int) date( 'd' ) - $i - 1 ),
+				'year' => (int) date( 'Y', $date ),
+				'month' => (int) date( 'm', $date ),
+				'day' => (int) date( 'd', $date ),
 			);
 		}
 
@@ -99,7 +101,7 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 			$post = get_post( $post_id );
 			setup_postdata( $post );
 			$mod_date = get_the_modified_date( 'Y-m-dTH:i:sZ' );
-						$xml_date = (string) $xml_struct->url->lastmod;
+			$xml_date = (string) $xml_struct->url->lastmod;
 			$this->assertSame( $mod_date, $xml_date );
 			wp_reset_postdata();
 		}
@@ -111,14 +113,15 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 	function test_get_sitemap_post_id() {
 
 		// Get yesterday's sitemap post.
-		$sitemap_year = date( 'Y' );
-		$sitemap_month = date( 'm' );
-		$sitemap_day = date( 'd' ) - 1;
+		$date = strtotime( "-1 day");
+		$sitemap_year = date( 'Y', $date );
+		$sitemap_month = date( 'm', $date );
+		$sitemap_day = date( 'd', $date );
 		$sitemap_ymd = sprintf( '%s-%s-%s', $sitemap_year, $sitemap_month, $sitemap_day );
 
 		$sitemap_post_id = Metro_Sitemap::get_sitemap_post_id( $sitemap_year, $sitemap_month, $sitemap_day );
 		$sitemap_post = get_post( $sitemap_post_id );
-
+		error_log( print_r( $sitemap_post, true), 3, './stats.log' );
 		$this->assertTrue( is_a( $sitemap_post, 'WP_Post' ), 'get_sitemap_post_id returned non-WP_Post value' );
 		$this->assertEquals( $sitemap_ymd, $sitemap_post->post_title );
 

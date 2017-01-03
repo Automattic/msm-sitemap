@@ -40,14 +40,17 @@ class WP_Test_Sitemap_Stats extends WP_UnitTestCase {
 		// Add a post for each day in the last x years.
 		$dates = array();
 		$build_dates = array();
+		$date = time();
 		for ( $i = 0; $i < $this->num_years_data; $i++ ) {
 			// Add a post for x years ago.
-			$dates[] = ( (int) date( 'Y' ) - $i ) . '-' . date( 'm' ) . '-' . date( 'd' ) . ' 00:00:00';
+			$dates[] = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
 			$build_dates[] = array(
-				'year' => ( (int) date( 'Y' ) - $i ),
-							'month' => (int) date( 'm' ),
-				'day' => (int) date( 'd' ),
+				'year' => (int) date( 'Y', $date ),
+				'month' => (int) date( 'm', $date ),
+				'day' => (int) date( 'd', $date ),
 			);
+			
+			$date = strtotime("-1 year", $date);
 		}
 
 		$this->test_base->create_dummy_posts( $dates );
@@ -86,7 +89,7 @@ class WP_Test_Sitemap_Stats extends WP_UnitTestCase {
 	 * that already has a sitemap.
 	 */
 	function test_site_stats_for_new_post() {
-		$today_str = date( 'Y' ) . '-' . date( 'm' ) . '-' . date( 'd' );
+		$today_str = date( 'Y-m-d' );
 
 		// Insert a new post for today.
 		$this->test_base->create_dummy_posts( array( $today_str . ' 00:00:00' ) );
