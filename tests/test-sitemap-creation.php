@@ -121,7 +121,7 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 
 		$sitemap_post_id = Metro_Sitemap::get_sitemap_post_id( $sitemap_year, $sitemap_month, $sitemap_day );
 		$sitemap_post = get_post( $sitemap_post_id );
-		error_log( print_r( $sitemap_post, true), 3, './stats.log' );
+		
 		$this->assertTrue( is_a( $sitemap_post, 'WP_Post' ), 'get_sitemap_post_id returned non-WP_Post value' );
 		$this->assertEquals( $sitemap_ymd, $sitemap_post->post_title );
 
