@@ -42,16 +42,10 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 
 		// Create posts for the last num_days days.
 		$dates = array();
-		$build_dates = array();
 		$date = time();
 		for ( $i = 0; $i < $this->num_days; $i++ ) {
 			$date = strtotime( "-1 day", $date );
 			$dates[] = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date );
-			$build_dates[] = array(
-				'year' => (int) date( 'Y', $date ),
-				'month' => (int) date( 'm', $date ),
-				'day' => (int) date( 'd', $date ),
-			);
 		}
 
 		$this->test_base->create_dummy_posts( $dates );
