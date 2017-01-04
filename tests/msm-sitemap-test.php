@@ -28,6 +28,36 @@ class MSM_SiteMap_Test {
 	public $posts_created = array();
 
 	/**
+	 * Creates a new post for given day, post_type and Status
+	 *
+	 * Does not trigger building of sitemaps.
+	 *
+	 * @param str $day The day to create posts on.
+	 * @param str $post_type The Post Type Slug.
+	 * @param str @post_status The status of the created post.
+	 * @throws Exception Unable to insert posts.
+	 */
+	function create_dummy_post( $day, $post_status = 'publish', $post_type = 'post' ) {
+		$post_data = array(
+				'post_title' => (string) uniqid(),
+				'post_type' => $post_type,
+				'post_content' => (string) uniqid(),
+				'post_status' => $post_status,
+				'post_author' => 1,
+		);
+
+		$post_data['post_date'] = $post_data['post_modified'] = date_format( new DateTime( $day ), 'Y-m-d H:i:s' );
+		$post_data['ID'] = wp_insert_post( $post_data, true );
+
+		if ( is_wp_error( $post_data['ID'] ) || 0 === $post_data['ID'] ) {
+			throw new Exception( "Error: WP Error encountered inserting post. {$post_data['ID']->errors}, {$post_data['ID']->error_data}" );
+		}
+
+		$this->posts_created[] = $post_data['ID'];
+		$this->posts[] = $post_data;
+	}
+	
+	/**
 	 * Creates a new post for every day in $dates.
 	 *
 	 * Does not trigger building of sitemaps.
@@ -38,23 +68,7 @@ class MSM_SiteMap_Test {
 	function create_dummy_posts( $dates ) {
 
 		foreach ( $dates as $day ) {
-			$post_data = array(
-					'post_title' => (string) uniqid(),
-					'post_type' => 'post',
-					'post_content' => (string) uniqid(),
-					'post_status' => 'publish',
-					'post_author' => 1,
-			);
-
-			$post_data['post_date'] = $post_data['post_modified'] = date_format( new DateTime( $day ), 'Y-m-d H:i:s' );
-			$post_data['ID'] = wp_insert_post( $post_data, true );
-
-			if ( is_wp_error( $post_data['ID'] ) || 0 === $post_data['ID'] ) {
-				throw new Exception( "Error: WP Error encountered inserting post. {$post_data['ID']->errors}, {$post_data['ID']->error_data}" );
-			}
-
-			$this->posts_created[] = $post_data['ID'];
-			$this->posts[] = $post_data;
+			$this->create_dummy_post( $day );
 		}
 	}
 
