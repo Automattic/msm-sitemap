@@ -108,7 +108,8 @@ class MSM_SiteMap_Test {
 	 */
 	function build_sitemaps() {
 		global $wpdb;
-		$posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type = %s ORDER BY post_date LIMIT 1000", 'post' ) );
+		$post_types_in = $this->get_supported_post_types_in();
+		$posts = $wpdb->get_results( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) ORDER BY post_date LIMIT 1000" );
 		$dates = array();
 		foreach ( $posts as $post ) {
 			$dates[] = date( 'Y-m-d', strtotime( $post->post_date ) );
@@ -120,6 +121,26 @@ class MSM_SiteMap_Test {
 
 			MSM_Sitemap_Builder_Cron::generate_sitemap_for_year_month_day( array( 'year' => $year, 'month' => $month, 'day' => $day ) );
 		}
+	}
+	
+	/**
+	 * Duplicate of Metro_Sitemap get_supported_post_types_in
+	 * 
+	 * @global type $wpdb
+	 * @return type
+	 */
+	function get_supported_post_types_in() {
+		global $wpdb;
+
+		$post_types_in = '';
+		$post_types = Metro_Sitemap::get_supported_post_types();
+		$post_types_prepared = array();
+
+		foreach ( $post_types as $post_type ) {
+			$post_types_prepared[] = $wpdb->prepare( '%s', $post_type );
+		}
+
+		return implode( ', ', $post_types_prepared );
 	}
 
 	/**

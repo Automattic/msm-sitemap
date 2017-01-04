@@ -10,7 +10,6 @@ require_once( 'msm-sitemap-test.php' );
 /**
  * Unit Tests to confirm Sitemaps are generated.
  *
- * @author michaelblouin
  * @author Matthew Denton (mdbitz)
  */
 class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
