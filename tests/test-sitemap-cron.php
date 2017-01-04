@@ -8,19 +8,18 @@
 require_once( 'msm-sitemap-test.php' );
 
 /**
- * Unit Tests to confirm Sitemaps are generated.
+ * Unit Tests to confirm Cron is populated as expected
  *
- * @author michaelblouin
  * @author Matthew Denton (mdbitz)
  */
 class WP_Test_Sitemap_Cron extends WP_UnitTestCase {
 
 	/**
-	 * Humber of Posts to Create (1 per day)
+	 * Humber of Posts to Create (1 per year)
 	 *
 	 * @var Integer
 	 */
-	private $num_days = 4;
+	private $num_years_data = 2;
 
 	/**
 	 * Base Test Class Instance
@@ -40,17 +39,17 @@ class WP_Test_Sitemap_Cron extends WP_UnitTestCase {
 
 		$this->test_base = new MSM_SiteMap_Test();
 
-		// Create posts for the last num_days days.
+		// Add a post for each day in the last x years.
 		$dates = array();
 		$date = time();
-		for ( $i = 0; $i < $this->num_days; $i++ ) {
-			$date = strtotime( "-1 day", $date );
-			$dates[] = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date );
+		for ( $i = 0; $i < $this->num_years_data; $i++ ) {
+			// Add a post for x years ago.
+			$dates[] = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
+			$date = strtotime( '-1 year', $date );
 		}
 
 		$this->test_base->create_dummy_posts( $dates );
-		$this->assertCount( $this->num_days, $this->test_base->posts );
-				$this->test_base->build_sitemaps();
+		$this->assertCount( $this->num_years_data, $this->test_base->posts );
 	}
 
 	/**
@@ -63,8 +62,112 @@ class WP_Test_Sitemap_Cron extends WP_UnitTestCase {
 			'fields' => 'ids',
 			'posts_per_page' => -1,
 		) );
-				update_option( 'msm_sitemap_indexed_url_count' , 0 );
+		update_option( 'msm_sitemap_indexed_url_count' , 0 );
 		array_map( 'wp_delete_post', array_merge( $this->test_base->posts_created, $sitemaps ) );
+	}
+
+	/**
+	 * Validate that Cron Jobs are scheduled as expected.
+	 */
+	function test_cron_jobs_scheduling() {
+
+		// Reset Cron SitemapBuilder.
+		MSM_Sitemap_Builder_Cron::reset_sitemap_data();
+		delete_option( 'msm_stop_processing' );
+		MSM_Sitemap_Builder_Cron::generate_full_sitemap();
+		update_option( 'msm_sitemap_create_in_progress', true );
+
+		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
+		$months_being_processed = (array) get_option( 'msm_months_to_process', array() );
+		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
+
+		// Validate initial Options is set to years for Posts.
+		$expected_years = [
+			date( 'Y' ),
+			date( 'Y', strtotime( '-1 year' ) ),
+		];
+
+		// Validate initial option values.
+		$this->assertSame( array_diff( $expected_years, $years_being_processed ), array_diff( $years_being_processed, $expected_years ), "Years Scheduled for Processing don't align with Posts." );
+
+		// fake_cron.
+		$this->fake_cron();
+
+		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
+		$months_being_processed = (array) get_option( 'msm_months_to_process', array() );
+		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
+
+		// Validate Current Month is added to months_to_process.
+		$month = date( 'n' );
+		$this->assertContains( $month, $months_being_processed, 'Initial Year Processing should use Current Month if same year' );
+
+		// fake_cron.
+		$this->fake_cron();
+
+		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
+		$months_being_processed = (array) get_option( 'msm_months_to_process', array() );
+		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
+
+		$expected_days = range( 1, date( 'j' ) );
+		// Validate Current Month only processes days that have passed and today.
+		$this->assertSame( array_diff( $expected_days, $days_being_processed ), array_diff( $days_being_processed, $expected_days ), "Current Month shouldn't process days in future." );
+
+		$cur_year = date( 'Y' );
+		while ( in_array( $cur_year, $years_being_processed ) ) {
+			$this->fake_cron();
+			$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
+		}
+
+		// Check New Year.
+		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
+		$months_being_processed = (array) get_option( 'msm_months_to_process', array() );
+		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
+
+		// Validate initial Options is set to years for Posts.
+		$expected_years = [
+			date( 'Y', strtotime( '-1 year' ) ),
+		];
+
+		// Validate initial option values.
+		$this->assertSame( array_diff( $expected_years, $years_being_processed ), array_diff( $years_being_processed, $expected_years ), "Years Scheduled for Processing don't align when year finishes processing" );
+
+		// fake_cron.
+		$this->fake_cron();
+
+		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
+		$months_being_processed = (array) get_option( 'msm_months_to_process', array() );
+		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
+
+		// Validate Current Month is added to months_to_process.
+		$month = 12;
+		$this->assertContains( $month, $months_being_processed, 'New Year Processing should start in December' );
+
+		// fake_cron.
+		$this->fake_cron();
+
+		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
+		$months_being_processed = (array) get_option( 'msm_months_to_process', array() );
+		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
+
+		$this->assertGreaterThanOrEqual( 27, count( $days_being_processed ), 'New Month Processing should star at end of Month' );
+
+	}
+
+	/**
+	 * Fakes a cron job
+	 */
+	function fake_cron() {
+		$schedule = _get_cron_array();
+		foreach ( $schedule as $timestamp => $cron ) {
+			foreach ( $cron as $hook => $arg_wrapper ) {
+				if ( substr( $hook, 0, 3 ) !== 'msm' ) { continue; // only run our own jobs.
+				}
+				$arg_struct = array_pop( $arg_wrapper );
+				$args = $arg_struct['args'][0];
+				wp_unschedule_event( $timestamp, $hook, $arg_struct['args'] );
+				do_action( $hook, $args );
+			}
+		}
 	}
 
 }
