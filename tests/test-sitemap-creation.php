@@ -33,10 +33,6 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 	 * Generate posts and build the sitemap
 	 */
 	function setup() {
-		if ( ! class_exists( 'MSM_Sitemap_Builder_Cron' ) ) {
-			require dirname( dirname( __FILE__ ) ) . '/includes/msm-sitemap-builder-cron.php';
-			MSM_Sitemap_Builder_Cron::setup();
-		}
 
 		$this->test_base = new MSM_SiteMap_Test();
 
@@ -44,7 +40,7 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 		$dates = array();
 		$date = time();
 		for ( $i = 0; $i < $this->num_days; $i++ ) {
-			$date = strtotime( "-1 day", $date );
+			$date = strtotime( '-1 day', $date );
 			$dates[] = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date );
 		}
 
@@ -107,7 +103,7 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 	function test_get_sitemap_post_id() {
 
 		// Get yesterday's sitemap post.
-		$date = strtotime( "-1 day");
+		$date = strtotime( '-1 day' );
 		$sitemap_year = date( 'Y', $date );
 		$sitemap_month = date( 'm', $date );
 		$sitemap_day = date( 'd', $date );
@@ -115,7 +111,7 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 
 		$sitemap_post_id = Metro_Sitemap::get_sitemap_post_id( $sitemap_year, $sitemap_month, $sitemap_day );
 		$sitemap_post = get_post( $sitemap_post_id );
-		
+
 		$this->assertTrue( is_a( $sitemap_post, 'WP_Post' ), 'get_sitemap_post_id returned non-WP_Post value' );
 		$this->assertEquals( $sitemap_ymd, $sitemap_post->post_title );
 

@@ -43,7 +43,7 @@ class WP_Test_Sitemap_Stats extends WP_UnitTestCase {
 		for ( $i = 0; $i < $this->num_years_data; $i++ ) {
 			// Add a post for x years ago.
 			$dates[] = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
-			$date = strtotime("-1 year", $date);
+			$date = strtotime( '-1 year', $date );
 		}
 
 		$this->test_base->create_dummy_posts( $dates );
