@@ -61,6 +61,7 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 		) );
 				update_option( 'msm_sitemap_indexed_url_count' , 0 );
 		array_map( 'wp_delete_post', array_merge( $this->test_base->posts_created, $sitemaps ) );
+		$this->test_base->fake_cron( false );
 	}
 
 	/**

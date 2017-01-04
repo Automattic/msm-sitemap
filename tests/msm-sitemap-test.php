@@ -154,6 +154,27 @@ class MSM_SiteMap_Test {
 		MSM_Sitemap_Builder_Cron::generate_sitemap_for_year_month_day( array( 'year' => $year, 'month' => $month, 'day' => $day ) );
 	}
 
+	/**
+	 * Fakes a cron job
+	 * 
+	 * @param str #execute Execute the hook.
+	 */
+	function fake_cron($execute = 'run') {
+		$schedule = _get_cron_array();
+		foreach ( $schedule as $timestamp => $cron ) {
+			foreach ( $cron as $hook => $arg_wrapper ) {
+				if ( substr( $hook, 0, 3 ) !== 'msm' ) { continue; // only run our own jobs.
+				}
+				$arg_struct = array_pop( $arg_wrapper );
+				$args = $arg_struct['args'][0];
+				wp_unschedule_event( $timestamp, $hook, $arg_struct['args'] );
+				if( 'run' === $execute ) {
+					do_action( $hook, $args );
+				}
+			}
+		}
+	}
+
 }
 
 

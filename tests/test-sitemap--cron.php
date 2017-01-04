@@ -91,30 +91,31 @@ class WP_Test_Sitemap_Cron extends WP_UnitTestCase {
 		$this->assertSame( array_diff( $expected_years, $years_being_processed ), array_diff( $years_being_processed, $expected_years ), "Years Scheduled for Processing don't align with Posts." );
 
 		// fake_cron.
-		$this->fake_cron();
+		$this->test_base->fake_cron();
 
 		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
 		$months_being_processed = (array) get_option( 'msm_months_to_process', array() );
 		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
 
 		// Validate Current Month is added to months_to_process.
-		$month = date( 'n' );
+		$month = date( 'n', time() );
 		$this->assertContains( $month, $months_being_processed, 'Initial Year Processing should use Current Month if same year' );
 
 		// fake_cron.
-		$this->fake_cron();
+		$this->test_base->fake_cron();
 
 		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
 		$months_being_processed = (array) get_option( 'msm_months_to_process', array() );
 		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
 
 		$expected_days = range( 1, date( 'j' ) );
+		
 		// Validate Current Month only processes days that have passed and today.
 		$this->assertSame( array_diff( $expected_days, $days_being_processed ), array_diff( $days_being_processed, $expected_days ), "Current Month shouldn't process days in future." );
 
 		$cur_year = date( 'Y' );
 		while ( in_array( $cur_year, $years_being_processed ) ) {
-			$this->fake_cron();
+			$this->test_base->fake_cron();
 			$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
 		}
 
@@ -132,7 +133,7 @@ class WP_Test_Sitemap_Cron extends WP_UnitTestCase {
 		$this->assertSame( array_diff( $expected_years, $years_being_processed ), array_diff( $years_being_processed, $expected_years ), "Years Scheduled for Processing don't align when year finishes processing" );
 
 		// fake_cron.
-		$this->fake_cron();
+		$this->test_base->fake_cron();
 
 		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
 		$months_being_processed = (array) get_option( 'msm_months_to_process', array() );
@@ -143,7 +144,7 @@ class WP_Test_Sitemap_Cron extends WP_UnitTestCase {
 		$this->assertContains( $month, $months_being_processed, 'New Year Processing should start in December' );
 
 		// fake_cron.
-		$this->fake_cron();
+		$this->test_base->fake_cron();
 
 		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
 		$months_being_processed = (array) get_option( 'msm_months_to_process', array() );
@@ -153,21 +154,5 @@ class WP_Test_Sitemap_Cron extends WP_UnitTestCase {
 
 	}
 
-	/**
-	 * Fakes a cron job
-	 */
-	function fake_cron() {
-		$schedule = _get_cron_array();
-		foreach ( $schedule as $timestamp => $cron ) {
-			foreach ( $cron as $hook => $arg_wrapper ) {
-				if ( substr( $hook, 0, 3 ) !== 'msm' ) { continue; // only run our own jobs.
-				}
-				$arg_struct = array_pop( $arg_wrapper );
-				$args = $arg_struct['args'][0];
-				wp_unschedule_event( $timestamp, $hook, $arg_struct['args'] );
-				do_action( $hook, $args );
-			}
-		}
-	}
-
+	
 }
