@@ -108,7 +108,7 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 	 */
 	public function postYearRangeDataProvider() {
 		return array(
-		    array( 'none',1 ),
+		    array( 'none',0 ),
 		    array( 0,1 ),
 		    array( 1,2 ),
 		    array( 10,11 ),
