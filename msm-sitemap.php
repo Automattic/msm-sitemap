@@ -294,9 +294,9 @@ class Metro_Sitemap {
 			$oldest_post_year = date( 'Y', strtotime( $oldest_post_date_gmt ) );
 			$current_year = date( 'Y' );
 			return range( $oldest_post_year, $current_year );
-		} else {
-			return array();
 		}
+		
+		return array();
 
 	}
 
