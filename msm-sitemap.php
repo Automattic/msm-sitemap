@@ -30,6 +30,7 @@ class Metro_Sitemap {
 		add_action( 'admin_init', array( __CLASS__, 'sitemap_init_cron' ) );
 		add_action( 'redirect_canonical', array( __CLASS__, 'disable_canonical_redirects_for_sitemap_xml' ), 10, 2 );
 		add_action( 'init', array( __CLASS__, 'create_post_type' ) );
+		add_action( 'posts_pre_query', array( __CLASS__, 'disable_main_query_for_sitemap_xml' ) );
 		add_filter( 'template_include', array( __CLASS__, 'load_sitemap_template' ) );
 
 		// By default, we use wp-cron to help generate the full sitemap.
@@ -604,7 +605,21 @@ class Metro_Sitemap {
 		}
 		return $template;
 	}
+	
+	/**
+	 * Disable Main Query when rendering sitemaps
+	 * 
+	 * @param array|null $posts array of post data or null
+	 * @param WP_Query $query The WP_Query instance.
+	 */
+	public static function disable_main_query_for_sitemap_xml( $posts, $query ) {
+		
+		if( $query->is_main_query() && 'true' === $query->query_vars['sitemap'] ) {
+			$posts = false;
+		}
+		return $posts;
 
+	}
 
 	/**
 	 * Build Root sitemap XML - currently all days
