@@ -1,6 +1,6 @@
 <?php
 /**
- * WP_Test_Sitemap_Core Query
+ * WP_Test_Sitemap_Filter Query
  *
  * @package Metro_Sitemap/unit_tests
  */
@@ -8,11 +8,11 @@
 require_once( 'msm-sitemap-test.php' );
 
 /**
- * Unit Tests to validate WordPress Main Query is bypassed when generating Sitemaps
+ * Unit Tests to validate Filters applied when generating Sitemaps
  *
  * @author Matthew Denton (mdbitz)
  */
-class WP_Test_Sitemap_Core_Query extends WP_UnitTestCase {
+class WP_Test_Sitemap_Filter extends WP_UnitTestCase {
 
 	/**
 	 * Humber of Posts to Create (1 per day)
@@ -70,15 +70,36 @@ class WP_Test_Sitemap_Core_Query extends WP_UnitTestCase {
 	function test_bypass_main_query() {
 		global $wp_query;
 		
-		// Verify Main Query not modified if not hitting Sitemap
-		$this->go_to('/');
-		$num_posts = count($wp_query->posts);
-		$this->assertEquals( $this->num_days, $num_posts );
+		// Verify post_pre_query filter returns null by default
+		$posts = apply_filters_ref_array( 'posts_pre_query', array( null, $wp_query ) );
+		$this->assertNull( $posts, "Verify that posts_pre_query returns null by default. > establishes baseline that filter is applied from Metro_Sitemap" );
 		
-		// Verify Main Query has no posts when querrying sitemap
-		$this->go_to('/?sitemap=true');
-		$num_posts = count( $wp_query->posts);
-		$this->assertEquals( 0, $num_posts );
+		// Verify post_pre_query on sitemap queryvar returns empty array
+		set_query_var( 'sitemap', 'true' );
+		$posts = apply_filters_ref_array( 'posts_pre_query', array( null, $wp_query ) );
+		$this->assertInternalType('array', $posts);
+		$this->assertEmpty( $posts );
+		
+	}
+	
+	/**
+	 * Verify that secondary query is not get modified if sitemap var is set.
+	 */
+	function test_secondary_query_not_bypassed() {		
+		
+		$query = new WP_Query( array(
+			'post_type' => 'post'
+		) );
+		
+		// Verify post_pre_query filter returns null by default
+		$orig_posts = apply_filters_ref_array( 'posts_pre_query', array(array(1), $query ) );
+		
+		$query = new WP_Query( array(
+			'post_type' => 'post',
+			'sitemap' => 'true'
+		) );
+		$sitemap_posts = apply_filters_ref_array( 'posts_pre_query', array( array(1), $query ) );
+		$this->assertEquals($orig_posts, $sitemap_posts, 'Non-Main WP_Query is being modified from sitemap query var');
 		
 	}
 
