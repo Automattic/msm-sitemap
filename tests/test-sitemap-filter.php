@@ -70,10 +70,6 @@ class WP_Test_Sitemap_Filter extends WP_UnitTestCase {
 	function test_bypass_main_query() {
 		global $wp_query;
 		
-		// Verify post_pre_query filter returns null by default
-		$posts = apply_filters_ref_array( 'posts_pre_query', array( null, $wp_query ) );
-		$this->assertNull( $posts, "Verify that posts_pre_query returns null by default. > establishes baseline that filter is applied from Metro_Sitemap" );
-		
 		// Verify post_pre_query on sitemap queryvar returns empty array
 		set_query_var( 'sitemap', 'true' );
 		$posts = apply_filters_ref_array( 'posts_pre_query', array( null, $wp_query ) );
@@ -87,19 +83,15 @@ class WP_Test_Sitemap_Filter extends WP_UnitTestCase {
 	 */
 	function test_secondary_query_not_bypassed() {		
 		
-		$query = new WP_Query( array(
-			'post_type' => 'post'
-		) );
-		
 		// Verify post_pre_query filter returns null by default
-		$orig_posts = apply_filters_ref_array( 'posts_pre_query', array(array(1), $query ) );
+		$exp_result = array(1);
 		
 		$query = new WP_Query( array(
 			'post_type' => 'post',
 			'sitemap' => 'true'
 		) );
-		$sitemap_posts = apply_filters_ref_array( 'posts_pre_query', array( array(1), $query ) );
-		$this->assertEquals($orig_posts, $sitemap_posts, 'Non-Main WP_Query is being modified from sitemap query var');
+		$sitemap_posts = apply_filters_ref_array( 'posts_pre_query', array( $exp_result, $query ) );
+		$this->assertEquals($exp_result, $sitemap_posts, 'Non-Main WP_Query is being modified from sitemap query var');
 		
 	}
 
