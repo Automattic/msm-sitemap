@@ -91,7 +91,7 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 
 			$post = get_post( $post_id );
 			setup_postdata( $post );
-			$mod_date = get_the_modified_date( 'Y-m-dTH:i:sZ' );
+			$mod_date = get_the_modified_date( 'c' );
 			$xml_date = (string) $xml_struct->url->lastmod;
 			$this->assertSame( $mod_date, $xml_date );
 			wp_reset_postdata();
