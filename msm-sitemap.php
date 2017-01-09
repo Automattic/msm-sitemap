@@ -431,11 +431,13 @@ class Metro_Sitemap {
 			'xsi:schemaLocation' => 'http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd',
 		) );
 
-		$namespace_str = '<?xml version="1.0" encoding="utf-8"?><urlset';
+		$namespace_attributes = array();
 		foreach ( $namespaces as $ns => $value ) {
-			$namespace_str .= sprintf( ' %s="%s"', esc_attr( $ns ), esc_attr( $value ) );
+			$namespace_attributes[] = sprintf( '%s="%s"', esc_attr( $ns ), esc_attr( $value ) );
 		}
-		$namespace_str .= '></urlset>';
+
+		$namespace_str = '';
+		$namespace_str .= '<urlset ' . implode( ' ', $namespace_attributes ) . '></urlset>';
 
 		// Create XML
 		$xml = new SimpleXMLElement( $namespace_str );
