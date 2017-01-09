@@ -495,13 +495,22 @@ class Metro_Sitemap {
 			return $entry_xml;
 		}
 
+		$images = array();
 		$thumbnail_url = get_the_post_thumbnail_url( null, 'large' );
-		if ( ! $thumbnail_url ) {
-			return $entry_xml;
+		if ( $thumbnail_url ) {
+			$images[] = array(
+				'image:loc' => $thumbnail_url,
+			);
 		}
 
-		$image_xml = $entry_xml->addChild( 'image:image' );
-		$image_xml->addChild( 'image:loc', $thumbnail_url );
+		$images = apply_filters( 'msm_sitemap_entry_images', $images );
+
+		foreach ( $images as $image ) {
+			$image_xml = $entry_xml->addChild( 'image:image' );
+			foreach ( $image as $meta => $value ) {
+				$image_xml->addChild( $meta, esc_html( $value ) );
+			}
+		}
 
 		return $entry_xml;
 	}
