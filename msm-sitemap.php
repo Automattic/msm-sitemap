@@ -447,16 +447,15 @@ class Metro_Sitemap {
 			if ( apply_filters( 'msm_sitemap_skip_post', false ) )
 				continue;
 
-			$url = $xml->addChild( 'url' );
-			$url->addChild( 'loc', get_permalink() );
-			$url->addChild( 'lastmod', get_post_modified_time( 'c', true ) );
-			$url->addChild( 'changefreq', 'monthly' );
-			$url->addChild( 'priority', '0.7' );
+			$entry_xml = $xml->addChild( 'url' );
+			$entry_xml->addChild( 'loc', get_permalink() );
+			$entry_xml->addChild( 'lastmod', get_post_modified_time( 'c', true ) );
+			$entry_xml->addChild( 'changefreq', 'monthly' );
+			$entry_xml->addChild( 'priority', '0.7' );
 
-			apply_filters( 'msm_sitemap_entry', $url );
+			apply_filters( 'msm_sitemap_entry', $entry_xml );
 
 			++$url_count;
-			// TODO: add images to sitemap via <image:image> tag
 		}
 
 				// Save the sitemap
