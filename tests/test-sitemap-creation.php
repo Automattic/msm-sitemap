@@ -1,36 +1,52 @@
 <?php
+/**
+ * WP_Test_Sitemap_Creation
+ *
+ * @package Metro_Sitemap/unit_tests
+ */
 
-require_once( 'msm_sitemap_test.php');
+require_once( 'msm-sitemap-test.php' );
 
+/**
+ * Unit Tests to confirm Sitemaps are generated.
+ *
+ * @author michaelblouin
+ * @author Matthew Denton (mdbitz)
+ */
 class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
-	
-	public $core = null;
-	
+
+	/**
+	 * Humber of Posts to Create (1 per day)
+	 *
+	 * @var Integer
+	 */
 	private $num_days = 4;
-	private $posts = array();
-	private $posts_created = array();
+
+	/**
+	 * Base Test Class Instance
+	 *
+	 * @var MSM_SIteMap_Test
+	 */
 	private $test_base;
 
 	/**
 	 * Generate posts and build the sitemap
 	 */
 	function setup() {
-		if ( ! class_exists( 'MSM_Sitemap_Builder_Cron' ) ) {
-			require dirname( dirname( __FILE__ ) ) . '/includes/msm-sitemap-builder-cron.php';
-			MSM_Sitemap_Builder_Cron::setup();
-		}
 
 		$this->test_base = new MSM_SiteMap_Test();
-		
-		// Create posts for the last num_days days
+
+		// Create posts for the last num_days days.
 		$dates = array();
-		for ( $i = 0; $i < $this->num_days; $i++ )
-			$dates[] = date( 'Y' ). '-' . date('m') . '-' . ( (int) date('d') - $i - 1 );
-		
-		$this->test_base->create_dummy_posts($dates);
-		
-		$this->assertCount($this->num_days, $this->test_base->posts);
-		$this->test_base->build_sitemaps();
+		$date = time();
+		for ( $i = 0; $i < $this->num_days; $i++ ) {
+			$date = strtotime( '-1 day', $date );
+			$dates[] = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date );
+		}
+
+		$this->test_base->create_dummy_posts( $dates );
+		$this->assertCount( $this->num_days, $this->test_base->posts );
+				$this->test_base->build_sitemaps();
 	}
 
 	/**
@@ -43,26 +59,28 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 			'fields' => 'ids',
 			'posts_per_page' => -1,
 		) );
+				update_option( 'msm_sitemap_indexed_url_count' , 0 );
 		array_map( 'wp_delete_post', array_merge( $this->test_base->posts_created, $sitemaps ) );
+		$this->test_base->fake_cron( false );
 	}
 
 	/**
-	 * Examines the XML stored in the database after sitemap generation
+	 * Validate the XML stored in the database after sitemap generation
 	 */
 	function test_sitemap_posts_were_created() {
 		global $post;
-		
+
 		$sitemaps = get_posts( array(
 			'post_type' => Metro_Sitemap::SITEMAP_CPT,
 			'fields' => 'ids',
 			'posts_per_page' => -1,
 		) );
-		
+
 		$this->assertCount( $this->num_days, $sitemaps );
-		
+
 		foreach ( $sitemaps as $i => $map_id ) {
 			$xml = get_post_meta( $map_id, 'msm_sitemap_xml', true );
-			$post_id = $this->test_base->posts[$i]['ID'];
+			$post_id = $this->test_base->posts[ $i ]['ID'];
 			$this->assertContains( 'p=' . $post_id, $xml );
 
 			$xml_struct = simplexml_load_string( $xml );
@@ -73,17 +91,23 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 
 			$post = get_post( $post_id );
 			setup_postdata( $post );
-			$mod_date = get_the_modified_date( 'Y-m-d' ) . 'T' . get_the_modified_date( 'H:i:s' ) . 'Z';
-			$this->assertSame( $mod_date, (string) $xml_struct->url->lastmod );
+			$mod_date = get_the_modified_date( 'c' );
+			$xml_date = (string) $xml_struct->url->lastmod;
+			$this->assertSame( $mod_date, $xml_date );
 			wp_reset_postdata();
 		}
 	}
 
-	function test__get_sitemap_post_id() {
-		// Get yesterday's sitemap post
-		$sitemap_year = date( 'Y' );
-		$sitemap_month = date( 'm' );
-		$sitemap_day = date( 'd' ) - 1;
+	/**
+	 * Validate that get_sitemap_post_id function returns the expected Sitemap
+	 */
+	function test_get_sitemap_post_id() {
+
+		// Get yesterday's sitemap post.
+		$date = strtotime( '-1 day' );
+		$sitemap_year = date( 'Y', $date );
+		$sitemap_month = date( 'm', $date );
+		$sitemap_day = date( 'd', $date );
 		$sitemap_ymd = sprintf( '%s-%s-%s', $sitemap_year, $sitemap_month, $sitemap_day );
 
 		$sitemap_post_id = Metro_Sitemap::get_sitemap_post_id( $sitemap_year, $sitemap_month, $sitemap_day );
@@ -91,12 +115,12 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 
 		$this->assertTrue( is_a( $sitemap_post, 'WP_Post' ), 'get_sitemap_post_id returned non-WP_Post value' );
 		$this->assertEquals( $sitemap_ymd, $sitemap_post->post_title );
+
 	}
 
 	/**
-	 * This is a long and convoluted test.
-	 *
-	 * Checks to see that a sitemap for a day is deleted when all posts for that day are deleted too.
+	 * Validate that Metro Sitemap CPTs are deleted when all posts are removed
+	 * for a date
 	 */
 	function test_delete_empty_sitemap() {
 		global $wpdb;
@@ -127,5 +151,6 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 		$this->assertEmpty( get_post( $sitemap->ID ), 'Sitemap with no posts was not deleted' );
 		$this->assertEquals( $expected_total_urls, Metro_Sitemap::get_total_indexed_url_count(), 'Mismatch in total indexed URLs' );
 		$this->assertEquals( 1, did_action( 'msm_delete_sitemap_post' ), 'msm_delete_sitemap_post action did not fire' );
+
 	}
 }
