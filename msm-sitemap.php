@@ -289,10 +289,15 @@ class Metro_Sitemap {
 		global $wpdb;
 
 		$oldest_post_date_gmt = $wpdb->get_var( "SELECT post_date FROM $wpdb->posts WHERE post_status = 'publish' ORDER BY post_date ASC LIMIT 1" );
-		$oldest_post_year = date( 'Y', strtotime( $oldest_post_date_gmt ) );
-		$current_year = date( 'Y' );
+		
+		if( null !== $oldest_post_date_gmt ) {
+			$oldest_post_year = date( 'Y', strtotime( $oldest_post_date_gmt ) );
+			$current_year = date( 'Y' );
+			return range( $oldest_post_year, $current_year );
+		}
+		
+		return array();
 
-		return range( $oldest_post_year, $current_year );
 	}
 
 	/**
@@ -444,7 +449,7 @@ class Metro_Sitemap {
 
 			$url = $xml->addChild( 'url' );
 			$url->addChild( 'loc', get_permalink() );
-			$url->addChild( 'lastmod', get_post_modified_time( 'Y-m-dTH:i:sZ', true ) );
+			$url->addChild( 'lastmod', get_post_modified_time( 'c', true ) );
 			$url->addChild( 'changefreq', 'monthly' );
 			$url->addChild( 'priority', '0.7' );
 
