@@ -678,8 +678,7 @@ class Metro_Sitemap {
 			return $sitemap_content;
 		} else {
 			/* There are no posts for this day */
-			$xml = new SimpleXMLElement( '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>' );
-			return $xml->asXML();
+			return false;
 		}
 	}
 
