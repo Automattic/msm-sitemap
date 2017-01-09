@@ -32,6 +32,8 @@ class Metro_Sitemap {
 		add_action( 'init', array( __CLASS__, 'create_post_type' ) );
 		add_filter( 'template_include', array( __CLASS__, 'load_sitemap_template' ) );
 
+		add_filter( 'msm_sitemap_entry', array( __CLASS__, 'add_entry_featured_image' ), 1, 999 ); // Run late so we don't conflict with other plugins
+
 		// By default, we use wp-cron to help generate the full sitemap.
 		// However, this will let us override it, if necessary, like on WP.com
 		if ( true === apply_filters( 'msm_sitemap_use_cron_builder', true ) ) {
@@ -484,6 +486,24 @@ class Metro_Sitemap {
 		update_option( 'msm_sitemap_indexed_url_count' , $total_url_count );
 
 		wp_reset_postdata();
+	}
+
+	public function add_entry_featured_image( $entry_xml ) {
+		// Back-compat; if someone is already adding images, don't bother
+		$existing_images = $entry_xml->children( 'image', true );
+		if ( count( $existing_images ) > 0 ) {
+			return $entry_xml;
+		}
+
+		$thumbnail_url = get_the_post_thumbnail_url( null, 'large' );
+		if ( ! $thumbnail_url ) {
+			return $entry_xml;
+		}
+
+		$image_xml = $entry_xml->addChild( 'image:image' );
+		$image_xml->addChild( 'image:loc', $thumbnail_url );
+
+		return $entry_xml;
 	}
 
 	public static function delete_sitemap_for_date( $sitemap_date ) {
