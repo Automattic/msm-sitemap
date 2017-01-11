@@ -20,9 +20,7 @@ if ( $build_xml === false ) {
 		__( 'Sitemap Not Available', 'msm-sitemap' ),
 		array ( 'response' => 404 )
 	);
-} else {
-	
-	header( 'Content-type: application/xml; charset=UTF-8' );
-	echo $build_xml;
-}
+} 
+header( 'Content-type: application/xml; charset=UTF-8' );
+echo $build_xml;
 ?>
