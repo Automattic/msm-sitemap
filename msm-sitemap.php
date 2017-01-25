@@ -676,11 +676,9 @@ class Metro_Sitemap {
 			$sitemap_content = get_post_meta( $sitemap_id, 'msm_sitemap_xml', true );
 			// Return is now as it should be valid xml!
 			return $sitemap_content;
-		} else {
-			/* There are no posts for this day */
-			$xml = new SimpleXMLElement( '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>' );
-			return $xml->asXML();
 		}
+		/* There are no posts for this day */
+		return false;
 	}
 
 	/**
