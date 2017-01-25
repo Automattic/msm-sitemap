@@ -605,20 +605,18 @@ class Metro_Sitemap {
 		}
 		return $template;
 	}
-	
+
 	/**
 	 * Disable Main Query when rendering sitemaps
-	 * 
+	 *
 	 * @param array|null $posts array of post data or null
 	 * @param WP_Query $query The WP_Query instance.
 	 */
 	public static function disable_main_query_for_sitemap_xml( $posts, $query ) {
-		
 		if( $query->is_main_query() && isset($query->query_vars['sitemap']) && 'true' === $query->query_vars['sitemap'] ) {
 			$posts = array();
 		}
 		return $posts;
-
 	}
 
 	/**
