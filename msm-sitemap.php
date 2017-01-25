@@ -677,8 +677,8 @@ class Metro_Sitemap {
 			// Return is now as it should be valid xml!
 			return $sitemap_content;
 		}
-        /* There are no posts for this day */
-        return false;
+		/* There are no posts for this day */
+		return false;
 	}
 
 	/**
