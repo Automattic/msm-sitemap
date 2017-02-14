@@ -214,7 +214,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 			$sitemap_count += 1;
 		}
 
-		update_option( 'msm_sitemap_indexed_url_count', $total_count );
+		update_option( 'msm_sitemap_indexed_url_count', $total_count, false );
 		WP_CLI::line( sprintf( 'Total posts found: %s', $total_count ) );
 		WP_CLI::line( sprintf( 'Number of sitemaps found: %s', $sitemap_count ) );
 

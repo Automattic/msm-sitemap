@@ -420,7 +420,7 @@ class Metro_Sitemap {
 		// For migration: in case the previous version used an array for this option
 		if ( is_array( $total_url_count ) ) {
 			$total_url_count = array_sum( $total_url_count );
-			update_option( 'msm_sitemap_indexed_url_count', $total_url_count );
+			update_option( 'msm_sitemap_indexed_url_count', $total_url_count, false );
 		}
 
 		// SimpleXML doesn't allow us to define namespaces using addAttribute, so we need to specify them in the construction instead.
@@ -483,7 +483,7 @@ class Metro_Sitemap {
 		}
 
 		// Update indexed url counts
-		update_option( 'msm_sitemap_indexed_url_count' , $total_url_count );
+		update_option( 'msm_sitemap_indexed_url_count', $total_url_count, false );
 
 		wp_reset_postdata();
 	}
@@ -508,7 +508,7 @@ class Metro_Sitemap {
 
 		$total_url_count = self::get_total_indexed_url_count();
 		$total_url_count -= intval( get_post_meta( $sitemap_id, 'msm_indexed_url_count', true ) );
-		update_option( 'msm_sitemap_indexed_url_count' , $total_url_count );
+		update_option( 'msm_sitemap_indexed_url_count', $total_url_count, false );
 
 		wp_delete_post( $sitemap_id, true );
 		do_action( 'msm_delete_sitemap_post', $sitemap_id, $year, $month, $day );
@@ -593,7 +593,7 @@ class Metro_Sitemap {
 
 			do_action( 'msm_update_sitemap_for_year_month_date', array( $year, $month, $day ), $time );
 		}
-		update_option( 'msm_sitemap_update_last_run', current_time( 'timestamp', 1 ) );
+		update_option( 'msm_sitemap_update_last_run', current_time( 'timestamp', 1 ), false );
 	}
 
 	/**
