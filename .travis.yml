@@ -24,10 +24,6 @@ env:
 
 matrix:
   include:
-   - php: "nightly"
-     env: WP_VERSION=latest
-   - php: "nightly"
-     env: WP_VERSION=4.6
    - php: "5.4"
      env: WP_VERSION=latest
    - php: "5.4"
