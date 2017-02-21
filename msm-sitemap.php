@@ -711,6 +711,9 @@ class Metro_Sitemap {
 			/* Invalid options sent */
 			return false;
 		}
+		
+		$xml = apply_filters( 'msm_sitemap_build_xml', $xml, $request );
+
 		return $xml;
 	}
 
