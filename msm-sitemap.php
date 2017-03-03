@@ -429,7 +429,7 @@ class Metro_Sitemap {
 			'xmlns' => 'http://www.sitemaps.org/schemas/sitemap/0.9',
 			'xmlns:n' => 'http://www.google.com/schemas/sitemap-news/0.9',
 			'xmlns:image' => 'http://www.google.com/schemas/sitemap-image/1.1',
-			'xsi:schemaLocation' => 'http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd',
+			'xsi:schemaLocation' => 'http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd http://www.google.com/schemas/sitemap-image/1.1 http://www.google.com/schemas/sitemap-image/1.1/sitemap-image.xsd',
 		) );
 
 		$namespace_str = '<?xml version="1.0" encoding="utf-8"?><urlset';
