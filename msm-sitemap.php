@@ -628,7 +628,10 @@ class Metro_Sitemap {
 		global $wpdb;
 		// Direct query because we just want dates of the sitemap entries and this is much faster than WP_Query
 		$sitemaps = $wpdb->get_col( $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s ORDER BY post_date DESC LIMIT 10000", Metro_Sitemap::SITEMAP_CPT ) );
-
+		
+		// Sometimes duplicate sitemaps exist, lets make sure so they are not output
+		$sitemaps = array_unique( $sitemaps );
+		
 		$xml = new SimpleXMLElement( $xml_prefix . '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
 		foreach ( $sitemaps as $sitemap_date ) {
 			$sitemap_time = strtotime( $sitemap_date );
