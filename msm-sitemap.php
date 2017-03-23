@@ -423,38 +423,22 @@ class Metro_Sitemap {
 			update_option( 'msm_sitemap_indexed_url_count', $total_url_count );
 		}
 
-		// SimpleXML doesn't allow us to define namespaces using addAttribute, so we need to specify them in the construction instead.
-		$namespaces = apply_filters( 'msm_sitemap_namespace', array(
-			'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
-			'xmlns' => 'http://www.sitemaps.org/schemas/sitemap/0.9',
-			'xmlns:n' => 'http://www.google.com/schemas/sitemap-news/0.9',
-			'xmlns:image' => 'http://www.google.com/schemas/sitemap-image/1.1',
-			'xsi:schemaLocation' => 'http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd',
-		) );
 
-		$namespace_str = '<?xml version="1.0" encoding="utf-8"?><urlset';
-		foreach ( $namespaces as $ns => $value ) {
-			$namespace_str .= sprintf( ' %s="%s"', esc_attr( $ns ), esc_attr( $value ) );
-		}
-		$namespace_str .= '></urlset>';
-
-		// Create XML
-		$xml = new SimpleXMLElement( $namespace_str );
 
 		$url_count = 0;
+		$sitemap_post_data = [];
 		while ( $query->have_posts() ) {
 			$query->the_post();
 
 			if ( apply_filters( 'msm_sitemap_skip_post', false ) )
 				continue;
 
-			$url = $xml->addChild( 'url' );
-			$url->addChild( 'loc', esc_url( get_permalink() ) );
-			$url->addChild( 'lastmod', get_post_modified_time( 'c', true ) );
-			$url->addChild( 'changefreq', 'monthly' );
-			$url->addChild( 'priority', '0.7' );
-
-			apply_filters( 'msm_sitemap_entry', $url );
+            array_push($sitemap_post_data, [
+	            'loc' => esc_url( get_permalink() ),
+	            'lastmod' => get_post_modified_time( 'c', true ),
+	            'changefreq' => 'monthly',
+	            'priority' => '0.7',
+            ]);
 
 			++$url_count;
 			// TODO: add images to sitemap via <image:image> tag
@@ -468,13 +452,13 @@ class Metro_Sitemap {
 			// Update the total post count with the difference
 			$total_url_count += $url_count - $previous_url_count;
 
-			update_post_meta( $sitemap_id, 'msm_sitemap_xml', $xml->asXML() );
+			update_post_meta( $sitemap_id, 'msm_sitemap_xml', serialize( $sitemap_post_data ) );
 			update_post_meta( $sitemap_id, 'msm_indexed_url_count', $url_count );
 			do_action( 'msm_update_sitemap_post', $sitemap_id, $year, $month, $day );
 		} else {
 			/* Should no longer hit this */
 			$sitemap_id = wp_insert_post( $sitemap_data );
-			add_post_meta( $sitemap_id, 'msm_sitemap_xml', $xml->asXML() );
+			add_post_meta( $sitemap_id, 'msm_sitemap_xml', serialize( $sitemap_post_data ) );
 			add_post_meta( $sitemap_id, 'msm_indexed_url_count', $url_count );
 			do_action( 'msm_insert_sitemap_post', $sitemap_id, $year, $month, $day );
 
@@ -687,8 +671,35 @@ class Metro_Sitemap {
 
 		if ( $sitemap_id ) {
 			$sitemap_content = get_post_meta( $sitemap_id, 'msm_sitemap_xml', true );
-			// Return is now as it should be valid xml!
-			return $sitemap_content;
+            // SimpleXML doesn't allow us to define namespaces using addAttribute, so we need to specify them in the construction instead.
+            $namespaces = apply_filters( 'msm_sitemap_namespace', array(
+                'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
+                'xmlns' => 'http://www.sitemaps.org/schemas/sitemap/0.9',
+                'xmlns:n' => 'http://www.google.com/schemas/sitemap-news/0.9',
+                'xmlns:image' => 'http://www.google.com/schemas/sitemap-image/1.1',
+                'xsi:schemaLocation' => 'http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd',
+            ) );
+
+            $namespace_str = '<?xml version="1.0" encoding="utf-8"?><urlset';
+            foreach ( $namespaces as $ns => $value ) {
+                $namespace_str .= sprintf( ' %s="%s"', esc_attr( $ns ), esc_attr( $value ) );
+            }
+            $namespace_str .= '></urlset>';
+
+			$xml = new SimpleXMLElement( $namespace_str );
+            $sitemap_content_data = unserialize($sitemap_content);
+
+            foreach( $sitemap_content_data as $sitemap_item ) {
+	            $url = $xml->addChild( 'url' );
+	            $url->addChild( 'loc', $sitemap_item['loc'] );
+	            $url->addChild( 'lastmod', $sitemap_item['lastmod'] );
+	            $url->addChild( 'changefreq', $sitemap_item['changefreq'] );
+	            $url->addChild( 'priority', $sitemap_item['priority'] );
+
+	            apply_filters( 'msm_sitemap_entry', $url );
+            }
+
+            return $xml->asXML();
 		}
 		/* There are no posts for this day */
 		return false;
