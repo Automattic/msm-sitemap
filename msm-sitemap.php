@@ -451,6 +451,10 @@ class Metro_Sitemap {
 			// Update the total post count with the difference
 			$total_url_count += $url_count - $previous_url_count;
 
+			// Since we've changed the key name, we can let this snippet of code handle cleanup for us.
+            // Theoretically we can remove this after a given period of time
+			delete_post_meta( $sitemap_id, 'msm_sitemap_xml');
+
 			update_post_meta( $sitemap_id, 'msm_sitemap_data', serialize( $sitemap_post_data ) );
 			update_post_meta( $sitemap_id, 'msm_indexed_url_count', $url_count );
 			do_action( 'msm_update_sitemap_post', $sitemap_id, $year, $month, $day );
