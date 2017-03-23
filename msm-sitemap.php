@@ -423,22 +423,21 @@ class Metro_Sitemap {
 			update_option( 'msm_sitemap_indexed_url_count', $total_url_count );
 		}
 
-
-
 		$url_count = 0;
 		$sitemap_post_data = [];
+
 		while ( $query->have_posts() ) {
 			$query->the_post();
 
 			if ( apply_filters( 'msm_sitemap_skip_post', false ) )
 				continue;
 
-            array_push($sitemap_post_data, [
-	            'loc' => esc_url( get_permalink() ),
-	            'lastmod' => get_post_modified_time( 'c', true ),
-	            'changefreq' => 'monthly',
-	            'priority' => '0.7',
-            ]);
+                array_push($sitemap_post_data, [
+                    'loc' => esc_url( get_permalink() ),
+                    'lastmod' => get_post_modified_time( 'c', true ),
+                    'changefreq' => 'monthly',
+                    'priority' => '0.7',
+                ]);
 
 			++$url_count;
 			// TODO: add images to sitemap via <image:image> tag
@@ -452,13 +451,13 @@ class Metro_Sitemap {
 			// Update the total post count with the difference
 			$total_url_count += $url_count - $previous_url_count;
 
-			update_post_meta( $sitemap_id, 'msm_sitemap_xml', serialize( $sitemap_post_data ) );
+			update_post_meta( $sitemap_id, 'msm_sitemap_data', serialize( $sitemap_post_data ) );
 			update_post_meta( $sitemap_id, 'msm_indexed_url_count', $url_count );
 			do_action( 'msm_update_sitemap_post', $sitemap_id, $year, $month, $day );
 		} else {
 			/* Should no longer hit this */
 			$sitemap_id = wp_insert_post( $sitemap_data );
-			add_post_meta( $sitemap_id, 'msm_sitemap_xml', serialize( $sitemap_post_data ) );
+			add_post_meta( $sitemap_id, 'msm_sitemap_data', serialize( $sitemap_post_data ) );
 			add_post_meta( $sitemap_id, 'msm_indexed_url_count', $url_count );
 			do_action( 'msm_insert_sitemap_post', $sitemap_id, $year, $month, $day );
 
@@ -670,7 +669,8 @@ class Metro_Sitemap {
 		$sitemap_id = self::get_sitemap_post_id( $year, $month, $day );
 
 		if ( $sitemap_id ) {
-			$sitemap_content = get_post_meta( $sitemap_id, 'msm_sitemap_xml', true );
+			$sitemap_content = get_post_meta( $sitemap_id, 'msm_sitemap_data', true );
+
             // SimpleXML doesn't allow us to define namespaces using addAttribute, so we need to specify them in the construction instead.
             $namespaces = apply_filters( 'msm_sitemap_namespace', array(
                 'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
@@ -681,13 +681,16 @@ class Metro_Sitemap {
             ) );
 
             $namespace_str = '<?xml version="1.0" encoding="utf-8"?><urlset';
+
             foreach ( $namespaces as $ns => $value ) {
                 $namespace_str .= sprintf( ' %s="%s"', esc_attr( $ns ), esc_attr( $value ) );
             }
+
             $namespace_str .= '></urlset>';
 
 			$xml = new SimpleXMLElement( $namespace_str );
-            $sitemap_content_data = unserialize($sitemap_content);
+
+			$sitemap_content_data = unserialize($sitemap_content);
 
             foreach( $sitemap_content_data as $sitemap_item ) {
 	            $url = $xml->addChild( 'url' );
