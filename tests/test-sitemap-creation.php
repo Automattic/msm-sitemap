@@ -79,21 +79,21 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 		$this->assertCount( $this->num_days, $sitemaps );
 
 		foreach ( $sitemaps as $i => $map_id ) {
-			$xml = get_post_meta( $map_id, 'msm_sitemap_xml', true );
+			$sitemap_data = get_post_meta( $map_id, 'msm_sitemap_data', true );
 			$post_id = $this->test_base->posts[ $i ]['ID'];
 			$this->assertContains( 'p=' . $post_id, $xml );
 
-			$xml_struct = simplexml_load_string( $xml );
-			$this->assertNotEmpty( $xml_struct->url );
-			$this->assertNotEmpty( $xml_struct->url->loc );
-			$this->assertNotEmpty( $xml_struct->url->lastmod );
-			$this->assertContains( 'p=' . $post_id, (string) $xml_struct->url->loc );
+			$sitemap_data = unserialize($sitemap_data);
+			$this->assertNotEmpty($sitemap_data[0]);
+			$this->assertNotEmpty($sitemap_data[0]['loc']);
+			$this->assertNotEmpty($sitemap_data[0]['lastmod']);
+			$this->assertContains( 'p=' . $post_id, $sitemap_data[0]['loc'] );
 
 			$post = get_post( $post_id );
 			setup_postdata( $post );
 			$mod_date = get_the_modified_date( 'c' );
-			$xml_date = (string) $xml_struct->url->lastmod;
-			$this->assertSame( $mod_date, $xml_date );
+			$sitemap_date = $sitemap_data[0]['lastmod'];
+			$this->assertSame( $mod_date, $sitemap_date );
 			wp_reset_postdata();
 		}
 	}
