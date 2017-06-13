@@ -17,6 +17,8 @@ class Metro_Sitemap {
 
 	const SITEMAP_CPT = 'msm_sitemap';
 
+	public static $index_by_year = false;
+
 	/**
 	 * Register actions for our hook
 	 */
@@ -24,6 +26,9 @@ class Metro_Sitemap {
 		define( 'MSM_INTERVAL_PER_GENERATION_EVENT', 60 ); // how far apart should full cron generation events be spaced
 
 		add_filter( 'cron_schedules', array( __CLASS__, 'sitemap_15_min_cron_interval' ) );
+
+		// Filter to allow the sitemap to be indexed by year
+		self::$index_by_year = apply_filters( 'msm_sitemap_index_by_year', false );
 
 		// A cron schedule for creating/updating sitemap posts based on updated content since the last run
 		add_action( 'init', array( __CLASS__, 'sitemap_init' ) );
@@ -59,13 +64,28 @@ class Metro_Sitemap {
 	 */
 	public static function sitemap_init() {
 		define( 'WPCOM_SKIP_DEFAULT_SITEMAP', true );
-		add_rewrite_tag( '%sitemap%', 'true' ); // allow 'sitemap=true' parameter
-		add_rewrite_rule( '^sitemap.xml$','index.php?sitemap=true','top' );
+
+		self::sitemap_rewrite_init();
 
 		add_filter( 'robots_txt', array( __CLASS__, 'robots_txt' ), 10, 2 );
 		add_action( 'admin_menu', array( __CLASS__, 'metro_sitemap_menu' ) );
 		add_action( 'msm_cron_update_sitemap', array( __CLASS__, 'update_sitemap_from_modified_posts' ) );
 		add_action( 'wp_ajax_msm-sitemap-get-sitemap-counts', array( __CLASS__, 'ajax_get_sitemap_counts' ) );
+	}
+
+	/**
+	 * Setup rewrite rules for the sitemap
+	 */
+	public static function sitemap_rewrite_init() {
+		// Allow 'sitemap=true' parameter
+		add_rewrite_tag( '%sitemap%', 'true' );
+
+		// Define rewrite rules for the index based on the setup
+		if ( self::$index_by_year ) {
+			add_rewrite_rule( '^sitemap-([0-9]{4}).xml$','index.php?sitemap=true&yyyy=$matches[1]','top' );
+		} else {
+			add_rewrite_rule( '^sitemap.xml$','index.php?sitemap=true','top' );
+		}
 	}
 
 	/**
@@ -269,14 +289,20 @@ class Metro_Sitemap {
 	}
 
 	/**
-	 * Disable canonical redirects for the sitemap file
+	 * Disable canonical redirects for the sitemap files
 	 * @see http://codex.wordpress.org/Function_Reference/redirect_canonical
 	 * @param string $redirect_url
 	 * @param string $requested_url
 	 * @return string URL to redirect
 	 */
 	public static function disable_canonical_redirects_for_sitemap_xml( $redirect_url, $requested_url ) {
-		if ( preg_match( '|sitemap\.xml|', $requested_url ) ) {
+		if ( self::$index_by_year ) {
+			$pattern = '|sitemap-([0-9]{4})\.xml|';
+		} else {
+			$pattern = '|sitemap\.xml|';
+		}
+
+		if ( preg_match( $pattern, $requested_url ) ) {
 			return $requested_url;
 		}
 		return $redirect_url;
