@@ -150,17 +150,17 @@ class Metro_Sitemap {
 
 		?>
 		<div class="stats-container">
-			<div class="stats-box"><strong id="sitemap-count"><?php echo number_format( Metro_Sitemap::count_sitemaps() ); ?></strong><?php _e( 'Sitemaps', 'metro-sitemaps' ); ?></div>
-			<div class="stats-box"><strong id="sitemap-indexed-url-count"><?php echo number_format( Metro_Sitemap::get_total_indexed_url_count() ); ?></strong><?php _e( 'Indexed URLs', 'metro-sitemaps' ); ?></div>
-			<div class="stats-footer"><span><span class="noticon noticon-time"></span><?php _e( 'Updated', 'metro-sitemaps' ); ?> <strong><?php echo human_time_diff( $sitemap_update_last_run ); ?> <?php _e( 'ago', 'metro-sitemaps' ) ?></strong></span></div>
+			<div class="stats-box"><strong id="sitemap-count"><?php echo number_format( Metro_Sitemap::count_sitemaps() ); ?></strong><?php esc_html_e( 'Sitemaps', 'metro-sitemaps' ); ?></div>
+			<div class="stats-box"><strong id="sitemap-indexed-url-count"><?php echo number_format( Metro_Sitemap::get_total_indexed_url_count() ); ?></strong><?php esc_html_e( 'Indexed URLs', 'metro-sitemaps' ); ?></div>
+			<div class="stats-footer"><span><span class="noticon noticon-time"></span><?php esc_html_e( 'Updated', 'metro-sitemaps' ); ?> <strong><?php echo human_time_diff( $sitemap_update_last_run ); ?> <?php esc_html_e( 'ago', 'metro-sitemaps' ) ?></strong></span></div>
 		</div>
 
-		<h3><?php _e( 'Latest Sitemaps', 'metro-sitemaps' ); ?></h3>
+		<h3><?php esc_html_e( 'Latest Sitemaps', 'metro-sitemaps' ); ?></h3>
 		<div class="stats-container stats-placeholder"></div>
 		<div id="stats-graph-summary"><?php printf( __( 'Max: %s on %s. Showing the last %s days.', 'metro-sitemaps' ), '<span id="stats-graph-max"></span>', '<span id="stats-graph-max-date"></span>', '<span id="stats-graph-num-days"></span>' ); ?></div>
 
-		<h3><?php _e( 'Generate', 'metro-sitemaps' ); ?></h3>
-		<p><strong><?php _e( 'Sitemap Create Status:', 'metro-sitemaps' ) ?></strong> <?php echo esc_html( $sitemap_create_status ); ?></p>
+		<h3><?php esc_html_e( 'Generate', 'metro-sitemaps' ); ?></h3>
+		<p><strong><?php esc_html_e( 'Sitemap Create Status:', 'metro-sitemaps' ) ?></strong> <?php echo esc_html( $sitemap_create_status ); ?></p>
 		<form action="<?php echo menu_page_url( 'metro-sitemap', false ) ?>" method="post" style="float: left;">
 			<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
 			<?php foreach ( $actions as $action ):
@@ -169,7 +169,7 @@ class Metro_Sitemap {
 			<?php endforeach; ?>
 		</form>
 		</div>
-		<div id="tooltip"><strong class="content"></strong> <?php _e( 'indexed urls', 'metro-sitemaps' ); ?></div>
+		<div id="tooltip"><strong class="content"></strong> <?php esc_html_e( 'indexed urls', 'metro-sitemaps' ); ?></div>
 		<?php
 	}
 
@@ -290,13 +290,13 @@ class Metro_Sitemap {
 		global $wpdb;
 
 		$oldest_post_date_gmt = $wpdb->get_var( "SELECT post_date FROM $wpdb->posts WHERE post_status = 'publish' ORDER BY post_date ASC LIMIT 1" );
-		
+
 		if( null !== $oldest_post_date_gmt ) {
 			$oldest_post_year = date( 'Y', strtotime( $oldest_post_date_gmt ) );
 			$current_year = date( 'Y' );
 			return range( $oldest_post_year, $current_year );
 		}
-		
+
 		return array();
 
 	}
@@ -628,10 +628,10 @@ class Metro_Sitemap {
 		global $wpdb;
 		// Direct query because we just want dates of the sitemap entries and this is much faster than WP_Query
 		$sitemaps = $wpdb->get_col( $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s ORDER BY post_date DESC LIMIT 10000", Metro_Sitemap::SITEMAP_CPT ) );
-		
+
 		// Sometimes duplicate sitemaps exist, lets make sure so they are not output
 		$sitemaps = array_unique( $sitemaps );
-		
+
 		$xml = new SimpleXMLElement( $xml_prefix . '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
 		foreach ( $sitemaps as $sitemap_date ) {
 			$sitemap_time = strtotime( $sitemap_date );
