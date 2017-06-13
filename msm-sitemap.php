@@ -266,14 +266,24 @@ class Metro_Sitemap {
 	}
 
 	/**
-	 * Add entry to the bottom of robots.txt
+	 * Add entries to the bottom of robots.txt
 	 */
 	public static function robots_txt( $output, $public ) {
 
 		// Make sure the site isn't private
 		if ( '1' == $public ) {
 			$output .= '# Sitemap archive' . PHP_EOL;
-			$output .= 'Sitemap: ' . home_url( '/sitemap.xml' ) . PHP_EOL . PHP_EOL;
+
+			if ( self::$index_by_year ) {
+				$years = self::check_year_has_posts();
+				foreach ( $years as $year ) {
+					$output .= 'Sitemap: ' . home_url( '/sitemap-' . absint( $year ) . '.xml' ) . PHP_EOL;
+				}
+
+				$output .= PHP_EOL;
+			} else {
+				$output .= 'Sitemap: ' . home_url( '/sitemap.xml' ) . PHP_EOL . PHP_EOL;
+			}
 		}
 		return $output;
 
