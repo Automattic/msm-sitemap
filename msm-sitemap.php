@@ -82,7 +82,8 @@ class Metro_Sitemap {
 
 		// Define rewrite rules for the index based on the setup
 		if ( self::$index_by_year ) {
-			add_rewrite_rule( '^sitemap-([0-9]{4}).xml$','index.php?sitemap=true&yyyy=$matches[1]','top' );
+			add_rewrite_tag( '%sitemap-year%', '[0-9]{4}' );
+			add_rewrite_rule( '^sitemap-([0-9]{4}).xml$','index.php?sitemap=true&sitemap-year=$matches[1]','top' );
 		} else {
 			add_rewrite_rule( '^sitemap.xml$','index.php?sitemap=true','top' );
 		}
@@ -656,21 +657,51 @@ class Metro_Sitemap {
 	}
 
 	/**
-	 * Build Root sitemap XML - currently all days
+	 * Build Root sitemap XML
+	 * Can be all days (default) or a specific year.
+	 * @param int|boolean $year
 	 */
-	public static function build_root_sitemap_xml() {
+	public static function build_root_sitemap_xml( $year = false ) {
 
 		$xml_prefix = '<?xml version="1.0" encoding="utf-8"?>';
 		global $wpdb;
 		// Direct query because we just want dates of the sitemap entries and this is much faster than WP_Query
-		$sitemaps = $wpdb->get_col( $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s ORDER BY post_date DESC LIMIT 10000", Metro_Sitemap::SITEMAP_CPT ) );
+		if ( is_numeric( $year ) ) {
+			$query = $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s AND YEAR(post_date) = %s ORDER BY post_date DESC LIMIT 10000", Metro_Sitemap::SITEMAP_CPT, $year );
+		} else {
+			$query = $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s ORDER BY post_date DESC LIMIT 10000", Metro_Sitemap::SITEMAP_CPT );
+		}
+
+		$sitemaps = $wpdb->get_col( $query );
 
 		// Sometimes duplicate sitemaps exist, lets make sure so they are not output
 		$sitemaps = array_unique( $sitemaps );
 
 		$xml = new SimpleXMLElement( $xml_prefix . '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
 		foreach ( $sitemaps as $sitemap_date ) {
-			$sitemap_time = strtotime( $sitemap_date );
+			$sitemap = $xml->addChild( 'sitemap' );
+			$sitemap->loc = self::build_sitemap_url( $sitemap_date ); // manually set the child instead of addChild to prevent "unterminated entity reference" warnings due to encoded ampersands http://stackoverflow.com/a/555039/169478
+		}
+		return $xml->asXML();
+	}
+
+	/**
+	 * Build the sitemap URL for a given date
+	 * @param string $sitemap_date
+	 * @return string
+	 */
+	public static function build_sitemap_url( $sitemap_date ) {
+		$sitemap_time = strtotime( $sitemap_date );
+
+		if ( self::$index_by_year ) {
+			$sitemap_url = add_query_arg(
+				array(
+					'mm' => date( 'm', $sitemap_time ),
+					'dd' => date( 'd', $sitemap_time ),
+				),
+				home_url( '/sitemap-' . date( 'Y', $sitemap_time ) . '.xml' )
+			);
+		} else {
 			$sitemap_url = add_query_arg(
 				array(
 					'yyyy' => date( 'Y', $sitemap_time ),
@@ -679,11 +710,9 @@ class Metro_Sitemap {
 				),
 				home_url( '/sitemap.xml' )
 			);
-
-			$sitemap = $xml->addChild( 'sitemap' );
-			$sitemap->loc = $sitemap_url; // manually set the child instead of addChild to prevent "unterminated entity reference" warnings due to encoded ampersands http://stackoverflow.com/a/555039/169478
 		}
-		return $xml->asXML();
+
+		return $sitemap_url;
 	}
 
 	public static function get_sitemap_post_id( $year, $month, $day ) {
@@ -742,8 +771,8 @@ class Metro_Sitemap {
 		$month = $request['month'];
 		$day = $request['day'];
 
-		if ( false === $year && false === $month && false === $day ) {
-			$xml = self::build_root_sitemap_xml();
+		if ( ( false === $year || is_numeric( $year ) ) && false === $month && false === $day ) {
+			$xml = self::build_root_sitemap_xml( $year );
 		} else if ( $year > 0 && $month > 0 && $day > 0 ) {
 			$xml = self::build_individual_sitemap_xml( $year, $month, $day );
 		} else {
