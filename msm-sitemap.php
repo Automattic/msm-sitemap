@@ -666,6 +666,7 @@ class Metro_Sitemap {
 
 		$xml_prefix = '<?xml version="1.0" encoding="utf-8"?>';
 		global $wpdb;
+
 		// Direct query because we just want dates of the sitemap entries and this is much faster than WP_Query
 		if ( is_numeric( $year ) ) {
 			$query = $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s AND YEAR(post_date) = %s ORDER BY post_date DESC LIMIT 10000", Metro_Sitemap::SITEMAP_CPT, $year );
