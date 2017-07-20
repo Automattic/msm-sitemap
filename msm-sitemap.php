@@ -179,27 +179,27 @@ class Metro_Sitemap {
 		);
 
 		?>
-        <div class="stats-container">
-            <div class="stats-box"><strong id="sitemap-count"><?php echo number_format( Metro_Sitemap::count_sitemaps() ); ?></strong><?php esc_html_e( 'Sitemaps', 'metro-sitemaps' ); ?></div>
-            <div class="stats-box"><strong id="sitemap-indexed-url-count"><?php echo number_format( Metro_Sitemap::get_total_indexed_url_count() ); ?></strong><?php esc_html_e( 'Indexed URLs', 'metro-sitemaps' ); ?></div>
-            <div class="stats-footer"><span><span class="noticon noticon-time"></span><?php esc_html_e( 'Updated', 'metro-sitemaps' ); ?> <strong><?php echo human_time_diff( $sitemap_update_last_run ); ?> <?php esc_html_e( 'ago', 'metro-sitemaps' ) ?></strong></span></div>
-        </div>
+		<div class="stats-container">
+			<div class="stats-box"><strong id="sitemap-count"><?php echo number_format( Metro_Sitemap::count_sitemaps() ); ?></strong><?php esc_html_e( 'Sitemaps', 'metro-sitemaps' ); ?></div>
+			<div class="stats-box"><strong id="sitemap-indexed-url-count"><?php echo number_format( Metro_Sitemap::get_total_indexed_url_count() ); ?></strong><?php esc_html_e( 'Indexed URLs', 'metro-sitemaps' ); ?></div>
+			<div class="stats-footer"><span><span class="noticon noticon-time"></span><?php esc_html_e( 'Updated', 'metro-sitemaps' ); ?> <strong><?php echo human_time_diff( $sitemap_update_last_run ); ?> <?php esc_html_e( 'ago', 'metro-sitemaps' ) ?></strong></span></div>
+		</div>
 
-        <h3><?php esc_html_e( 'Latest Sitemaps', 'metro-sitemaps' ); ?></h3>
-        <div class="stats-container stats-placeholder"></div>
-        <div id="stats-graph-summary"><?php printf( __( 'Max: %s on %s. Showing the last %s days.', 'metro-sitemaps' ), '<span id="stats-graph-max"></span>', '<span id="stats-graph-max-date"></span>', '<span id="stats-graph-num-days"></span>' ); ?></div>
+		<h3><?php esc_html_e( 'Latest Sitemaps', 'metro-sitemaps' ); ?></h3>
+		<div class="stats-container stats-placeholder"></div>
+		<div id="stats-graph-summary"><?php printf( __( 'Max: %s on %s. Showing the last %s days.', 'metro-sitemaps' ), '<span id="stats-graph-max"></span>', '<span id="stats-graph-max-date"></span>', '<span id="stats-graph-num-days"></span>' ); ?></div>
 
-        <h3><?php esc_html_e( 'Generate', 'metro-sitemaps' ); ?></h3>
-        <p><strong><?php esc_html_e( 'Sitemap Create Status:', 'metro-sitemaps' ) ?></strong> <?php echo esc_html( $sitemap_create_status ); ?></p>
-        <form action="<?php echo menu_page_url( 'metro-sitemap', false ) ?>" method="post" style="float: left;">
+		<h3><?php esc_html_e( 'Generate', 'metro-sitemaps' ); ?></h3>
+		<p><strong><?php esc_html_e( 'Sitemap Create Status:', 'metro-sitemaps' ) ?></strong> <?php echo esc_html( $sitemap_create_status ); ?></p>
+		<form action="<?php echo menu_page_url( 'metro-sitemap', false ) ?>" method="post" style="float: left;">
 			<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
 			<?php foreach ( $actions as $action ):
 				if ( ! $action['enabled'] ) continue; ?>
-                <input type="submit" name="action" class="button-secondary" value="<?php echo esc_attr( $action['text'] ); ?>">
+				<input type="submit" name="action" class="button-secondary" value="<?php echo esc_attr( $action['text'] ); ?>">
 			<?php endforeach; ?>
-        </form>
-        </div>
-        <div id="tooltip"><strong class="content"></strong> <?php esc_html_e( 'indexed urls', 'metro-sitemaps' ); ?></div>
+		</form>
+		</div>
+		<div id="tooltip"><strong class="content"></strong> <?php esc_html_e( 'indexed urls', 'metro-sitemaps' ); ?></div>
 		<?php
 	}
 
@@ -211,7 +211,7 @@ class Metro_Sitemap {
 		$class = 'updated';
 		if ( $level === 'warning' )
 			$class = 'update-nag';
-        elseif ( $level === 'error' )
+		elseif ( $level === 'error' )
 			$class = 'error';
 
 		echo '<div class="' . esc_attr( $class ) . ' msm-sitemap-message"><p>' . wp_kses( $message, wp_kses_allowed_html( 'post' ) ) . '</p></div>';
@@ -411,6 +411,12 @@ class Metro_Sitemap {
 		$end_date = $sitemap_date . ' 23:59:59';
 		$post_types_in = self::get_supported_post_types_in();
 
+		/**
+		 *
+		 * The intention here is to allow modifications to the base query to allow more control over the results
+		 * providing further breakdown of sitemaps
+		 *
+		 */
 		$post_search_query = apply_filters( 'msm_modify_post_search_query', "SELECT ID FROM $wpdb->posts WHERE post_status = 'publish' AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) ORDER BY post_date LIMIT %d" );
 		$post_search_vars = apply_filters( 'msm_modify_post_search_vars', array($start_date, $end_date, $limit) );
 
@@ -444,6 +450,11 @@ class Metro_Sitemap {
 			'post_date' => $sitemap_date,
 		);
 
+		/**
+		 * Filter which modifies the default data to allow for changing of additional insert data, allows higher degree of control
+         *
+		 * Intention is to allow sitemap extensibility
+		 */
 		$sitemap_data = apply_filters( 'msm_modify_sitemap_insert_query', $sitemap_data );
 
 		$sitemap_id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", self::SITEMAP_CPT, $sitemap_name ) );
@@ -476,6 +487,12 @@ class Metro_Sitemap {
 			'ignore_sticky_posts' => true,
 			'post_status' => 'publish',
 		);
+
+		/**
+		 * Filter which modifies the default data to allow for changing of additional insert data, allows higher degree of control
+         *
+         * Intention is to allow sitemap extensibility
+		 */
 
 		$sitemap_query_vars = apply_filters( 'msm_modify_sitemap_search_query', $sitemap_query_vars );
 
@@ -621,6 +638,12 @@ class Metro_Sitemap {
 
 		$post_types_in = self::get_supported_post_types_in();
 
+		/**
+		 *
+		 * The intention here is to allow modifications to the base query to allow more control over the results
+		 * providing further breakdown of sitemaps
+		 *
+		 */
 		$post_search_query = apply_filters( 'msm_modify_last_modified_query', "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_modified_gmt >= %s LIMIT 1000" );
 		$post_search_vars = apply_filters( 'msm_modify_last_modified_vars', array($date) );
 
