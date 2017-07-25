@@ -798,7 +798,7 @@ class Metro_Sitemap {
 			'suppress_filters' => false,
 		);
 
-		$sitemap_args = apply_filter( 'msm_modify_sitemap_search_query', $sitemap_args );
+		$sitemap_args = apply_filters( 'msm_modify_sitemap_search_query', $sitemap_args );
 
 		$sitemap_query = get_posts( $sitemap_args );
 
@@ -865,7 +865,7 @@ class Metro_Sitemap {
 		return apply_filters( 'msm_sitemap_entry_post_type', array( 'post' ) );
 	}
 
-	private static function get_supported_post_types_in() {
+	public static function get_supported_post_types_in() {
 		global $wpdb;
 
 		$post_types_in = '';
