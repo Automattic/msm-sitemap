@@ -56,7 +56,7 @@ class Metro_Sitemap {
 		$schedules[ 'ms-sitemap-15-min-cron-interval' ] = array(
 			'interval' => 900,
 			'display' => __( 'Every 15 minutes', 'metro-sitemaps' ),
-		);
+			);
 		return $schedules;
 	}
 
@@ -448,11 +448,11 @@ class Metro_Sitemap {
 			'post_type' => self::SITEMAP_CPT,
 			'post_status' => 'publish',
 			'post_date' => $sitemap_date,
-		);
+			);
 
 		/**
 		 * Filter which modifies the default data to allow for changing of additional insert data, allows higher degree of control
-         *
+		 *
 		 * Intention is to allow sitemap extensibility
 		 */
 		$sitemap_data = apply_filters( 'msm_modify_sitemap_insert_query', $sitemap_data );
@@ -490,8 +490,8 @@ class Metro_Sitemap {
 
 		/**
 		 * Filter which modifies the default data to allow for changing of additional insert data, allows higher degree of control
-         *
-         * Intention is to allow sitemap extensibility
+		 *
+		 * Intention is to allow sitemap extensibility
 		 */
 
 		$sitemap_query_vars = apply_filters( 'msm_modify_sitemap_search_query', $sitemap_query_vars );
@@ -608,7 +608,7 @@ class Metro_Sitemap {
 				'labels'       => array(
 					'name'          => __( 'Sitemaps' ),
 					'singular_name' => __( 'Sitemap' ),
-				),
+					),
 				'public'       => false,
 				'has_archive'  => false,
 				'rewrite'      => false,
@@ -616,9 +616,9 @@ class Metro_Sitemap {
 				'show_in_menu' => false, // Since we're manually adding a Sitemaps menu, no need to auto-add one through the CPT.
 				'supports'     => array(
 					'title',
-				),
-			)
-		);
+					),
+				)
+			);
 	}
 
 	/**
