@@ -94,7 +94,7 @@ class Metro_Sitemap {
 		 * The intention is to call add_rewrite_rules on more sitemap types
 		 * ie news-sitemap.xml etc etc
 		 */
-		do_action('msm_additional_sitemap_rewrites');
+		do_action('msm_sitemap_rewrites');
 
 	}
 
