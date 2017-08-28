@@ -633,21 +633,7 @@ class Metro_Sitemap {
 
 		$post_types_in = self::get_supported_post_types_in();
 
-		/**
-		 *
-		 * The intention here is to allow modifications to the base query to allow more control over the results
-		 * providing further breakdown of sitemaps
-		 *
-		 */
-		$post_search_query = apply_filters( 'msm_modify_last_modified_query', "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_modified_gmt >= %s LIMIT 1000" );
-		$post_search_vars = apply_filters( 'msm_modify_last_modified_vars', array($date) );
-
-		$modified_posts = $wpdb->get_results(
-			$wpdb->prepare(
-				$post_search_query,
-				$post_search_vars
-			)
-		);
+		$modified_posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_modified_gmt >= %s LIMIT 1000", $date ) );
 		return $modified_posts;
 	}
 
@@ -792,8 +778,6 @@ class Metro_Sitemap {
 			'update_term_cache' => false,
 			'suppress_filters' => false,
 		);
-
-		$sitemap_args = apply_filters( 'msm_modify_sitemap_search_query', $sitemap_args );
 
 		$sitemap_query = get_posts( $sitemap_args );
 
