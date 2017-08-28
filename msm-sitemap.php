@@ -294,11 +294,6 @@ class Metro_Sitemap {
 			} else {
 				$output .= 'Sitemap: ' . home_url( '/sitemap.xml' ) . PHP_EOL . PHP_EOL;
 			}
-			/**
-			 * The intention here is
-			 * to provide additional filtering for anything added in the @action 'msm_additional_sitemap_rewrites'
-			 */
-			$output = apply_filters( 'msm_additional_robots_txt', $output );
 		}
 		return $output;
 
