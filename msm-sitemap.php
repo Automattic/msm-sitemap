@@ -406,21 +406,7 @@ class Metro_Sitemap {
 		$end_date = $sitemap_date . ' 23:59:59';
 		$post_types_in = self::get_supported_post_types_in();
 
-		/**
-		 *
-		 * The intention here is to allow modifications to the base query to allow more control over the results
-		 * providing further breakdown of sitemaps
-		 *
-		 */
-		$post_search_query = apply_filters( 'msm_modify_post_search_query', "SELECT ID FROM $wpdb->posts WHERE post_status = 'publish' AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) ORDER BY post_date LIMIT %d" );
-		$post_search_vars = apply_filters( 'msm_modify_post_search_vars', array($start_date, $end_date, $limit) );
-
-		return $wpdb->get_col(
-			$wpdb->prepare(
-				$post_search_query,
-				$post_search_vars
-			)
-		);
+		return $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_status = 'publish' AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) ORDER BY post_date LIMIT %d", $start_date, $end_date, $limit ) );
 	}
 
 	/**
@@ -473,25 +459,14 @@ class Metro_Sitemap {
 		}
 
 		// We need to get a WP_Query object for back-compat as we run a Loop when building
-
-		$sitemap_query_vars = array(
+		$query = new WP_Query( array(
 			'post__in' => $post_ids,
 			'post_type' => self::get_supported_post_types(),
 			'no_found_rows' => true,
 			'posts_per_page' => $per_page,
 			'ignore_sticky_posts' => true,
 			'post_status' => 'publish',
-		);
-
-		/**
-		 * Filter which modifies the default data to allow for changing of additional insert data, allows higher degree of control
-		 *
-		 * Intention is to allow sitemap extensibility
-		 */
-
-		$sitemap_query_vars = apply_filters( 'msm_modify_sitemap_search_query', $sitemap_query_vars );
-
-		$query = new WP_Query( $sitemap_query_vars );
+		) );
 		$post_count = $query->post_count;
 
 		$total_url_count = self::get_total_indexed_url_count();
