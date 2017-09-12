@@ -88,6 +88,14 @@ class Metro_Sitemap {
 		} else {
 			add_rewrite_rule( '^sitemap.xml$','index.php?sitemap=true','top' );
 		}
+
+		/**
+		 * Intended for any additional rewrite rules that might be applied for extensibilty
+		 * The intention is to call add_rewrite_rules on more sitemap types
+		 * ie news-sitemap.xml etc etc
+		 */
+		do_action('msm_sitemap_rewrites');
+
 	}
 
 	/**
@@ -412,6 +420,7 @@ class Metro_Sitemap {
 		list( $year, $month, $day ) = explode( '-', $sitemap_date );
 
 		$sitemap_name = $sitemap_date;
+
 		$sitemap_exists = false;
 
 		$sitemap_data = array(
@@ -421,6 +430,13 @@ class Metro_Sitemap {
 			'post_status' => 'publish',
 			'post_date' => $sitemap_date,
 			);
+
+		/**
+		 * Filter which modifies the default data to allow for changing of additional insert data, allows higher degree of control
+		 *
+		 * Intention is to allow sitemap extensibility
+		 */
+		$sitemap_data = apply_filters( 'msm_modify_sitemap_insert_query', $sitemap_data );
 
 		$sitemap_id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", self::SITEMAP_CPT, $sitemap_name ) );
 
@@ -498,7 +514,7 @@ class Metro_Sitemap {
 			// TODO: add images to sitemap via <image:image> tag
 		}
 
-				// Save the sitemap
+		// Save the sitemap
 		if ( $sitemap_exists ) {
 			// Get the previous post count
 			$previous_url_count = intval( get_post_meta( $sitemap_id, 'msm_indexed_url_count', true ) );
@@ -803,7 +819,7 @@ class Metro_Sitemap {
 		return apply_filters( 'msm_sitemap_entry_post_type', array( 'post' ) );
 	}
 
-	private static function get_supported_post_types_in() {
+	public static function get_supported_post_types_in() {
 		global $wpdb;
 
 		$post_types_in = '';
