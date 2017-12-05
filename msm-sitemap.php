@@ -408,7 +408,6 @@ class Metro_Sitemap {
 	public static function generate_sitemap_for_date( $sitemap_date ) {
 		global $wpdb;
 
-		$sitemap_time = strtotime( $sitemap_date );
 		list( $year, $month, $day ) = explode( '-', $sitemap_date );
 
 		$sitemap_name = $sitemap_date;
