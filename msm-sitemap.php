@@ -804,7 +804,6 @@ class Metro_Sitemap {
 	private static function get_supported_post_types_in() {
 		global $wpdb;
 
-		$post_types_in = '';
 		$post_types = self::get_supported_post_types();
 		$post_types_prepared = array();
 
