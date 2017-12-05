@@ -451,7 +451,6 @@ class Metro_Sitemap {
 			'ignore_sticky_posts' => true,
 			'post_status' => 'publish',
 		) );
-		$post_count = $query->post_count;
 
 		$total_url_count = self::get_total_indexed_url_count();
 
