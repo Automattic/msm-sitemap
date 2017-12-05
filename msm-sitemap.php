@@ -408,7 +408,6 @@ class Metro_Sitemap {
 	public static function generate_sitemap_for_date( $sitemap_date ) {
 		global $wpdb;
 
-		$sitemap_time = strtotime( $sitemap_date );
 		list( $year, $month, $day ) = explode( '-', $sitemap_date );
 
 		$sitemap_name = $sitemap_date;
@@ -451,7 +450,6 @@ class Metro_Sitemap {
 			'ignore_sticky_posts' => true,
 			'post_status' => 'publish',
 		) );
-		$post_count = $query->post_count;
 
 		$total_url_count = self::get_total_indexed_url_count();
 
@@ -791,7 +789,6 @@ class Metro_Sitemap {
 	private static function get_supported_post_types_in() {
 		global $wpdb;
 
-		$post_types_in = '';
 		$post_types = self::get_supported_post_types();
 		$post_types_prepared = array();
 
