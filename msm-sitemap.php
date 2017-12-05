@@ -784,21 +784,6 @@ class Metro_Sitemap {
 		return $xml;
 	}
 
-	public static function find_valid_days( $year ) {
-		$days = 31;
-		if ( $m == 2 ) {
-			$days = date( 'L', strtotime( $year . '-01-01' ) ) ? 29 : 28;  // leap year
-		} elseif ( $m == 4 || $m == 6 || $m == 9 || $m == 11 ) {
-			$days = 30;
-		}
-
-		if ( $m == date( 'm' ) ) {
-			$days = date( 'd' );
-		}
-
-		return $days;
-	}
-
 	public static function get_supported_post_types() {
 		return apply_filters( 'msm_sitemap_entry_post_type', array( 'post' ) );
 	}
