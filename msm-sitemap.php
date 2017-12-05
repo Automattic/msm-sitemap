@@ -442,8 +442,12 @@ class Metro_Sitemap {
 			return;
 		}
 
-		// We need to get a WP_Query object for back-compat as we run a Loop when building
-		$query = new WP_Query( array(
+		/**
+		 * Filters the arguments passed to the WP_Query that builds the sitemap.
+		 *
+		 * @param array $query_args Query arguments.
+		 */
+		$query_args = apply_filters( 'msm_sitemap_query_args', array(
 			'post__in' => $post_ids,
 			'post_type' => self::get_supported_post_types(),
 			'no_found_rows' => true,
@@ -451,6 +455,9 @@ class Metro_Sitemap {
 			'ignore_sticky_posts' => true,
 			'post_status' => 'publish',
 		) );
+
+		// We need to get a WP_Query object for back-compat as we run a Loop when building
+		$query = new WP_Query( $query_args );
 		$post_count = $query->post_count;
 
 		$total_url_count = self::get_total_indexed_url_count();
