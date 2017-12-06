@@ -398,7 +398,13 @@ class Metro_Sitemap {
 		$end_date = $sitemap_date . ' 23:59:59';
 		$post_types_in = self::get_supported_post_types_in();
 
-		return $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_status = 'publish' AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) ORDER BY post_date LIMIT %d", $start_date, $end_date, $limit ) );
+		$posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_status = 'publish' AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT %d", $start_date, $end_date, $limit ) );
+
+		usort( $posts, array( __CLASS__ , 'order_by_post_date' ) );
+
+		$post_ids = wp_list_pluck( $posts, 'ID' );
+
+		return array_map( 'intval', $post_ids );
 	}
 
 	/**
@@ -797,6 +803,23 @@ class Metro_Sitemap {
 		}
 
 		return implode( ', ', $post_types_prepared );
+	}
+
+	/**
+	 * Helper function for PHP ordering of posts by date, desc.
+	 *
+	 * @param object $post_a StdClass object, or WP_Post object to order.
+	 * @param object $post_b StdClass object or WP_Post object to order.
+	 *
+	 * @return int
+	 */
+	private static function order_by_post_date( $post_a, $post_b ) {
+		$a_date = strtotime( $post_a->post_date );
+		$b_date = strtotime( $post_b->post_date );
+		if ( $a_date === $b_date ) {
+			return 0;
+		}
+		return ( $a_date < $b_date ) ? -1 : 1;
 	}
 }
 

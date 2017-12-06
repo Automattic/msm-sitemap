@@ -36,6 +36,8 @@ class MSM_SiteMap_Test {
 	 * @param str $post_type The Post Type Slug.
 	 * @param str @post_status The status of the created post.
 	 * @throws Exception Unable to insert posts.
+	 *
+	 * @return int ID of created post.
 	 */
 	function create_dummy_post( $day, $post_status = 'publish', $post_type = 'post' ) {
 		$post_data = array(
@@ -55,6 +57,8 @@ class MSM_SiteMap_Test {
 
 		$this->posts_created[] = $post_data['ID'];
 		$this->posts[] = $post_data;
+
+		return $post_data['ID'];
 	}
 	
 	/**
