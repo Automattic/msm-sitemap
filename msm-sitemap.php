@@ -402,7 +402,9 @@ class Metro_Sitemap {
 
 		usort( $posts, array( __CLASS__ , 'order_by_post_date' ) );
 
-		return wp_list_pluck( $posts, 'ID' );
+		$post_ids = wp_list_pluck( $posts, 'ID' );
+
+		return array_map( 'intval', $post_ids );
 	}
 
 	/**
@@ -435,9 +437,9 @@ class Metro_Sitemap {
 		}
 
 		$per_page = apply_filters( 'msm_sitemap_entry_posts_per_page', self::DEFAULT_POSTS_PER_SITEMAP_PAGE );
-		$posts_ids = self::get_post_ids_for_date( $sitemap_date, $per_page );
+		$post_ids = self::get_post_ids_for_date( $sitemap_date, $per_page );
 
-		if ( empty( $posts_ids ) ) {
+		if ( empty( $post_ids ) ) {
 			// If no entries - delete the whole sitemap post
 			if ( $sitemap_exists ) {
 				self::delete_sitemap_by_id( $sitemap_id );
@@ -472,7 +474,7 @@ class Metro_Sitemap {
 		$xml = new SimpleXMLElement( $namespace_str );
 
 		$url_count = 0;
-		foreach ( $posts_ids as $post_id ) {
+		foreach ( $post_ids as $post_id ) {
 			$GLOBALS['post'] = get_post( $post_id );
 			setup_postdata( $GLOBALS['post'] );
 
