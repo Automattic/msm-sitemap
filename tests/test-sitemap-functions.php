@@ -257,13 +257,19 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 		// 1 for 2016-10-03 in "draft" status.
 		$this->test_base->create_dummy_post( '2016-10-01 00:00:00', 'draft' );
 
+		$created_post_ids = array();
 		// 20 for 2016-10-02.
 		for ( $i = 0; $i < 20; $i ++ ) {
-			$this->test_base->create_dummy_post( '2016-10-02 00:00:00' );
+			$hour = $i < 10 ? '0' . $i : $i;
+			if ( '2016-10-02' === $sitemap_date ) {
+				$created_post_ids[] = $this->test_base->create_dummy_post( '2016-10-02 ' . $hour . ':00:00' );
+			}
 		}
+
 
 		$post_ids = Metro_Sitemap::get_post_ids_for_date( $sitemap_date, $limit );
 		$this->assertEquals( $expected_count, count( $post_ids ) );
+		$this->assertEquals( array_slice( $created_post_ids, 0, $limit ), $post_ids );
 
 	}
 
