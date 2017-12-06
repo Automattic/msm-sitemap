@@ -269,7 +269,7 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 
 		$post_ids = Metro_Sitemap::get_post_ids_for_date( $sitemap_date, $limit );
 		$this->assertEquals( $expected_count, count( $post_ids ) );
-		$this->assertEquals( array_slice( $created_post_ids, 0, $limit ), $post_ids );
+		$this->assertEquals( array_slice( $created_post_ids, 0, $limit ), wp_list_pluck( $post_ids, 'ID' ) );
 
 	}
 
