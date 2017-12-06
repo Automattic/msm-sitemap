@@ -398,7 +398,7 @@ class Metro_Sitemap {
 		$end_date = $sitemap_date . ' 23:59:59';
 		$post_types_in = self::get_supported_post_types_in();
 
-		return $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_status = 'publish' AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) ORDER BY post_date LIMIT %d", $start_date, $end_date, $limit ) );
+		return $wpdb->get_col( $wpdb->prepare( "SELECT * FROM $wpdb->posts WHERE post_status = 'publish' AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) ORDER BY post_date LIMIT %d", $start_date, $end_date, $limit ) );
 	}
 
 	/**
@@ -431,9 +431,9 @@ class Metro_Sitemap {
 		}
 
 		$per_page = apply_filters( 'msm_sitemap_entry_posts_per_page', self::DEFAULT_POSTS_PER_SITEMAP_PAGE );
-		$post_ids = self::get_post_ids_for_date( $sitemap_date, $per_page );
+		$posts = self::get_post_ids_for_date( $sitemap_date, $per_page );
 
-		if ( empty( $post_ids ) ) {
+		if ( empty( $posts ) ) {
 			// If no entries - delete the whole sitemap post
 			if ( $sitemap_exists ) {
 				self::delete_sitemap_by_id( $sitemap_id );
@@ -468,8 +468,8 @@ class Metro_Sitemap {
 		$xml = new SimpleXMLElement( $namespace_str );
 
 		$url_count = 0;
-		foreach ( $post_ids as $post_id ) {
-			$GLOBALS['post'] = get_post( $post_id );
+		foreach ( $post_ids as $post ) {
+			$GLOBALS['post'] = get_post( $post );
 			setup_postdata( $GLOBALS['post'] );
 
 			if ( apply_filters( 'msm_sitemap_skip_post', false ) )
