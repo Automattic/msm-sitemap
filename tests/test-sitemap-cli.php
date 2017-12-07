@@ -13,9 +13,60 @@ require_once( dirname( __FILE__ ) . '/../includes/wp-cli.php' );
 /**
  * Unit Tests to validate CLI command
  *
- * @author bcampeau
+ * @author davidbinovec
  */
 class WP_Test_Sitemap_CLI extends WP_UnitTestCase {
+
+	/**
+	 * Create posts across a number of years
+	 *
+	 * @var int
+	 */
+	private $num_years_data = 3;
+
+	/**
+	 * Base Test Class Instance
+	 *
+	 * @var MSM_SIteMap_Test
+	 */
+	private $test_base;
+
+	/**
+	 * Generate posts and build initial sitemaps
+	 */
+	function setup() {
+		_delete_all_posts();
+
+		$this->test_base = new MSM_SiteMap_Test();
+
+		// Add a post for each day in the last x years.
+		$dates = array();
+		$date = time();
+		for ( $i = 0; $i < $this->num_years_data; $i++ ) {
+			// Add a post for x years ago.
+			$dates[] = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
+			$date = strtotime( '-1 year', $date );
+		}
+
+		$this->test_base->create_dummy_posts( $dates );
+
+		$this->assertCount( $this->num_years_data, $this->test_base->posts );
+		$this->test_base->build_sitemaps();
+	}
+
+	/**
+	 * Remove created posts, sitemaps and options
+	 */
+	function teardown() {
+		$this->test_base->posts = array();
+		$sitemaps = get_posts( array(
+			'post_type' => Metro_Sitemap::SITEMAP_CPT,
+			'fields' => 'ids',
+			'posts_per_page' => -1,
+		) );
+		update_option( 'msm_sitemap_indexed_url_count' , 0 );
+		array_map( 'wp_delete_post', array_merge( $this->test_base->posts_created, $sitemaps ) );
+	}
 
 	/**
 	 * Call protected/private method of a class.
