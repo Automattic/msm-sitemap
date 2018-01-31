@@ -398,7 +398,13 @@ class Metro_Sitemap {
 		$end_date = $sitemap_date . ' 23:59:59';
 		$post_types_in = self::get_supported_post_types_in();
 
-		return $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_status = 'publish' AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) ORDER BY post_date LIMIT %d", $start_date, $end_date, $limit ) );
+		$posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_status = 'publish' AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT %d", $start_date, $end_date, $limit ) );
+
+		usort( $posts, array( __CLASS__ , 'order_by_post_date' ) );
+
+		$post_ids = wp_list_pluck( $posts, 'ID' );
+
+		return array_map( 'intval', $post_ids );
 	}
 
 	/**
@@ -408,7 +414,6 @@ class Metro_Sitemap {
 	public static function generate_sitemap_for_date( $sitemap_date ) {
 		global $wpdb;
 
-		$sitemap_time = strtotime( $sitemap_date );
 		list( $year, $month, $day ) = explode( '-', $sitemap_date );
 
 		$sitemap_name = $sitemap_date;
@@ -451,14 +456,13 @@ class Metro_Sitemap {
 			'ignore_sticky_posts' => true,
 			'post_status' => 'publish',
 		) );
-		$post_count = $query->post_count;
 
 		$total_url_count = self::get_total_indexed_url_count();
 
 		// For migration: in case the previous version used an array for this option
 		if ( is_array( $total_url_count ) ) {
 			$total_url_count = array_sum( $total_url_count );
-			update_option( 'msm_sitemap_indexed_url_count', $total_url_count );
+			update_option( 'msm_sitemap_indexed_url_count', $total_url_count, false );
 		}
 
 		// SimpleXML doesn't allow us to define namespaces using addAttribute, so we need to specify them in the construction instead.
@@ -521,7 +525,7 @@ class Metro_Sitemap {
 		}
 
 		// Update indexed url counts
-		update_option( 'msm_sitemap_indexed_url_count' , $total_url_count );
+		update_option( 'msm_sitemap_indexed_url_count', $total_url_count, false );
 
 		wp_reset_postdata();
 	}
@@ -546,7 +550,7 @@ class Metro_Sitemap {
 
 		$total_url_count = self::get_total_indexed_url_count();
 		$total_url_count -= intval( get_post_meta( $sitemap_id, 'msm_indexed_url_count', true ) );
-		update_option( 'msm_sitemap_indexed_url_count' , $total_url_count );
+		update_option( 'msm_sitemap_indexed_url_count', $total_url_count, false );
 
 		wp_delete_post( $sitemap_id, true );
 		do_action( 'msm_delete_sitemap_post', $sitemap_id, $year, $month, $day );
@@ -631,7 +635,7 @@ class Metro_Sitemap {
 
 			do_action( 'msm_update_sitemap_for_year_month_date', array( $year, $month, $day ), $time );
 		}
-		update_option( 'msm_sitemap_update_last_run', current_time( 'timestamp', 1 ) );
+		update_option( 'msm_sitemap_update_last_run', current_time( 'timestamp', 1 ), false );
 	}
 
 	/**
@@ -784,21 +788,6 @@ class Metro_Sitemap {
 		return $xml;
 	}
 
-	public static function find_valid_days( $year ) {
-		$days = 31;
-		if ( $m == 2 ) {
-			$days = date( 'L', strtotime( $year . '-01-01' ) ) ? 29 : 28;  // leap year
-		} elseif ( $m == 4 || $m == 6 || $m == 9 || $m == 11 ) {
-			$days = 30;
-		}
-
-		if ( $m == date( 'm' ) ) {
-			$days = date( 'd' );
-		}
-
-		return $days;
-	}
-
 	public static function get_supported_post_types() {
 		return apply_filters( 'msm_sitemap_entry_post_type', array( 'post' ) );
 	}
@@ -806,7 +795,6 @@ class Metro_Sitemap {
 	private static function get_supported_post_types_in() {
 		global $wpdb;
 
-		$post_types_in = '';
 		$post_types = self::get_supported_post_types();
 		$post_types_prepared = array();
 
@@ -815,6 +803,23 @@ class Metro_Sitemap {
 		}
 
 		return implode( ', ', $post_types_prepared );
+	}
+
+	/**
+	 * Helper function for PHP ordering of posts by date, desc.
+	 *
+	 * @param object $post_a StdClass object, or WP_Post object to order.
+	 * @param object $post_b StdClass object or WP_Post object to order.
+	 *
+	 * @return int
+	 */
+	private static function order_by_post_date( $post_a, $post_b ) {
+		$a_date = strtotime( $post_a->post_date );
+		$b_date = strtotime( $post_b->post_date );
+		if ( $a_date === $b_date ) {
+			return 0;
+		}
+		return ( $a_date < $b_date ) ? -1 : 1;
 	}
 }
 
