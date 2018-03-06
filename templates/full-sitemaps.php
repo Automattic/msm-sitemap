@@ -1,5 +1,5 @@
 <?php
-
+timer_start();
 if ( ! Metro_Sitemap::is_blog_public() ) {
 	wp_die(
 		__( 'Sorry, this site is not public so sitemaps are not available.', 'msm-sitemap' ),
