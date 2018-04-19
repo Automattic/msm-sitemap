@@ -449,12 +449,14 @@ class Metro_Sitemap {
 
 		// We need to get a WP_Query object for back-compat as we run a Loop when building
 		$query = new WP_Query( array(
-			'post__in' => $post_ids,
-			'post_type' => self::get_supported_post_types(),
-			'no_found_rows' => true,
-			'posts_per_page' => $per_page,
-			'ignore_sticky_posts' => true,
-			'post_status' => 'publish',
+			'post__in'               => $post_ids,
+			'post_type'              => self::get_supported_post_types(),
+			'no_found_rows'          => true,
+			'posts_per_page'         => $per_page,
+			'ignore_sticky_posts'    => true,
+			'post_status'            => 'publish',
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
 		) );
 
 		$total_url_count = self::get_total_indexed_url_count();
