@@ -87,6 +87,8 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 			$this->assertNotEmpty( $xml_struct->url );
 			$this->assertNotEmpty( $xml_struct->url->loc );
 			$this->assertNotEmpty( $xml_struct->url->lastmod );
+			$this->assertNotEmpty( $xml_struct->url->changefreq );
+			$this->assertNotEmpty( $xml_struct->url->priority );
 			$this->assertContains( 'p=' . $post_id, (string) $xml_struct->url->loc );
 
 			$post = get_post( $post_id );
