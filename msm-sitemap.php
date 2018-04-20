@@ -610,7 +610,7 @@ class Metro_Sitemap {
 	 * Update the sitemap with changes from recently modified posts
 	 */
 	public static function update_sitemap_from_modified_posts() {
-		$time = current_time( 'timestamp', 1 );
+		$start_time = $time = current_time( 'timestamp', 1 );
 		$last_modified_posts = self::get_last_modified_posts();
 		$dates = self::get_post_dates( $last_modified_posts );
 
@@ -626,7 +626,7 @@ class Metro_Sitemap {
 
 			do_action( 'msm_update_sitemap_for_year_month_date', array( $year, $month, $day ), $time );
 		}
-		update_option( 'msm_sitemap_update_last_run', current_time( 'timestamp', 1 ), false );
+		update_option( 'msm_sitemap_update_last_run', $start_time, false );
 	}
 
 	/**
