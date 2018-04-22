@@ -332,9 +332,9 @@ class MSM_Sitemap_Builder_Cron {
 
 		update_option( 'msm_sitemap_create_in_progress', true );
 
-		$days_being_processed = get_option( 'msm_days_to_process' );
-		$months_being_processed = get_option( 'msm_months_to_process' );
-		$years_being_processed = get_option( 'msm_years_to_process' );
+		$days_being_processed = ( array ) get_option( 'msm_days_to_process', array() );
+		$months_being_processed = ( array ) get_option( 'msm_months_to_process', array() );
+		$years_being_processed = ( array ) get_option( 'msm_years_to_process', array() );
 
 		$total_days = count( $days_being_processed );
 		$total_months = count( $months_being_processed );
