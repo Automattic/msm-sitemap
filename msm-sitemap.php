@@ -580,12 +580,14 @@ class Metro_Sitemap {
 		if ( ! $post ) {
 			return;
 		}
-		// add conditional for allowed post types
-		$deleted_posts[] = array(
-			'ID' => (string) $post->ID,
-			'post_date' => $post->post_date,
-			);
-		update_option( 'msm_sitemap_deleted_posts', $deleted_posts, false );
+
+		if ( in_array( $post->post_type, self::get_supported_post_types() ) ) {
+			$deleted_posts[] = array(
+				'ID' => (string) $post->ID,
+				'post_date' => $post->post_date,
+				);
+			update_option( 'msm_sitemap_deleted_posts', $deleted_posts, false );
+		}
 	}
 
 	/**
