@@ -592,12 +592,16 @@ class Metro_Sitemap {
 	 * Get posts modified within the last hour
 	 * @return object[] modified posts
 	 */
-	public static function get_last_modified_posts() {
+	public static function get_last_modified_posts( $start_time = null) {
 		global $wpdb;
+
+		if ( ! $start_time ) {
+			$start_time = current_time( 'timestamp', 1 );
+		}
 
 		$sitemap_last_run = get_option( 'msm_sitemap_update_last_run', false );
 
-		$date = date( 'Y-m-d H:i:s', ( current_time( 'timestamp', 1 ) - 3600 ) ); // posts changed within the last hour
+		$date = date( 'Y-m-d H:i:s', ( $start_time - 3600 ) ); // posts changed within the last hour
 
 		if ( $sitemap_last_run ) {
 			$date = date( 'Y-m-d H:i:s', $sitemap_last_run );
@@ -632,7 +636,7 @@ class Metro_Sitemap {
 	 */
 	public static function update_sitemap_from_modified_posts() {
 		$start_time = $time = current_time( 'timestamp', 1 );
-		$last_modified_posts = self::get_last_modified_posts();
+		$last_modified_posts = self::get_last_modified_posts( $start_time );
 		$dates = self::get_post_dates( $last_modified_posts );
 
 		foreach ( $dates as $date ) {
