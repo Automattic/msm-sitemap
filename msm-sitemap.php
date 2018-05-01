@@ -592,6 +592,8 @@ class Metro_Sitemap {
 
 	/**
 	 * Get posts modified within the last hour
+	 *
+	 * @param  int $start_time Uses or sets a canonical start time to avoid risk of missing posts modified during processing.
 	 * @return object[] modified posts
 	 */
 	public static function get_last_modified_posts( $start_time = null) {
