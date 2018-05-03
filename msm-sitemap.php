@@ -573,20 +573,29 @@ class Metro_Sitemap {
 
 	/**
 	 * Record deleted posts in an option to be used by get_last_modified_posts.
+	 *
+	 * This function saves one entry per date to avoid excessive db calls or option
+	 * size when deleting a large number of posts.
 	 */
 	public static function record_deleted_post( $post_id ) {
 		$deleted_posts = get_option( 'msm_sitemap_deleted_posts', array() );
-		$post = get_post( $post_id );
+		$post          = get_post( $post_id );
 		if ( ! $post ) {
 			return;
 		}
 
-		if ( in_array( $post->post_type, self::get_supported_post_types() ) ) {
-			$deleted_posts[] = array(
-				'ID' => (string) $post->ID,
-				'post_date' => $post->post_date,
+		if ( in_array( $post->post_type, self::get_supported_post_types(), true ) ) {
+			// We want to standardize the post date to a specific date. Let's discard the time.
+			$date = date( 'Y-m-d', strtotime( $post->post_date ) );
+
+			// Let's check to see if the date is already on deck for regeneration.
+			if ( ! in_array( $date, array_column( $deleted_posts, 'post_date' ), true ) ) {
+				$deleted_posts[] = array(
+					'ID'        => 0, // Array item is a placeholder to match modified post structure.
+					'post_date' => $date,
 				);
-			update_option( 'msm_sitemap_deleted_posts', $deleted_posts, false );
+				update_option( 'msm_sitemap_deleted_posts', $deleted_posts, false );
+			}
 		}
 	}
 
