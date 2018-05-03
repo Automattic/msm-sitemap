@@ -144,6 +144,10 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 			wp_delete_post( $post_id, true );
 		}
 
+		$deleted_posts = get_option( 'msm_sitemap_deleted_posts', array() );
+		$this->assertNotEmpty( $deleted_posts, 'msm_sitemap_deleted_posts does not have deleted posts saved' );
+		$this->assertArrayHasKey( 'ID', $deleted_posts[0], 'msm_sitemap_deleted_posts has an invalid format' );
+
 		MSM_Sitemap_Builder_Cron::generate_sitemap_for_year_month_day( array(
 			'year' => $year,
 			'month' => $month,
