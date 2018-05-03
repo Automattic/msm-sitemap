@@ -36,7 +36,7 @@ class Metro_Sitemap {
 		add_action( 'admin_init', array( __CLASS__, 'sitemap_init_cron' ) );
 		add_action( 'redirect_canonical', array( __CLASS__, 'disable_canonical_redirects_for_sitemap_xml' ), 10, 2 );
 		add_action( 'init', array( __CLASS__, 'create_post_type' ) );
-		add_action( 'delete_post', array( __CLASS__, 'record_sitemap_to_rebuild' ) );
+		add_action( 'delete_post', array( __CLASS__, 'record_deleted_post' ) );
 		add_filter( 'posts_pre_query', array( __CLASS__, 'disable_main_query_for_sitemap_xml' ), 10, 2 );
 		add_filter( 'template_include', array( __CLASS__, 'load_sitemap_template' ) );
 
@@ -574,7 +574,7 @@ class Metro_Sitemap {
 	/**
 	 * Record deleted posts in an option to be used by get_last_modified_posts.
 	 */
-	public static function record_sitemap_to_rebuild( $post_id ) {
+	public static function record_deleted_post( $post_id ) {
 		$deleted_posts = get_option( 'msm_sitemap_deleted_posts', array() );
 		$post = get_post( $post_id );
 		if ( ! $post ) {
