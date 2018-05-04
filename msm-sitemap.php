@@ -814,4 +814,32 @@ class Metro_Sitemap {
 	}
 }
 
+/**
+ * Fires functions on plugin activation
+ *
+ * @return void
+ **/
+function metro_sitemap_activation_hook() {
+	// Set up sitemap rewrites.
+	Metro_Sitemap::sitemap_rewrite_init();
+	flush_rewrite_rules();
+}
+
+/**
+ * Fires functions to remove functionality upon plugin deactivation.
+ *
+ * @return  void
+ */
+function metro_sitemap_deactivation_hook() {
+	global $wp_rewrite;
+	remove_rewrite_tag( '%sitemap%' );
+	remove_rewrite_tag( '%sitemap-year%' );
+	unset( $wp_rewrite->extra_rules_top['^sitemap.xml$'] );
+	unset( $wp_rewrite->extra_rules_top['^sitemap-([0-9]{4}).xml$'] );
+	flush_rewrite_rules();
+}
+
+register_activation_hook( __FILE__, 'metro_sitemap_activation_hook' );
+register_deactivation_hook( __FILE__, 'metro_sitemap_deactivation_hook' );
+
 add_action( 'after_setup_theme', array( 'Metro_Sitemap', 'setup' ) );
