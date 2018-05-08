@@ -42,7 +42,7 @@ class Metro_Sitemap {
 		// By default, we use wp-cron to help generate the full sitemap.
 		// However, this will let us override it, if necessary, like on WP.com
 		if ( true === apply_filters( 'msm_sitemap_use_cron_builder', true ) ) {
-			require dirname( __FILE__ ) . '/includes/msm-sitemap-builder-cron.php';
+			require_once dirname( __FILE__ ) . '/includes/msm-sitemap-builder-cron.php';
 			MSM_Sitemap_Builder_Cron::setup();
 		}
 	}
@@ -826,17 +826,32 @@ function metro_sitemap_activation_hook() {
 }
 
 /**
- * Fires functions to remove functionality upon plugin deactivation.
+ * Fires functions to remove functionality and clean options upon plugin deactivation.
+ *
+ * Due to the potentially large number of msm_sitemap posts created, this function does not
+ * attempt to delete them. To delete sitemap posts, use:
+ * wp post delete $(wp post list --post_type=msm_sitemap --format=ids) --force
  *
  * @return  void
  */
 function metro_sitemap_deactivation_hook() {
+	// Clean rewrite rules.
 	global $wp_rewrite;
 	remove_rewrite_tag( '%sitemap%' );
 	remove_rewrite_tag( '%sitemap-year%' );
 	unset( $wp_rewrite->extra_rules_top['^sitemap.xml$'] );
 	unset( $wp_rewrite->extra_rules_top['^sitemap-([0-9]{4}).xml$'] );
 	flush_rewrite_rules();
+
+	// Clean cron jobs.
+	wp_unschedule_hook( 'msm_cron_generate_sitemap_for_year_month_day' );
+	wp_unschedule_hook( 'msm_cron_generate_sitemap_for_year_month' );
+	wp_unschedule_hook( 'msm_cron_generate_sitemap_for_year' );
+	wp_unschedule_hook( 'msm_cron_update_sitemap' );
+
+	// Clean options.
+	require_once dirname( __FILE__ ) . '/includes/msm-sitemap-builder-cron.php';
+	MSM_Sitemap_Builder_Cron::reset_sitemap_data();
 }
 
 register_activation_hook( __FILE__, 'metro_sitemap_activation_hook' );
