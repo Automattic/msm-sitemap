@@ -141,7 +141,6 @@ class Metro_Sitemap {
 
 		// Start outputting html
 		echo '<div class="wrap">';
-		screen_icon();
 		echo '<h2>' . __( 'Sitemap', 'metro-sitemaps' ) . '</h2>';
 
 		if ( ! self::is_blog_public() ) {
