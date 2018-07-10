@@ -45,3 +45,18 @@ usage: wp msm-sitemap generate-sitemap
 
 See 'wp help msm-sitemap <command>' for more information on a specific command.
 ```
+
+## Filtering Sitemap URLs
+
+If you need to filter the URLs displayed in a sitemap created via the Comprehensive Sitemap plugin, there are two considerations. First, if you are filtering the individual sitemaps, which display the URLs to the articles published on a specific date, you can use the `msm_sitemap_entry` hook to filter the URLs. An example for a reverse-proxy situation is below:
+
+```
+function example_filter_msm_sitemap_entry( $url ) {
+    $location = str_replace( 'example.wordpress.com', 'example.com/blog', $url->loc );
+    $url->loc = $location;
+    return $url;
+}
+add_filter( 'msm_sitemap_entry', 'example_filter_msm_sitemap_entry', 10, 1 );
+```
+
+Second, if you are filtering the root sitemap, which displays the URLs to the individual sitemaps by date, you will need to filter the `home_url` directly. There is no plugin-specific hook to filter the URLs on the root sitemap.
