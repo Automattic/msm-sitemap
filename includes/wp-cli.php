@@ -100,7 +100,11 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		WP_CLI::line( sprintf( 'Generating sitemap for %s-%s', $year, $month ) );
 
 		// Calculate actual number of days in the month since we don't have cal_days_in_month available
-		$max_days = 31;
+		if ( ! function_exists( 'cal_days_in_month' ) ) {
+			$max_days = 31;
+		} else {
+			$max_days = cal_days_in_month( CAL_GREGORIAN, (int) $month, (int) $year );
+		}
 
 		if ( date( 'Y' ) == $year && date( 'n' ) == $month ) {
 			$max_days = date( 'j' );

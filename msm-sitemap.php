@@ -447,16 +447,6 @@ class Metro_Sitemap {
 			return;
 		}
 
-		// We need to get a WP_Query object for back-compat as we run a Loop when building
-		$query = new WP_Query( array(
-			'post__in' => $post_ids,
-			'post_type' => self::get_supported_post_types(),
-			'no_found_rows' => true,
-			'posts_per_page' => $per_page,
-			'ignore_sticky_posts' => true,
-			'post_status' => 'publish',
-		) );
-
 		$total_url_count = self::get_total_indexed_url_count();
 
 		// For migration: in case the previous version used an array for this option
@@ -484,8 +474,9 @@ class Metro_Sitemap {
 		$xml = new SimpleXMLElement( $namespace_str );
 
 		$url_count = 0;
-		while ( $query->have_posts() ) {
-			$query->the_post();
+		foreach ( $post_ids as $post_id ) {
+			$GLOBALS['post'] = get_post( $post_id );
+			setup_postdata( $GLOBALS['post'] );
 
 			if ( apply_filters( 'msm_sitemap_skip_post', false ) )
 				continue;

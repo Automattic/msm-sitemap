@@ -155,7 +155,7 @@ class MSM_Sitemap_Builder_Cron {
 		list( $year, $month, $day ) = $date;
 
 		wp_schedule_single_event(
-			$time, 
+			$time,
 			'msm_cron_generate_sitemap_for_year_month_day',
 			array(
 				array(
@@ -197,13 +197,13 @@ class MSM_Sitemap_Builder_Cron {
 
 		if ( 0 == count( $all_years_with_posts ) )
 			return; // Cannot generate sitemaps if there are no posts
-				
+
 		$time = time();
 		$next_year = end( $all_years_with_posts );
 
 		wp_schedule_single_event(
-			$time, 
-			'msm_cron_generate_sitemap_for_year', 
+			$time,
+			'msm_cron_generate_sitemap_for_year',
 			array(
 				array(
 					'year' => (int) $next_year,
@@ -290,7 +290,7 @@ class MSM_Sitemap_Builder_Cron {
 					),
 				)
 			);
-		
+
 	}
 
 	/**
@@ -311,7 +311,7 @@ class MSM_Sitemap_Builder_Cron {
 
 		self::find_next_day_to_process( $year, $month, $day );
 	}
-	
+
 	/**
 	 * Find the next day with posts to process
 	 * @param int $year
@@ -332,9 +332,9 @@ class MSM_Sitemap_Builder_Cron {
 
 		update_option( 'msm_sitemap_create_in_progress', true );
 
-		$days_being_processed = get_option( 'msm_days_to_process' );
-		$months_being_processed = get_option( 'msm_months_to_process' );
-		$years_being_processed = get_option( 'msm_years_to_process' );
+		$days_being_processed = ( array ) get_option( 'msm_days_to_process', array() );
+		$months_being_processed = ( array ) get_option( 'msm_months_to_process', array() );
+		$years_being_processed = ( array ) get_option( 'msm_years_to_process', array() );
 
 		$total_days = count( $days_being_processed );
 		$total_months = count( $months_being_processed );
