@@ -142,7 +142,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		$year = intval( $assoc_args['year'] );
 		$month = intval( $assoc_args['month'] );
 		$day = intval( $assoc_args['day'] );
-		
+
 		$valid = $this->validate_year_month_day( $year, $month, $day );
 		if ( is_wp_error( $valid ) )
 			WP_CLI::error( $valid->get_error_message() );
@@ -150,10 +150,13 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		WP_CLI::line( sprintf( 'Generating sitemap for %s-%s-%s', $year, $month, $day ) );
 
 		$date_stamp = Metro_Sitemap::get_date_stamp( $year, $month, $day );
-		if ( Metro_Sitemap::date_range_has_posts( $date_stamp, $date_stamp ) ) {
-			Metro_Sitemap::generate_sitemap_for_date( $date_stamp ); // TODO: simplify; this function should accept the year, month, day and translate accordingly
-		} else {
-			Metro_Sitemap::delete_sitemap_for_date( $date_stamp );
+
+		foreach ( Metro_Sitemap::get_supported_post_types() as $post_type ) {
+			if ( Metro_Sitemap::date_range_has_posts( $date_stamp, $date_stamp, $post_type ) ) {
+				Metro_Sitemap::generate_sitemap_for_date( $date_stamp, $post_type ); // TODO: simplify; this function should accept the year, month, day and translate accordingly
+			} else {
+				Metro_Sitemap::delete_sitemap_for_date( $date_stamp, $post_type );
+			}
 		}
 	}
 
