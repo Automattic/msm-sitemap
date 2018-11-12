@@ -85,16 +85,25 @@ class Metro_Sitemap {
 	public static function sitemap_rewrite_init() {
 		// Allow 'sitemap=true' parameter
 		add_rewrite_tag( '%sitemap%', 'true' );
-		add_rewrite_tag( '%type%', '(\-.*)' );
 
 		// Define rewrite rules for the index based on the setup
 		if ( self::$index_by_year ) {
 			add_rewrite_tag( '%sitemap-year%', '[0-9]{4}' );
-			add_rewrite_rule( '^sitemap(\-.*)?-([0-9]{4}).xml$', 'index.php?sitemap=true&&type=$matches[1]sitemap-year=$matches[2]', 'top' );
+			add_rewrite_rule( '^sitemap-([0-9]{4}).xml$','index.php?sitemap=true&sitemap-year=$matches[1]','top' );
 		} else {
-			add_rewrite_rule( '^sitemap(\-.*)?.xml$', 'index.php?sitemap=true&type=$matches[1]', 'top' );
+			add_rewrite_rule( '^sitemap.xml$','index.php?sitemap=true','top' );
 		}
 
+		/**
+		 * Setup additional rewrite rule for the sitemap.
+		 *
+		 * Do add_rewrite_rule().
+		 * Don't forget to add 'redirect_canonical' hook for new rule. {@see 'redirect_canonical'}
+		 *
+		 * @since 1.3.0
+		 *
+		 * @param type  $var Description.
+		 */
 		do_action( 'msm_sitemap_rewrite_rule' );
 	}
 
@@ -317,9 +326,9 @@ class Metro_Sitemap {
 	 */
 	public static function disable_canonical_redirects_for_sitemap_xml( $redirect_url, $requested_url ) {
 		if ( self::$index_by_year ) {
-			$pattern = '|sitemap(\-.*)?-([0-9]{4})\.xml|';
+			$pattern = '|sitemap-([0-9]{4})\.xml|';
 		} else {
-			$pattern = '|sitemap(\-.*)?\.xml|';
+			$pattern = '|sitemap\.xml|';
 		}
 
 		if ( preg_match( $pattern, $requested_url ) ) {
