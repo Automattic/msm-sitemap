@@ -101,8 +101,6 @@ class Metro_Sitemap {
 		 * Don't forget to add 'redirect_canonical' hook for new rule. {@see 'redirect_canonical'}
 		 *
 		 * @since 1.3.0
-		 *
-		 * @param type  $var Description.
 		 */
 		do_action( 'msm_sitemap_rewrite_rule' );
 	}
@@ -716,7 +714,7 @@ class Metro_Sitemap {
 	public static function build_sitemap_url( $sitemap_date ) {
 		$sitemap_time = strtotime( $sitemap_date );
 		$post_type = get_query_var( 'post_type' );
-		$post_type = empty( $post_type ) ? '' : '-' . $post_type;
+		$post_type = empty( $post_type ) || ! post_type_exists( $post_type ) ? '' : '-' . $post_type;
 
 		if ( self::$index_by_year ) {
 			$sitemap_url = add_query_arg(
