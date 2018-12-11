@@ -740,7 +740,7 @@ class Metro_Sitemap {
 
 	public static function get_sitemap_post_id( $year, $month, $day, $post_type = '' ) {
 		$ymd = self::get_date_stamp( $year, $month, $day );
-		$post_type = empty( $post_type ) ? 'post' : $post_type;
+		$post_type = empty( $post_type ) || ! post_type_exists( $post_type ) ? 'post' : $post_type;
 
 		$sitemap_args = array(
 			'date_query' => array(
