@@ -20,6 +20,8 @@ class Metro_Sitemap {
 
 	public static $index_by_year = false;
 
+	public static $split_by_posttype = false;
+
 	/**
 	 * Register actions for our hook
 	 */
@@ -30,6 +32,9 @@ class Metro_Sitemap {
 
 		// Filter to allow the sitemap to be indexed by year
 		self::$index_by_year = apply_filters( 'msm_sitemap_index_by_year', false );
+
+		// Filter to allow the sitemap to be split by post type
+		self::$split_by_posttype = apply_filters( 'msm_sitemap_split_by_posttype', false );
 
 		// A cron schedule for creating/updating sitemap posts based on updated content since the last run
 		add_action( 'init', array( __CLASS__, 'sitemap_init' ) );
@@ -80,15 +85,24 @@ class Metro_Sitemap {
 	public static function sitemap_rewrite_init() {
 		// Allow 'sitemap=true' parameter
 		add_rewrite_tag( '%sitemap%', 'true' );
-		add_rewrite_tag( '%type%', '(\-.*)' );
 
 		// Define rewrite rules for the index based on the setup
 		if ( self::$index_by_year ) {
 			add_rewrite_tag( '%sitemap-year%', '[0-9]{4}' );
-			add_rewrite_rule( '^sitemap(\-.*)?-([0-9]{4}).xml$', 'index.php?sitemap=true&&type=$matches[1]sitemap-year=$matches[2]', 'top' );
+			add_rewrite_rule( '^sitemap-([0-9]{4}).xml$','index.php?sitemap=true&sitemap-year=$matches[1]','top' );
 		} else {
-			add_rewrite_rule( '^sitemap(\-.*)?.xml$', 'index.php?sitemap=true&type=$matches[1]', 'top' );
+			add_rewrite_rule( '^sitemap.xml$','index.php?sitemap=true','top' );
 		}
+
+		/**
+		 * Setup additional rewrite rule for the sitemap.
+		 *
+		 * Do add_rewrite_rule().
+		 * Don't forget to add 'redirect_canonical' hook for new rule. {@see 'redirect_canonical'}
+		 *
+		 * @since 1.3.0
+		 */
+		do_action( 'msm_sitemap_rewrite_rule' );
 	}
 
 	/**
@@ -310,9 +324,9 @@ class Metro_Sitemap {
 	 */
 	public static function disable_canonical_redirects_for_sitemap_xml( $redirect_url, $requested_url ) {
 		if ( self::$index_by_year ) {
-			$pattern = '|sitemap(\-.*)?-([0-9]{4})\.xml|';
+			$pattern = '|sitemap-([0-9]{4})\.xml|';
 		} else {
-			$pattern = '|sitemap(\-.*)?\.xml|';
+			$pattern = '|sitemap\.xml|';
 		}
 
 		if ( preg_match( $pattern, $requested_url ) ) {
@@ -699,8 +713,8 @@ class Metro_Sitemap {
 	 */
 	public static function build_sitemap_url( $sitemap_date ) {
 		$sitemap_time = strtotime( $sitemap_date );
-		$post_type = get_query_var( 'type' );
-		$post_type = empty( $post_type ) ? '' : $post_type;
+		$post_type = get_query_var( 'post_type' );
+		$post_type = empty( $post_type ) || ! post_type_exists( $post_type ) ? '' : '-' . $post_type;
 
 		if ( self::$index_by_year ) {
 			$sitemap_url = add_query_arg(
@@ -726,8 +740,7 @@ class Metro_Sitemap {
 
 	public static function get_sitemap_post_id( $year, $month, $day, $post_type = '' ) {
 		$ymd = self::get_date_stamp( $year, $month, $day );
-		$query_var = ltrim( get_query_var( 'type' ), '-' );
-		$post_type = empty( $post_type ) && ! empty( $query_var ) ? $query_var : 'post';
+		$post_type = empty( $post_type ) || ! post_type_exists( $post_type ) ? 'post' : $post_type;
 
 		$sitemap_args = array(
 			'date_query' => array(
@@ -761,9 +774,10 @@ class Metro_Sitemap {
 	 * Get XML for individual day
 	 */
 	public static function build_individual_sitemap_xml( $year, $month, $day ) {
+		$post_type = get_query_var( 'post_type' );
 
 		// Get XML for an individual day. Stored as full xml
-		$sitemap_id = self::get_sitemap_post_id( $year, $month, $day );
+		$sitemap_id = self::get_sitemap_post_id( $year, $month, $day, $post_type );
 
 		if ( $sitemap_id ) {
 			$sitemap_content = get_post_meta( $sitemap_id, 'msm_sitemap_xml', true );
