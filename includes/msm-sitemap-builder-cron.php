@@ -303,10 +303,13 @@ class MSM_Sitemap_Builder_Cron {
 		$day = $args['day'];
 
 		$date_stamp = Metro_Sitemap::get_date_stamp( $year, $month, $day );
-		if ( Metro_Sitemap::date_range_has_posts( $date_stamp, $date_stamp ) ) {
-			Metro_Sitemap::generate_sitemap_for_date( $date_stamp );
-		} else {
-			Metro_Sitemap::delete_sitemap_for_date( $date_stamp );
+
+		foreach ( Metro_Sitemap::get_supported_post_types() as $post_type ) {
+			if ( Metro_Sitemap::date_range_has_posts( $date_stamp, $date_stamp, $post_type ) ) {
+				Metro_Sitemap::generate_sitemap_for_date( $date_stamp, $post_type );
+			} else {
+				Metro_Sitemap::delete_sitemap_for_date( $date_stamp, $post_type );
+			}
 		}
 
 		self::find_next_day_to_process( $year, $month, $day );
