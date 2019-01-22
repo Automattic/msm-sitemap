@@ -60,3 +60,12 @@ add_filter( 'msm_sitemap_entry', 'example_filter_msm_sitemap_entry', 10, 1 );
 ```
 
 Second, if you are filtering the root sitemap, which displays the URLs to the individual sitemaps by date, you will need to filter the `home_url` directly. There is no plugin-specific hook to filter the URLs on the root sitemap.
+
+
+## Filter Sitemap Index
+
+Use the `msm_sitemap_index` filter to exclude day sitemaps from the index.
+
+```
+TODO: Add an example.
+```
