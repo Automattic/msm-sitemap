@@ -64,8 +64,10 @@ Second, if you are filtering the root sitemap, which displays the URLs to the in
 
 ## Filter Sitemap Index
 
-Use the `msm_sitemap_index` filter to exclude day sitemaps from the index.
+Use the `msm_sitemap_index` filter to exclude daily sitemaps from the index based on date.
 
 ```
-TODO: Add an example.
+add_filter( 'msm_sitemap_index', function( $sitemaps ) {
+	return array_filter( $sitemaps, function( $date ) { return '2017-09-09' < $date; } );
+});
 ```

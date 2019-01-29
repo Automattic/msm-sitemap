@@ -674,7 +674,7 @@ class Metro_Sitemap {
 		// Sometimes duplicate sitemaps exist, lets make sure so they are not output
 		$sitemaps = array_unique( $sitemaps );
 
-		// Allow excluding daily sitemaps from the index.
+		// Filter daily sitemaps from the index by date.
 		$sitemaps = apply_filters( 'msm_sitemap_index', $sitemaps, $year );
 
 		$xml = new SimpleXMLElement( $xml_prefix . '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
