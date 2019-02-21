@@ -45,5 +45,16 @@ class WP_Test_Sitemap_Filter extends WP_UnitTestCase {
 		
 	}
 
+	/**
+	 * Verify that msm_sitemap_index filter runs when build_root_sitemap_xml is called.
+	 */
+	function test_msm_sitemap_index_filter_ran() {
+		$ran = false;
+
+		add_filter( 'msm_sitemap_index', function() use ( &$ran ) { $ran = true; return []; } );
+		Metro_Sitemap::build_root_sitemap_xml();
+
+		$this->assertTrue( $ran );
+	}
 }
 

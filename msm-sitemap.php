@@ -674,6 +674,21 @@ class Metro_Sitemap {
 		// Sometimes duplicate sitemaps exist, lets make sure so they are not output
 		$sitemaps = array_unique( $sitemaps );
 
+		/**
+		 * Filter daily sitemaps from the index by date.
+		 *
+		 * Expects an array of dates in MySQL DATETIME format [ Y-m-d H:i:s ].
+		 *
+		 * Since adding dates that do not have posts is pointless, this filter is primarily intended for removing
+		 * dates before or after a specific date or possibly targeting specific dates to exclude.
+		 *
+		 * @since 1.4.0
+		 *
+		 * @param array  $sitemaps Array of dates in MySQL DATETIME format [ Y-m-d H:i:s ].
+		 * @param string $year     Year that sitemap is being generated for.
+		 */
+		$sitemaps = apply_filters( 'msm_sitemap_index', $sitemaps, $year );
+
 		$xml = new SimpleXMLElement( $xml_prefix . '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
 		foreach ( $sitemaps as $sitemap_date ) {
 			$sitemap = $xml->addChild( 'sitemap' );
