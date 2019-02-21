@@ -68,6 +68,10 @@ Use the `msm_sitemap_index` filter to exclude daily sitemaps from the index base
 
 ```
 add_filter( 'msm_sitemap_index', function( $sitemaps ) {
-	return array_filter( $sitemaps, function( $date ) { return '2017-09-09' < $date; } );
-});
+    $reference_date = strtotime( '2017-09-09' );
+
+    return array_filter( $sitemaps, function ( $date ) use ( $reference_date ) {
+        return ( $reference_date < strtotime( $date ) );
+    } );
+} );
 ```
