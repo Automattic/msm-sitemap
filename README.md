@@ -17,7 +17,7 @@ Comprehensive sitemaps for your WordPress.com VIP site. Joint collaboration betw
 
 We want to generate the entire sitemap catalogue async to avoid running into timeout and memory issues.
 
-Here's how the defualt WP-Cron approach works:
+Here's how the default WP-Cron approach works:
 
 * Get year range for content.
 * Store these years in options table.
