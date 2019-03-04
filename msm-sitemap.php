@@ -485,7 +485,6 @@ class Metro_Sitemap {
 			$url->addChild( 'loc', esc_url( get_permalink() ) );
 			$url->addChild( 'lastmod', get_post_modified_time( 'c', true ) );
 			$url->addChild( 'changefreq', 'monthly' );
-			$url->addChild( 'priority', '0.7' );
 
 			apply_filters( 'msm_sitemap_entry', $url );
 
