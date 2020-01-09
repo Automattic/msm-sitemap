@@ -3,7 +3,7 @@ language: php
 
 # PHP version used in first build configuration.
 php:
-    - "7.0"
+    - "7.3"
 
 # WordPress version used in first build configuration.
 env:
@@ -24,17 +24,17 @@ env:
 
 matrix:
   include:
-   - php: "5.4"
-     env: WP_VERSION=latest
-   - php: "5.4"
-     env: WP_VERSION=4.7
    - php: "5.6"
      env: WP_VERSION=latest
    - php: "5.6"
-     env: WP_VERSION=4.7
-     # 7.0 / latest already included above as first build.
+     env: WP_VERSION=5.3.2
    - php: "7.0"
      env: WP_VERSION=latest
+   - php: "7.0"
+     env: WP_VERSION=5.3.2
+     # 7.3 / latest already included above as first build.
+   - php: "7.3"
+     env: WP_VERSION=5.3.2
 
 before_script:
   - export PATH="$HOME/.composer/vendor/bin:$PATH"
