@@ -39,6 +39,9 @@ class Metro_Sitemap {
 		add_filter( 'posts_pre_query', array( __CLASS__, 'disable_main_query_for_sitemap_xml' ), 10, 2 );
 		add_filter( 'template_include', array( __CLASS__, 'load_sitemap_template' ) );
 
+		// Potentially disable cron based on a kill switch
+		add_filter( 'msm_sitemap_use_cron_builder', array( __CLASS__, 'maybe_use_cron' ) );
+
 		// By default, we use wp-cron to help generate the full sitemap.
 		// However, this will let us override it, if necessary, like on WP.com
 		if ( true === apply_filters( 'msm_sitemap_use_cron_builder', true ) ) {
@@ -795,6 +798,10 @@ class Metro_Sitemap {
 
 	public static function get_supported_post_types() {
 		return apply_filters( 'msm_sitemap_entry_post_type', array( 'post' ) );
+	}
+
+	public static function maybe_use_cron( $enable ) {
+		return ( 'yes' === get_option( 'msm_disable_cron', false ) ) ? false : $enable;
 	}
 
 	private static function get_supported_post_types_in() {
