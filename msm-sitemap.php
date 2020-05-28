@@ -692,6 +692,7 @@ class Metro_Sitemap {
 		foreach ( $sitemaps as $sitemap_date ) {
 			$sitemap = $xml->addChild( 'sitemap' );
 			$sitemap->loc = self::build_sitemap_url( $sitemap_date ); // manually set the child instead of addChild to prevent "unterminated entity reference" warnings due to encoded ampersands http://stackoverflow.com/a/555039/169478
+			do_action( 'msm_sitemap_element', $sitemap );
 		}
 		return $xml->asXML();
 	}
