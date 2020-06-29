@@ -40,7 +40,7 @@ class Metro_Sitemap {
 		add_filter( 'template_include', array( __CLASS__, 'load_sitemap_template' ) );
 		
 		// Disable WordPress 5.5-era sitemaps.
-		add_filter( 'wp_sitemaps_is_enabled', '__return_false' );
+		add_filter( 'wp_sitemaps_enabled', '__return_false' );
 
 		// By default, we use wp-cron to help generate the full sitemap.
 		// However, this will let us override it, if necessary, like on WP.com
