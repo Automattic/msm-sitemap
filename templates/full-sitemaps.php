@@ -8,7 +8,7 @@ if ( ! Metro_Sitemap::is_blog_public() ) {
 	);
 }
 
-$req_year = get_query_var( 'sitemap-year' );
+$req_year = get_query_var( 'sitemap_msm-year' );
 if ( empty( $req_year ) ) {
 	$req_year = ( isset( $_GET['yyyy'] ) ) ? intval( $_GET['yyyy'] ) : false;
 }
