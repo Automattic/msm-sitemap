@@ -164,7 +164,7 @@ class Metro_Sitemap {
 		}
 
 		// All the settings we need to read to display the page
-		$sitemap_create_in_progress = get_option( 'msm_sitemap_create_in_progress' ) === true;
+		$sitemap_create_in_progress = (bool) get_option( 'msm_sitemap_create_in_progress' ) === true;
 		$sitemap_update_last_run = get_option( 'msm_sitemap_update_last_run' );
 
 		// Determine sitemap status text

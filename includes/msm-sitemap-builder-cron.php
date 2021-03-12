@@ -34,8 +34,8 @@ class MSM_Sitemap_Builder_Cron {
 			return $actions;
 		}
 
-		$sitemap_create_in_progress = get_option( 'msm_sitemap_create_in_progress' ) === true;
-		$sitemap_halt_in_progress = get_option( 'msm_stop_processing' ) === true;
+		$sitemap_create_in_progress = (bool) get_option( 'msm_sitemap_create_in_progress' ) === true;
+		$sitemap_halt_in_progress = (bool) get_option( 'msm_stop_processing' ) === true;
 
 		$actions['generate'] = array( 'text' => __( 'Generate from all articles', 'metro-sitemaps' ), 'enabled' => ! $sitemap_create_in_progress && ! $sitemap_halt_in_progress );
 		$actions['generate_from_latest'] = array( 'text' => __( 'Generate from latest articles', 'metro-sitemaps' ), 'enabled' => ! $sitemap_create_in_progress && ! $sitemap_halt_in_progress );
@@ -55,9 +55,10 @@ class MSM_Sitemap_Builder_Cron {
 	 * @return string The status text.
 	 */
 	public static function sitemap_create_status( $status ) {
-		if ( get_option( 'msm_stop_processing' ) === true && get_option( 'msm_sitemap_create_in_progress' ) === true )
+		if ( (bool) get_option( 'msm_stop_processing' ) === true && (bool) get_option( 'msm_sitemap_create_in_progress' ) === true ) {
 			return __( 'Halting', 'metro-sitemaps' );
-
+		}
+			
 		return $status;
 	}
 
@@ -67,7 +68,7 @@ class MSM_Sitemap_Builder_Cron {
 	 * Hooked into the msm_sitemap_actions-generate action.
 	 */
 	public static function action_generate() {
-		$sitemap_create_in_progress = get_option( 'msm_sitemap_create_in_progress' );
+		$sitemap_create_in_progress = (bool) get_option( 'msm_sitemap_create_in_progress' );
 		self::generate_full_sitemap();
 
 		if ( false !== get_option( 'msm_sitemap_create_in_progress', false ) ) {
@@ -105,9 +106,9 @@ class MSM_Sitemap_Builder_Cron {
 	 */
 	public static function action_halt() {
 		// Can only halt generation if sitemap creation is already in process
-		if ( get_option( 'msm_stop_processing' ) === true ) {
+		if ( (bool) get_option( 'msm_stop_processing' ) === true ) {
 			Metro_Sitemap::show_action_message( __( 'Cannot stop sitemap generation: sitemap generation is already being halted.', 'metro-sitemaps' ), 'warning' );
-		} else if ( get_option( 'msm_sitemap_create_in_progress' ) === true ) {
+		} else if ( (bool) get_option( 'msm_sitemap_create_in_progress' ) === true ) {
 			update_option( 'msm_stop_processing', true );
 			Metro_Sitemap::show_action_message( __( 'Stopping Sitemap generation', 'metro-sitemaps' ) );
 		} else {
@@ -321,7 +322,7 @@ class MSM_Sitemap_Builder_Cron {
 	 */
 	public static function find_next_day_to_process( $year, $month, $day ) {
 
-		$halt = get_option( 'msm_stop_processing' ) === true;
+		$halt = (bool) get_option( 'msm_stop_processing' ) === true;
 		if ( $halt || ! Metro_Sitemap::is_blog_public() ) {
 			// Allow user to bail out of the current process, doesn't remove where the job got up to
 			// or If the blog became private while sitemaps were enabled, stop here.
