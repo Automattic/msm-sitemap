@@ -3,8 +3,8 @@
 Plugin Name: Metro Sitemap
 Description: Comprehensive sitemaps for your WordPress site. Joint collaboration between Metro.co.uk, MAKE, Alley Interactive, and WordPress.com VIP.
 Author: Artur Synowiec, Paul Kevan, and others
-Version: 1.4.1
-Stable tag: 1.4.1
+Version: 1.5.0
+Stable tag: 1.5.0
 License: GPLv2
 */
 
@@ -38,7 +38,7 @@ class Metro_Sitemap {
 		add_action( 'init', array( __CLASS__, 'create_post_type' ) );
 		add_filter( 'posts_pre_query', array( __CLASS__, 'disable_main_query_for_sitemap_xml' ), 10, 2 );
 		add_filter( 'template_include', array( __CLASS__, 'load_sitemap_template' ) );
-		
+
 		// Disable WordPress 5.5-era sitemaps.
 		add_filter( 'wp_sitemaps_enabled', '__return_false' );
 
@@ -82,14 +82,14 @@ class Metro_Sitemap {
 	 */
 	public static function sitemap_rewrite_init() {
 		// Allow 'sitemap=true' parameter
-		add_rewrite_tag( '%sitemap%', 'true' );
+		add_rewrite_tag( '%sitemap_msm%', 'true' );
 
 		// Define rewrite rules for the index based on the setup
 		if ( self::$index_by_year ) {
-			add_rewrite_tag( '%sitemap-year%', '[0-9]{4}' );
-			add_rewrite_rule( '^sitemap-([0-9]{4}).xml$','index.php?sitemap=true&sitemap-year=$matches[1]','top' );
+			add_rewrite_tag( '%sitemap_msm-year%', '[0-9]{4}' );
+			add_rewrite_rule( '^sitemap-([0-9]{4}).xml$','index.php?sitemap_msm=true&sitemap_msm-year=$matches[1]','top' );
 		} else {
-			add_rewrite_rule( '^sitemap.xml$','index.php?sitemap=true','top' );
+			add_rewrite_rule( '^sitemap.xml$','index.php?sitemap_msm=true','top' );
 		}
 	}
 
@@ -635,7 +635,7 @@ class Metro_Sitemap {
 	 * Trigger rendering of the actual sitemap
 	 */
 	public static function load_sitemap_template( $template ) {
-		if ( get_query_var( 'sitemap' ) === 'true' ) {
+		if ( get_query_var( 'sitemap_msm' ) === 'true' ) {
 			$template = dirname( __FILE__ ) . '/templates/full-sitemaps.php';
 		}
 		return $template;
@@ -648,7 +648,7 @@ class Metro_Sitemap {
 	 * @param WP_Query $query The WP_Query instance.
 	 */
 	public static function disable_main_query_for_sitemap_xml( $posts, $query ) {
-		if ( $query->is_main_query() && isset($query->query_vars['sitemap']) && 'true' === $query->query_vars['sitemap'] ) {
+		if ( $query->is_main_query() && isset($query->query_vars['sitemap_msm']) && 'true' === $query->query_vars['sitemap_msm'] ) {
 			$posts = array();
 		}
 		return $posts;
