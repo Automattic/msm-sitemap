@@ -1,4 +1,4 @@
-name: Run PHPUnit and PHPCS
+name: Run PHPUnit
 
 on:
   # Run on all pushes and on all pull requests.
@@ -41,7 +41,6 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          coverage: pcov
           # https://make.wordpress.org/hosting/handbook/handbook/server-environment/#php-extensions
           extensions: curl, dom, exif, fileinfo, hash, json, mbstring, mysqli, openssl, pcre, imagick, xml, zip
 
