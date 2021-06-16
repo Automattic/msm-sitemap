@@ -51,7 +51,7 @@ jobs:
 
       # Lint PHP.
       - name: Lint PHP against parse errors
-        run: composer cs | cs2pr
+        run: composer lint-ci | cs2pr
 
       # Needed as runs-on: system doesn't have xml-lint by default.
       # @link https://github.com/marketplace/actions/xml-lint
