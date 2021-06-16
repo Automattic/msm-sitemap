@@ -45,7 +45,7 @@
 		],
 		"test-ms": [
 			"@putenv WP_MULTISITE=1",
-			"@composer integration"
+			"@composer test"
 		]
 	},
 	"support": {
