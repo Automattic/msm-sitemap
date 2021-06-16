@@ -31,21 +31,21 @@
 		"cs": [
 			"@php ./vendor/bin/phpcs"
 		],
-		"integration": [
-			"@php ./vendor/bin/phpunit --testsuite WP_Tests"
-		],
-		"integration-ms": [
-			"@putenv WP_MULTISITE=1",
-			"@composer integration"
-		],
 		"lint": [
 			"@php ./vendor/php-parallel-lint/php-parallel-lint/parallel-lint . -e php --exclude vendor --exclude .git"
 		],
 		"lint-ci": [
 			"@php ./vendor/php-parallel-lint/php-parallel-lint/parallel-lint . -e php --exclude vendor --exclude .git --checkstyle"
 		],
-		"prepare": [
+		"prepare-ci": [
 			"bash bin/install-wp-tests.sh wordpress_test root root localhost"
+		],
+		"test": [
+			"@php ./vendor/bin/phpunit --testsuite WP_Tests"
+		],
+		"test-ms": [
+			"@putenv WP_MULTISITE=1",
+			"@composer integration"
 		]
 	},
 	"support": {

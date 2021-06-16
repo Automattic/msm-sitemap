@@ -65,10 +65,10 @@ jobs:
         run: sudo /etc/init.d/mysql start
 
       - name: Install WordPress environment
-        run: composer prepare ${{ matrix.wordpress }}
+        run: composer prepare-ci ${{ matrix.wordpress }}
 
       - name: Run integration tests (single site)
-        run: composer integration
+        run: composer test
 
       - name: Run integration tests (multisite)
-        run: composer integration-ms
+        run: composer test-ms
