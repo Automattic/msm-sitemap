@@ -40,7 +40,7 @@
 	<rule ref="WordPress-Docs"/>
 	<!-- For help in understanding these custom sniff properties:
 		https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/wiki/Customizable-sniff-properties -->
-	<config name="minimum_supported_wp_version" value="4.0"/>
+	<config name="minimum_supported_wp_version" value="5.5"/>
 
 	<!-- Rules: WordPress VIP - see
 		https://github.com/Automattic/VIP-Coding-Standards -->
@@ -58,6 +58,7 @@
 		<properties>
 			<property name="text_domain" type="array">
 				<element value="metro-sitemap"/>
+				<element value="msm-sitemap"/>
 			</property>
 		</properties>
 	</rule>
@@ -65,14 +66,6 @@
 	<rule ref="WordPress.WhiteSpace.ControlStructureSpacing">
 		<properties>
 			<property name="blank_line_check" value="true"/>
-		</properties>
-	</rule>
-
-	<rule ref="WordPress.Files.FileName">
-		<properties>
-			<property name="custom_test_class_whitelist" type="array">
-				<element value="WP_UnitTestCase"/>
-			</property>
 		</properties>
 	</rule>
 
