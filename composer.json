@@ -1,8 +1,8 @@
 {
 	"name": "automattic/msm-sitemap",
+	"type": "wordpress-plugin",
 	"description": "Comprehensive sitemaps for your WordPress.com VIP site.",
 	"homepage": "https://github.com/Automattic/msm-sitemap/",
-	"type": "wordpress-plugin",
 	"license": "GPL-2.0-or-later",
 	"authors": [
 		{
@@ -10,13 +10,9 @@
 			"homepage": "https://automattic.com/"
 		}
 	],
-	"support": {
-		"issues": "https://github.com/Automattic/msm-sitemap/issues",
-		"source": "https://github.com/Automattic/msm-sitemap"
-	},
 	"require": {
-		"composer/installers": "~1.0",
-		"php": ">=5.6"
+		"php": ">=5.6",
+		"composer/installers": "~1.0"
 	},
 	"require-dev": {
 		"automattic/vipwpcs": "^2.2",
@@ -29,11 +25,18 @@
 		"yoast/phpunit-polyfills": "^0.2.0"
 	},
 	"scripts": {
+		"cbf": [
+			"@php ./vendor/bin/phpcbf"
+		],
 		"cs": [
 			"@php ./vendor/bin/phpcs"
 		],
-		"cbf": [
-			"@php ./vendor/bin/phpcbf"
+		"integration": [
+			"@php ./vendor/bin/phpunit --testsuite WP_Tests"
+		],
+		"integration-ms": [
+			"@putenv WP_MULTISITE=1",
+			"@composer integration"
 		],
 		"lint": [
 			"@php ./vendor/php-parallel-lint/php-parallel-lint/parallel-lint . -e php --exclude vendor --exclude .git"
@@ -43,13 +46,10 @@
 		],
 		"prepare": [
 			"bash bin/install-wp-tests.sh wordpress_test root root localhost"
-		],
-		"integration": [
-			"@php ./vendor/bin/phpunit --testsuite WP_Tests"
-		],
-		"integration-ms": [
-			"@putenv WP_MULTISITE=1",
-			"@composer integration"
 		]
+	},
+	"support": {
+		"issues": "https://github.com/Automattic/msm-sitemap/issues",
+		"source": "https://github.com/Automattic/msm-sitemap"
 	}
 }
