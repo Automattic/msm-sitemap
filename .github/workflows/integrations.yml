@@ -17,7 +17,6 @@ jobs:
     # https://www.php.net/manual/en/mysqli.requirements.php
     # TODO: change to ubuntu-latest when we no longer support PHP < 7.4
     runs-on: ubuntu-18.04
-    continue-on-error: ${{ matrix.allowed_failure }}
 
     env:
       WP_VERSION: ${{ matrix.wordpress }}
