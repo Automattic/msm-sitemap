@@ -25,6 +25,12 @@
 		"yoast/phpunit-polyfills": "^0.2.0"
 	},
 	"scripts": {
+		"coverage": [
+			"@php ./vendor/bin/phpunit --coverage-html ./build/coverage-html"
+		],
+		"coverage-ci": [
+			"@php ./vendor/bin/phpunit"
+		],
 		"cbf": [
 			"@php ./vendor/bin/phpcbf"
 		],
