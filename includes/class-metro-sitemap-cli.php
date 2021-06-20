@@ -17,14 +17,14 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 	/**
 	 * Type of command triggered so we can keep track of killswitch cleanup.
 	 *
-	 * @var string Type of command
+	 * @var string
 	 */
 	private $command = '';
 
 	/**
 	 * Flag whether or not execution should be stopped.
 	 *
-	 * @var bool Halt flag
+	 * @var bool
 	 */
 	private $halt = false;
 
