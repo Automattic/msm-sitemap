@@ -9,7 +9,7 @@ License: GPLv2
 */
 
 if ( defined( 'WP_CLI' ) && true === WP_CLI ) {
-	require dirname( __FILE__ ) . '/includes/wp-cli.php';
+	require dirname( __FILE__ ) . '/includes/class-metro-sitemap-cli.php';
 }
 
 class Metro_Sitemap {
