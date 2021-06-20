@@ -5,8 +5,14 @@
  * @package Metro_Sitemap
  */
 
+/**
+ * Manages cron
+ */
 class MSM_Sitemap_Builder_Cron {
 
+	/**
+	 * Setup
+	 */
 	public static function setup() {
 		add_action( 'msm_update_sitemap_for_year_month_date', array( __CLASS__, 'schedule_sitemap_update_for_year_month_date' ), 10, 2 );
 
@@ -34,7 +40,7 @@ class MSM_Sitemap_Builder_Cron {
 	 * @return array
 	 */
 	public static function add_actions( $actions ) {
-		// No actions for private blogs
+		// No actions for private blogs.
 		if ( ! Metro_Sitemap::is_blog_public() ) {
 			return $actions;
 		}
@@ -43,19 +49,19 @@ class MSM_Sitemap_Builder_Cron {
 		$sitemap_halt_in_progress   = (bool) get_option( 'msm_stop_processing' ) === true;
 
 		$actions['generate']             = array(
-			'text'    => __( 'Generate from all articles', 'metro-sitemaps' ),
+			'text'    => __( 'Generate from all articles', 'msm-sitemap' ),
 			'enabled' => ! $sitemap_create_in_progress && ! $sitemap_halt_in_progress,
 		);
 		$actions['generate_from_latest'] = array(
-			'text'    => __( 'Generate from latest articles', 'metro-sitemaps' ),
+			'text'    => __( 'Generate from latest articles', 'msm-sitemap' ),
 			'enabled' => ! $sitemap_create_in_progress && ! $sitemap_halt_in_progress,
 		);
 		$actions['halt_generation']      = array(
-			'text'    => __( 'Halt Sitemap Generation', 'metro-sitemaps' ),
+			'text'    => __( 'Halt Sitemap Generation', 'msm-sitemap' ),
 			'enabled' => $sitemap_create_in_progress && ! $sitemap_halt_in_progress,
 		);
 		$actions['reset_sitemap_data']   = array(
-			'text'    => __( 'Reset Sitemap Data', 'metro-sitemaps' ),
+			'text'    => __( 'Reset Sitemap Data', 'msm-sitemap' ),
 			'enabled' => ! $sitemap_create_in_progress && ! $sitemap_halt_in_progress,
 		);
 
@@ -73,7 +79,7 @@ class MSM_Sitemap_Builder_Cron {
 	 */
 	public static function sitemap_create_status( $status ) {
 		if ( (bool) get_option( 'msm_stop_processing' ) === true && (bool) get_option( 'msm_sitemap_create_in_progress' ) === true ) {
-			return __( 'Halting', 'metro-sitemaps' );
+			return __( 'Halting', 'msm-sitemap' );
 		}
 
 		return $status;
@@ -95,9 +101,9 @@ class MSM_Sitemap_Builder_Cron {
 		}
 
 		if ( empty( $sitemap_create_in_progress ) ) {
-			Metro_Sitemap::show_action_message( __( 'Starting sitemap generation...', 'metro-sitemaps' ) );
+			Metro_Sitemap::show_action_message( __( 'Starting sitemap generation...', 'msm-sitemap' ) );
 		} else {
-			Metro_Sitemap::show_action_message( __( 'Resuming sitemap creation', 'metro-sitemaps' ) );
+			Metro_Sitemap::show_action_message( __( 'Resuming sitemap creation', 'msm-sitemap' ) );
 		}
 	}
 
@@ -110,9 +116,9 @@ class MSM_Sitemap_Builder_Cron {
 		$last_modified = Metro_Sitemap::get_last_modified_posts();
 		if ( count( $last_modified ) > 0 ) {
 			Metro_Sitemap::update_sitemap_from_modified_posts();
-			Metro_Sitemap::show_action_message( __( 'Updating sitemap from latest articles...', 'metro-sitemaps' ) );
+			Metro_Sitemap::show_action_message( __( 'Updating sitemap from latest articles...', 'msm-sitemap' ) );
 		} else {
-			Metro_Sitemap::show_action_message( __( 'Cannot generate from latest articles: no posts updated lately.', 'metro-sitemaps' ), 'error' );
+			Metro_Sitemap::show_action_message( __( 'Cannot generate from latest articles: no posts updated lately.', 'msm-sitemap' ), 'error' );
 		}
 	}
 
@@ -122,14 +128,14 @@ class MSM_Sitemap_Builder_Cron {
 	 * Hooked into the msm_sitemap_actions-halt_generation action.
 	 */
 	public static function action_halt() {
-		// Can only halt generation if sitemap creation is already in process
+		// Can only halt generation if sitemap creation is already in process.
 		if ( (bool) get_option( 'msm_stop_processing' ) === true ) {
-			Metro_Sitemap::show_action_message( __( 'Cannot stop sitemap generation: sitemap generation is already being halted.', 'metro-sitemaps' ), 'warning' );
+			Metro_Sitemap::show_action_message( __( 'Cannot stop sitemap generation: sitemap generation is already being halted.', 'msm-sitemap' ), 'warning' );
 		} elseif ( (bool) get_option( 'msm_sitemap_create_in_progress' ) === true ) {
 			update_option( 'msm_stop_processing', true );
-			Metro_Sitemap::show_action_message( __( 'Stopping Sitemap generation', 'metro-sitemaps' ) );
+			Metro_Sitemap::show_action_message( __( 'Stopping Sitemap generation', 'msm-sitemap' ) );
 		} else {
-			Metro_Sitemap::show_action_message( __( 'Cannot stop sitemap generation: sitemap generation not in progress', 'metro-sitemaps' ), 'warning' );
+			Metro_Sitemap::show_action_message( __( 'Cannot stop sitemap generation: sitemap generation not in progress', 'msm-sitemap' ), 'warning' );
 		}
 	}
 
@@ -139,14 +145,15 @@ class MSM_Sitemap_Builder_Cron {
 	 * Hooked into the msm_sitemap_actions-reset_sitemap_data action.
 	 */
 	public static function action_reset_data() {
-		// Do the same as when we finish then tell use to delete manuallyrather than remove all data
+		// Do the same as when we finish then tell use to delete manually rather than remove all data.
 		self::reset_sitemap_data();
 		Metro_Sitemap::show_action_message(
 			sprintf(
+				/* translators: 1: Post type slug, 2: WP-CLI command */
 				__( '<p>Sitemap data reset. If you want to completely remove the data you must do so manually by deleting all posts with post type <code>%1$s</code>.</p><p>The WP-CLI command to do this is: <code>%2$s</code></p>', 'msm-sitemap' ),
 				Metro_Sitemap::SITEMAP_CPT,
 				'wp post delete $(wp post list --post_type=' . Metro_Sitemap::SITEMAP_CPT . ' --format=ids)'
-			) 
+			)
 		);
 	}
 
@@ -154,23 +161,29 @@ class MSM_Sitemap_Builder_Cron {
 	 * Reset sitemap options
 	 */
 	public static function reset_sitemap_data() {
-		// Remove the stats meta information
+		// Remove the stats meta information.
 		delete_post_meta_by_key( 'msm_indexed_url_count' );
 
-		// Remove the XML sitemap data
+		// Remove the XML sitemap data.
 		delete_post_meta_by_key( 'msm_sitemap_xml' );
 
-		// Delete state options
+		// Delete state options.
 		delete_option( 'msm_days_to_process' );
 		delete_option( 'msm_months_to_process' );
 		delete_option( 'msm_years_to_process' );
 		delete_option( 'msm_stop_processing' );
 		delete_option( 'msm_sitemap_create_in_progress' );
 
-		// Delete stats options
+		// Delete stats options.
 		delete_option( 'msm_sitemap_indexed_url_count' );
 	}
 
+	/**
+	 * Schedule sitemap update
+	 *
+	 * @param array $date
+	 * @param int   $time Unix timestamp (UTC) for when to next run the event.
+	 */
 	public static function schedule_sitemap_update_for_year_month_date( $date, $time ) {
 		list( $year, $month, $day ) = $date;
 
@@ -216,7 +229,7 @@ class MSM_Sitemap_Builder_Cron {
 		}
 
 		if ( 0 == count( $all_years_with_posts ) ) {
-			return; // Cannot generate sitemaps if there are no posts
+			return; // Cannot generate sitemaps if there are no posts.
 		}
 
 		$time      = time();
@@ -243,7 +256,7 @@ class MSM_Sitemap_Builder_Cron {
 
 		$year      = $args['year'];
 		$max_month = 12;
-		if ( $year == date( 'Y' ) ) {
+		if ( date( 'Y' ) == $year ) {
 			$max_month = date( 'n' );
 		}
 
@@ -280,14 +293,14 @@ class MSM_Sitemap_Builder_Cron {
 		$year  = $args['year'];
 		$month = $args['month'];
 
-		// cal_days_in_month doesn't exist on WP.com so set it to a possible max. Will skip invalid dates as no posts will be found
+		// cal_days_in_month doesn't exist on WP.com so set it to a possible max. Will skip invalid dates as no posts will be found.
 		if ( ! function_exists( 'cal_days_in_month' ) ) {
 			$max_days = 31;
 		} else {
 			$max_days = cal_days_in_month( CAL_GREGORIAN, (int) $month, (int) $year );
 		}
 
-		if ( date( 'Y' ) == $year && $month == date( 'n' ) ) {
+		if ( date( 'Y' ) == $year && date( 'n' ) == $month ) {
 			$max_days = date( 'j' );
 		}
 
@@ -364,30 +377,30 @@ class MSM_Sitemap_Builder_Cron {
 		$total_years  = count( $years_being_processed );
 
 		if ( $total_days && $day > 1 ) {
-			// Day has finished
+			// Day has finished.
 			unset( $days_being_processed[ $total_days - 1 ] );
 			update_option( 'msm_days_to_process', $days_being_processed );
 			self::generate_sitemap_for_year_month(
 				array(
 					'year'  => $year,
 					'month' => $month,
-				) 
+				)
 			);
-		} elseif ( $total_months and $month > 1 ) {
-			// Month has finished
+		} elseif ( $total_months && $month > 1 ) {
+			// Month has finished.
 			unset( $months_being_processed[ $total_months - 1 ] );
 			delete_option( 'msm_days_to_process' );
 			update_option( 'msm_months_to_process', $months_being_processed );
 			self::generate_sitemap_for_year( array( 'year' => $year ) );
 		} elseif ( $total_years > 1 ) {
-			// Year has finished
+			// Year has finished.
 			unset( $years_being_processed[ $total_years - 1 ] );
 			delete_option( 'msm_days_to_process' );
 			delete_option( 'msm_months_to_process' );
 			update_option( 'msm_years_to_process', $years_being_processed );
 			self::generate_full_sitemap();
 		} else {
-			// We've finished - remove all options
+			// We've finished - remove all options.
 			delete_option( 'msm_days_to_process' );
 			delete_option( 'msm_months_to_process' );
 			delete_option( 'msm_years_to_process' );
