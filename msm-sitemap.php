@@ -382,8 +382,12 @@ class Metro_Sitemap {
 		$start_date .= ' 00:00:00';
 		$end_date .= ' 23:59:59';
 
+		$start_date_local_time = get_date_from_gmt( $start_date );
+		$end_date_local_time = get_date_from_gmt( $end_date );
+
 		$post_types_in = self::get_supported_post_types_in();
-		return $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_status = 'publish' AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT 1", $start_date, $end_date ) );
+		
+		return $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_status = 'publish' AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT 1", $start_date_local_time, $end_date_local_time ) );
 	}
 
 	/**
@@ -398,9 +402,13 @@ class Metro_Sitemap {
 
 		$start_date = $sitemap_date . ' 00:00:00';
 		$end_date = $sitemap_date . ' 23:59:59';
+		
+		$start_date_local_time = get_date_from_gmt( $start_date );
+		$end_date_local_time = get_date_from_gmt( $end_date );
+
 		$post_types_in = self::get_supported_post_types_in();
 
-		$posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_status = 'publish' AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT %d", $start_date, $end_date, $limit ) );
+		$posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_status = 'publish' AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT %d", $start_date_local_time, $end_date_local_time, $limit ) );
 
 		usort( $posts, array( __CLASS__ , 'order_by_post_date' ) );
 
