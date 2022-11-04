@@ -815,7 +815,7 @@ class Metro_Sitemap {
 	 * @return string[] Array of post statuses.
 	 */
 	public static function get_supported_post_statuses() {
-		return (array) apply_filters( 'msm_sitemap_entry_post_status', array_keys( get_post_stati( array( 'public' => true ) ) ) );
+		return (array) apply_filters( 'msm_sitemap_entry_post_status', array_values( get_post_stati( array( 'public' => true ) ) ) );
 	}
 
 	/**
