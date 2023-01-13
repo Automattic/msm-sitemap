@@ -1,7 +1,9 @@
 Comprehensive Sitemaps
 ===========
 
-Comprehensive sitemaps for your WordPress.com VIP site. Joint collaboration between Metro.co.uk, WordPress.com VIP, Alley Interactive, Maker Media, 10up, and others.
+Comprehensive sitemaps for your WordPress VIP site. Site-wide sitemaps on WordPress.com includes 1,000 entries by default. This plugin allows you to include all the entries on your site into your sitemap.
+
+Joint collaboration between Metro.co.uk, WordPress.com VIP, Alley Interactive, Maker Media, 10up, and others.
 
 ## How It Works
 
@@ -31,6 +33,8 @@ Here's how the default WP-Cron approach works:
 * Move on to the next month and repeat.
 * Move on to next year when we run out of months.
 
+The Comprehensive Sitemap plugin will only update the standard sitemap. The [news sitemap ](https://en.support.wordpress.com/sitemaps/#news-sitemaps) will only contain posts from the last two days, based on [Google’s guidelines](https://support.google.com/news/publisher/answer/74288?hl=en).
+
 ## CLI Commands
 
 The plugin ships with a bunch of wp-cli commands to simplify sitemap creation:
@@ -45,6 +49,10 @@ usage: wp msm-sitemap generate-sitemap
 
 See 'wp help msm-sitemap <command>' for more information on a specific command.
 ```
+
+## Custom post types
+
+Include custom post types in the generated sitemap with the `msm_sitemap_entry_post_type` filter.
 
 ## Filtering Sitemap URLs
 
