@@ -330,7 +330,7 @@ class Metro_Sitemap {
 	public static function get_post_year_range() {
 		global $wpdb;
 
-		$oldest_post_date_year = $wpdb->get_var( "SELECT DISTINCT YEAR(post_date) as year FROM $wpdb->posts WHERE post_status = 'publish' ORDER BY year ASC LIMIT 1" );
+		$oldest_post_date_year = $wpdb->get_var( "SELECT DISTINCT YEAR(post_date) as year FROM $wpdb->posts WHERE post_status = 'publish' AND post_date > 0 ORDER BY year ASC LIMIT 1" );
 
 		if ( null !== $oldest_post_date_year ) {
 			$current_year = date( 'Y' );
