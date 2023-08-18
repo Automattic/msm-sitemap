@@ -23,7 +23,7 @@ class WP_Test_Sitemap_Filter extends WP_UnitTestCase {
 		// Verify post_pre_query on sitemap queryvar returns empty array
 		set_query_var( 'sitemap', 'true' );
 		$posts = apply_filters_ref_array( 'posts_pre_query', array( null, $wp_query ) );
-		$this->assertInternalType('array', $posts);
+		$this->assertIsArray( $posts );
 		$this->assertEmpty( $posts );
 		
 	}

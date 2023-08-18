@@ -32,7 +32,7 @@ class WP_Test_Sitemap_Stats extends WP_UnitTestCase {
 	/**
 	 * Generate posts and build initial sitemaps
 	 */
-	function setup() {
+	function setup(): void {
 		_delete_all_posts();
 
 		$this->test_base = new MSM_SiteMap_Test();
@@ -55,7 +55,7 @@ class WP_Test_Sitemap_Stats extends WP_UnitTestCase {
 	/**
 	 * Remove created posts, Sitemaps and options
 	 */
-	function teardown() {
+	function teardown(): void {
 		$this->test_base->posts = array();
 		$sitemaps = get_posts( array(
 			'post_type' => Metro_Sitemap::SITEMAP_CPT,
