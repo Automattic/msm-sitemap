@@ -45,11 +45,11 @@ jobs:
         run: composer validate --no-check-all
 
       # Install dependencies and handle caching in one go.
-      # @link https://github.com/marketplace/actions/install-composer-dependencies
-      - name: Install Composer dependencies
-        uses: ramsey/composer-install@v1
-
+      # @link https://github.com/marketplace/actions/install-php-dependencies-with-composer
+      - name: Install PHP Dependencies with Composer
+        uses: ramsey/composer-install@2.2.0
       # Lint PHP.
+      
       - name: Lint PHP against parse errors
         run: composer lint-ci | cs2pr
 
