@@ -32,7 +32,7 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 	/**
 	 * Generate posts and build the sitemap
 	 */
-	function setup() {
+	function setup(): void {
 
 		$this->test_base = new MSM_SiteMap_Test();
 
@@ -52,7 +52,7 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 	/**
 	 * Remove the sample posts and the sitemap posts
 	 */
-	function teardown() {
+	function teardown(): void {
 		$this->test_base->posts = array();
 		$sitemaps = get_posts( array(
 			'post_type' => Metro_Sitemap::SITEMAP_CPT,
@@ -81,7 +81,7 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 		foreach ( $sitemaps as $i => $map_id ) {
 			$xml = get_post_meta( $map_id, 'msm_sitemap_xml', true );
 			$post_id = $this->test_base->posts[ $i ]['ID'];
-			$this->assertContains( 'p=' . $post_id, $xml );
+			$this->assertStringContainsString( 'p=' . $post_id, $xml );
 
 			$xml_struct = simplexml_load_string( $xml );
 			$this->assertNotEmpty( $xml_struct->url );
@@ -89,7 +89,7 @@ class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
 			$this->assertNotEmpty( $xml_struct->url->lastmod );
 			$this->assertNotEmpty( $xml_struct->url->changefreq );
 			$this->assertNotEmpty( $xml_struct->url->priority );
-			$this->assertContains( 'p=' . $post_id, (string) $xml_struct->url->loc );
+			$this->assertStringContainsString( 'p=' . $post_id, (string) $xml_struct->url->loc );
 
 			$post = get_post( $post_id );
 			setup_postdata( $post );
