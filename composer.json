@@ -57,5 +57,11 @@
 	"support": {
 		"issues": "https://github.com/Automattic/msm-sitemap/issues",
 		"source": "https://github.com/Automattic/msm-sitemap"
+	},
+	"config": {
+		"allow-plugins": {
+			"composer/installers": true,
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
 	}
 }
