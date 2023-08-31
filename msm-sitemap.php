@@ -384,7 +384,7 @@ class Metro_Sitemap {
 		$start_date .= ' 00:00:00';
 		$end_date .= ' 23:59:59';
 
-		$post_types_in     = self::get_supported_post_types_in();
+		$post_types_in    = self::get_supported_post_types_in();
 		$post_statuses_in = self::get_supported_post_statuses_in();
 
 		return $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_status IN ( {$post_statuses_in} ) AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT 1", $start_date, $end_date ) );
