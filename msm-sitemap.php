@@ -401,7 +401,7 @@ class Metro_Sitemap {
 		global $wpdb;
 
 		$start_date = $sitemap_date . ' 00:00:00';
-		$end_dat    = $sitemap_date . ' 23:59:59';
+		$end_date   = $sitemap_date . ' 23:59:59';
 
 		$post_types_in    = self::get_supported_post_types_in();
 		$post_statuses_in = self::get_supported_post_statuses_in();
