@@ -24,7 +24,7 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 	/**
 	 * Initialize MSM_SiteMap_Test
 	 */
-	function setup() {
+	function setup(): void {
 		$this->test_base = new MSM_SiteMap_Test();
 
 	}
@@ -32,7 +32,7 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 	/**
 	 * Remove the sample posts and the sitemap posts
 	 */
-	function teardown() {
+	function teardown(): void {
 		$this->test_base->posts = array();
 		$sitemaps = get_posts( array(
 			'post_type' => Metro_Sitemap::SITEMAP_CPT,
@@ -141,12 +141,12 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 		// Add a post for last year and 5 years ago.
 		$date = strtotime( '-1 year', time() );
 		$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
-		$prev_year = date( 'Y', $date );
+		$prev_year = (int) date( 'Y', $date );
 		$this->test_base->create_dummy_post( $cur_day );
 
 		$date = strtotime( '-4 year', $date );
 		$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
-		$prev5_year = date( 'Y', $date );
+		$prev5_year = (int) date( 'Y', $date );
 		$this->test_base->create_dummy_post( $cur_day );
 
 		// Verify only Years for Posts are returned.

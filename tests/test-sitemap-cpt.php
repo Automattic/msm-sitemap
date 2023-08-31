@@ -31,7 +31,7 @@ class WP_Test_Sitemap_CPT extends WP_UnitTestCase {
 	/**
 	 * Initialize Test CPT
 	 */
-	static function setupBeforeClass() {
+	static function setupBeforeClass(): void {
 		register_post_type(
 			self::TEST_CPT,
 			array(
@@ -55,7 +55,7 @@ class WP_Test_Sitemap_CPT extends WP_UnitTestCase {
 	/**
 	 * Initialize MSM_SiteMap_Test
 	 */
-	function setup() {
+	function setup(): void {
 
 		$this->test_base = new MSM_SiteMap_Test();
 
@@ -88,7 +88,7 @@ class WP_Test_Sitemap_CPT extends WP_UnitTestCase {
 	/**
 	 * Remove the sample posts and the sitemap posts
 	 */
-	function teardown() {
+	function teardown(): void {
 		$this->test_base->posts = array();
 		$sitemaps = get_posts( array(
 			'post_type' => Metro_Sitemap::SITEMAP_CPT,

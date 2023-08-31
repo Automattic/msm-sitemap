@@ -31,7 +31,7 @@ class WP_Test_Sitemap_Cron extends WP_UnitTestCase {
 	/**
 	 * Generate posts and build the sitemap
 	 */
-	function setup() {
+	function setup(): void {
 		if ( ! class_exists( 'MSM_Sitemap_Builder_Cron' ) ) {
 			require dirname( dirname( __FILE__ ) ) . '/includes/msm-sitemap-builder-cron.php';
 			MSM_Sitemap_Builder_Cron::setup();
@@ -55,7 +55,7 @@ class WP_Test_Sitemap_Cron extends WP_UnitTestCase {
 	/**
 	 * Remove the sample posts and the sitemap posts
 	 */
-	function teardown() {
+	function teardown(): void {
 		$this->test_base->posts = array();
 		$sitemaps = get_posts( array(
 			'post_type' => Metro_Sitemap::SITEMAP_CPT,
@@ -98,7 +98,7 @@ class WP_Test_Sitemap_Cron extends WP_UnitTestCase {
 		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
 
 		// Validate Current Month is added to months_to_process.
-		$month = date( 'n', time() );
+		$month = (int) date( 'n', time() );
 		$this->assertContains( $month, $months_being_processed, 'Initial Year Processing should use Current Month if same year' );
 
 		// fake_cron.

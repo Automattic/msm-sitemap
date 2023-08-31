@@ -332,7 +332,7 @@ class Metro_Sitemap {
 
 		$post_statuses_in = self::get_supported_post_statuses_in();
 
-		$oldest_post_date_year = $wpdb->get_var( "SELECT DISTINCT YEAR(post_date) as year FROM $wpdb->posts WHERE post_status IN ( {$post_statuses_in} ) ORDER BY year ASC LIMIT 1" );
+		$oldest_post_date_year = $wpdb->get_var( "SELECT DISTINCT YEAR(post_date) as year FROM $wpdb->posts WHERE post_status IN ( {$post_statuses_in} ) AND post_date > 0 ORDER BY year ASC LIMIT 1" );
 
 		if ( null !== $oldest_post_date_year ) {
 			$current_year = date( 'Y' );
