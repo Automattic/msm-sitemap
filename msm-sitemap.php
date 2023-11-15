@@ -6,6 +6,7 @@ Author: Artur Synowiec, Paul Kevan, and others
 Version: 1.4.1
 Stable tag: 1.4.1
 License: GPLv2
+Requires PHP: 7.4
 */
 
 if ( defined( 'WP_CLI' ) && true === WP_CLI ) {
