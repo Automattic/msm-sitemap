@@ -325,6 +325,7 @@ class Metro_Sitemap {
 
 	/**
 	 * Helper method to get the custom post status.
+	 * Hook allows developers to extend the sitemap functionality easily and integrate their custom post statuses.
 	 *
 	 * @return string
 	 */
