@@ -124,7 +124,7 @@ class Metro_Sitemap {
 
 		$data = array(
 			'total_indexed_urls'   => number_format( Metro_Sitemap::get_total_indexed_url_count() ),
-			'total_sitemaps'	   => number_format( Metro_Sitemap::count_sitemaps() ),
+			'total_sitemaps'       => number_format( Metro_Sitemap::count_sitemaps() ),
 			'sitemap_indexed_urls' => self::get_recent_sitemap_url_counts( $n ),
 		);
 
@@ -156,7 +156,7 @@ class Metro_Sitemap {
 		if ( isset( $_POST['action'] ) ) {
 			check_admin_referer( 'msm-sitemap-action' );
 			foreach ( $actions as $slug => $action ) {
-				if ( $action['text'] !== $_POST['action'] )	continue;
+				if ( $action['text'] !== $_POST['action'] ) continue;
 
 				do_action( 'msm_sitemap_action-' . $slug );
 				break;
@@ -324,13 +324,23 @@ class Metro_Sitemap {
 	}
 
 	/**
+	 * Helper method to get the custom post status.
+	 *
+	 * @return string
+	 */
+	public static function get_post_status() {
+		return apply_filters('msm_sitemap_post_status', 'publish');
+	}
+
+	/**
 	 * Return range of years for posts in the database
 	 * @return int[] valid years
 	 */
 	public static function get_post_year_range() {
 		global $wpdb;
+		$post_status = self::get_post_status();
 
-		$oldest_post_date_year = $wpdb->get_var( "SELECT DISTINCT YEAR(post_date) as year FROM $wpdb->posts WHERE post_status = 'publish' AND post_date > 0 ORDER BY year ASC LIMIT 1" );
+		$oldest_post_date_year = $wpdb->get_var( "SELECT DISTINCT YEAR(post_date) as year FROM $wpdb->posts WHERE post_status = '$post_status' AND post_date > 0 ORDER BY year ASC LIMIT 1" );
 
 		if ( null !== $oldest_post_date_year ) {
 			$current_year = date( 'Y' );
@@ -381,9 +391,10 @@ class Metro_Sitemap {
 
 		$start_date .= ' 00:00:00';
 		$end_date .= ' 23:59:59';
+		$post_status = self::get_post_status();
 
 		$post_types_in = self::get_supported_post_types_in();
-		return $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_status = 'publish' AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT 1", $start_date, $end_date ) );
+		return $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_status = %s AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT 1", $post_status, $start_date, $end_date ) );
 	}
 
 	/**
@@ -396,11 +407,12 @@ class Metro_Sitemap {
 	public static function get_post_ids_for_date( $sitemap_date, $limit = 500 ) {
 		global $wpdb;
 
+		$post_status = self::get_post_status();
 		$start_date = $sitemap_date . ' 00:00:00';
 		$end_date = $sitemap_date . ' 23:59:59';
 		$post_types_in = self::get_supported_post_types_in();
 
-		$posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_status = 'publish' AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT %d", $start_date, $end_date, $limit ) );
+		$posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_status = %s AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT %d", $post_status, $start_date, $end_date, $limit ) );
 
 		usort( $posts, array( __CLASS__ , 'order_by_post_date' ) );
 
@@ -425,7 +437,7 @@ class Metro_Sitemap {
 			'post_name' => $sitemap_name,
 			'post_title' => $sitemap_name,
 			'post_type' => self::SITEMAP_CPT,
-			'post_status' => 'publish',
+			'post_status' => self::get_post_status(),
 			'post_date' => $sitemap_date,
 			);
 
