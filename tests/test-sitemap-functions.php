@@ -348,9 +348,9 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 	 * Verify get_post_ids_for_date returns expected value with custom status hook
 	 *
 	 * @dataProvider postIdsForDateDataProvider
-	 * @param str $sitemap_date Date in Y-M-D format.
-	 * @param str $limit max number of posts to return.
-	 * @param int $expected_count Number of posts expected to be returned.
+	 * @param string  $sitemap_date   Date in Y-M-D format.
+	 * @param string  $limit          Max number of posts to return.
+	 * @param int     $expected_count Number of posts expected to be returned.
 	 */
 	function test_get_post_ids_for_date_custom_status( $sitemap_date, $limit, $expected_count ) {
 
