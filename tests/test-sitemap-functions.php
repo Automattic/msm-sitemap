@@ -26,11 +26,6 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 	 */
 	function setup(): void {
 		$this->test_base = new MSM_SiteMap_Test();
-
-		// register new post status.
-		register_post_status( 'live', array(
-			'public'                    => true,
-		) );
 	}
 
 	/**
@@ -45,6 +40,27 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 		) );
 		update_option( 'msm_sitemap_indexed_url_count' , 0 );
 		array_map( 'wp_delete_post', array_merge( $this->test_base->posts_created, $sitemaps ) );
+	}
+
+	/**
+     * custom post_status setup
+     */
+    public function customPostStatusSetUp() {
+        // register new post status.
+		register_post_status( 'live', array(
+			'public'                    => true,
+		) );
+
+		// add filter to return custom post status.
+		add_filter( 'msm_sitemap_post_status', array( $this, 'add_post_status_to_msm_sitemap' ) );
+
+    }
+
+	/**
+	 * custom post_status teardown
+	 */
+	public function customPostStatusTearDown() {
+		remove_filter( 'msm_sitemap_post_status', array( $this, 'add_post_status_to_msm_sitemap' ) );
 	}
 
 	/**
@@ -146,8 +162,9 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 	 * @param int $range_values Number of years in range.
 	 */
 	function test_get_post_year_range_custom_status_posts( $years, $range_values ) {
+
 		// set msm_sitemap_post_status filter to custom_status.
-		add_filter( 'msm_sitemap_post_status', array( $this, 'add_post_status_to_msm_sitemap' ) );
+		$this->customPostStatusSetUp();
 
 		// Add a post for each day in the last x years.
 		if ( 'none' !== $years ) {
@@ -160,7 +177,7 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 		$this->assertEquals( $range_values, count( $year_range ) );
 
 		// remove filter.
-		remove_filter( 'msm_sitemap_post_status', array( $this, 'add_post_status_to_msm_sitemap' ) );
+		$this->customPostStatusTearDown();
 	}
 
 	/**
@@ -279,9 +296,8 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 	 * @param boolean $has_post   Does Range have Post.
 	 */
 	function test_date_range_has_posts_custom_status( $start_date, $end_date, $has_post ) {
-
 		// set msm_sitemap_post_status filter to custom_status.
-		add_filter( 'msm_sitemap_post_status', array( $this, 'add_post_status_to_msm_sitemap' ) );
+		$this->customPostStatusSetUp();
 
 		// 1 for 2016-10-12 in "live" status.
 		$this->test_base->create_dummy_post( '2015-10-12 00:00:00', 'live' );
@@ -299,8 +315,7 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 			$this->assertNull( Metro_Sitemap::date_range_has_posts( $start_date, $end_date ) );
 		}
 
-		// remove filter.
-		remove_filter( 'msm_sitemap_post_status', array( $this, 'add_post_status_to_msm_sitemap' ) );
+		$this->customPostStatusTearDown();
 
 	}
 
@@ -359,7 +374,7 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 	function test_get_post_ids_for_date_custom_status( $sitemap_date, $limit, $expected_count ) {
 
 		// set msm_sitemap_post_status filter to custom_status.
-		add_filter( 'msm_sitemap_post_status', array( $this, 'add_post_status_to_msm_sitemap' ) );
+		$this->customPostStatusSetUp();
 
 		// 1 for 2016-10-03 in "draft" status.
 		$this->test_base->create_dummy_post( '2016-10-01 00:00:00', 'draft' );
@@ -378,8 +393,7 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 		$this->assertEquals( $expected_count, count( $post_ids ) );
 		$this->assertEquals( array_slice( $created_post_ids, 0, $limit ), $post_ids );
 
-		// remove filter.
-		remove_filter( 'msm_sitemap_post_status', array( $this, 'add_post_status_to_msm_sitemap' ) );
+		$this->customPostStatusTearDown();
 	}
 
 	/**
@@ -387,25 +401,22 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 	 */
 	function test_get_post_status() {
 
-		// verify default value.
-		$this->assertEquals( 'publish', Metro_Sitemap::get_post_status() );
+		// set msm_sitemap_post_status filter to custom_status.
+		$this->customPostStatusSetUp();
 
-		// add filter and verify value.
-		add_filter( 'msm_sitemap_post_status', array( $this, 'add_post_status_to_msm_sitemap' ) );
 		$this->assertEquals( 'live', Metro_Sitemap::get_post_status() );
 
 		add_filter( 'msm_sitemap_post_status', function() {
 			return 'bad_status';
 		} );
 		$this->assertEquals( 'publish', Metro_Sitemap::get_post_status() );
-		
-		// remove filter.
-		remove_filter( 'msm_sitemap_post_status', array( $this, 'add_post_status_to_msm_sitemap' ) );
 
 		// remove filter.
 		remove_filter( 'msm_sitemap_post_status', function() {
 			return 'bad_status';
 		} );
+
+		$this->customPostStatusTearDown();
 
 	}
 
