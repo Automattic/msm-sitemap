@@ -27,6 +27,10 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 	function setup(): void {
 		$this->test_base = new MSM_SiteMap_Test();
 
+		// register new post status.
+		register_post_status( 'live', array(
+			'public'                    => true,
+		) );
 	}
 
 	/**
@@ -389,9 +393,20 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 		// add filter and verify value.
 		add_filter( 'msm_sitemap_post_status', array( $this, 'add_post_status_to_msm_sitemap' ) );
 		$this->assertEquals( 'live', Metro_Sitemap::get_post_status() );
+
+		add_filter( 'msm_sitemap_post_status', function() {
+			return 'bad_status';
+		} );
+		$this->assertEquals( 'publish', Metro_Sitemap::get_post_status() );
 		
 		// remove filter.
 		remove_filter( 'msm_sitemap_post_status', array( $this, 'add_post_status_to_msm_sitemap' ) );
+
+		// remove filter.
+		remove_filter( 'msm_sitemap_post_status', function() {
+			return 'bad_status';
+		} );
+
 	}
 
 	 function add_post_status_to_msm_sitemap( $post_status ) {

@@ -324,13 +324,24 @@ class Metro_Sitemap {
 	}
 
 	/**
-	 * Helper method to get the custom post status.
 	 * Hook allows developers to extend the sitemap functionality easily and integrate their custom post statuses.
 	 *
-	 * @return string
+	 * Rather than having to modify the plugin code, developers can use this filter to add their custom post statuses.
+	 *
+	 * @since 1.4.3
+	 *
 	 */
-	public static function get_post_status() {
-		return apply_filters('msm_sitemap_post_status', 'publish');
+	public static function get_post_status(): string {
+		$default_status = 'publish';
+		$post_status = apply_filters('msm_sitemap_post_status', $default_status);
+	
+		$allowed_statuses = get_post_stati();
+		
+		if (!in_array($post_status, $allowed_statuses)) {
+			$post_status = $default_status;
+		}
+	
+		return $post_status;
 	}
 
 	/**
@@ -341,7 +352,7 @@ class Metro_Sitemap {
 		global $wpdb;
 		$post_status = self::get_post_status();
 
-		$oldest_post_date_year = $wpdb->get_var( "SELECT DISTINCT YEAR(post_date) as year FROM $wpdb->posts WHERE post_status = '$post_status' AND post_date > 0 ORDER BY year ASC LIMIT 1" );
+		$oldest_post_date_year = $wpdb->get_var( $wpdb->prepare( "SELECT DISTINCT YEAR(post_date) as year FROM $wpdb->posts WHERE post_status = %s AND post_date > 0 ORDER BY year ASC LIMIT 1", $post_status ) );
 
 		if ( null !== $oldest_post_date_year ) {
 			$current_year = date( 'Y' );
