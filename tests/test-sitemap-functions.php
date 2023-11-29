@@ -138,8 +138,8 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 	 * Verify get_post_year_range returns proper year ranges with custom status hook
 	 *
 	 * @dataProvider postYearRangeDataProvider
-	 * @param int @years # of Years.
-	 * @param int @range_values # of years in range.
+	 * @param int $years Number of years.
+	 * @param int $range_values Number of years in range.
 	 */
 	function test_get_post_year_range_custom_status_posts( $years, $range_values ) {
 		// set msm_sitemap_post_status filter to custom_status.
