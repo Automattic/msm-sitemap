@@ -381,7 +381,7 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 	/**
 	 * Verify msm_sitemap_post_status filter returns expected value
 	 */
-	 function test_get_post_status() {
+	function test_get_post_status() {
 
 		// verify default value.
 		$this->assertEquals( 'publish', Metro_Sitemap::get_post_status() );
