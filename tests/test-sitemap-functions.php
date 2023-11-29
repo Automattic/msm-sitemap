@@ -392,7 +392,7 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 		
 		// remove filter.
 		remove_filter( 'msm_sitemap_post_status', array( $this, 'add_post_status_to_msm_sitemap' ) );
-	 }
+	}
 
 	 function add_post_status_to_msm_sitemap( $post_status ) {
 		return 'live';
