@@ -270,9 +270,9 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 	 * Verify date_range_has_posts returns expected value with custom status hook
 	 *
 	 * @dataProvider dateRangeHasPostsCustomStatusDataProvider
-	 * @param Str     $start_date Start Date of Range in Y-M-D format.
-	 * @param Str     $end_date  End Date of Range in Y-M-D format.
-	 * @param boolean $has_post Does Range have Post.
+	 * @param string  $start_date Start Date of Range in Y-M-D format.
+	 * @param string  $end_date   End Date of Range in Y-M-D format.
+	 * @param boolean $has_post   Does Range have Post.
 	 */
 	function test_date_range_has_posts_custom_status( $start_date, $end_date, $has_post ) {
 
