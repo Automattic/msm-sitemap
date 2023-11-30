@@ -507,13 +507,13 @@ class Metro_Sitemap {
 
 			update_post_meta( $sitemap_id, 'msm_sitemap_xml', $generated_xml_string );
 			update_post_meta( $sitemap_id, 'msm_indexed_url_count', $url_count );
-			do_action( 'msm_update_sitemap_post', $sitemap_id, $year, $month, $day );
+			do_action( 'msm_update_sitemap_post', $sitemap_id, $year, $month, $day, $generated_xml_string, $url_count );
 		} else {
 			/* Should no longer hit this */
 			$sitemap_id = wp_insert_post( $sitemap_data );
 			add_post_meta( $sitemap_id, 'msm_sitemap_xml', $generated_xml_string );
 			add_post_meta( $sitemap_id, 'msm_indexed_url_count', $url_count );
-			do_action( 'msm_insert_sitemap_post', $sitemap_id, $year, $month, $day );
+			do_action( 'msm_insert_sitemap_post', $sitemap_id, $year, $month, $day, $generated_xml_string, $url_count );
 
 			// Update the total url count
 			$total_url_count += $url_count;
@@ -521,16 +521,6 @@ class Metro_Sitemap {
 
 		// Update indexed url counts
 		update_option( 'msm_sitemap_indexed_url_count', $total_url_count, false );
-
-		/**
-		 * Fires after a sitemap has been generated. This is a good place to do things like ping search engines.
-		 * @param string $generated_xml_string The XML of the sitemap
-		 * @param int $total_url_count The total number of URLs in the sitemap
-		 * @param int $url_count The number of URLs in this sitemap
-		 * @param int $sitemap_id The ID of the sitemap post 
-		 * 
-		 */
-		do_action( 'msm_sitemap_generated', $generated_xml_string, $total_url_count, $url_count, $sitemap_id );
 
 		wp_reset_postdata();
 	}
