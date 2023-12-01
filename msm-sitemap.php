@@ -519,7 +519,9 @@ class Metro_Sitemap {
 			// TODO: add images to sitemap via <image:image> tag
 		}
 
-				// Save the sitemap
+		$generated_xml_string = $xml->asXML();
+
+		// Save the sitemap
 		if ( $sitemap_exists ) {
 			// Get the previous post count
 			$previous_url_count = intval( get_post_meta( $sitemap_id, 'msm_indexed_url_count', true ) );
@@ -527,15 +529,15 @@ class Metro_Sitemap {
 			// Update the total post count with the difference
 			$total_url_count += $url_count - $previous_url_count;
 
-			update_post_meta( $sitemap_id, 'msm_sitemap_xml', $xml->asXML() );
+			update_post_meta( $sitemap_id, 'msm_sitemap_xml', $generated_xml_string );
 			update_post_meta( $sitemap_id, 'msm_indexed_url_count', $url_count );
-			do_action( 'msm_update_sitemap_post', $sitemap_id, $year, $month, $day );
+			do_action( 'msm_update_sitemap_post', $sitemap_id, $year, $month, $day, $generated_xml_string, $url_count );
 		} else {
 			/* Should no longer hit this */
 			$sitemap_id = wp_insert_post( $sitemap_data );
-			add_post_meta( $sitemap_id, 'msm_sitemap_xml', $xml->asXML() );
+			add_post_meta( $sitemap_id, 'msm_sitemap_xml', $generated_xml_string );
 			add_post_meta( $sitemap_id, 'msm_indexed_url_count', $url_count );
-			do_action( 'msm_insert_sitemap_post', $sitemap_id, $year, $month, $day );
+			do_action( 'msm_insert_sitemap_post', $sitemap_id, $year, $month, $day, $generated_xml_string, $url_count );
 
 			// Update the total url count
 			$total_url_count += $url_count;
