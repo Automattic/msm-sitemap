@@ -26,7 +26,6 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 	 */
 	function setup(): void {
 		$this->test_base = new MSM_SiteMap_Test();
-
 	}
 
 	/**
@@ -41,6 +40,27 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 		) );
 		update_option( 'msm_sitemap_indexed_url_count' , 0 );
 		array_map( 'wp_delete_post', array_merge( $this->test_base->posts_created, $sitemaps ) );
+	}
+
+	/**
+     * custom post_status setup
+     */
+    public function customPostStatusSetUp() {
+        // register new post status.
+		register_post_status( 'live', array(
+			'public'                    => true,
+		) );
+
+		// add filter to return custom post status.
+		add_filter( 'msm_sitemap_post_status', array( $this, 'add_post_status_to_msm_sitemap' ) );
+
+    }
+
+	/**
+	 * custom post_status teardown
+	 */
+	public function customPostStatusTearDown() {
+		remove_filter( 'msm_sitemap_post_status', array( $this, 'add_post_status_to_msm_sitemap' ) );
 	}
 
 	/**
@@ -135,6 +155,32 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Verify get_post_year_range returns proper year ranges with custom status hook
+	 *
+	 * @dataProvider postYearRangeDataProvider
+	 * @param int $years Number of years.
+	 * @param int $range_values Number of years in range.
+	 */
+	function test_get_post_year_range_custom_status_posts( $years, $range_values ) {
+
+		// set msm_sitemap_post_status filter to custom_status.
+		$this->customPostStatusSetUp();
+
+		// Add a post for each day in the last x years.
+		if ( 'none' !== $years ) {
+			$date = strtotime( "-$years year", time() );
+			$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
+			$this->test_base->create_dummy_post( $cur_day, 'live' );
+		}
+
+		$year_range = Metro_Sitemap::get_post_year_range();
+		$this->assertEquals( $range_values, count( $year_range ) );
+
+		// remove filter.
+		$this->customPostStatusTearDown();
+	}
+
+	/**
 	 * Verify check_year_has_posts returns only years with posts
 	 */
 	function test_check_year_has_posts() {
@@ -202,6 +248,18 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Data Provider for date_range_has_posts
+	 *
+	 * @return array( str, str, boolean ) Array of Test parameters.
+	 */
+	public function dateRangeHasPostsCustomStatusDataProvider() {
+		return array(
+		    array( '2016-11-01', '2016-12-15', false ),
+		    array( '2014-12-28', '2016-05-04', true ),
+		);
+	}
+
+	/**
 	 * Verify date_range_has_posts returns expected value
 	 *
 	 * @dataProvider dateRangeHasPostsDataProvider
@@ -226,6 +284,38 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 		} else {
 			$this->assertNull( Metro_Sitemap::date_range_has_posts( $start_date, $end_date ) );
 		}
+
+	}
+
+	/**
+	 * Verify date_range_has_posts returns expected value with custom status hook
+	 *
+	 * @dataProvider dateRangeHasPostsCustomStatusDataProvider
+	 * @param string  $start_date Start Date of Range in Y-M-D format.
+	 * @param string  $end_date   End Date of Range in Y-M-D format.
+	 * @param boolean $has_post   Does Range have Post.
+	 */
+	function test_date_range_has_posts_custom_status( $start_date, $end_date, $has_post ) {
+		// set msm_sitemap_post_status filter to custom_status.
+		$this->customPostStatusSetUp();
+
+		// 1 for 2016-10-12 in "live" status.
+		$this->test_base->create_dummy_post( '2015-10-12 00:00:00', 'live' );
+
+		// 1 for 2016-01-01.
+		$this->test_base->create_dummy_post( '2016-01-01 00:00:00' );
+
+		// // 1 for 2015-06-02.
+		$this->test_base->create_dummy_post( '2015-06-02 00:00:00' );
+
+		// Validate Range result.
+		if ( $has_post ) {
+			$this->assertNotNull( Metro_Sitemap::date_range_has_posts( $start_date, $end_date ) );
+		} else {
+			$this->assertNull( Metro_Sitemap::date_range_has_posts( $start_date, $end_date ) );
+		}
+
+		$this->customPostStatusTearDown();
 
 	}
 
@@ -271,6 +361,67 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 		$this->assertEquals( $expected_count, count( $post_ids ) );
 		$this->assertEquals( array_slice( $created_post_ids, 0, $limit ), $post_ids );
 
+	}
+
+	/**
+	 * Verify get_post_ids_for_date returns expected value with custom status hook
+	 *
+	 * @dataProvider postIdsForDateDataProvider
+	 * @param string  $sitemap_date   Date in Y-M-D format.
+	 * @param string  $limit          Max number of posts to return.
+	 * @param int     $expected_count Number of posts expected to be returned.
+	 */
+	function test_get_post_ids_for_date_custom_status( $sitemap_date, $limit, $expected_count ) {
+
+		// set msm_sitemap_post_status filter to custom_status.
+		$this->customPostStatusSetUp();
+
+		// 1 for 2016-10-03 in "draft" status.
+		$this->test_base->create_dummy_post( '2016-10-01 00:00:00', 'draft' );
+
+		$created_post_ids = array();
+		// 20 for 2016-10-02.
+		for ( $i = 0; $i < 20; $i ++ ) {
+			$hour = $i < 10 ? '0' . $i : $i;
+			if ( '2016-10-02' === $sitemap_date ) {
+				$created_post_ids[] = $this->test_base->create_dummy_post( '2016-10-02 ' . $hour . ':00:00', 'live' );
+			}
+		}
+
+
+		$post_ids = Metro_Sitemap::get_post_ids_for_date( $sitemap_date, $limit );
+		$this->assertEquals( $expected_count, count( $post_ids ) );
+		$this->assertEquals( array_slice( $created_post_ids, 0, $limit ), $post_ids );
+
+		$this->customPostStatusTearDown();
+	}
+
+	/**
+	 * Verify msm_sitemap_post_status filter returns expected value
+	 */
+	function test_get_post_status() {
+
+		// set msm_sitemap_post_status filter to custom_status.
+		$this->customPostStatusSetUp();
+
+		$this->assertEquals( 'live', Metro_Sitemap::get_post_status() );
+
+		add_filter( 'msm_sitemap_post_status', function() {
+			return 'bad_status';
+		} );
+		$this->assertEquals( 'publish', Metro_Sitemap::get_post_status() );
+
+		// remove filter.
+		remove_filter( 'msm_sitemap_post_status', function() {
+			return 'bad_status';
+		} );
+
+		$this->customPostStatusTearDown();
+
+	}
+
+	 function add_post_status_to_msm_sitemap( $post_status ) {
+		return 'live';
 	}
 
 }

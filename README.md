@@ -54,6 +54,17 @@ See 'wp help msm-sitemap <command>' for more information on a specific command.
 
 Include custom post types in the generated sitemap with the `msm_sitemap_entry_post_type` filter.
 
+## Generate Sitemap with posts of a custom status other than 'publish'
+
+By default, the sitemap will only fetch posts with the status of 'publish'. To change this, use the `msm_sitemap_post_status` filter.
+
+```
+function example_filter_msm_sitemap_post_status( $post_status ) {
+    return 'my_custom_status';
+}
+add_filter( 'msm_sitemap_post_status', 'example_filter_msm_sitemap_post_status', 10, 1 );
+```
+
 ## Filtering Sitemap URLs
 
 If you need to filter the URLs displayed in a sitemap created via the Comprehensive Sitemap plugin, there are two considerations. First, if you are filtering the individual sitemaps, which display the URLs to the articles published on a specific date, you can use the `msm_sitemap_entry` hook to filter the URLs. An example for a reverse-proxy situation is below:
