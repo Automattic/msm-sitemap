@@ -36,6 +36,7 @@ class Metro_Sitemap {
 		add_action( 'admin_init', array( __CLASS__, 'sitemap_init_cron' ) );
 		add_action( 'redirect_canonical', array( __CLASS__, 'disable_canonical_redirects_for_sitemap_xml' ), 10, 2 );
 		add_action( 'init', array( __CLASS__, 'create_post_type' ) );
+		add_action( 'delete_post', array( __CLASS__, 'record_deleted_post' ) );
 		add_filter( 'posts_pre_query', array( __CLASS__, 'disable_main_query_for_sitemap_xml' ), 10, 2 );
 		add_filter( 'template_include', array( __CLASS__, 'load_sitemap_template' ) );
 		
@@ -599,15 +600,54 @@ class Metro_Sitemap {
 	}
 
 	/**
+	 * Record deleted posts in an option to be used by get_last_modified_posts.
+	 *
+	 * This function saves one entry per date to avoid excessive db calls or option
+	 * size when deleting a large number of posts on PHP 5.5+.
+	 */
+	public static function record_deleted_post( $post_id ) {
+		$deleted_posts = get_option( 'msm_sitemap_deleted_posts', array() );
+		$post          = get_post( $post_id );
+		$skip          = false;
+		if ( ! $post ) {
+			return;
+		}
+
+		if ( in_array( $post->post_type, self::get_supported_post_types(), true ) ) {
+			// We want to standardize the post date to a specific date. Let's discard the time.
+			$date = date( 'Y-m-d', strtotime( $post->post_date ) );
+
+			if ( function_exists( 'array_column' ) ) { // PHP 5.5+
+				// Let's check to see if the date is already on deck for regeneration.
+				$skip = in_array( $date, array_column( $deleted_posts, 'post_date' ), true );
+			}
+
+			if ( ! $skip ) {
+				$deleted_posts[] = array(
+					'ID'        => 0, // Array item is a placeholder to match modified post structure.
+					'post_date' => $date,
+				);
+				update_option( 'msm_sitemap_deleted_posts', $deleted_posts, false );
+			}
+		}
+	}
+
+	/**
 	 * Get posts modified within the last hour
+	 *
+	 * @param  int $start_time Uses or sets a canonical start time to avoid risk of missing posts modified during processing.
 	 * @return object[] modified posts
 	 */
-	public static function get_last_modified_posts() {
+	public static function get_last_modified_posts( $start_time = null) {
 		global $wpdb;
+
+		if ( ! $start_time ) {
+			$start_time = current_time( 'timestamp', 1 );
+		}
 
 		$sitemap_last_run = get_option( 'msm_sitemap_update_last_run', false );
 
-		$date = date( 'Y-m-d H:i:s', ( current_time( 'timestamp', 1 ) - 3600 ) ); // posts changed within the last hour
+		$date = date( 'Y-m-d H:i:s', ( $start_time - 3600 ) ); // posts changed within the last hour
 
 		if ( $sitemap_last_run ) {
 			$date = date( 'Y-m-d H:i:s', $sitemap_last_run );
@@ -615,7 +655,10 @@ class Metro_Sitemap {
 
 		$post_types_in = self::get_supported_post_types_in();
 
-		$modified_posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_modified_gmt >= %s LIMIT 1000", $date ) );
+		$modified_posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_modified_gmt >= %s LIMIT 1000", $date ), ARRAY_A );
+		$deleted_posts = get_option( 'msm_sitemap_deleted_posts', array() );
+		update_option( 'msm_sitemap_deleted_posts', array(), false );
+		$modified_posts = array_merge( $modified_posts, $deleted_posts );
 		return $modified_posts;
 	}
 
@@ -627,7 +670,7 @@ class Metro_Sitemap {
 	public static function get_post_dates( $posts ) {
 		$dates = array();
 		foreach ( $posts as $post ) {
-			$dates[] = date( 'Y-m-d', strtotime( $post->post_date ) );
+			$dates[] = date( 'Y-m-d', strtotime( $post['post_date'] ) );
 		}
 		$dates = array_unique( $dates );
 
@@ -638,8 +681,8 @@ class Metro_Sitemap {
 	 * Update the sitemap with changes from recently modified posts
 	 */
 	public static function update_sitemap_from_modified_posts() {
-		$time = current_time( 'timestamp', 1 );
-		$last_modified_posts = self::get_last_modified_posts();
+		$start_time = $time = current_time( 'timestamp', 1 );
+		$last_modified_posts = self::get_last_modified_posts( $start_time );
 		$dates = self::get_post_dates( $last_modified_posts );
 
 		foreach ( $dates as $date ) {
@@ -654,7 +697,7 @@ class Metro_Sitemap {
 
 			do_action( 'msm_update_sitemap_for_year_month_date', array( $year, $month, $day ), $time );
 		}
-		update_option( 'msm_sitemap_update_last_run', current_time( 'timestamp', 1 ), false );
+		update_option( 'msm_sitemap_update_last_run', $start_time, false );
 	}
 
 	/**
