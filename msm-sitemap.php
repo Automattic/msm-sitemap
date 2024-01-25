@@ -408,15 +408,10 @@ class Metro_Sitemap {
 		$end_date .= ' 23:59:59';
 		$post_status = self::get_post_status();
 
-<<<<<<< HEAD
 		$post_types_in    = self::get_supported_post_types_in();
 		$post_statuses_in = self::get_supported_post_statuses_in();
 
 		return $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_status IN ( {$post_statuses_in} ) AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT 1", $start_date, $end_date ) );
-=======
-		$post_types_in = self::get_supported_post_types_in();
-		return $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_status = %s AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT 1", $post_status, $start_date, $end_date ) );
->>>>>>> fork/main
 	}
 
 	/**
@@ -433,14 +428,10 @@ class Metro_Sitemap {
 		$start_date = $sitemap_date . ' 00:00:00';
 		$end_date   = $sitemap_date . ' 23:59:59';
 
-<<<<<<< HEAD
 		$post_types_in    = self::get_supported_post_types_in();
 		$post_statuses_in = self::get_supported_post_statuses_in();
 
 		$posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_status IN ( {$post_statuses_in} ) AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT %d", $start_date, $end_date, $limit ) );
-=======
-		$posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_status = %s AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT %d", $post_status, $start_date, $end_date, $limit ) );
->>>>>>> fork/main
 
 		usort( $posts, array( __CLASS__ , 'order_by_post_date' ) );
 
@@ -632,12 +623,7 @@ class Metro_Sitemap {
 		$post_types_in    = self::get_supported_post_types_in();
 		$post_statuses_in = self::get_supported_post_statuses_in();
 
-<<<<<<< HEAD
-		$modified_posts = $wpdb->get_results(
-			$wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_status IN ( {$post_statuses_in} ) AND post_modified_gmt >= %s LIMIT 1000", $date )
-		);
-=======
-		$query = $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_modified_gmt >= %s LIMIT 1000", $date );
+		$query = $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_status IN ( {$post_statuses_in} ) AND post_modified_gmt >= %s LIMIT 1000", $date );
 
 		/**
 		 * Filter the query used to get the last modified posts.
@@ -651,7 +637,6 @@ class Metro_Sitemap {
 
 		$modified_posts = $wpdb->get_results( $query );
 
->>>>>>> fork/main
 		return $modified_posts;
 	}
 
