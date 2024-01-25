@@ -124,7 +124,7 @@ class Metro_Sitemap {
 
 		$data = array(
 			'total_indexed_urls'   => number_format( Metro_Sitemap::get_total_indexed_url_count() ),
-			'total_sitemaps'	   => number_format( Metro_Sitemap::count_sitemaps() ),
+			'total_sitemaps'       => number_format( Metro_Sitemap::count_sitemaps() ),
 			'sitemap_indexed_urls' => self::get_recent_sitemap_url_counts( $n ),
 		);
 
@@ -156,7 +156,7 @@ class Metro_Sitemap {
 		if ( isset( $_POST['action'] ) ) {
 			check_admin_referer( 'msm-sitemap-action' );
 			foreach ( $actions as $slug => $action ) {
-				if ( $action['text'] !== $_POST['action'] )	continue;
+				if ( $action['text'] !== $_POST['action'] ) continue;
 
 				do_action( 'msm_sitemap_action-' . $slug );
 				break;
@@ -324,11 +324,33 @@ class Metro_Sitemap {
 	}
 
 	/**
+	 * Hook allows developers to extend the sitemap functionality easily and integrate their custom post statuses.
+	 *
+	 * Rather than having to modify the plugin code, developers can use this filter to add their custom post statuses.
+	 *
+	 * @since 1.4.3
+	 *
+	 */
+	public static function get_post_status(): string {
+		$default_status = 'publish';
+		$post_status = apply_filters('msm_sitemap_post_status', $default_status);
+
+		$allowed_statuses = get_post_stati();
+
+		if (!in_array($post_status, $allowed_statuses)) {
+			$post_status = $default_status;
+		}
+
+		return $post_status;
+	}
+
+	/**
 	 * Return range of years for posts in the database
 	 * @return int[] valid years
 	 */
 	public static function get_post_year_range() {
 		global $wpdb;
+		$post_status = self::get_post_status();
 
 		$post_statuses_in = self::get_supported_post_statuses_in();
 		$post_types_in    = self::get_supported_post_types_in();
@@ -384,11 +406,17 @@ class Metro_Sitemap {
 
 		$start_date .= ' 00:00:00';
 		$end_date .= ' 23:59:59';
+		$post_status = self::get_post_status();
 
+<<<<<<< HEAD
 		$post_types_in    = self::get_supported_post_types_in();
 		$post_statuses_in = self::get_supported_post_statuses_in();
 
 		return $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_status IN ( {$post_statuses_in} ) AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT 1", $start_date, $end_date ) );
+=======
+		$post_types_in = self::get_supported_post_types_in();
+		return $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_status = %s AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT 1", $post_status, $start_date, $end_date ) );
+>>>>>>> fork/main
 	}
 
 	/**
@@ -401,13 +429,18 @@ class Metro_Sitemap {
 	public static function get_post_ids_for_date( $sitemap_date, $limit = 500 ) {
 		global $wpdb;
 
+		$post_status = self::get_post_status();
 		$start_date = $sitemap_date . ' 00:00:00';
 		$end_date   = $sitemap_date . ' 23:59:59';
 
+<<<<<<< HEAD
 		$post_types_in    = self::get_supported_post_types_in();
 		$post_statuses_in = self::get_supported_post_statuses_in();
 
 		$posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_status IN ( {$post_statuses_in} ) AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT %d", $start_date, $end_date, $limit ) );
+=======
+		$posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_status = %s AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT %d", $post_status, $start_date, $end_date, $limit ) );
+>>>>>>> fork/main
 
 		usort( $posts, array( __CLASS__ , 'order_by_post_date' ) );
 
@@ -432,7 +465,7 @@ class Metro_Sitemap {
 			'post_name' => $sitemap_name,
 			'post_title' => $sitemap_name,
 			'post_type' => self::SITEMAP_CPT,
-			'post_status' => 'publish',
+			'post_status' => self::get_post_status(),
 			'post_date' => $sitemap_date,
 			);
 
@@ -502,7 +535,9 @@ class Metro_Sitemap {
 			// TODO: add images to sitemap via <image:image> tag
 		}
 
-				// Save the sitemap
+		$generated_xml_string = $xml->asXML();
+
+		// Save the sitemap
 		if ( $sitemap_exists ) {
 			// Get the previous post count
 			$previous_url_count = intval( get_post_meta( $sitemap_id, 'msm_indexed_url_count', true ) );
@@ -510,15 +545,15 @@ class Metro_Sitemap {
 			// Update the total post count with the difference
 			$total_url_count += $url_count - $previous_url_count;
 
-			update_post_meta( $sitemap_id, 'msm_sitemap_xml', $xml->asXML() );
+			update_post_meta( $sitemap_id, 'msm_sitemap_xml', $generated_xml_string );
 			update_post_meta( $sitemap_id, 'msm_indexed_url_count', $url_count );
-			do_action( 'msm_update_sitemap_post', $sitemap_id, $year, $month, $day );
+			do_action( 'msm_update_sitemap_post', $sitemap_id, $year, $month, $day, $generated_xml_string, $url_count );
 		} else {
 			/* Should no longer hit this */
 			$sitemap_id = wp_insert_post( $sitemap_data );
-			add_post_meta( $sitemap_id, 'msm_sitemap_xml', $xml->asXML() );
+			add_post_meta( $sitemap_id, 'msm_sitemap_xml', $generated_xml_string );
 			add_post_meta( $sitemap_id, 'msm_indexed_url_count', $url_count );
-			do_action( 'msm_insert_sitemap_post', $sitemap_id, $year, $month, $day );
+			do_action( 'msm_insert_sitemap_post', $sitemap_id, $year, $month, $day, $generated_xml_string, $url_count );
 
 			// Update the total url count
 			$total_url_count += $url_count;
@@ -597,9 +632,26 @@ class Metro_Sitemap {
 		$post_types_in    = self::get_supported_post_types_in();
 		$post_statuses_in = self::get_supported_post_statuses_in();
 
+<<<<<<< HEAD
 		$modified_posts = $wpdb->get_results(
 			$wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_status IN ( {$post_statuses_in} ) AND post_modified_gmt >= %s LIMIT 1000", $date )
 		);
+=======
+		$query = $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_modified_gmt >= %s LIMIT 1000", $date );
+
+		/**
+		 * Filter the query used to get the last modified posts.
+		 * $wpdb->prepare() should be used for security if a new replacement query is created in the callback.
+		 *
+		 * @param string $query         The query to use to get the last modified posts.
+		 * @param string $post_types_in A comma-separated list of post types to include in the query.
+		 * @param string $date          The date to use as the cutoff for the query.
+		 */
+		$query = apply_filters( 'msm_pre_get_last_modified_posts', $query, $post_types_in, $date );
+
+		$modified_posts = $wpdb->get_results( $query );
+
+>>>>>>> fork/main
 		return $modified_posts;
 	}
 
