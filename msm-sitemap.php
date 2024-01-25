@@ -619,10 +619,11 @@ class Metro_Sitemap {
 
 		/**
 		 * Filter the query used to get the last modified posts.
+		 * $wpdb->prepare() should be used for security if a new replacement query is created in the callback.
 		 * 
-		 * @param string|null $query The query to use to get the last modified posts.
+		 * @param string $query         The query to use to get the last modified posts.
 		 * @param string $post_types_in A comma-separated list of post types to include in the query.
-		 * @param string $date The date to use as the cutoff for the query.
+		 * @param string $date          The date to use as the cutoff for the query.
 		 */
 		$query = apply_filters( 'msm_pre_get_last_modified_posts', $query, $post_types_in, $date );
 
