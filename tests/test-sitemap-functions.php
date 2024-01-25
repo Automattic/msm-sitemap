@@ -424,4 +424,48 @@ class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
 		return 'live';
 	}
 
+	function test_get_last_modified_posts_filter_no_change() {
+		$posts_before = Metro_Sitemap::get_last_modified_posts();
+		$tag          = 'msm_pre_get_last_modified_posts';
+
+		// Test no changes to query.
+		$function = function ( $query ) {
+			return $query;
+		};
+		add_filter( $tag, $function, 10, 3 );
+		$posts_after = Metro_Sitemap::get_last_modified_posts();
+		remove_filter( $tag, $function );
+
+		$this->assertEquals( count( $posts_before ), count( $posts_after ) );
+	}
+
+	function test_get_last_modified_posts_filter_change_query() {
+		$posts_before = Metro_Sitemap::get_last_modified_posts();
+		$tag          = 'msm_pre_get_last_modified_posts';
+
+		// Modify query to fetch posts created in the last 3 months.
+		$function = function ( $query, $post_types_in, $date ) {
+			global $wpdb;
+			$query = $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_date >= DATE_SUB(NOW(), INTERVAL 3 MONTH) AND post_modified_gmt >= %s LIMIT 1000", $date );
+			return $query;
+		};
+
+		add_filter( $tag, $function, 10, 3 );
+		$posts_after_date = Metro_Sitemap::get_last_modified_posts();
+		remove_filter( $tag, $function );
+
+		// Modify query as string to fetch only 10 posts.
+		$limit    = 10;
+		$function = function ( $query ) use ( $limit ) {
+			return str_replace( 'LIMIT 1000', "LIMIT $limit", $query );
+		};
+
+		add_filter( $tag, $function );
+		$posts_after = Metro_Sitemap::get_last_modified_posts();
+		remove_filter( $tag, $function );
+
+		$this->assertLessThan( count( $posts_before ), count( $posts_after_date ) );
+		$this->assertEquals( count( $posts_after ), $limit );
+	}
+
 }
