@@ -874,10 +874,20 @@ class Metro_Sitemap {
 		return implode( ', ', $prepared );
 	}
 
+	/**
+	 * Retrieve supported post types for inclusion in sitemap.
+	 *
+	 * @return string[]
+	 */
 	private static function get_supported_post_types_in() {
 		return self::prepare_where_in( self::get_supported_post_types() );
 	}
 
+	/**
+	 * Retrieve supported post statuses for inclusion in sitemap.
+	 *
+	 * @return string[]
+	 */
 	private static function get_supported_post_statuses_in() {
 		return self::prepare_where_in( self::get_supported_post_statuses() );
 	}
