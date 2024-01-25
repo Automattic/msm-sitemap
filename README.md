@@ -95,7 +95,7 @@ add_filter( 'msm_sitemap_index', function( $sitemaps ) {
 } );
 ```
 
-## Filter Sitemap Index
+## Customize the last modified posts query
 
 Use the `msm_pre_get_last_modified_posts` filter to customize the query that gets the last modified posts.
 
