@@ -94,3 +94,19 @@ add_filter( 'msm_sitemap_index', function( $sitemaps ) {
     } );
 } );
 ```
+
+## Filter Sitemap Index
+
+Use the `msm_pre_get_last_modified_posts` filter to customize the query that gets the last modified posts.
+
+On large sites, this filter could be leveraged to enhance query efficiency by avoiding scanning older posts that don't get updated frequently and making better use of the `type_status_date` index.
+
+```
+function ( $query, $post_types_in, $date ) {
+    global $wpdb;
+
+    $query = $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_status = 'publish' AND post_date >= DATE_SUB(NOW(), INTERVAL 3 MONTH) AND post_modified_gmt >= %s LIMIT 1000", $date );
+
+    return $query;
+};
+```
