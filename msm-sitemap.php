@@ -355,13 +355,13 @@ class Metro_Sitemap {
 	public static function get_post_status(): string {
 		$default_status = 'publish';
 		$post_status = apply_filters('msm_sitemap_post_status', $default_status);
-	
+
 		$allowed_statuses = get_post_stati();
-		
+
 		if (!in_array($post_status, $allowed_statuses)) {
 			$post_status = $default_status;
 		}
-	
+
 		return $post_status;
 	}
 
@@ -370,10 +370,29 @@ class Metro_Sitemap {
 	 * @return int[] valid years
 	 */
 	public static function get_post_year_range() {
-		global $wpdb;
-		$post_status = self::get_post_status();
+		/**
+		 * Allow the post year range to be short-circuited.
+		 *
+		 * @param array|false $pre The pre-filtered value. If false, the default value will be used.
+		 */
+		$pre = apply_filters( 'msm_sitemap_pre_get_post_year_range', false );
 
-		$oldest_post_date_year = $wpdb->get_var( $wpdb->prepare( "SELECT DISTINCT YEAR(post_date) as year FROM $wpdb->posts WHERE post_status = %s AND post_date > 0 ORDER BY year ASC LIMIT 1", $post_status ) );
+		// Return the pre-filtered value if it's an array.
+		if ( is_array( $pre ) ) {
+			return $pre;
+		}
+
+		$oldest_post_date_year = wp_cache_get( 'oldest_post_date_year', 'msm_sitemap' );
+
+		if ( false === $oldest_post_date_year ) {
+			global $wpdb;
+
+			$post_status = self::get_post_status();
+
+			$oldest_post_date_year = $wpdb->get_var( $wpdb->prepare( "SELECT DISTINCT YEAR(post_date) as year FROM $wpdb->posts WHERE post_status = %s AND post_date > 0 ORDER BY year ASC LIMIT 1", $post_status ) );
+
+			wp_cache_set( 'oldest_post_date_year', $oldest_post_date_year, 'msm_sitemap', WEEK_IN_SECONDS );
+		}
 
 		if ( null !== $oldest_post_date_year ) {
 			$current_year = date( 'Y' );
@@ -381,7 +400,6 @@ class Metro_Sitemap {
 		}
 
 		return array();
-
 	}
 
 	/**
@@ -642,7 +660,7 @@ class Metro_Sitemap {
 		/**
 		 * Filter the query used to get the last modified posts.
 		 * $wpdb->prepare() should be used for security if a new replacement query is created in the callback.
-		 * 
+		 *
 		 * @param string $query         The query to use to get the last modified posts.
 		 * @param string $post_types_in A comma-separated list of post types to include in the query.
 		 * @param string $date          The date to use as the cutoff for the query.

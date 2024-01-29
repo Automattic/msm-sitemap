@@ -178,6 +178,27 @@ class FunctionsTest extends TestCase {
 	}
 
 	/**
+	 * Verify that get_post_year_range() calculates and caches the oldest post year.
+	 */
+	public function test_get_post_year_range_caches_oldest_post_year(): void {
+		wp_cache_delete( 'oldest_post_date_year', 'msm_sitemap' );
+
+		// Create posts in two different years.
+		$this->create_dummy_post( '2010-01-01 00:00:00' );
+		$this->create_dummy_post( '2015-01-01 00:00:00' );
+
+		// Prime the cache by calling get_post_year_range.
+		$years = Metro_Sitemap::get_post_year_range();
+		$this->assertContains( 2010, $years );
+		$this->assertContains( 2015, $years );
+
+		// Now, delete all posts and check that the cached value is still used.
+		_delete_all_posts();
+		$cached_years = Metro_Sitemap::get_post_year_range();
+		$this->assertEquals( $years, $cached_years );
+	}
+
+	/**
 	 * Verify check_year_has_posts returns only years with posts
 	 */
 	public function test_check_year_has_posts(): void {
