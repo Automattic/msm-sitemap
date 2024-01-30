@@ -38,7 +38,7 @@ class Metro_Sitemap {
 		add_action( 'init', array( __CLASS__, 'create_post_type' ) );
 		add_filter( 'posts_pre_query', array( __CLASS__, 'disable_main_query_for_sitemap_xml' ), 10, 2 );
 		add_filter( 'template_include', array( __CLASS__, 'load_sitemap_template' ) );
-		
+
 		// Disable WordPress 5.5-era sitemaps.
 		add_filter( 'wp_sitemaps_enabled', '__return_false' );
 
@@ -67,7 +67,9 @@ class Metro_Sitemap {
 	 * Register endpoint for sitemap and other hooks
 	 */
 	public static function sitemap_init() {
-		define( 'WPCOM_SKIP_DEFAULT_SITEMAP', true );
+		if ( ! defined( 'WPCOM_SKIP_DEFAULT_SITEMAP' ) ) {
+			define( 'WPCOM_SKIP_DEFAULT_SITEMAP', true );
+		}
 
 		self::sitemap_rewrite_init();
 
