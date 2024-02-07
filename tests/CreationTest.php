@@ -9,6 +9,7 @@ namespace Automattic\MSM_Sitemap\Tests;
 
 use Metro_Sitemap;
 use MSM_Sitemap_Builder_Cron;
+use WP_Post;
 
 /**
  * Unit Tests to confirm Sitemaps are generated.
@@ -23,12 +24,12 @@ class CreationTest extends TestCase {
 	 *
 	 * @var Integer
 	 */
-	private $num_days = 4;
+	private int $num_days = 4;
 
 	/**
 	 * Generate posts and build the sitemap
 	 */
-	function setup(): void {
+	public function setup(): void {
 		// Create posts for the last num_days days.
 		$dates = array();
 		$date = time();
@@ -45,7 +46,7 @@ class CreationTest extends TestCase {
 	/**
 	 * Remove the sample posts and the sitemap posts
 	 */
-	function teardown(): void {
+	public function teardown(): void {
 		$this->posts = array();
 		$sitemaps = get_posts( array(
 			'post_type' => Metro_Sitemap::SITEMAP_CPT,
@@ -60,7 +61,8 @@ class CreationTest extends TestCase {
 	/**
 	 * Validate the XML stored in the database after sitemap generation
 	 */
-	function test_sitemap_posts_were_created() {
+	public function test_sitemap_posts_were_created(): void
+	{
 		global $post;
 
 		$sitemaps = get_posts( array(
@@ -96,7 +98,8 @@ class CreationTest extends TestCase {
 	/**
 	 * Validate that get_sitemap_post_id function returns the expected Sitemap
 	 */
-	function test_get_sitemap_post_id() {
+	public function test_get_sitemap_post_id(): void
+	{
 
 		// Get yesterday's sitemap post.
 		$date = strtotime( '-1 day' );
@@ -108,7 +111,7 @@ class CreationTest extends TestCase {
 		$sitemap_post_id = Metro_Sitemap::get_sitemap_post_id( $sitemap_year, $sitemap_month, $sitemap_day );
 		$sitemap_post = get_post( $sitemap_post_id );
 
-		$this->assertTrue( is_a( $sitemap_post, 'WP_Post' ), 'get_sitemap_post_id returned non-WP_Post value' );
+		$this->assertInstanceOf( WP_Post::class, $sitemap_post, 'get_sitemap_post_id returned non-WP_Post value' );
 		$this->assertEquals( $sitemap_ymd, $sitemap_post->post_title );
 
 	}
@@ -117,7 +120,8 @@ class CreationTest extends TestCase {
 	 * Validate that Metro Sitemap CPTs are deleted when all posts are removed
 	 * for a date
 	 */
-	function test_delete_empty_sitemap() {
+	public function test_delete_empty_sitemap(): void
+	{
 		global $wpdb;
 
 		list( $sitemap ) = get_posts( array(

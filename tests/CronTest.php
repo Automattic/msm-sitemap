@@ -22,14 +22,14 @@ class CronTest extends TestCase {
 	 *
 	 * @var Integer
 	 */
-	private $num_years_data = 2;
+	private int $num_years_data = 2;
 
 	/**
 	 * Generate posts and build the sitemap
 	 */
-	function setup(): void {
+	public function setup(): void {
 		if ( ! class_exists( 'MSM_Sitemap_Builder_Cron' ) ) {
-			require dirname( dirname( __FILE__ ) ) . '/includes/msm-sitemap-builder-cron.php';
+			require dirname( __FILE__, 2 ) . '/includes/msm-sitemap-builder-cron.php';
 			MSM_Sitemap_Builder_Cron::setup();
 		}
 
@@ -49,7 +49,7 @@ class CronTest extends TestCase {
 	/**
 	 * Remove the sample posts and the sitemap posts
 	 */
-	function teardown(): void {
+	public function teardown(): void {
 		$this->posts = array();
 		$sitemaps = get_posts( array(
 			'post_type' => Metro_Sitemap::SITEMAP_CPT,
@@ -63,7 +63,8 @@ class CronTest extends TestCase {
 	/**
 	 * Validate that Cron Jobs are scheduled as expected.
 	 */
-	function test_cron_jobs_scheduling() {
+	public function test_cron_jobs_scheduling(): void
+	{
 
 		// Reset Cron SitemapBuilder.
 		MSM_Sitemap_Builder_Cron::reset_sitemap_data();
@@ -71,8 +72,6 @@ class CronTest extends TestCase {
 		MSM_Sitemap_Builder_Cron::generate_full_sitemap();
 		update_option( 'msm_sitemap_create_in_progress', true );
 
-		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
-		$months_being_processed = (array) get_option( 'msm_months_to_process', array() );
 		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
 
 		// Validate initial Options is set to years for Posts.
@@ -87,19 +86,16 @@ class CronTest extends TestCase {
 		// fake_cron.
 		$this->fake_cron();
 
-		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
 		$months_being_processed = (array) get_option( 'msm_months_to_process', array() );
-		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
 
 		// Validate Current Month is added to months_to_process.
-		$month = (int) date( 'n', time() );
+		$month = (int) date( 'n' );
 		$this->assertContains( $month, $months_being_processed, 'Initial Year Processing should use Current Month if same year' );
 
 		// fake_cron.
 		$this->fake_cron();
 
 		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
-		$months_being_processed = (array) get_option( 'msm_months_to_process', array() );
 		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
 
 		$expected_days = range( 1, date( 'j' ) );
@@ -114,8 +110,6 @@ class CronTest extends TestCase {
 		}
 
 		// Check New Year.
-		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
-		$months_being_processed = (array) get_option( 'msm_months_to_process', array() );
 		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
 
 		// Validate initial Options is set to years for Posts.
@@ -129,9 +123,7 @@ class CronTest extends TestCase {
 		// fake_cron.
 		$this->fake_cron();
 
-		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
 		$months_being_processed = (array) get_option( 'msm_months_to_process', array() );
-		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
 
 		// Validate Current Month is added to months_to_process.
 		$month = 12;
@@ -141,8 +133,6 @@ class CronTest extends TestCase {
 		$this->fake_cron();
 
 		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
-		$months_being_processed = (array) get_option( 'msm_months_to_process', array() );
-		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
 
 		$this->assertGreaterThanOrEqual( 27, count( $days_being_processed ), 'New Month Processing should star at end of Month' );
 

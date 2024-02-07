@@ -21,14 +21,12 @@ class IndexesTest extends TestCase {
 	 *
 	 * @var int
 	 */
-	private $num_years_data = 3;
+	private int $num_years_data = 3;
 
 	/**
 	 * Generate posts and build initial sitemaps
 	 */
-	function setup(): void {
-		_delete_all_posts();
-
+	public function setup(): void {
 		// Add a post for each day in the last x years.
 		$dates = array();
 		$date = time();
@@ -47,7 +45,7 @@ class IndexesTest extends TestCase {
 	/**
 	 * Remove created posts, sitemaps and options
 	 */
-	function teardown(): void {
+	public function teardown(): void {
 		$this->posts = array();
 		$sitemaps = get_posts( array(
 			'post_type' => Metro_Sitemap::SITEMAP_CPT,
@@ -61,7 +59,8 @@ class IndexesTest extends TestCase {
 	/**
 	 * Test that robots.txt has a single sitemap index when sitemaps by year are disabled
 	 */
-	function test_single_sitemap_index() {
+	public function test_single_sitemap_index(): void
+	{
 		// Turn on indexing by year
 		Metro_Sitemap::$index_by_year = false;
 
@@ -71,23 +70,24 @@ class IndexesTest extends TestCase {
 		preg_match_all( '|sitemap\.xml|', apply_filters( 'robots_txt', '', true ), $matches );
 
 		// Check that we've indexed the proper total number of URLs.
-		$this->assertEquals( 1, count( $matches[0] ) );
+		$this->assertCount(1, $matches[0]);
 	}
 
 	/**
 	 * Test that robots.txt has sitemap indexes for all years when sitemaps by year are enabled
 	 */
-	function test_sitemap_index_by_year() {
+	public function test_sitemap_index_by_year(): void
+	{
 		// Turn on indexing by year
 		Metro_Sitemap::$index_by_year = true;
 
 		// Check that we have a single instance of sitemap.xml in robots.txt
 		// We can't actually use the core function since it outputs headers,
 		// but we only care about our stuff output to a public blog.
-		preg_match_all( '|sitemap-([0-9]{4})\.xml|', apply_filters( 'robots_txt', '', true ), $matches );
+		preg_match_all( '|sitemap-(\d{4})\.xml|', apply_filters( 'robots_txt', '', true ), $matches );
 
 		// Check that we've indexed the proper total number of URLs.
-		$this->assertEquals( 3, count( $matches[0] ) );
+		$this->assertCount(3, $matches[0]);
 	}
 }
 

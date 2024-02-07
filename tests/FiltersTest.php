@@ -20,10 +20,11 @@ class FiltersTest extends TestCase {
 	/**
 	 * Verify that request for sitemap url doesn't cause Main Query to hit db.
 	 */
-	function test_bypass_main_query() {
+	public function test_bypass_main_query(): void
+	{
 		global $wp_query;
 
-		// Verify post_pre_query on sitemap queryvar returns empty array
+		// Verify post_pre_query on sitemap query_var returns empty array
 		set_query_var( 'sitemap', 'true' );
 		$posts = apply_filters_ref_array( 'posts_pre_query', array( null, $wp_query ) );
 		$this->assertIsArray( $posts );
@@ -34,7 +35,8 @@ class FiltersTest extends TestCase {
 	/**
 	 * Verify that secondary query is not get modified if sitemap var is set.
 	 */
-	function test_secondary_query_not_bypassed() {
+	public function test_secondary_query_not_bypassed(): void
+	{
 
 		// Verify post_pre_query filter returns null by default
 		$exp_result = array(1);
@@ -51,7 +53,8 @@ class FiltersTest extends TestCase {
 	/**
 	 * Verify that msm_sitemap_index filter runs when build_root_sitemap_xml is called.
 	 */
-	function test_msm_sitemap_index_filter_ran() {
+	public function test_msm_sitemap_index_filter_ran(): void
+	{
 		$ran = false;
 
 		add_filter( 'msm_sitemap_index', function() use ( &$ran ) { $ran = true; return []; } );
