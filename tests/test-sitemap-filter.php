@@ -5,8 +5,6 @@
  * @package Metro_Sitemap/unit_tests
  */
 
-require_once('TestCase.php');
-
 /**
  * Unit Tests to validate Filters applied when generating Sitemaps
  *

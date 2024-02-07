@@ -5,8 +5,6 @@
  * @package Metro_Sitemap/unit_tests
  */
 
-require_once('TestCase.php');
-
 /**
  * Unit Tests to confirm Cron is populated as expected
  *
