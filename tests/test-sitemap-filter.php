@@ -5,7 +5,7 @@
  * @package Metro_Sitemap/unit_tests
  */
 
-require_once( 'msm-sitemap-test.php' );
+require_once('TestCase.php');
 
 /**
  * Unit Tests to validate Filters applied when generating Sitemaps
@@ -19,30 +19,30 @@ class WP_Test_Sitemap_Filter extends WP_UnitTestCase {
 	 */
 	function test_bypass_main_query() {
 		global $wp_query;
-		
+
 		// Verify post_pre_query on sitemap queryvar returns empty array
 		set_query_var( 'sitemap', 'true' );
 		$posts = apply_filters_ref_array( 'posts_pre_query', array( null, $wp_query ) );
 		$this->assertIsArray( $posts );
 		$this->assertEmpty( $posts );
-		
+
 	}
-	
+
 	/**
 	 * Verify that secondary query is not get modified if sitemap var is set.
 	 */
-	function test_secondary_query_not_bypassed() {		
-		
+	function test_secondary_query_not_bypassed() {
+
 		// Verify post_pre_query filter returns null by default
 		$exp_result = array(1);
-		
+
 		$query = new WP_Query( array(
 			'post_type' => 'post',
 			'sitemap' => 'true'
 		) );
 		$sitemap_posts = apply_filters_ref_array( 'posts_pre_query', array( $exp_result, $query ) );
 		$this->assertEquals($exp_result, $sitemap_posts, 'Non-Main WP_Query is being modified from sitemap query var');
-		
+
 	}
 
 	/**

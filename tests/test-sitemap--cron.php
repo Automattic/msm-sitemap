@@ -5,7 +5,7 @@
  * @package Metro_Sitemap/unit_tests
  */
 
-require_once( 'msm-sitemap-test.php' );
+require_once('TestCase.php');
 
 /**
  * Unit Tests to confirm Cron is populated as expected
@@ -109,7 +109,7 @@ class WP_Test_Sitemap_Cron extends WP_UnitTestCase {
 		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
 
 		$expected_days = range( 1, date( 'j' ) );
-		
+
 		// Validate Current Month only processes days that have passed and today.
 		$this->assertSame( array_diff( $expected_days, $days_being_processed ), array_diff( $days_being_processed, $expected_days ), "Current Month shouldn't process days in future." );
 
@@ -154,5 +154,5 @@ class WP_Test_Sitemap_Cron extends WP_UnitTestCase {
 
 	}
 
-	
+
 }
