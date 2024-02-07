@@ -5,12 +5,17 @@
  * @package Metro_Sitemap/unit_tests
  */
 
+namespace Automattic\MSM_Sitemap\Tests;
+
+use Metro_Sitemap;
+use WP_Query;
+
 /**
  * Unit Tests to validate Filters applied when generating Sitemaps
  *
  * @author Matthew Denton (mdbitz)
  */
-class WP_Test_Sitemap_Filter extends WP_UnitTestCase {
+class WP_Test_Sitemap_Filter extends \WP_UnitTestCase {
 
 	/**
 	 * Verify that request for sitemap url doesn't cause Main Query to hit db.

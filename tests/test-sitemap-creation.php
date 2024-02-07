@@ -5,13 +5,18 @@
  * @package Metro_Sitemap/unit_tests
  */
 
+namespace Automattic\MSM_Sitemap\Tests;
+
+use Metro_Sitemap;
+use MSM_Sitemap_Builder_Cron;
+
 /**
  * Unit Tests to confirm Sitemaps are generated.
  *
  * @author michaelblouin
  * @author Matthew Denton (mdbitz)
  */
-class WP_Test_Sitemap_Creation extends WP_UnitTestCase {
+class WP_Test_Sitemap_Creation extends \WP_UnitTestCase {
 
 	/**
 	 * Humber of Posts to Create (1 per day)

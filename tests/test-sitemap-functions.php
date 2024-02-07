@@ -5,12 +5,16 @@
  * @package Metro_Sitemap/unit_tests
  */
 
+namespace Automattic\MSM_Sitemap\Tests;
+
+use Metro_Sitemap;
+
 /**
  * Unit Tests to confirm Sitemaps are generated.
  *
  * @author Matthew Denton (mdbitz)
  */
-class WP_Test_Sitemap_Functions extends WP_UnitTestCase {
+class WP_Test_Sitemap_Functions extends \WP_UnitTestCase {
 
 	/**
 	 * Base Test Class Instance

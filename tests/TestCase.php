@@ -5,6 +5,8 @@
  * @package Metro_Sitemap/unit_tests
  */
 
+namespace Automattic\MSM_Sitemap\Tests;
+
 /**
  * A base class for MSM SiteMap Tests that exposes a few handy functions for test cases.
  *
@@ -48,11 +50,11 @@ class MSM_SiteMap_Test {
 				'post_author' => 1,
 		);
 
-		$post_data['post_date'] = $post_data['post_modified'] = date_format( new DateTime( $day ), 'Y-m-d H:i:s' );
+		$post_data['post_date'] = $post_data['post_modified'] = date_format( new \DateTime( $day ), 'Y-m-d H:i:s' );
 		$post_data['ID'] = wp_insert_post( $post_data, true );
 
 		if ( is_wp_error( $post_data['ID'] ) || 0 === $post_data['ID'] ) {
-			throw new Exception( "Error: WP Error encountered inserting post. {$post_data['ID']->errors}, {$post_data['ID']->error_data}" );
+			throw new \Exception( "Error: WP Error encountered inserting post. {$post_data['ID']->errors}, {$post_data['ID']->error_data}" );
 		}
 
 		$this->posts_created[] = $post_data['ID'];
@@ -60,14 +62,14 @@ class MSM_SiteMap_Test {
 
 		return $post_data['ID'];
 	}
-	
+
 	/**
 	 * Creates a new post for every day in $dates.
 	 *
 	 * Does not trigger building of sitemaps.
 	 *
 	 * @param array(str) $dates The days to create posts on.
-	 * @throws Exception Unable to insert posts.
+	 * @throws \Exception Unable to insert posts.
 	 */
 	function create_dummy_posts( $dates ) {
 
@@ -84,7 +86,7 @@ class MSM_SiteMap_Test {
 
 		// Count the number of posts for each date.
 		foreach ( $this->posts as $post ) {
-			$date = date_format( new DateTime( $post['post_date'] ), 'Y-m-d' );
+			$date = date_format( new \DateTime( $post['post_date'] ), 'Y-m-d' );
 
 			if ( isset( $dates[ $date ] ) ) {
 				$dates[ $date ] ++;
@@ -97,7 +99,7 @@ class MSM_SiteMap_Test {
 		foreach ( $dates as $date => $count ) {
 			list( $year, $month, $day ) = explode( '-', $date, 3 );
 
-			$indexed_url_count = Metro_Sitemap::get_indexed_url_count( $year, $month, $day );
+			$indexed_url_count = \Metro_Sitemap::get_indexed_url_count( $year, $month, $day );
 			if ( $indexed_url_count !== $count ) {
 				echo "\nExpected url count of $indexed_url_count but had count of $count on $year-$month-$day\n";
 				return false;
@@ -123,13 +125,13 @@ class MSM_SiteMap_Test {
 		foreach ( $udates as $date ) {
 			list( $year, $month, $day ) = explode( '-', $date );
 
-			MSM_Sitemap_Builder_Cron::generate_sitemap_for_year_month_day( array( 'year' => $year, 'month' => $month, 'day' => $day ) );
+			\MSM_Sitemap_Builder_Cron::generate_sitemap_for_year_month_day( array( 'year' => $year, 'month' => $month, 'day' => $day ) );
 		}
 	}
-	
+
 	/**
 	 * Duplicate of Metro_Sitemap get_supported_post_types_in
-	 * 
+	 *
 	 * @global type $wpdb
 	 * @return type
 	 */
@@ -137,7 +139,7 @@ class MSM_SiteMap_Test {
 		global $wpdb;
 
 		$post_types_in = '';
-		$post_types = Metro_Sitemap::get_supported_post_types();
+		$post_types = \Metro_Sitemap::get_supported_post_types();
 		$post_types_prepared = array();
 
 		foreach ( $post_types as $post_type ) {
@@ -155,12 +157,12 @@ class MSM_SiteMap_Test {
 	function update_sitemap_by_post( $post ) {
 		$date = date( 'Y-m-d', strtotime( $post->post_date ) );
 		list( $year, $month, $day ) = explode( '-', $date );
-		MSM_Sitemap_Builder_Cron::generate_sitemap_for_year_month_day( array( 'year' => $year, 'month' => $month, 'day' => $day ) );
+		\MSM_Sitemap_Builder_Cron::generate_sitemap_for_year_month_day( array( 'year' => $year, 'month' => $month, 'day' => $day ) );
 	}
 
 	/**
 	 * Fakes a cron job
-	 * 
+	 *
 	 * @param str #execute Execute the hook.
 	 */
 	function fake_cron($execute = 'run') {

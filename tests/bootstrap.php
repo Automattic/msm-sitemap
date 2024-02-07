@@ -5,6 +5,8 @@
  * @package Automattic\MSM_Sitemap
  */
 
+namespace Automattic\MSM_Sitemap\Tests;
+
 use Yoast\WPTestUtils\WPIntegration;
 
 require_once dirname( __DIR__ ) . '/vendor/yoast/wp-test-utils/src/WPIntegration/bootstrap-functions.php';
@@ -37,7 +39,7 @@ function _manually_load_plugin() {
 	require dirname( __DIR__ ) . '/msm-sitemap.php';
 }
 
-tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
+tests_add_filter( 'muplugins_loaded', __NAMESPACE__ . '\\_manually_load_plugin' );
 
 // Make sure the Composer autoload file has been generated.
 WPIntegration\check_composer_autoload_exists();
