@@ -15,7 +15,7 @@ use Metro_Sitemap;
  * @author michaelblouin
  * @author Matthew Denton (mdbitz)
  */
-class StatsTest extends \WP_UnitTestCase {
+class StatsTest extends TestCase {
 
 	/**
 	 * Humber of Posts to Create (1 per year)
@@ -25,19 +25,10 @@ class StatsTest extends \WP_UnitTestCase {
 	private $num_years_data = 3;
 
 	/**
-	 * Base Test Class Instance
-	 *
-	 * @var MSM_SIteMap_Test
-	 */
-	private $test_base;
-
-	/**
 	 * Generate posts and build initial sitemaps
 	 */
 	function setup(): void {
 		_delete_all_posts();
-
-		$this->test_base = new MSM_SiteMap_Test();
 
 		// Add a post for each day in the last x years.
 		$dates = array();
@@ -48,24 +39,24 @@ class StatsTest extends \WP_UnitTestCase {
 			$date = strtotime( '-1 year', $date );
 		}
 
-		$this->test_base->create_dummy_posts( $dates );
+		$this->create_dummy_posts( $dates );
 
-		$this->assertCount( $this->num_years_data, $this->test_base->posts );
-		$this->test_base->build_sitemaps();
+		$this->assertCount( $this->num_years_data, $this->posts );
+		$this->build_sitemaps();
 	}
 
 	/**
 	 * Remove created posts, Sitemaps and options
 	 */
 	function teardown(): void {
-		$this->test_base->posts = array();
+		$this->posts = array();
 		$sitemaps = get_posts( array(
 			'post_type' => Metro_Sitemap::SITEMAP_CPT,
 			'fields' => 'ids',
 			'posts_per_page' => -1,
 		) );
 		update_option( 'msm_sitemap_indexed_url_count' , 0 );
-		array_map( 'wp_delete_post', array_merge( $this->test_base->posts_created, $sitemaps ) );
+		array_map( 'wp_delete_post', array_merge( $this->posts_created, $sitemaps ) );
 	}
 
 	/**
@@ -76,7 +67,7 @@ class StatsTest extends \WP_UnitTestCase {
 		$this->assertEquals( $this->num_years_data, Metro_Sitemap::get_total_indexed_url_count() );
 
 		// Check specific stats.
-		$this->assertTrue( $this->test_base->check_stats_for_created_posts() );
+		$this->assertTrue( $this->check_stats_for_created_posts() );
 	}
 
 	/**
@@ -87,16 +78,16 @@ class StatsTest extends \WP_UnitTestCase {
 		$today_str = date( 'Y-m-d' );
 
 		// Insert a new post for today.
-		$this->test_base->create_dummy_posts( array( $today_str . ' 00:00:00' ) );
+		$this->create_dummy_posts( array( $today_str . ' 00:00:00' ) );
 
 		// Build sitemaps.
-		$this->test_base->build_sitemaps();
+		$this->build_sitemaps();
 
 		// Check stats.
 		$this->assertEquals( $this->num_years_data + 1, Metro_Sitemap::get_total_indexed_url_count() );
 
 		// Check specific stats.
-		$this->assertTrue( $this->test_base->check_stats_for_created_posts() );
+		$this->assertTrue( $this->check_stats_for_created_posts() );
 	}
 
 	/**
@@ -105,15 +96,15 @@ class StatsTest extends \WP_UnitTestCase {
 	function test_site_stats_for_deleted_post() {
 
 		// Delete all posts (going backwards in time).
-		$post_count = count( $this->test_base->posts );
+		$post_count = count( $this->posts );
 		while ( $post_count ) {
-			$last_post = array_pop( $this->test_base->posts );
+			$last_post = array_pop( $this->posts );
 			$post = wp_delete_post( $last_post['ID'], true );
 			$post_count -= 1;
 
-			$this->test_base->update_sitemap_by_post( $post );
+			$this->update_sitemap_by_post( $post );
 			$this->assertEquals( $post_count, Metro_Sitemap::get_total_indexed_url_count() );
-			$this->assertTrue( $this->test_base->check_stats_for_created_posts() );
+			$this->assertTrue( $this->check_stats_for_created_posts() );
 		}
 
 		$this->assertEquals( 0, Metro_Sitemap::count_sitemaps() );

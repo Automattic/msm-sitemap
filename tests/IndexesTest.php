@@ -14,7 +14,7 @@ use Metro_Sitemap;
  *
  * @author bcampeau
  */
-class IndexesTest extends \WP_UnitTestCase {
+class IndexesTest extends TestCase {
 
 	/**
 	 * Create posts across a number of years
@@ -24,19 +24,10 @@ class IndexesTest extends \WP_UnitTestCase {
 	private $num_years_data = 3;
 
 	/**
-	 * Base Test Class Instance
-	 *
-	 * @var MSM_SIteMap_Test
-	 */
-	private $test_base;
-
-	/**
 	 * Generate posts and build initial sitemaps
 	 */
 	function setup(): void {
 		_delete_all_posts();
-
-		$this->test_base = new MSM_SiteMap_Test();
 
 		// Add a post for each day in the last x years.
 		$dates = array();
@@ -47,24 +38,24 @@ class IndexesTest extends \WP_UnitTestCase {
 			$date = strtotime( '-1 year', $date );
 		}
 
-		$this->test_base->create_dummy_posts( $dates );
+		$this->create_dummy_posts( $dates );
 
-		$this->assertCount( $this->num_years_data, $this->test_base->posts );
-		$this->test_base->build_sitemaps();
+		$this->assertCount( $this->num_years_data, $this->posts );
+		$this->build_sitemaps();
 	}
 
 	/**
 	 * Remove created posts, sitemaps and options
 	 */
 	function teardown(): void {
-		$this->test_base->posts = array();
+		$this->posts = array();
 		$sitemaps = get_posts( array(
 			'post_type' => Metro_Sitemap::SITEMAP_CPT,
 			'fields' => 'ids',
 			'posts_per_page' => -1,
 		) );
 		update_option( 'msm_sitemap_indexed_url_count' , 0 );
-		array_map( 'wp_delete_post', array_merge( $this->test_base->posts_created, $sitemaps ) );
+		array_map( 'wp_delete_post', array_merge( $this->posts_created, $sitemaps ) );
 	}
 
 	/**

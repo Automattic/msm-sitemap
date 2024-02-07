@@ -16,7 +16,7 @@ use MSM_Sitemap_Builder_Cron;
  * @author michaelblouin
  * @author Matthew Denton (mdbitz)
  */
-class CreationTest extends \WP_UnitTestCase {
+class CreationTest extends TestCase {
 
 	/**
 	 * Humber of Posts to Create (1 per day)
@@ -26,19 +26,9 @@ class CreationTest extends \WP_UnitTestCase {
 	private $num_days = 4;
 
 	/**
-	 * Base Test Class Instance
-	 *
-	 * @var MSM_SIteMap_Test
-	 */
-	private $test_base;
-
-	/**
 	 * Generate posts and build the sitemap
 	 */
 	function setup(): void {
-
-		$this->test_base = new MSM_SiteMap_Test();
-
 		// Create posts for the last num_days days.
 		$dates = array();
 		$date = time();
@@ -47,24 +37,24 @@ class CreationTest extends \WP_UnitTestCase {
 			$dates[] = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date );
 		}
 
-		$this->test_base->create_dummy_posts( $dates );
-		$this->assertCount( $this->num_days, $this->test_base->posts );
-				$this->test_base->build_sitemaps();
+		$this->create_dummy_posts( $dates );
+		$this->assertCount( $this->num_days, $this->posts );
+				$this->build_sitemaps();
 	}
 
 	/**
 	 * Remove the sample posts and the sitemap posts
 	 */
 	function teardown(): void {
-		$this->test_base->posts = array();
+		$this->posts = array();
 		$sitemaps = get_posts( array(
 			'post_type' => Metro_Sitemap::SITEMAP_CPT,
 			'fields' => 'ids',
 			'posts_per_page' => -1,
 		) );
 				update_option( 'msm_sitemap_indexed_url_count' , 0 );
-		array_map( 'wp_delete_post', array_merge( $this->test_base->posts_created, $sitemaps ) );
-		$this->test_base->fake_cron( false );
+		array_map( 'wp_delete_post', array_merge( $this->posts_created, $sitemaps ) );
+		$this->fake_cron( false );
 	}
 
 	/**
@@ -83,7 +73,7 @@ class CreationTest extends \WP_UnitTestCase {
 
 		foreach ( $sitemaps as $i => $map_id ) {
 			$xml = get_post_meta( $map_id, 'msm_sitemap_xml', true );
-			$post_id = $this->test_base->posts[ $i ]['ID'];
+			$post_id = $this->posts[ $i ]['ID'];
 			$this->assertStringContainsString( 'p=' . $post_id, $xml );
 
 			$xml_struct = simplexml_load_string( $xml );

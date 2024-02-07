@@ -14,14 +14,7 @@ use Metro_Sitemap;
  *
  * @author Matthew Denton (mdbitz)
  */
-class CPTTest extends \WP_UnitTestCase {
-
-	/**
-	 * Base Test Class Instance
-	 *
-	 * @var MSM_SIteMap_Test
-	 */
-	private $test_base;
+class CPTTest extends TestCase {
 
 	/**
 	 * Custom Post Type
@@ -58,32 +51,29 @@ class CPTTest extends \WP_UnitTestCase {
 	 * Initialize MSM_SiteMap_Test
 	 */
 	function setup(): void {
-
-		$this->test_base = new MSM_SiteMap_Test();
-
 		// Create Multiple Posts acorss various Dates.
 		$date = time();
 
 		// 3 for Today, 1 in "draft" status
 		$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
-		$this->test_base->create_dummy_post( $cur_day );
-		$this->test_base->create_dummy_post( $cur_day );
-		$this->test_base->create_dummy_post( $cur_day, 'draft' );
+		$this->create_dummy_post( $cur_day );
+		$this->create_dummy_post( $cur_day );
+		$this->create_dummy_post( $cur_day, 'draft' );
 
 		// 1  for each day in last week for CPT
 		for ( $i = 0; $i < 6; $i++ ) {
 			$date = strtotime( '-1 day', $date );
 			$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
-			$this->test_base->create_dummy_post( $cur_day, 'publish', self::TEST_CPT );
+			$this->create_dummy_post( $cur_day, 'publish', self::TEST_CPT );
 		}
 
 		// 1 CPT draft for a  month ago
 		$date = strtotime( '-1 month', time() );
 		$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
-		$this->test_base->create_dummy_post( $cur_day, 'draft', self::TEST_CPT );
+		$this->create_dummy_post( $cur_day, 'draft', self::TEST_CPT );
 
-		$this->assertCount( 10, $this->test_base->posts );
-		$this->test_base->build_sitemaps();
+		$this->assertCount( 10, $this->posts );
+		$this->build_sitemaps();
 
 	}
 
@@ -91,14 +81,14 @@ class CPTTest extends \WP_UnitTestCase {
 	 * Remove the sample posts and the sitemap posts
 	 */
 	function teardown(): void {
-		$this->test_base->posts = array();
+		$this->posts = array();
 		$sitemaps = get_posts( array(
 			'post_type' => Metro_Sitemap::SITEMAP_CPT,
 			'fields' => 'ids',
 			'posts_per_page' => -1,
 		) );
 		update_option( 'msm_sitemap_indexed_url_count' , 0 );
-		array_map( 'wp_delete_post', array_merge( $this->test_base->posts_created, $sitemaps ) );
+		array_map( 'wp_delete_post', array_merge( $this->posts_created, $sitemaps ) );
 	}
 
 	/**
@@ -106,7 +96,7 @@ class CPTTest extends \WP_UnitTestCase {
 	 */
 	function test_cpt_ignored_by_default() {
 
-		$this->test_base->build_sitemaps();
+		$this->build_sitemaps();
 		$sitemaps = get_posts( array(
 			'post_type' => Metro_Sitemap::SITEMAP_CPT,
 			'fields' => 'ids',
@@ -125,7 +115,7 @@ class CPTTest extends \WP_UnitTestCase {
 
 		add_filter( 'msm_sitemap_entry_post_type', array( $this, 'add_cpt_to_msm_sitemap' ) );
 
-		$this->test_base->build_sitemaps();
+		$this->build_sitemaps();
 		$sitemaps = get_posts( array(
 			'post_type' => Metro_Sitemap::SITEMAP_CPT,
 			'fields' => 'ids',

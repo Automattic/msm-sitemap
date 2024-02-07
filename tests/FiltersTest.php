@@ -15,7 +15,7 @@ use WP_Query;
  *
  * @author Matthew Denton (mdbitz)
  */
-class FiltersTest extends \WP_UnitTestCase {
+class FiltersTest extends TestCase {
 
 	/**
 	 * Verify that request for sitemap url doesn't cause Main Query to hit db.

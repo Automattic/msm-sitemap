@@ -13,7 +13,7 @@ namespace Automattic\MSM_Sitemap\Tests;
  * @author michaelblouin
  * @author Matthew Denton (mdbitz)
  */
-class MSM_SiteMap_Test {
+class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 
 	/**
 	 * Array of Posts Created for Test

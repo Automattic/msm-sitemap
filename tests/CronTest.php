@@ -15,7 +15,7 @@ use MSM_Sitemap_Builder_Cron;
  *
  * @author Matthew Denton (mdbitz)
  */
-class CronTest extends \WP_UnitTestCase {
+class CronTest extends TestCase {
 
 	/**
 	 * Humber of Posts to Create (1 per year)
@@ -23,13 +23,6 @@ class CronTest extends \WP_UnitTestCase {
 	 * @var Integer
 	 */
 	private $num_years_data = 2;
-
-	/**
-	 * Base Test Class Instance
-	 *
-	 * @var MSM_SIteMap_Test
-	 */
-	private $test_base;
 
 	/**
 	 * Generate posts and build the sitemap
@@ -40,8 +33,6 @@ class CronTest extends \WP_UnitTestCase {
 			MSM_Sitemap_Builder_Cron::setup();
 		}
 
-		$this->test_base = new MSM_SiteMap_Test();
-
 		// Add a post for each day in the last x years.
 		$dates = array();
 		$date = time();
@@ -51,22 +42,22 @@ class CronTest extends \WP_UnitTestCase {
 			$date = strtotime( '-1 year', $date );
 		}
 
-		$this->test_base->create_dummy_posts( $dates );
-		$this->assertCount( $this->num_years_data, $this->test_base->posts );
+		$this->create_dummy_posts( $dates );
+		$this->assertCount( $this->num_years_data, $this->posts );
 	}
 
 	/**
 	 * Remove the sample posts and the sitemap posts
 	 */
 	function teardown(): void {
-		$this->test_base->posts = array();
+		$this->posts = array();
 		$sitemaps = get_posts( array(
 			'post_type' => Metro_Sitemap::SITEMAP_CPT,
 			'fields' => 'ids',
 			'posts_per_page' => -1,
 		) );
 		update_option( 'msm_sitemap_indexed_url_count' , 0 );
-		array_map( 'wp_delete_post', array_merge( $this->test_base->posts_created, $sitemaps ) );
+		array_map( 'wp_delete_post', array_merge( $this->posts_created, $sitemaps ) );
 	}
 
 	/**
@@ -94,7 +85,7 @@ class CronTest extends \WP_UnitTestCase {
 		$this->assertSame( array_diff( $expected_years, $years_being_processed ), array_diff( $years_being_processed, $expected_years ), "Years Scheduled for Processing don't align with Posts." );
 
 		// fake_cron.
-		$this->test_base->fake_cron();
+		$this->fake_cron();
 
 		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
 		$months_being_processed = (array) get_option( 'msm_months_to_process', array() );
@@ -105,7 +96,7 @@ class CronTest extends \WP_UnitTestCase {
 		$this->assertContains( $month, $months_being_processed, 'Initial Year Processing should use Current Month if same year' );
 
 		// fake_cron.
-		$this->test_base->fake_cron();
+		$this->fake_cron();
 
 		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
 		$months_being_processed = (array) get_option( 'msm_months_to_process', array() );
@@ -118,7 +109,7 @@ class CronTest extends \WP_UnitTestCase {
 
 		$cur_year = date( 'Y' );
 		while ( in_array( $cur_year, $years_being_processed ) ) {
-			$this->test_base->fake_cron();
+			$this->fake_cron();
 			$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
 		}
 
@@ -136,7 +127,7 @@ class CronTest extends \WP_UnitTestCase {
 		$this->assertSame( array_diff( $expected_years, $years_being_processed ), array_diff( $years_being_processed, $expected_years ), "Years Scheduled for Processing don't align when year finishes processing" );
 
 		// fake_cron.
-		$this->test_base->fake_cron();
+		$this->fake_cron();
 
 		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
 		$months_being_processed = (array) get_option( 'msm_months_to_process', array() );
@@ -147,7 +138,7 @@ class CronTest extends \WP_UnitTestCase {
 		$this->assertContains( $month, $months_being_processed, 'New Year Processing should start in December' );
 
 		// fake_cron.
-		$this->test_base->fake_cron();
+		$this->fake_cron();
 
 		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
 		$months_being_processed = (array) get_option( 'msm_months_to_process', array() );

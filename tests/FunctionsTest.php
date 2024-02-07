@@ -14,34 +14,19 @@ use Metro_Sitemap;
  *
  * @author Matthew Denton (mdbitz)
  */
-class FunctionsTest extends \WP_UnitTestCase {
-
-	/**
-	 * Base Test Class Instance
-	 *
-	 * @var MSM_SIteMap_Test
-	 */
-	private $test_base;
-
-	/**
-	 * Initialize MSM_SiteMap_Test
-	 */
-	function setup(): void {
-		$this->test_base = new MSM_SiteMap_Test();
-	}
-
+class FunctionsTest extends TestCase {
 	/**
 	 * Remove the sample posts and the sitemap posts
 	 */
 	function teardown(): void {
-		$this->test_base->posts = array();
+		$this->posts = array();
 		$sitemaps = get_posts( array(
 			'post_type' => Metro_Sitemap::SITEMAP_CPT,
 			'fields' => 'ids',
 			'posts_per_page' => -1,
 		) );
 		update_option( 'msm_sitemap_indexed_url_count' , 0 );
-		array_map( 'wp_delete_post', array_merge( $this->test_base->posts_created, $sitemaps ) );
+		array_map( 'wp_delete_post', array_merge( $this->posts_created, $sitemaps ) );
 	}
 
 	/**
@@ -91,25 +76,25 @@ class FunctionsTest extends \WP_UnitTestCase {
 		$date = time();
 		// 3 for Today, 1 in "draft" status
 		$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
-		$this->test_base->create_dummy_post( $cur_day );
-		$this->test_base->create_dummy_post( $cur_day );
-		$this->test_base->create_dummy_post( $cur_day, 'draft' );
+		$this->create_dummy_post( $cur_day );
+		$this->create_dummy_post( $cur_day );
+		$this->create_dummy_post( $cur_day, 'draft' );
 
 		// 1  for each day in last week
 		for ( $i = 0; $i < 6; $i++ ) {
 			$date = strtotime( '-1 day', $date );
 			$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
-			$this->test_base->create_dummy_post( $cur_day );
+			$this->create_dummy_post( $cur_day );
 		}
 
 		// 1 per week for previous 3 weeks
 		for ( $i = 0; $i < 3; $i++ ) {
 			$date = strtotime( '-7 day', $date );
 			$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
-			$this->test_base->create_dummy_post( $cur_day );
+			$this->create_dummy_post( $cur_day );
 		}
-		$this->assertCount( 12, $this->test_base->posts );
-		$this->test_base->build_sitemaps();
+		$this->assertCount( 12, $this->posts );
+		$this->build_sitemaps();
 
 		$stats = Metro_Sitemap::get_recent_sitemap_url_counts( $n );
 		$tot_count = 0;
@@ -149,7 +134,7 @@ class FunctionsTest extends \WP_UnitTestCase {
 		if ( 'none' !== $years ) {
 			$date = strtotime( "-$years year", time() );
 			$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
-			$this->test_base->create_dummy_post( $cur_day );
+			$this->create_dummy_post( $cur_day );
 		}
 
 		$year_range = Metro_Sitemap::get_post_year_range();
@@ -172,7 +157,7 @@ class FunctionsTest extends \WP_UnitTestCase {
 		if ( 'none' !== $years ) {
 			$date = strtotime( "-$years year", time() );
 			$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
-			$this->test_base->create_dummy_post( $cur_day, 'live' );
+			$this->create_dummy_post( $cur_day, 'live' );
 		}
 
 		$year_range = Metro_Sitemap::get_post_year_range();
@@ -190,12 +175,12 @@ class FunctionsTest extends \WP_UnitTestCase {
 		$date = strtotime( '-1 year', time() );
 		$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
 		$prev_year = (int) date( 'Y', $date );
-		$this->test_base->create_dummy_post( $cur_day );
+		$this->create_dummy_post( $cur_day );
 
 		$date = strtotime( '-4 year', $date );
 		$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
 		$prev5_year = (int) date( 'Y', $date );
-		$this->test_base->create_dummy_post( $cur_day );
+		$this->create_dummy_post( $cur_day );
 
 		// Verify only Years for Posts are returned.
 		$range_with_posts = Metro_Sitemap::check_year_has_posts();
@@ -272,13 +257,13 @@ class FunctionsTest extends \WP_UnitTestCase {
 	function test_date_range_has_posts( $start_date, $end_date, $has_post ) {
 
 		// 1 for 2016-10-12 in "draft" status.
-		$this->test_base->create_dummy_post( '2016-10-12 00:00:00', 'draft' );
+		$this->create_dummy_post( '2016-10-12 00:00:00', 'draft' );
 
 		// 1 for 2016-01-01.
-		$this->test_base->create_dummy_post( '2016-01-01 00:00:00' );
+		$this->create_dummy_post( '2016-01-01 00:00:00' );
 
 		// 1 for 2015-06-02.
-		$this->test_base->create_dummy_post( '2015-06-02 00:00:00' );
+		$this->create_dummy_post( '2015-06-02 00:00:00' );
 
 		// Validate Range result.
 		if ( $has_post ) {
@@ -302,13 +287,13 @@ class FunctionsTest extends \WP_UnitTestCase {
 		$this->customPostStatusSetUp();
 
 		// 1 for 2016-10-12 in "live" status.
-		$this->test_base->create_dummy_post( '2015-10-12 00:00:00', 'live' );
+		$this->create_dummy_post( '2015-10-12 00:00:00', 'live' );
 
 		// 1 for 2016-01-01.
-		$this->test_base->create_dummy_post( '2016-01-01 00:00:00' );
+		$this->create_dummy_post( '2016-01-01 00:00:00' );
 
 		// // 1 for 2015-06-02.
-		$this->test_base->create_dummy_post( '2015-06-02 00:00:00' );
+		$this->create_dummy_post( '2015-06-02 00:00:00' );
 
 		// Validate Range result.
 		if ( $has_post ) {
@@ -347,14 +332,14 @@ class FunctionsTest extends \WP_UnitTestCase {
 	function test_get_post_ids_for_date( $sitemap_date, $limit, $expected_count ) {
 
 		// 1 for 2016-10-03 in "draft" status.
-		$this->test_base->create_dummy_post( '2016-10-01 00:00:00', 'draft' );
+		$this->create_dummy_post( '2016-10-01 00:00:00', 'draft' );
 
 		$created_post_ids = array();
 		// 20 for 2016-10-02.
 		for ( $i = 0; $i < 20; $i ++ ) {
 			$hour = $i < 10 ? '0' . $i : $i;
 			if ( '2016-10-02' === $sitemap_date ) {
-				$created_post_ids[] = $this->test_base->create_dummy_post( '2016-10-02 ' . $hour . ':00:00' );
+				$created_post_ids[] = $this->create_dummy_post( '2016-10-02 ' . $hour . ':00:00' );
 			}
 		}
 
@@ -379,14 +364,14 @@ class FunctionsTest extends \WP_UnitTestCase {
 		$this->customPostStatusSetUp();
 
 		// 1 for 2016-10-03 in "draft" status.
-		$this->test_base->create_dummy_post( '2016-10-01 00:00:00', 'draft' );
+		$this->create_dummy_post( '2016-10-01 00:00:00', 'draft' );
 
 		$created_post_ids = array();
 		// 20 for 2016-10-02.
 		for ( $i = 0; $i < 20; $i ++ ) {
 			$hour = $i < 10 ? '0' . $i : $i;
 			if ( '2016-10-02' === $sitemap_date ) {
-				$created_post_ids[] = $this->test_base->create_dummy_post( '2016-10-02 ' . $hour . ':00:00', 'live' );
+				$created_post_ids[] = $this->create_dummy_post( '2016-10-02 ' . $hour . ':00:00', 'live' );
 			}
 		}
 
