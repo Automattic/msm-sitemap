@@ -15,7 +15,7 @@ use Metro_Sitemap;
  * @author michaelblouin
  * @author Matthew Denton (mdbitz)
  */
-class WP_Test_Sitemap_Stats extends \WP_UnitTestCase {
+class StatsTest extends \WP_UnitTestCase {
 
 	/**
 	 * Humber of Posts to Create (1 per year)

@@ -15,7 +15,7 @@ use MSM_Sitemap_Builder_Cron;
  *
  * @author Matthew Denton (mdbitz)
  */
-class WP_Test_Sitemap_Cron extends \WP_UnitTestCase {
+class CronTest extends \WP_UnitTestCase {
 
 	/**
 	 * Humber of Posts to Create (1 per year)

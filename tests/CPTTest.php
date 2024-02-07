@@ -14,7 +14,7 @@ use Metro_Sitemap;
  *
  * @author Matthew Denton (mdbitz)
  */
-class WP_Test_Sitemap_CPT extends \WP_UnitTestCase {
+class CPTTest extends \WP_UnitTestCase {
 
 	/**
 	 * Base Test Class Instance

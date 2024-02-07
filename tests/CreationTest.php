@@ -16,7 +16,7 @@ use MSM_Sitemap_Builder_Cron;
  * @author michaelblouin
  * @author Matthew Denton (mdbitz)
  */
-class WP_Test_Sitemap_Creation extends \WP_UnitTestCase {
+class CreationTest extends \WP_UnitTestCase {
 
 	/**
 	 * Humber of Posts to Create (1 per day)

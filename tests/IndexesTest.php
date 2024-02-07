@@ -14,7 +14,7 @@ use Metro_Sitemap;
  *
  * @author bcampeau
  */
-class WP_Test_Sitemap_Index extends \WP_UnitTestCase {
+class IndexesTest extends \WP_UnitTestCase {
 
 	/**
 	 * Create posts across a number of years
