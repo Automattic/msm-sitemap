@@ -25,6 +25,7 @@ if ( $build_xml === false ) {
 		array ( 'response' => 404 )
 	);
 }
+status_header( 200 );
 header( 'Content-type: application/xml; charset=UTF-8' );
 echo $build_xml;
 ?>
