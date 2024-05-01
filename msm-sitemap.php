@@ -51,6 +51,10 @@ class Metro_Sitemap {
 		}
 	}
 
+	public static function use_custom_queries(): bool {
+		return ! apply_filters( 'msm_sitemap_avoid_custom_queries', false );
+	}
+
 	/**
 	 * Register 15 minute cron interval for latest articles
 	 * @param array[] $schedules
@@ -337,13 +341,13 @@ class Metro_Sitemap {
 	public static function get_post_status(): string {
 		$default_status = 'publish';
 		$post_status = apply_filters('msm_sitemap_post_status', $default_status);
-	
+
 		$allowed_statuses = get_post_stati();
-		
+
 		if (!in_array($post_status, $allowed_statuses)) {
 			$post_status = $default_status;
 		}
-	
+
 		return $post_status;
 	}
 
@@ -441,7 +445,6 @@ class Metro_Sitemap {
 	 * @param string $sitemap_date
 	 */
 	public static function generate_sitemap_for_date( $sitemap_date ) {
-		global $wpdb;
 
 		list( $year, $month, $day ) = explode( '-', $sitemap_date );
 
@@ -456,7 +459,12 @@ class Metro_Sitemap {
 			'post_date' => $sitemap_date,
 			);
 
-		$sitemap_id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", self::SITEMAP_CPT, $sitemap_name ) );
+		if ( self::use_custom_queries() ) {
+			global $wpdb;
+			$sitemap_id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", self::SITEMAP_CPT, $sitemap_name ) );
+		} else {
+			$sitemap_id = self::get_sitemap_post_id( $year, $month, $day );
+		}
 
 		if ( $sitemap_id ) {
 			$sitemap_exists = true;
@@ -623,7 +631,7 @@ class Metro_Sitemap {
 		/**
 		 * Filter the query used to get the last modified posts.
 		 * $wpdb->prepare() should be used for security if a new replacement query is created in the callback.
-		 * 
+		 *
 		 * @param string $query         The query to use to get the last modified posts.
 		 * @param string $post_types_in A comma-separated list of post types to include in the query.
 		 * @param string $date          The date to use as the cutoff for the query.
@@ -704,17 +712,33 @@ class Metro_Sitemap {
 	public static function build_root_sitemap_xml( $year = false ) {
 
 		$xml_prefix = '<?xml version="1.0" encoding="utf-8"?>';
-		global $wpdb;
 
-		// Direct query because we just want dates of the sitemap entries and this is much faster than WP_Query
-		if ( is_numeric( $year ) ) {
-			$query = $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s AND YEAR(post_date) = %s ORDER BY post_date DESC LIMIT 10000", Metro_Sitemap::SITEMAP_CPT, $year );
+		if ( self::use_custom_queries() ) {
+			global $wpdb;
+			// Direct query because we just want dates of the sitemap entries and this is much faster than WP_Query
+			if ( is_numeric( $year ) ) {
+				$query = $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s AND YEAR(post_date) = %s ORDER BY post_date DESC LIMIT 10000", Metro_Sitemap::SITEMAP_CPT, $year );
+			} else {
+				$query = $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s ORDER BY post_date DESC LIMIT 10000", Metro_Sitemap::SITEMAP_CPT );
+			}
+			$sitemaps = $wpdb->get_col( $query );
 		} else {
-			$query = $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s ORDER BY post_date DESC LIMIT 10000", Metro_Sitemap::SITEMAP_CPT );
+			$args = [
+				'post_type' => Metro_Sitemap::SITEMAP_CPT,
+				'orderby'   => 'post_date',
+				'order'     => 'DESC',
+			];
+			if ( is_numeric( $year ) ) {
+				$args['m'] = $year;
+			}
+
+			$sitemaps = array_map(
+				function ( \WP_Post $post ): string {
+					return $post->post_date;
+				},
+				get_posts( $args )
+			);
 		}
-
-		$sitemaps = $wpdb->get_col( $query );
-
 		// Sometimes duplicate sitemaps exist, lets make sure so they are not output
 		$sitemaps = array_unique( $sitemaps );
 
@@ -768,7 +792,7 @@ class Metro_Sitemap {
 			);
 		}
 
-		return $sitemap_url;
+		return apply_filters( 'msm_sitemap_url', $sitemap_url );
 	}
 
 	public static function get_sitemap_post_id( $year, $month, $day ) {
