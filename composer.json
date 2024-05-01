@@ -1,13 +1,16 @@
 {
-	"name": "automattic/msm-sitemap",
+	"name": "newsuk/nuk-msm-sitemap",
 	"type": "wordpress-plugin",
 	"description": "Comprehensive sitemaps for your WordPress.com VIP site.",
-	"homepage": "https://github.com/Automattic/msm-sitemap/",
+	"homepage": "https://github.com/newsuk/nuk-msm-sitemap/",
 	"license": "GPL-2.0-or-later",
 	"authors": [
 		{
 			"name": "Automattic",
 			"homepage": "https://automattic.com/"
+		},
+		{
+			"name": "NewsUK Content Platforms",
 		}
 	],
 	"require": {
@@ -60,8 +63,8 @@
 		]
 	},
 	"support": {
-		"issues": "https://github.com/Automattic/msm-sitemap/issues",
-		"source": "https://github.com/Automattic/msm-sitemap"
+		"issues": "https://github.com/newsuk/nuk-msm-sitemap/issues",
+		"source": "https://github.com/newsuk/nuk-msm-sitemap"
 	},
 	"config": {
 		"allow-plugins": {
