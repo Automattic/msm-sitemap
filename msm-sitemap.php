@@ -723,22 +723,7 @@ class Metro_Sitemap {
 			}
 			$sitemaps = $wpdb->get_col( $query );
 		} else {
-			$args = [
-				'post_type'   => Metro_Sitemap::SITEMAP_CPT,
-				'orderby'     => 'post_date',
-				'order'       => 'DESC',
-				'numberposts' => self::max_sitemap_length(),
-			];
-			if ( is_numeric( $year ) ) {
-				$args['m'] = $year;
-			}
-
-			$sitemaps = array_map(
-				function ( \WP_Post $post ): string {
-					return $post->post_date;
-				},
-				get_posts( $args )
-			);
+			$sitemaps = self::get_sitemap_dates( $year );
 		}
 		// Sometimes duplicate sitemaps exist, lets make sure so they are not output
 		$sitemaps = array_unique( $sitemaps );
@@ -764,6 +749,35 @@ class Metro_Sitemap {
 			$sitemap->loc = self::build_sitemap_url( $sitemap_date ); // manually set the child instead of addChild to prevent "unterminated entity reference" warnings due to encoded ampersands http://stackoverflow.com/a/555039/169478
 		}
 		return $xml->asXML();
+	}
+
+	/**
+	 * Return sitemap post_dates.
+	 *
+	 * @param ?int $year year to list.
+	 *
+	 * @return string[] dates of sitemap posts.
+	 */
+	public static function get_sitemap_dates( $year = false ): array {
+		$args = [
+			'post_type'   => Metro_Sitemap::SITEMAP_CPT,
+			'orderby'     => 'post_date',
+			'order'       => 'DESC',
+			'fields'      => 'ids',
+			'numberposts' => self::max_sitemap_length(),
+		];
+		if ( is_numeric( $year ) ) {
+			$args['m'] = $year;
+		}
+
+		$sitemaps = array_map(
+			function ( int $post_id ): string {
+				return get_post( $post_id )->post_date;
+			},
+			get_posts( $args )
+		);
+
+		return $sitemaps;
 	}
 
 	/**
