@@ -775,11 +775,12 @@ class Metro_Sitemap {
 			$args['m'] = $year;
 		}
 
-		$query = $wpdb->prepare(
-			"SELECT post_date FROM $wpdb->posts WHERE ID IN (%s) ORDER BY post_date DESC",
-			implode( ',', get_posts( $args ) )
+		return $wpdb->get_col(
+			sprintf(
+				"SELECT post_date FROM $wpdb->posts WHERE ID IN (%s) ORDER BY post_date DESC",
+				implode( ',', get_posts( $args ) )
+			)
 		);
-		$sitemaps = $wpdb->get_col( $query );
 
 		return $sitemaps;
 	}
