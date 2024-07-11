@@ -62,7 +62,10 @@ class Metro_Sitemap {
 	}
 
 	public static function max_sitemap_length(): int {
-		return apply_filters( 'msm_sitemap_max_sitemap_length', get_option( 'msm_sitemap_max_sitemap_length', 365 * 3) );
+		return filter_var(
+			apply_filters( 'msm_sitemap_max_sitemap_length', get_option( 'msm_sitemap_max_sitemap_length', 10000 ) ),
+			FILTER_VALIDATE_INT
+		);
 	}
 
 	/**
@@ -717,9 +720,9 @@ class Metro_Sitemap {
 			global $wpdb;
 			// Direct query because we just want dates of the sitemap entries and this is much faster than WP_Query
 			if ( is_numeric( $year ) ) {
-				$query = $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s AND YEAR(post_date) = %s ORDER BY post_date DESC LIMIT 10000", Metro_Sitemap::SITEMAP_CPT, $year );
+				$query = $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s AND YEAR(post_date) = %s ORDER BY post_date DESC LIMIT %d", Metro_Sitemap::SITEMAP_CPT, $year, self::max_sitemap_length() );
 			} else {
-				$query = $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s ORDER BY post_date DESC LIMIT 10000", Metro_Sitemap::SITEMAP_CPT );
+				$query = $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s ORDER BY post_date DESC LIMIT %d", Metro_Sitemap::SITEMAP_CPT, self::max_sitemap_length() );
 			}
 			$sitemaps = $wpdb->get_col( $query );
 		} else {
