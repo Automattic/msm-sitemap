@@ -762,6 +762,8 @@ class Metro_Sitemap {
 	 * @return string[] dates of sitemap posts.
 	 */
 	public static function get_sitemap_dates( $year = false ): array {
+		global $wpdb;
+
 		$args = [
 			'post_type'   => Metro_Sitemap::SITEMAP_CPT,
 			'orderby'     => 'post_date',
@@ -773,12 +775,11 @@ class Metro_Sitemap {
 			$args['m'] = $year;
 		}
 
-		$sitemaps = array_map(
-			function ( int $post_id ): string {
-				return get_post( $post_id )->post_date;
-			},
-			get_posts( $args )
+		$query = $wpdb->prepare(
+			"SELECT post_date FROM $wpdb->posts WHERE ID IN (%s) ORDER BY post_date DESC",
+			implode( ',', get_posts( $args ) )
 		);
+		$sitemaps = $wpdb->get_col( $query );
 
 		return $sitemaps;
 	}
