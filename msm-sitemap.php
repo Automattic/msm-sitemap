@@ -507,8 +507,9 @@ class Metro_Sitemap {
 			$GLOBALS['post'] = get_post( $post_id );
 			setup_postdata( $GLOBALS['post'] );
 
-			if ( apply_filters( 'msm_sitemap_skip_post', false ) )
+			if ( apply_filters( 'msm_sitemap_skip_post', false, $post_id ) ) {
 				continue;
+			}
 
 			$url = $xml->addChild( 'url' );
 			$url->addChild( 'loc', esc_url( get_permalink() ) );
