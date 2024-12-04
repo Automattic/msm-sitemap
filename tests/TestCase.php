@@ -5,25 +5,33 @@
  * @package Metro_Sitemap/unit_tests
  */
 
+namespace Automattic\MSM_Sitemap\Tests;
+
+use DateTime;
+use Exception;
+use Metro_Sitemap;
+use MSM_Sitemap_Builder_Cron;
+use WP_Post;
+
 /**
  * A base class for MSM SiteMap Tests that exposes a few handy functions for test cases.
  *
  * @author michaelblouin
  * @author Matthew Denton (mdbitz)
  */
-class MSM_SiteMap_Test {
+class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 
 	/**
 	 * Array of Posts Created for Test
 	 *
-	 * @var type array
+	 * @var array $posts
 	 */
 	public $posts = array();
 
 	/**
 	 * Array of Created Post IDs
 	 *
-	 * @var type array
+	 * @var array $posts_created
 	 */
 	public $posts_created = array();
 
@@ -32,18 +40,19 @@ class MSM_SiteMap_Test {
 	 *
 	 * Does not trigger building of sitemaps.
 	 *
-	 * @param str $day The day to create posts on.
-	 * @param str $post_type The Post Type Slug.
-	 * @param str @post_status The status of the created post.
-	 * @throws Exception Unable to insert posts.
+	 * @param string $day The day to create posts on.
+	 * @param string $post_status
+	 * @param string $post_type The Post Type Slug.
 	 *
 	 * @return int ID of created post.
+	 * @throws Exception Unable to insert posts.
 	 */
-	function create_dummy_post( $day, $post_status = 'publish', $post_type = 'post' ) {
+	public function create_dummy_post( string $day, string $post_status = 'publish', string $post_type = 'post' ): int
+	{
 		$post_data = array(
-				'post_title' => (string) uniqid(),
+				'post_title' => uniqid( '', true ),
 				'post_type' => $post_type,
-				'post_content' => (string) uniqid(),
+				'post_content' => uniqid( '', true ),
 				'post_status' => $post_status,
 				'post_author' => 1,
 		);
@@ -60,16 +69,18 @@ class MSM_SiteMap_Test {
 
 		return $post_data['ID'];
 	}
-	
+
 	/**
 	 * Creates a new post for every day in $dates.
 	 *
 	 * Does not trigger building of sitemaps.
 	 *
-	 * @param array(str) $dates The days to create posts on.
+	 * @param array<string> $dates The days to create posts on.
+	 *
 	 * @throws Exception Unable to insert posts.
 	 */
-	function create_dummy_posts( $dates ) {
+	public function create_dummy_posts( array $dates ): void
+	{
 
 		foreach ( $dates as $day ) {
 			$this->create_dummy_post( $day );
@@ -79,7 +90,8 @@ class MSM_SiteMap_Test {
 	/**
 	 * Checks that the stats are correct for each individual created post
 	 */
-	function check_stats_for_created_posts() {
+	public function check_stats_for_created_posts(): bool
+	{
 		$dates = array();
 
 		// Count the number of posts for each date.
@@ -110,7 +122,8 @@ class MSM_SiteMap_Test {
 	/**
 	 * Generate sitemaps for all Posts
 	 */
-	function build_sitemaps() {
+	public function build_sitemaps(): void
+	{
 		global $wpdb;
 		$post_types_in = $this->get_supported_post_types_in();
 		$posts = $wpdb->get_results( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) ORDER BY post_date LIMIT 1000" );
@@ -118,25 +131,21 @@ class MSM_SiteMap_Test {
 		foreach ( $posts as $post ) {
 			$dates[] = date( 'Y-m-d', strtotime( $post->post_date ) );
 		}
-		$udates = array_unique( $dates );
-
-		foreach ( $udates as $date ) {
+		foreach (array_unique( $dates ) as $date ) {
 			list( $year, $month, $day ) = explode( '-', $date );
 
 			MSM_Sitemap_Builder_Cron::generate_sitemap_for_year_month_day( array( 'year' => $year, 'month' => $month, 'day' => $day ) );
 		}
 	}
-	
+
 	/**
 	 * Duplicate of Metro_Sitemap get_supported_post_types_in
-	 * 
-	 * @global type $wpdb
-	 * @return type
+	 *
+	 * @return string
 	 */
-	function get_supported_post_types_in() {
+	public function get_supported_post_types_in(): string {
 		global $wpdb;
 
-		$post_types_in = '';
 		$post_types = Metro_Sitemap::get_supported_post_types();
 		$post_types_prepared = array();
 
@@ -152,7 +161,8 @@ class MSM_SiteMap_Test {
 	 *
 	 * @param WP_Post $post Post.
 	 */
-	function update_sitemap_by_post( $post ) {
+	public function update_sitemap_by_post( WP_Post $post ): void
+	{
 		$date = date( 'Y-m-d', strtotime( $post->post_date ) );
 		list( $year, $month, $day ) = explode( '-', $date );
 		MSM_Sitemap_Builder_Cron::generate_sitemap_for_year_month_day( array( 'year' => $year, 'month' => $month, 'day' => $day ) );
@@ -160,19 +170,20 @@ class MSM_SiteMap_Test {
 
 	/**
 	 * Fakes a cron job
-	 * 
-	 * @param str #execute Execute the hook.
+	 *
+	 * @param string $execute Execute the hook.
 	 */
-	function fake_cron($execute = 'run') {
-		$schedule = _get_cron_array();
-		foreach ( $schedule as $timestamp => $cron ) {
+	public function fake_cron( string $execute = 'run' ): void
+	{
+		foreach (_get_cron_array() as $timestamp => $cron ) {
 			foreach ( $cron as $hook => $arg_wrapper ) {
-				if ( substr( $hook, 0, 3 ) !== 'msm' ) { continue; // only run our own jobs.
+				if ( strpos( $hook, 'msm' ) !== 0 ) {
+					continue; // only run our own jobs.
 				}
 				$arg_struct = array_pop( $arg_wrapper );
 				$args = $arg_struct['args'][0];
 				wp_unschedule_event( $timestamp, $hook, $arg_struct['args'] );
-				if( 'run' === $execute ) {
+				if ( 'run' === $execute ) {
 					do_action( $hook, $args );
 				}
 			}
