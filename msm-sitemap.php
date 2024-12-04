@@ -6,6 +6,7 @@ Author: Artur Synowiec, Paul Kevan, and others
 Version: 1.4.1
 Stable tag: 1.4.1
 License: GPLv2
+Requires PHP: 7.4
 */
 
 if ( defined( 'WP_CLI' ) && true === WP_CLI ) {
@@ -67,7 +68,9 @@ class Metro_Sitemap {
 	 * Register endpoint for sitemap and other hooks
 	 */
 	public static function sitemap_init() {
-		define( 'WPCOM_SKIP_DEFAULT_SITEMAP', true );
+		if ( ! defined( 'WPCOM_SKIP_DEFAULT_SITEMAP' ) ) {
+			define( 'WPCOM_SKIP_DEFAULT_SITEMAP', true );
+		}
 
 		self::sitemap_rewrite_init();
 
