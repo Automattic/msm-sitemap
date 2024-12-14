@@ -56,7 +56,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		if ( is_wp_error( $valid ) )
 			WP_CLI::error( $valid->get_error_message() );
 
-		WP_CLI::line( sprintf( 'Generating sitemap for %s', $year ) );
+		WP_CLI::log( sprintf( 'Generating sitemap for %s', $year ) );
 
 		$max_month = 12;
 		if ( date( 'Y' ) == $year ) {
@@ -97,7 +97,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		if ( is_wp_error( $valid ) )
 			WP_CLI::error( $valid->get_error_message() );
 
-		WP_CLI::line( sprintf( 'Generating sitemap for %s-%s', $year, $month ) );
+		WP_CLI::log( sprintf( 'Generating sitemap for %s-%s', $year, $month ) );
 
 		// Calculate actual number of days in the month since we don't have cal_days_in_month available
 		if ( ! function_exists( 'cal_days_in_month' ) ) {
@@ -147,7 +147,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		if ( is_wp_error( $valid ) )
 			WP_CLI::error( $valid->get_error_message() );
 
-		WP_CLI::line( sprintf( 'Generating sitemap for %s-%s-%s', $year, $month, $day ) );
+		WP_CLI::log( sprintf( 'Generating sitemap for %s-%s-%s', $year, $month, $day ) );
 
 		$date_stamp = Metro_Sitemap::get_date_stamp( $year, $month, $day );
 		if ( Metro_Sitemap::date_range_has_posts( $date_stamp, $date_stamp ) ) {
@@ -219,8 +219,8 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		}
 
 		update_option( 'msm_sitemap_indexed_url_count', $total_count, false );
-		WP_CLI::line( sprintf( 'Total posts found: %s', $total_count ) );
-		WP_CLI::line( sprintf( 'Number of sitemaps found: %s', $sitemap_count ) );
+		WP_CLI::log( sprintf( 'Total posts found: %s', $total_count ) );
+		WP_CLI::log( sprintf( 'Number of sitemaps found: %s', $sitemap_count ) );
 
 	}
 
