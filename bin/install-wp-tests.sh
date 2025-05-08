@@ -25,6 +25,9 @@ download() {
     fi
 }
 
+sudo apt-get update
+sudo apt-get install -y subversion
+
 if [[ $WP_VERSION =~ ^[0-9]+\.[0-9]+\-(beta|RC)[0-9]+$ ]]; then
 	WP_BRANCH=${WP_VERSION%\-*}
 	WP_TESTS_TAG="branches/$WP_BRANCH"
@@ -179,4 +182,3 @@ install_db() {
 install_wp
 install_test_suite
 install_db
-
