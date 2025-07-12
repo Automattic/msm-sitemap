@@ -16,21 +16,6 @@ use Metro_Sitemap;
  */
 class FunctionsTest extends TestCase {
 	/**
-	 * Remove the sample posts and the sitemap posts
-	 */
-	public function teardown(): void {
-		_delete_all_posts();
-		$this->posts = array();
-		$sitemaps = get_posts( array(
-			'post_type' => Metro_Sitemap::SITEMAP_CPT,
-			'fields' => 'ids',
-			'posts_per_page' => -1,
-		) );
-		update_option( 'msm_sitemap_indexed_url_count' , 0 );
-		array_map( 'wp_delete_post', array_merge( $this->posts_created, $sitemaps ) );
-	}
-
-	/**
 	 * Custom post_status setup.
 	 */
 	public function custom_post_status_set_up(): void {

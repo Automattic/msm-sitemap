@@ -44,20 +44,6 @@ class StatsTest extends TestCase {
 	}
 
 	/**
-	 * Remove created posts, Sitemaps and options
-	 */
-	public function teardown(): void {
-		$this->posts = array();
-		$sitemaps = get_posts( array(
-			'post_type' => Metro_Sitemap::SITEMAP_CPT,
-			'fields' => 'ids',
-			'posts_per_page' => -1,
-		) );
-		update_option( 'msm_sitemap_indexed_url_count' , 0 );
-		array_map( 'wp_delete_post', array_merge( $this->posts_created, $sitemaps ) );
-	}
-
-	/**
 	 * Verify that indexed URL count is calculated correctly
 	 */
 	public function test_site_stats_creation(): void

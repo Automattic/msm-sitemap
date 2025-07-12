@@ -43,20 +43,6 @@ class IndexesTest extends TestCase {
 	}
 
 	/**
-	 * Remove created posts, sitemaps and options
-	 */
-	public function teardown(): void {
-		$this->posts = array();
-		$sitemaps = get_posts( array(
-			'post_type' => Metro_Sitemap::SITEMAP_CPT,
-			'fields' => 'ids',
-			'posts_per_page' => -1,
-		) );
-		update_option( 'msm_sitemap_indexed_url_count' , 0 );
-		array_map( 'wp_delete_post', array_merge( $this->posts_created, $sitemaps ) );
-	}
-
-	/**
 	 * Test that robots.txt has a single sitemap index when sitemaps by year are disabled
 	 */
 	public function test_single_sitemap_index(): void

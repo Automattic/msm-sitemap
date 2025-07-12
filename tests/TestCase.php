@@ -36,6 +36,30 @@ class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 	public $posts_created = array();
 
 	/**
+	 * Remove the sample posts and the sitemap posts after each test.
+	 */
+	public function teardown(): void {
+		// Remove all posts (from WordPress Test Library)
+		_delete_all_posts();
+
+		// Remove all posts created for the test.
+		$this->posts = array();
+
+		// Remove all sitemaps created for the test.
+		$sitemaps = get_posts( array(
+			'post_type' => Metro_Sitemap::SITEMAP_CPT,
+			'fields' => 'ids',
+			'posts_per_page' => -1,
+		) );
+
+		// Reset the indexed URL count.
+		update_option( 'msm_sitemap_indexed_url_count' , 0 );
+
+		// Remove all sitemaps created for the test.
+		array_map( 'wp_delete_post', array_merge( $this->posts_created, $sitemaps ) );
+	}
+
+	/**
 	 * Creates a new post for given day, post_type and Status
 	 *
 	 * Does not trigger building of sitemaps.
