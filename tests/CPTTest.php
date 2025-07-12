@@ -112,6 +112,8 @@ class CPTTest extends TestCase {
 
 		$this->assertCount( 7, $sitemaps );
 		$this->assertEquals( 8, Metro_Sitemap::get_total_indexed_url_count() );
+
+		remove_filter( 'msm_sitemap_entry_post_type', array( $this, 'add_cpt_to_msm_sitemap' ) );
 	}
 
 	/**
