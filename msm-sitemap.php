@@ -1,13 +1,24 @@
 <?php
-/*
-Plugin Name: Metro Sitemap
-Description: Comprehensive sitemaps for your WordPress site. Joint collaboration between Metro.co.uk, MAKE, Alley Interactive, and WordPress.com VIP.
-Author: Artur Synowiec, Paul Kevan, and others
-Version: 1.4.1
-Stable tag: 1.4.1
-License: GPLv2
-Requires PHP: 7.4
-*/
+/**
+ * Metro Sitemap - joint collaboration between Metro.co.uk, MAKE, Alley Interactive, and WordPress VIP.
+ *
+ * @package           automattic/msm-sitemap
+ * @author            Automattic
+ * @copyright         2015-onwards Artur Synowiec, Paul Kevan, and contributors.
+ * @license           GPL-2.0-or-later
+ *
+ * @wordpress-plugin
+ * Plugin Name:       Metro Sitemap
+ * Plugin URI:        https://github.com/Automattic/msm-sitemap
+ * Description:       Comprehensive sitemaps for your WordPress site. 
+ * Version:           1.4.1
+ * Requires at least: 5.9
+ * Requires PHP:      7.4
+ * Author:            Metro.co.uk, MAKE, Alley Interactive, WordPress VIP.
+ * Text Domain:       msm-sitemap
+ * License:           GPL-2.0-or-later
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.txt
+ */
 
 if ( defined( 'WP_CLI' ) && true === WP_CLI ) {
 	require dirname( __FILE__ ) . '/includes/wp-cli.php';
