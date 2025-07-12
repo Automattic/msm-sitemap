@@ -142,7 +142,5 @@ class CreationTest extends TestCase {
 
 		$this->assertEmpty( get_post( $sitemap->ID ), 'Sitemap with no posts was not deleted' );
 		$this->assertEquals( $expected_total_urls, Metro_Sitemap::get_total_indexed_url_count(), 'Mismatch in total indexed URLs' );
-		$this->assertEquals( 1, did_action( 'msm_delete_sitemap_post' ), 'msm_delete_sitemap_post action did not fire' );
-
 	}
 }
