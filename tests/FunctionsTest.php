@@ -19,6 +19,7 @@ class FunctionsTest extends TestCase {
 	 * Remove the sample posts and the sitemap posts
 	 */
 	public function teardown(): void {
+		_delete_all_posts();
 		$this->posts = array();
 		$sitemaps = get_posts( array(
 			'post_type' => Metro_Sitemap::SITEMAP_CPT,
@@ -30,55 +31,71 @@ class FunctionsTest extends TestCase {
 	}
 
 	/**
-     * custom post_status setup
-     */
-    public function customPostStatusSetUp(): void
-	{
-        // register new post status.
-		register_post_status( 'live', array(
-			'public'                    => true,
-		) );
+	 * Custom post_status setup.
+	 */
+	public function custom_post_status_set_up(): void {
+		register_post_status(
+			$this->custom_post_status(),
+			array(
+				'public' => true,
+			)
+		);
 
-		// add filter to return custom post status.
-		add_filter( 'msm_sitemap_post_status', array( $this, 'add_post_status_to_msm_sitemap' ) );
+		add_filter( 'msm_sitemap_post_status', array( $this, 'custom_post_status' ) );
 
-    }
+	}
 
 	/**
-	 * custom post_status teardown
+	 * Custom post_status teardown.
 	 */
-	public function customPostStatusTearDown(): void
-	{
-		remove_filter( 'msm_sitemap_post_status', array( $this, 'add_post_status_to_msm_sitemap' ) );
+	public function custom_post_status_tear_down(): void {
+		remove_filter( 'msm_sitemap_post_status', array( $this, 'custom_post_status' ) );
+	}
+
+	/**
+	 * Add post status to msm_sitemap.
+	 *
+	 * @return string Post status.
+	 */
+	public function custom_post_status(): string {
+		return 'live';
 	}
 
 	/**
 	 * Data provider providing map of recent variable and expected URL count.
 	 *
-	 * @return array<array<int,int>> Array of Test parameters.
+	 * @return iterable<string, array<string, int|string>> Test parameters.
 	 */
-	public function recentSitemapURLCountDataProvider(): array
-	{
-		return array(
-		    array( 1,2 ),
-		    array( 7,8 ),
-		    array( 31,11 ),
+	public function recent_sitemap_url_count_data_provider(): iterable {
+		yield '1 day' => array(
+			'days' => 1,
+			'URL count' => 2,
+		);
+
+		yield '7 days' => array(
+			'days' => 7,
+			'URL count' => 8,
+		);
+		
+		yield '31 days' => array(
+			'days' => 31,
+			'URL count' => 11,
 		);
 	}
 
 	/**
-	 * Verify get_recent_sitemap_url_counts returns correct count
+	 * Verify get_recent_sitemap_url_counts() returns correct count.
 	 *
-	 * @dataProvider recentSitemapURLCountDataProvider
+	 * @dataProvider recent_sitemap_url_count_data_provider
 	 *
-	 * @param int $n Days.
-	 * @param int  $expected_count Expected Urls to be counted.
+	 * @param int $days     Days.
+	 * @param int $expected Expected URLs to be counted.
 	 */
-	public function test_get_recent_sitemap_url_counts( int $n, int $expected_count ): void
-	{
+	public function test_get_recent_sitemap_url_counts( int $days, int $expected ): void {
 
 		// Create Multiple Posts across various Dates.
 		$date = time();
+		
 		// 3 for Today, 1 in "draft" status
 		$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
 		$this->create_dummy_post( $cur_day );
@@ -101,175 +118,216 @@ class FunctionsTest extends TestCase {
 		$this->assertCount( 12, $this->posts );
 		$this->build_sitemaps();
 
-		$stats = Metro_Sitemap::get_recent_sitemap_url_counts( $n );
+		$stats     = Metro_Sitemap::get_recent_sitemap_url_counts( $days );
 		$tot_count = array_sum( $stats );
 
-		// Verify Stat returned for each day in n.
-		$this->assertCount($n, $stats);
+		// Verify Stat returned for each day in $days.
+		$this->assertCount( $days, $stats );
 		// Verify total Stats are per post count.
-		$this->assertEquals( $expected_count, $tot_count );
+		$this->assertEquals( $expected, $tot_count );
 	}
 
 	/**
 	 * Data Provider for post year ranges
 	 *
-	 * @return array<array<int, mixed>> Array of Test parameters.
+	 * @return iterable<string, array<string, int|string>> Array of Test parameters.
 	 */
-	public function postYearRangeDataProvider(): array
-	{
-		return array(
-		    array( 'none', 0 ),
-		    array( 0, 1 ),
-		    array( 1, 2 ),
-		    array( 10, 11 ),
+	public function post_year_range_data_provider(): iterable {
+		yield 'no years' => array(
+			'years' => 'none',
+			'number_of_years_in_range' => 0,
+		);
+
+		yield 'zero years' => array(
+			'years' => 0,
+			'number_of_years_in_range' => 1,
+		);
+		
+		yield 'one year' => array(
+			'years' => 1,
+			'number_of_years_in_range' => 2,
+		);
+		
+		yield 'ten years' => array(
+			'years' => 10,
+			'number_of_years_in_range' => 11,
 		);
 	}
 
 	/**
-	 * Verify get_post_year_range returns proper year ranges
+	 * Verify get_post_year_range() returns proper year ranges
 	 *
-	 * @dataProvider postYearRangeDataProvider
+	 * @dataProvider post_year_range_data_provider
 	 *
-	 * @param mixed $years Number of Years or "none".
-	 * @param int $range_values # of years in range.
+	 * @param mixed $years                             Number of years or "none".
+	 * @param int   $expected_number_of_years_in_range Expected number of years in range.
 	 */
-	public function test_get_post_year_range( $years, int $range_values ): void
-	{
-		// Add a post for each day in the last x years.
+	public function test_get_post_year_range( $years, int $expected_number_of_years_in_range ): void {
 		if ( 'none' !== $years ) {
-			$date = strtotime("-$years year");
-			$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
-			$this->create_dummy_post( $cur_day );
+			$this->add_a_post_for_a_day_x_years_ago( $years );
 		}
 
 		$year_range = Metro_Sitemap::get_post_year_range();
-		$this->assertCount($range_values, $year_range);
+		$this->assertCount( $expected_number_of_years_in_range, $year_range, 'Expected ' . $expected_number_of_years_in_range . ' years in range, got ' . count( $year_range ) );
 	}
 
 	/**
 	 * Verify get_post_year_range returns proper year ranges with custom status hook
 	 *
-	 * @dataProvider postYearRangeDataProvider
+	 * @dataProvider post_year_range_data_provider
 	 *
-	 * @param mixed $years Number of years of "none".
-	 * @param int $range_values Number of years in range.
+	 * @param mixed $years                             Number of years of "none".
+	 * @param int   $expected_number_of_years_in_range Expected number of years in range.
 	 */
-	public function test_get_post_year_range_custom_status_posts( $years, int $range_values ): void
-	{
+	public function test_get_post_year_range_with_custom_status_posts( $years, int $expected_number_of_years_in_range ): void {
 
 		// set msm_sitemap_post_status filter to custom_status.
-		$this->customPostStatusSetUp();
+		$this->custom_post_status_set_up();
 
-		// Add a post for each day in the last x years.
 		if ( 'none' !== $years ) {
-			$date = strtotime("-$years year");
-			$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
-			$this->create_dummy_post( $cur_day, 'live' );
+			$this->add_a_post_for_a_day_x_years_ago( $years, 'live' );
 		}
 
 		$year_range = Metro_Sitemap::get_post_year_range();
-		$this->assertCount($range_values, $year_range);
+		// var_dump( $year_range );
+		$this->assertCount( $expected_number_of_years_in_range, $year_range, 'Expected ' . $expected_number_of_years_in_range . ' years in range, got ' . count( $year_range ) );
 
 		// remove filter.
-		$this->customPostStatusTearDown();
+		$this->custom_post_status_tear_down();
+	}
+
+	/**
+	 * Add a post for each day in the last x years.
+	 *
+	 * @param int $years Number of years.
+	 */
+	public function add_a_post_for_a_day_x_years_ago( $years, $status = 'publish' ): void {
+		$date = strtotime("-$years year");
+		$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
+		$this->create_dummy_post( $cur_day, $status );
 	}
 
 	/**
 	 * Verify check_year_has_posts returns only years with posts
 	 */
-	public function test_check_year_has_posts(): void
-	{
-		// Add a post for last year and 5 years ago.
-		$date = strtotime('-1 year');
-		$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
-		$prev_year = (int) date( 'Y', $date );
-		$this->create_dummy_post( $cur_day );
+	public function test_check_year_has_posts(): void {
+		$prev_year = (int) date( 'Y', strtotime('-1 year') );
+		$this->add_a_post_for_a_day_x_years_ago( 1 );
 
-		$date = strtotime( '-4 year', $date );
-		$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
-		$prev5_year = (int) date( 'Y', $date );
-		$this->create_dummy_post( $cur_day );
+		$prev5_year = (int) date( 'Y', strtotime('-5 year') );
+		$this->add_a_post_for_a_day_x_years_ago( 5 );
 
 		// Verify only Years for Posts are returned.
 		$range_with_posts = Metro_Sitemap::check_year_has_posts();
 		$this->assertContains( $prev_year, $range_with_posts );
 		$this->assertContains( $prev5_year, $range_with_posts );
-		$this->assertCount(2, $range_with_posts);
-
+		$this->assertCount( 2, $range_with_posts );
 	}
 
 	/**
 	 * Data Provider for get_date_stamp
 	 *
-	 * @return array<array<int, mixed>> Array of Test parameters.
+	 * @return iterable<string, array<string, int|string>> Array of Test parameters.
 	 */
-	public function dateStampDataProvider(): array
-	{
-		return array(
-		    array( 2016, 1, 7, '2016-01-07' ),
-		    array( 2010, 8, 22, '2010-08-22' ),
-		    array( 1985, 11, 5, '1985-11-05' ),
-		    array( 100, 10, 12, '100-10-12' ),
+	public function date_stamp_data_provider(): iterable {
+
+		yield 'old date' => array(
+			'year' => 1985,
+			'month' => 11,
+			'day' => 5,
+			'expected_string' => '1985-11-05',
+		);
+
+		yield 'sensible date' => array(
+			'year' => 2025,
+			'month' => 7,
+			'day' => 12,
+			'expected_string' => '2025-07-12',
+		);
+
+		yield 'future date' => array(
+			'year' => 2100,
+			'month' => 10,
+			'day' => 12,
+			'expected_string' => '2100-10-12',
+		);
+
+		yield 'invalid date' => array(
+			'year' => 0,
+			'month' => 10,
+			'day' => 12,
+			'expected_string' => '0-10-12',
 		);
 	}
 
 	/**
 	 * Verify get_date_stamp returns proper formatted date string
 	 *
-	 * @dataProvider dateStampDataProvider
+	 * @dataProvider date_stamp_data_provider
 	 *
-	 * @param int $year Year.
-	 * @param int $month Month.
-	 * @param int $day Day.
+	 * @param int    $year            Year.
+	 * @param int    $month           Month.
+	 * @param int    $day             Day.
 	 * @param string $expected_string Expected DateStamp.
 	 */
-	public function test_get_date_stamp( int $year, int $month, int $day, string $expected_string ): void
-	{
+	public function test_get_date_stamp( int $year, int $month, int $day, string $expected_string ): void {
 		$this->assertEquals( $expected_string, Metro_Sitemap::get_date_stamp( $year, $month, $day ) );
 	}
 
 
 	/**
-	 * Data Provider for date_range_has_posts
+	 * Data Provider for test_date_range_has_posts
 	 *
-	 * @return array<array<int, mixed>> Array of Test parameters.
+	 * @return iterable<string, array<string, int|string>> Array of Test parameters.
 	 */
-	public function dateRangeHasPostsDataProvider(): array
-	{
-		return array(
-		    array( '2016-11-01', '2016-12-15', false ),
-		    array( '2016-10-01', '2016-10-15', false ),
-		    array( '2016-01-01', '2016-01-01', true ),
-		    array( '2016-01-01', '2016-01-10', true ),
-		    array( '2015-12-28', '2016-01-01', true ),
-		    array( '2014-12-28', '2016-05-04', true ),
+	public function date_range_has_posts_data_provider(): iterable {
+		yield 'no posts' => array(
+			'start_date' => '2016-11-01',
+			'end_date' => '2016-12-15',
+			'has_post' => false,
 		);
-	}
 
-	/**
-	 * Data Provider for date_range_has_posts
-	 *
-	 * @return array<array<int, mixed>> Array of Test parameters.
-	 */
-	public function dateRangeHasPostsCustomStatusDataProvider(): array
-	{
-		return array(
-		    array( '2016-11-01', '2016-12-15', false ),
-		    array( '2014-12-28', '2016-05-04', true ),
+		yield 'no published posts' => array(
+			'start_date' => '2016-10-01',
+			'end_date' => '2016-10-15',
+			'has_post' => false,
+		);
+		
+		yield 'one published post on exact date' => array(
+			'start_date' => '2016-01-01',
+			'end_date' => '2016-01-01',
+			'has_post' => true,
+		);
+
+		yield 'one published post at start of range' => array(
+			'start_date' => '2016-01-01',
+			'end_date' => '2016-01-10',
+			'has_post' => true,
+		);
+
+		yield 'one published post at end of range' => array(
+			'start_date' => '2015-12-28',
+			'end_date' => '2016-01-01',
+			'has_post' => true,
+		);
+
+		yield 'two published posts in range' => array(
+			'start_date' => '2014-12-28',
+			'end_date' => '2016-05-04',
+			'has_post' => true,
 		);
 	}
 
 	/**
 	 * Verify date_range_has_posts returns expected value
 	 *
-	 * @dataProvider dateRangeHasPostsDataProvider
+	 * @dataProvider date_range_has_posts_data_provider
 	 *
 	 * @param string $start_date Start Date of Range in Y-M-D format.
 	 * @param string $end_date  End Date of Range in Y-M-D format.
 	 * @param boolean $has_post Does Range have Post.
 	 */
-	public function test_date_range_has_posts( string $start_date, string $end_date, bool $has_post ): void
-	{
+	public function test_check_date_range_has_posts( string $start_date, string $end_date, bool $has_post ): void {
 
 		// 1 for 2016-10-12 in "draft" status.
 		$this->create_dummy_post( '2016-10-12 00:00:00', 'draft' );
@@ -290,18 +348,37 @@ class FunctionsTest extends TestCase {
 	}
 
 	/**
+	 * Data Provider for test_date_range_has_posts_custom_status
+	 *
+	 * @return iterable<string, array<string, int|string>> Array of Test parameters.
+	 */
+	public function date_range_has_posts_custom_status_data_provider(): iterable {
+
+		yield 'no live status posts' => array(
+			'start_date' => '2015-12-01',
+			'end_date' => '2016-12-15',
+			'has_post' => false,
+		);
+
+		yield 'one live status post' => array(
+			'start_date' => '2014-12-28',
+			'end_date' => '2016-05-04',
+			'has_post' => true,
+		);
+	}
+
+	/**
 	 * Verify date_range_has_posts returns expected value with custom status hook
 	 *
-	 * @dataProvider dateRangeHasPostsCustomStatusDataProvider
+	 * @dataProvider date_range_has_posts_custom_status_data_provider
 	 *
 	 * @param string $start_date Start Date of Range in Y-M-D format.
 	 * @param string $end_date   End Date of Range in Y-M-D format.
 	 * @param boolean $has_post   Does Range have Post.
 	 */
-	public function test_date_range_has_posts_custom_status( string $start_date, string $end_date, bool $has_post ): void
-	{
+	public function test_check_date_range_has_posts_custom_status( string $start_date, string $end_date, bool $has_post ): void {
 		// set msm_sitemap_post_status filter to custom_status.
-		$this->customPostStatusSetUp();
+		$this->custom_post_status_set_up();
 
 		// 1 for 2016-10-12 in "live" status.
 		$this->create_dummy_post( '2015-10-12 00:00:00', 'live' );
@@ -319,38 +396,51 @@ class FunctionsTest extends TestCase {
 			$this->assertNull( Metro_Sitemap::date_range_has_posts( $start_date, $end_date ) );
 		}
 
-		$this->customPostStatusTearDown();
-
+		$this->custom_post_status_tear_down();
 	}
 
 
 	/**
 	 * Data Provider for get_post_ids_for_date
 	 *
-	 * @return array<array<int, mixed>> Array of Test parameters.
+	 * @return iterable<string, array<string, int|string>> Array of Test parameters.
 	 */
-	public function postIdsForDateDataProvider(): array
-	{
-		return array(
-		    array( '2016-10-01', 500, 0 ),
-		    array( '2016-10-02', 500, 20 ),
-		    array( '2016-10-02', 10, 10 ),
-		    array( '2016-10-03', 500, 0 ),
+	public function post_ids_for_date_data_provider(): iterable {
+		yield 'no posts' => array(
+			'sitemap_date' => '2016-10-01',
+			'limit' => 500,
+			'expected_count' => 0,
+		);
+
+		yield 'multiple posts for date' => array(
+			'sitemap_date' => '2016-10-02',
+			'limit' => 500,
+			'expected_count' => 20,
+		);
+
+		yield 'multiple posts for date, but get limited number' => array(
+			'sitemap_date' => '2016-10-02',
+			'limit' => 10,
+			'expected_count' => 10,
+		);
+
+		yield 'no published posts' => array(
+			'sitemap_date' => '2016-10-03',
+			'limit' => 500,
+			'expected_count' => 0,
 		);
 	}
 
 	/**
-	 * Verify get_post_ids_for_date returns expected value
+	 * Verify get_post_ids_for_date() returns expected value
 	 *
-	 * @dataProvider postIdsForDateDataProvider
+	 * @dataProvider post_ids_for_date_data_provider
 	 *
 	 * @param string $sitemap_date Date in Y-M-D format.
 	 * @param int $limit max number of posts to return.
 	 * @param int $expected_count Number of posts expected to be returned.
 	 */
-	public function test_get_post_ids_for_date( string $sitemap_date, int $limit, int $expected_count ): void
-	{
-
+	public function test_get_post_ids_for_date( string $sitemap_date, int $limit, int $expected_count ): void {
 		// 1 for 2016-10-03 in "draft" status.
 		$this->create_dummy_post( '2016-10-01 00:00:00', 'draft' );
 
@@ -373,17 +463,16 @@ class FunctionsTest extends TestCase {
 	/**
 	 * Verify get_post_ids_for_date returns expected value with custom status hook
 	 *
-	 * @dataProvider postIdsForDateDataProvider
+	 * @dataProvider post_ids_for_date_data_provider
 	 *
 	 * @param string $sitemap_date   Date in Y-M-D format.
 	 * @param int $limit          Max number of posts to return.
 	 * @param int $expected_count Number of posts expected to be returned.
 	 */
-	public function test_get_post_ids_for_date_custom_status( string $sitemap_date, int $limit, int $expected_count ): void
-	{
+	public function test_get_post_ids_for_date_custom_status( string $sitemap_date, int $limit, int $expected_count ): void {
 
 		// set msm_sitemap_post_status filter to custom_status.
-		$this->customPostStatusSetUp();
+		$this->custom_post_status_set_up();
 
 		// 1 for 2016-10-03 in "draft" status.
 		$this->create_dummy_post( '2016-10-01 00:00:00', 'draft' );
@@ -402,17 +491,16 @@ class FunctionsTest extends TestCase {
 		$this->assertCount($expected_count, $post_ids);
 		$this->assertEquals( array_slice( $created_post_ids, 0, $limit ), $post_ids );
 
-		$this->customPostStatusTearDown();
+		$this->custom_post_status_tear_down();
 	}
 
 	/**
 	 * Verify msm_sitemap_post_status filter returns expected value
 	 */
-	public function test_get_post_status(): void
-	{
+	public function test_get_post_status(): void {
 
 		// set msm_sitemap_post_status filter to custom_status.
-		$this->customPostStatusSetUp();
+		$this->custom_post_status_set_up();
 
 		$this->assertEquals( 'live', Metro_Sitemap::get_post_status() );
 
@@ -426,17 +514,11 @@ class FunctionsTest extends TestCase {
 			return 'bad_status';
 		} );
 
-		$this->customPostStatusTearDown();
+		$this->custom_post_status_tear_down();
 
 	}
 
-	 public function add_post_status_to_msm_sitemap(): string
-	 {
-		return 'live';
-	}
-
-	public function test_get_last_modified_posts_filter_no_change(): void
-	{
+	public function test_get_last_modified_posts_filter_no_change(): void {
 		$posts_before = Metro_Sitemap::get_last_modified_posts();
 		$tag          = 'msm_pre_get_last_modified_posts';
 
@@ -451,8 +533,27 @@ class FunctionsTest extends TestCase {
 		$this->assertCount(count($posts_before), $posts_after);
 	}
 
-	public function test_get_last_modified_posts_filter_change_query(): void
-	{
+	public function test_get_last_modified_posts_filter_change_query(): void {
+		// Create 6 posts modified within the last 3 months
+		for ($i = 0; $i < 6; $i++) {
+			$date = date('Y-m-d H:i:s', strtotime("-" . ($i * 10) . " days"));
+			$post_id = $this->create_dummy_post($date);
+			// Set post_modified_gmt to the same as post_date for simplicity
+			wp_update_post([
+				'ID' => $post_id,
+				'post_modified_gmt' => get_gmt_from_date($date),
+			]);
+		}
+		// Create 6 posts modified more than 3 months ago
+		for ($i = 0; $i < 6; $i++) {
+			$date = date('Y-m-d H:i:s', strtotime("-" . (100 + $i * 10) . " days"));
+			$post_id = $this->create_dummy_post($date);
+			wp_update_post([
+				'ID' => $post_id,
+				'post_modified_gmt' => get_gmt_from_date($date),
+			]);
+		}
+
 		$posts_before = Metro_Sitemap::get_last_modified_posts();
 		$tag          = 'msm_pre_get_last_modified_posts';
 
@@ -479,5 +580,4 @@ class FunctionsTest extends TestCase {
 		$this->assertLessThan( count( $posts_before ), count( $posts_after_date ) );
 		$this->assertEquals( count( $posts_after ), $limit );
 	}
-
 }
