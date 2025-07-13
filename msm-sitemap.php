@@ -355,13 +355,13 @@ class Metro_Sitemap {
 	public static function get_post_status(): string {
 		$default_status = 'publish';
 		$post_status = apply_filters('msm_sitemap_post_status', $default_status);
-	
+
 		$allowed_statuses = get_post_stati();
-		
+
 		if (!in_array($post_status, $allowed_statuses)) {
 			$post_status = $default_status;
 		}
-	
+
 		return $post_status;
 	}
 
@@ -373,7 +373,10 @@ class Metro_Sitemap {
 		global $wpdb;
 		$post_status = self::get_post_status();
 
-		$oldest_post_date_year = $wpdb->get_var( $wpdb->prepare( "SELECT DISTINCT YEAR(post_date) as year FROM $wpdb->posts WHERE post_status = %s AND post_date > 0 ORDER BY year ASC LIMIT 1", $post_status ) );
+		$post_statuses_in = self::get_supported_post_statuses_in();
+		$post_types_in    = self::get_supported_post_types_in();
+
+		$oldest_post_date_year = $wpdb->get_var( "SELECT DISTINCT YEAR(post_date) as year FROM $wpdb->posts WHERE post_status IN ( {$post_statuses_in} ) AND post_type IN ( {$post_types_in} ) AND post_date > 0 ORDER BY year ASC LIMIT 1" );
 
 		if ( null !== $oldest_post_date_year ) {
 			$current_year = date( 'Y' );
@@ -426,8 +429,10 @@ class Metro_Sitemap {
 		$end_date .= ' 23:59:59';
 		$post_status = self::get_post_status();
 
-		$post_types_in = self::get_supported_post_types_in();
-		return $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_status = %s AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT 1", $post_status, $start_date, $end_date ) );
+		$post_types_in    = self::get_supported_post_types_in();
+		$post_statuses_in = self::get_supported_post_statuses_in();
+
+		return $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_status IN ( {$post_statuses_in} ) AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT 1", $start_date, $end_date ) );
 	}
 
 	/**
@@ -442,10 +447,12 @@ class Metro_Sitemap {
 
 		$post_status = self::get_post_status();
 		$start_date = $sitemap_date . ' 00:00:00';
-		$end_date = $sitemap_date . ' 23:59:59';
-		$post_types_in = self::get_supported_post_types_in();
+		$end_date   = $sitemap_date . ' 23:59:59';
 
-		$posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_status = %s AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT %d", $post_status, $start_date, $end_date, $limit ) );
+		$post_types_in    = self::get_supported_post_types_in();
+		$post_statuses_in = self::get_supported_post_statuses_in();
+
+		$posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_status IN ( {$post_statuses_in} ) AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT %d", $start_date, $end_date, $limit ) );
 
 		usort( $posts, array( __CLASS__ , 'order_by_post_date' ) );
 
@@ -635,14 +642,15 @@ class Metro_Sitemap {
 			$date = date( 'Y-m-d H:i:s', $sitemap_last_run );
 		}
 
-		$post_types_in = self::get_supported_post_types_in();
+		$post_types_in    = self::get_supported_post_types_in();
+		$post_statuses_in = self::get_supported_post_statuses_in();
 
-		$query = $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_modified_gmt >= %s LIMIT 1000", $date );
+		$query = $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_status IN ( {$post_statuses_in} ) AND post_modified_gmt >= %s LIMIT 1000", $date );
 
 		/**
 		 * Filter the query used to get the last modified posts.
 		 * $wpdb->prepare() should be used for security if a new replacement query is created in the callback.
-		 * 
+		 *
 		 * @param string $query         The query to use to get the last modified posts.
 		 * @param string $post_types_in A comma-separated list of post types to include in the query.
 		 * @param string $date          The date to use as the cutoff for the query.
@@ -861,17 +869,49 @@ class Metro_Sitemap {
 		return apply_filters( 'msm_sitemap_entry_post_type', array( 'post' ) );
 	}
 
-	private static function get_supported_post_types_in() {
+	/**
+	 * Retrieve supported post statuses for inclusion in sitemap.
+	 *
+	 * @return string[] Array of post statuses.
+	 */
+	public static function get_supported_post_statuses() {
+		return (array) apply_filters( 'msm_sitemap_entry_post_status', array_values( get_post_stati( array( 'public' => true ) ) ) );
+	}
+
+	/**
+	 * Convert an array to a string of comma-separated values to be used in a query.
+	 *
+	 * @param string[] $values Array of values to be converted.
+	 * @return string Comma-separated prepared values.
+	 */
+	private static function prepare_where_in( $values ) {
 		global $wpdb;
 
-		$post_types = self::get_supported_post_types();
-		$post_types_prepared = array();
+		$prepared = array();
 
-		foreach ( $post_types as $post_type ) {
-			$post_types_prepared[] = $wpdb->prepare( '%s', $post_type );
+		foreach ( $values as $value ) {
+			$prepared[] = $wpdb->prepare( '%s', $value );
 		}
 
-		return implode( ', ', $post_types_prepared );
+		return implode( ', ', $prepared );
+	}
+
+	/**
+	 * Retrieve supported post types for inclusion in sitemap.
+	 *
+	 * @return string[]
+	 */
+	private static function get_supported_post_types_in() {
+		return self::prepare_where_in( self::get_supported_post_types() );
+	}
+
+	/**
+	 * Retrieve supported post statuses for inclusion in sitemap.
+	 *
+	 * @return string[]
+	 */
+	private static function get_supported_post_statuses_in() {
+		return self::prepare_where_in( self::get_supported_post_statuses() );
 	}
 
 	/**
