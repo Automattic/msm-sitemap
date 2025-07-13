@@ -26,19 +26,11 @@ class IndexesTest extends TestCase {
 	/**
 	 * Generate posts and build initial sitemaps
 	 */
-	public function setup(): void {
-		// Add a post for each day in the last x years.
-		$dates = array();
-		$date = time();
-		for ( $i = 0; $i < $this->num_years_data; $i++ ) {
-			// Add a post for x years ago.
-			$dates[] = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
-			$date = strtotime( '-1 year', $date );
-		}
+	public function setUp(): void {
+		parent::setUp();
+		$this->add_a_post_for_each_of_the_last_x_years( $this->num_years_data );
 
-		$this->create_dummy_posts( $dates );
-
-		$this->assertCount( $this->num_years_data, $this->posts );
+		$this->assertPostCount( $this->num_years_data );
 		$this->build_sitemaps();
 	}
 
