@@ -560,7 +560,7 @@ class Metro_Sitemap {
 		}
 
 		// If all posts were skipped, remove the sitemap post.
-		if ( 0 === $url_count && $sitemap_exists ) {
+		if ( 0 === $url_count ) {
 			self::delete_sitemap_by_id( $sitemap_id );
 			wp_reset_postdata();
 			return;
