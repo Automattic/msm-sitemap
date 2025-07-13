@@ -1,0 +1,168 @@
+# Copyright (C) 2025 Metro.co.uk, MAKE, Alley Interactive, WordPress VIP.
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Metro Sitemap 1.4.1\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/msm-sitemap\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2025-07-13T00:55:06+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: msm-sitemap\n"
+
+#. Plugin Name of the plugin
+#: msm-sitemap.php
+msgid "Metro Sitemap"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: msm-sitemap.php
+msgid "https://github.com/Automattic/msm-sitemap"
+msgstr ""
+
+#. Description of the plugin
+#: msm-sitemap.php
+msgid "Comprehensive sitemaps for your WordPress site."
+msgstr ""
+
+#. Author of the plugin
+#: msm-sitemap.php
+msgid "Metro.co.uk, MAKE, Alley Interactive, WordPress VIP."
+msgstr ""
+
+#: includes/msm-sitemap-builder-cron.php:40
+msgid "Generate from all articles"
+msgstr ""
+
+#: includes/msm-sitemap-builder-cron.php:41
+msgid "Generate from latest articles"
+msgstr ""
+
+#: includes/msm-sitemap-builder-cron.php:42
+msgid "Halt Sitemap Generation"
+msgstr ""
+
+#: includes/msm-sitemap-builder-cron.php:43
+msgid "Reset Sitemap Data"
+msgstr ""
+
+#: includes/msm-sitemap-builder-cron.php:59
+msgid "Halting"
+msgstr ""
+
+#: includes/msm-sitemap-builder-cron.php:81
+msgid "Starting sitemap generation..."
+msgstr ""
+
+#: includes/msm-sitemap-builder-cron.php:83
+msgid "Resuming sitemap creation"
+msgstr ""
+
+#: includes/msm-sitemap-builder-cron.php:96
+msgid "Updating sitemap from latest articles..."
+msgstr ""
+
+#: includes/msm-sitemap-builder-cron.php:98
+msgid "Cannot generate from latest articles: no posts updated lately."
+msgstr ""
+
+#: includes/msm-sitemap-builder-cron.php:110
+msgid "Cannot stop sitemap generation: sitemap generation is already being halted."
+msgstr ""
+
+#: includes/msm-sitemap-builder-cron.php:113
+msgid "Stopping Sitemap generation"
+msgstr ""
+
+#: includes/msm-sitemap-builder-cron.php:115
+msgid "Cannot stop sitemap generation: sitemap generation not in progress"
+msgstr ""
+
+#. translators: 1: post type, 2: WP-CLI command
+#: includes/msm-sitemap-builder-cron.php:129
+#, php-format
+msgid "<p>Sitemap data reset. If you want to completely remove the data you must do so manually by deleting all posts with post type <code>%1$s</code>.</p><p>The WP-CLI command to do this is: <code>%2$s</code></p>"
+msgstr ""
+
+#: msm-sitemap.php:73
+msgid "Every 15 minutes"
+msgstr ""
+
+#: msm-sitemap.php:114
+#: msm-sitemap.php:162
+#: msm-sitemap.php:609
+msgid "Sitemap"
+msgstr ""
+
+#: msm-sitemap.php:131
+#: msm-sitemap.php:153
+msgid "You do not have sufficient permissions to access this page."
+msgstr ""
+
+#: msm-sitemap.php:165
+msgid "Oops! Sitemaps are not supported on private blogs. Please make your blog public and try again."
+msgstr ""
+
+#: msm-sitemap.php:187
+msgid "Running"
+msgstr ""
+
+#: msm-sitemap.php:187
+msgid "Not Running"
+msgstr ""
+
+#: msm-sitemap.php:192
+#: msm-sitemap.php:608
+msgid "Sitemaps"
+msgstr ""
+
+#: msm-sitemap.php:193
+msgid "Indexed URLs"
+msgstr ""
+
+#: msm-sitemap.php:194
+msgid "Updated"
+msgstr ""
+
+#: msm-sitemap.php:194
+msgid "ago"
+msgstr ""
+
+#: msm-sitemap.php:197
+msgid "Latest Sitemaps"
+msgstr ""
+
+#. translators: 1: max number of indexed URLs, 2: date of max indexed URLs, 3: number of days to show
+#: msm-sitemap.php:202
+#, php-format
+msgid "Max: %1$s on %2$s. Showing the last %3$s days."
+msgstr ""
+
+#: msm-sitemap.php:208
+msgid "Generate"
+msgstr ""
+
+#: msm-sitemap.php:209
+msgid "Sitemap Create Status:"
+msgstr ""
+
+#: msm-sitemap.php:218
+msgid "indexed urls"
+msgstr ""
+
+#: templates/full-sitemaps.php:5
+msgid "Sorry, this site is not public so sitemaps are not available."
+msgstr ""
+
+#: templates/full-sitemaps.php:6
+#: templates/full-sitemaps.php:24
+msgid "Sitemap Not Available"
+msgstr ""
+
+#: templates/full-sitemaps.php:23
+msgid "Sorry, no sitemap available here."
+msgstr ""
