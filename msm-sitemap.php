@@ -215,7 +215,13 @@ class Metro_Sitemap {
 			<?php endforeach; ?>
 		</form>
 		</div>
-		<div id="tooltip"><strong class="content"></strong> <?php esc_html_e( 'indexed urls', 'msm-sitemap' ); ?></div>
+		<div id="tooltip">
+			<strong class="content"></strong>
+				<span class="url-label"
+					data-singular="<?php esc_attr_e( 'indexed URL', 'msm-sitemap' ); ?>"
+					data-plural="<?php esc_attr_e( 'indexed URLs', 'msm-sitemap' ); ?>"
+				><?php esc_html_e( 'indexed URLs', 'msm-sitemap' ); ?></span>
+		</div>
 		<?php
 	}
 
