@@ -37,10 +37,10 @@ class MSM_Sitemap_Builder_Cron {
 		$sitemap_create_in_progress = (bool) get_option( 'msm_sitemap_create_in_progress' ) === true;
 		$sitemap_halt_in_progress = (bool) get_option( 'msm_stop_processing' ) === true;
 
-		$actions['generate'] = array( 'text' => __( 'Generate from all articles', 'metro-sitemaps' ), 'enabled' => ! $sitemap_create_in_progress && ! $sitemap_halt_in_progress );
-		$actions['generate_from_latest'] = array( 'text' => __( 'Generate from latest articles', 'metro-sitemaps' ), 'enabled' => ! $sitemap_create_in_progress && ! $sitemap_halt_in_progress );
-		$actions['halt_generation'] = array( 'text' => __( 'Halt Sitemap Generation', 'metro-sitemaps' ), 'enabled' => $sitemap_create_in_progress && ! $sitemap_halt_in_progress );
-		$actions['reset_sitemap_data'] = array( 'text' => __( 'Reset Sitemap Data', 'metro-sitemaps' ), 'enabled' => ! $sitemap_create_in_progress && ! $sitemap_halt_in_progress );
+		$actions['generate'] = array( 'text' => __( 'Generate from all articles', 'msm-sitemap' ), 'enabled' => ! $sitemap_create_in_progress && ! $sitemap_halt_in_progress );
+		$actions['generate_from_latest'] = array( 'text' => __( 'Generate from latest articles', 'msm-sitemap' ), 'enabled' => ! $sitemap_create_in_progress && ! $sitemap_halt_in_progress );
+		$actions['halt_generation'] = array( 'text' => __( 'Halt Sitemap Generation', 'msm-sitemap' ), 'enabled' => $sitemap_create_in_progress && ! $sitemap_halt_in_progress );
+		$actions['reset_sitemap_data'] = array( 'text' => __( 'Reset Sitemap Data', 'msm-sitemap' ), 'enabled' => ! $sitemap_create_in_progress && ! $sitemap_halt_in_progress );
 
 		return $actions;
 	}
@@ -56,7 +56,7 @@ class MSM_Sitemap_Builder_Cron {
 	 */
 	public static function sitemap_create_status( $status ) {
 		if ( (bool) get_option( 'msm_stop_processing' ) === true && (bool) get_option( 'msm_sitemap_create_in_progress' ) === true ) {
-			return __( 'Halting', 'metro-sitemaps' );
+			return __( 'Halting', 'msm-sitemap' );
 		}
 			
 		return $status;
@@ -78,9 +78,9 @@ class MSM_Sitemap_Builder_Cron {
 		}
 
 		if ( empty( $sitemap_create_in_progress ) ) {
-			Metro_Sitemap::show_action_message( __( 'Starting sitemap generation...', 'metro-sitemaps' ) );
+			Metro_Sitemap::show_action_message( __( 'Starting sitemap generation...', 'msm-sitemap' ) );
 		} else {
-			Metro_Sitemap::show_action_message( __( 'Resuming sitemap creation', 'metro-sitemaps' ) );
+			Metro_Sitemap::show_action_message( __( 'Resuming sitemap creation', 'msm-sitemap' ) );
 		}
 	}
 
@@ -93,9 +93,9 @@ class MSM_Sitemap_Builder_Cron {
 		$last_modified = Metro_Sitemap::get_last_modified_posts();
 		if ( count( $last_modified ) > 0 ) {
 			Metro_Sitemap::update_sitemap_from_modified_posts();
-			Metro_Sitemap::show_action_message( __( 'Updating sitemap from latest articles...', 'metro-sitemaps' ) );
+			Metro_Sitemap::show_action_message( __( 'Updating sitemap from latest articles...', 'msm-sitemap' ) );
 		} else {
-			Metro_Sitemap::show_action_message( __( 'Cannot generate from latest articles: no posts updated lately.', 'metro-sitemaps' ), 'error' );
+			Metro_Sitemap::show_action_message( __( 'Cannot generate from latest articles: no posts updated lately.', 'msm-sitemap' ), 'error' );
 		}
 	}
 
@@ -107,12 +107,12 @@ class MSM_Sitemap_Builder_Cron {
 	public static function action_halt() {
 		// Can only halt generation if sitemap creation is already in process
 		if ( (bool) get_option( 'msm_stop_processing' ) === true ) {
-			Metro_Sitemap::show_action_message( __( 'Cannot stop sitemap generation: sitemap generation is already being halted.', 'metro-sitemaps' ), 'warning' );
+			Metro_Sitemap::show_action_message( __( 'Cannot stop sitemap generation: sitemap generation is already being halted.', 'msm-sitemap' ), 'warning' );
 		} else if ( (bool) get_option( 'msm_sitemap_create_in_progress' ) === true ) {
 			update_option( 'msm_stop_processing', true );
-			Metro_Sitemap::show_action_message( __( 'Stopping Sitemap generation', 'metro-sitemaps' ) );
+			Metro_Sitemap::show_action_message( __( 'Stopping Sitemap generation', 'msm-sitemap' ) );
 		} else {
-			Metro_Sitemap::show_action_message( __( 'Cannot stop sitemap generation: sitemap generation not in progress', 'metro-sitemaps' ), 'warning' );
+			Metro_Sitemap::show_action_message( __( 'Cannot stop sitemap generation: sitemap generation not in progress', 'msm-sitemap' ), 'warning' );
 		}
 	}
 
@@ -125,6 +125,7 @@ class MSM_Sitemap_Builder_Cron {
 		// Do the same as when we finish then tell use to delete manuallyrather than remove all data
 		self::reset_sitemap_data();
 		Metro_Sitemap::show_action_message( sprintf(
+				/* translators: 1: post type, 2: WP-CLI command */
 				__( '<p>Sitemap data reset. If you want to completely remove the data you must do so manually by deleting all posts with post type <code>%1$s</code>.</p><p>The WP-CLI command to do this is: <code>%2$s</code></p>', 'msm-sitemap' ),
 				Metro_Sitemap::SITEMAP_CPT,
 				'wp post delete $(wp post list --post_type=' . Metro_Sitemap::SITEMAP_CPT . ' --format=ids)'

@@ -70,7 +70,7 @@ class Metro_Sitemap {
 	public static function sitemap_15_min_cron_interval( $schedules ) {
 		$schedules[ 'ms-sitemap-15-min-cron-interval' ] = array(
 			'interval' => 900,
-			'display' => __( 'Every 15 minutes', 'metro-sitemaps' ),
+			'display' => __( 'Every 15 minutes', 'msm-sitemap' ),
 			);
 		return $schedules;
 	}
@@ -111,7 +111,7 @@ class Metro_Sitemap {
 	 * Register admin menu for sitemap
 	 */
 	public static function metro_sitemap_menu() {
-		$page_hook = add_management_page( __( 'Sitemap', 'metro-sitemaps' ), __( 'Sitemap', 'metro-sitemaps' ), 'manage_options', 'metro-sitemap', array( __CLASS__, 'render_sitemap_options_page' ) );
+		$page_hook = add_management_page( __( 'Sitemap', 'msm-sitemap' ), __( 'Sitemap', 'msm-sitemap' ), 'manage_options', 'metro-sitemap', array( __CLASS__, 'render_sitemap_options_page' ) );
 		add_action( 'admin_print_scripts-' . $page_hook, array( __CLASS__, 'add_admin_scripts' ) );
 	}
 
@@ -128,7 +128,7 @@ class Metro_Sitemap {
 		check_admin_referer( 'msm-sitemap-action' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( __( 'You do not have sufficient permissions to access this page.', 'metro-sitemaps' ) );
+			wp_die( __( 'You do not have sufficient permissions to access this page.', 'msm-sitemap' ) );
 		}
 
 		$n = 10;
@@ -150,7 +150,7 @@ class Metro_Sitemap {
 	 */
 	public static function render_sitemap_options_page() {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( __( 'You do not have sufficient permissions to access this page.', 'metro-sitemaps' ) );
+			wp_die( __( 'You do not have sufficient permissions to access this page.', 'msm-sitemap' ) );
 		}
 
 		// Array of possible user actions
@@ -159,10 +159,10 @@ class Metro_Sitemap {
 		// Start outputting html
 		echo '<div class="wrap">';
 		screen_icon();
-		echo '<h2>' . __( 'Sitemap', 'metro-sitemaps' ) . '</h2>';
+		echo '<h2>' . __( 'Sitemap', 'msm-sitemap' ) . '</h2>';
 
 		if ( ! self::is_blog_public() ) {
-			self::show_action_message( __( 'Oops! Sitemaps are not supported on private blogs. Please make your blog public and try again.', 'metro-sitemaps' ), 'error' );
+			self::show_action_message( __( 'Oops! Sitemaps are not supported on private blogs. Please make your blog public and try again.', 'msm-sitemap' ), 'error' );
 			echo '</div>';
 			return;
 		}
@@ -184,22 +184,29 @@ class Metro_Sitemap {
 		// Determine sitemap status text
 		$sitemap_create_status = apply_filters(
 			'msm_sitemap_create_status',
-			$sitemap_create_in_progress ? __( 'Running', 'metro-sitemaps' ) : __( 'Not Running', 'metro-sitemaps' )
+			$sitemap_create_in_progress ? __( 'Running', 'msm-sitemap' ) : __( 'Not Running', 'msm-sitemap' )
 		);
 
 		?>
 		<div class="stats-container">
-			<div class="stats-box"><strong id="sitemap-count"><?php echo number_format( Metro_Sitemap::count_sitemaps() ); ?></strong><?php esc_html_e( 'Sitemaps', 'metro-sitemaps' ); ?></div>
-			<div class="stats-box"><strong id="sitemap-indexed-url-count"><?php echo number_format( Metro_Sitemap::get_total_indexed_url_count() ); ?></strong><?php esc_html_e( 'Indexed URLs', 'metro-sitemaps' ); ?></div>
-			<div class="stats-footer"><span><span class="noticon noticon-time"></span><?php esc_html_e( 'Updated', 'metro-sitemaps' ); ?> <strong><?php echo human_time_diff( $sitemap_update_last_run ); ?> <?php esc_html_e( 'ago', 'metro-sitemaps' ) ?></strong></span></div>
+			<div class="stats-box"><strong id="sitemap-count"><?php echo number_format( Metro_Sitemap::count_sitemaps() ); ?></strong><?php esc_html_e( 'Sitemaps', 'msm-sitemap' ); ?></div>
+			<div class="stats-box"><strong id="sitemap-indexed-url-count"><?php echo number_format( Metro_Sitemap::get_total_indexed_url_count() ); ?></strong><?php esc_html_e( 'Indexed URLs', 'msm-sitemap' ); ?></div>
+			<div class="stats-footer"><span><span class="noticon noticon-time"></span><?php esc_html_e( 'Updated', 'msm-sitemap' ); ?> <strong><?php echo human_time_diff( $sitemap_update_last_run ); ?> <?php esc_html_e( 'ago', 'msm-sitemap' ) ?></strong></span></div>
 		</div>
 
-		<h3><?php esc_html_e( 'Latest Sitemaps', 'metro-sitemaps' ); ?></h3>
+		<h3><?php esc_html_e( 'Latest Sitemaps', 'msm-sitemap' ); ?></h3>
 		<div class="stats-container stats-placeholder"></div>
-		<div id="stats-graph-summary"><?php printf( __( 'Max: %s on %s. Showing the last %s days.', 'metro-sitemaps' ), '<span id="stats-graph-max"></span>', '<span id="stats-graph-max-date"></span>', '<span id="stats-graph-num-days"></span>' ); ?></div>
+		<div id="stats-graph-summary"><?php
+		printf(
+			/* translators: 1: max number of indexed URLs, 2: date of max indexed URLs, 3: number of days to show */
+			__( 'Max: %1$s on %2$s. Showing the last %3$s days.', 'msm-sitemap' ),
+			'<span id="stats-graph-max"></span>',
+			'<span id="stats-graph-max-date"></span>',
+			'<span id="stats-graph-num-days"></span>',
+		); ?></div>
 
-		<h3><?php esc_html_e( 'Generate', 'metro-sitemaps' ); ?></h3>
-		<p><strong><?php esc_html_e( 'Sitemap Create Status:', 'metro-sitemaps' ) ?></strong> <?php echo esc_html( $sitemap_create_status ); ?></p>
+		<h3><?php esc_html_e( 'Generate', 'msm-sitemap' ); ?></h3>
+		<p><strong><?php esc_html_e( 'Sitemap Create Status:', 'msm-sitemap' ) ?></strong> <?php echo esc_html( $sitemap_create_status ); ?></p>
 		<form action="<?php echo menu_page_url( 'metro-sitemap', false ) ?>" method="post" style="float: left;">
 			<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
 			<?php foreach ( $actions as $action ):
@@ -208,7 +215,7 @@ class Metro_Sitemap {
 			<?php endforeach; ?>
 		</form>
 		</div>
-		<div id="tooltip"><strong class="content"></strong> <?php esc_html_e( 'indexed urls', 'metro-sitemaps' ); ?></div>
+		<div id="tooltip"><strong class="content"></strong> <?php esc_html_e( 'indexed urls', 'msm-sitemap' ); ?></div>
 		<?php
 	}
 
@@ -598,8 +605,8 @@ class Metro_Sitemap {
 			self::SITEMAP_CPT,
 			array(
 				'labels'       => array(
-					'name'          => __( 'Sitemaps' ),
-					'singular_name' => __( 'Sitemap' ),
+					'name'          => __( 'Sitemaps', 'msm-sitemap' ),
+					'singular_name' => __( 'Sitemap', 'msm-sitemap' ),
 					),
 				'public'       => false,
 				'has_archive'  => false,
