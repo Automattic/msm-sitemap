@@ -62,5 +62,18 @@ class FiltersTest extends TestCase {
 
 		$this->assertTrue( $ran );
 	}
+
+	/**
+	 * Verify that msm_sitemap_pre_get_post_year_range filter can short-circuit the year range.
+	 */
+	public function test_pre_get_post_year_range_filter_short_circuits(): void {
+		add_filter( 'msm_sitemap_pre_get_post_year_range', function() {
+			return array( 2000, 2001, 2002 );
+		} );
+
+		$this->assertEquals( array( 2000, 2001, 2002 ), Metro_Sitemap::get_post_year_range() );
+
+		remove_all_filters( 'msm_sitemap_pre_get_post_year_range' );
+	}
 }
 
