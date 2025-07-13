@@ -788,7 +788,30 @@ class Metro_Sitemap {
 			$sitemap = $xml->addChild( 'sitemap' );
 			$sitemap->loc = self::build_sitemap_url( $sitemap_date ); // manually set the child instead of addChild to prevent "unterminated entity reference" warnings due to encoded ampersands http://stackoverflow.com/a/555039/169478
 		}
-		return $xml->asXML();
+		$xml_string = $xml->asXML();
+
+		/**
+		 * Filter the XML to append to the sitemap index before the closing tag.
+		 *
+		 * Useful for adding in extra sitemaps to the index.
+		 *
+		 * @param string   $appended_xml The XML to append. Default empty string.
+		 * @param int|bool $year         The year for which the sitemap index is being generated, or false for all years.
+		 * @param array    $sitemaps     The sitemaps to be included in the index.
+		 */
+		$appended = apply_filters( 'msm_sitemap_index_appended_xml', '', $year, $sitemaps );
+		$xml_string = str_replace( '</sitemapindex>', $appended . '</sitemapindex>', $xml_string );
+
+		/**
+		 * Filter the whole generated sitemap index XML before output.
+		 *
+		 * @param string   $xml_string The sitemap index XML.
+		 * @param int|bool $year       The year for which the sitemap index is being generated, or false for all years.
+		 * @param array    $sitemaps   The sitemaps to be included in the index.
+		 */
+		$xml_string = apply_filters( 'msm_sitemap_index_xml', $xml_string, $year, $sitemaps );
+
+		return $xml_string;
 	}
 
 	/**
