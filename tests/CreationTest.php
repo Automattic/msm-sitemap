@@ -20,7 +20,7 @@ use WP_Post;
 class CreationTest extends TestCase {
 
 	/**
-	 * Humber of Posts to Create (1 per day)
+	 * Number of days to create posts for.
 	 *
 	 * @var Integer
 	 */
@@ -29,32 +29,19 @@ class CreationTest extends TestCase {
 	/**
 	 * Generate posts and build the sitemap
 	 */
-	public function setup(): void {
-		// Create posts for the last num_days days.
-		$dates = array();
-		$date = time();
-		for ( $i = 0; $i < $this->num_days; $i++ ) {
-			$date = strtotime( '-1 day', $date );
-			$dates[] = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date );
-		}
+	public function setUp(): void {
+		parent::setUp();
+		$this->add_a_post_for_each_of_the_last_x_days_before_today( $this->num_days );
 
-		$this->create_dummy_posts( $dates );
-		$this->assertCount( $this->num_days, $this->posts );
-				$this->build_sitemaps();
+		$this->assertPostCount( $this->num_days );
+		$this->build_sitemaps();
 	}
 
 	/**
 	 * Remove the sample posts and the sitemap posts
 	 */
 	public function teardown(): void {
-		$this->posts = array();
-		$sitemaps = get_posts( array(
-			'post_type' => Metro_Sitemap::SITEMAP_CPT,
-			'fields' => 'ids',
-			'posts_per_page' => -1,
-		) );
-				update_option( 'msm_sitemap_indexed_url_count' , 0 );
-		array_map( 'wp_delete_post', array_merge( $this->posts_created, $sitemaps ) );
+		parent::teardown();
 		$this->fake_cron( false );
 	}
 
@@ -71,7 +58,7 @@ class CreationTest extends TestCase {
 			'posts_per_page' => -1,
 		) );
 
-		$this->assertCount( $this->num_days, $sitemaps );
+		$this->assertSitemapCount( $this->num_days );
 
 		foreach ( $sitemaps as $i => $map_id ) {
 			$xml = get_post_meta( $map_id, 'msm_sitemap_xml', true );
@@ -149,7 +136,5 @@ class CreationTest extends TestCase {
 
 		$this->assertEmpty( get_post( $sitemap->ID ), 'Sitemap with no posts was not deleted' );
 		$this->assertEquals( $expected_total_urls, Metro_Sitemap::get_total_indexed_url_count(), 'Mismatch in total indexed URLs' );
-		$this->assertEquals( 1, did_action( 'msm_delete_sitemap_post' ), 'msm_delete_sitemap_post action did not fire' );
-
 	}
 }

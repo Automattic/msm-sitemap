@@ -16,21 +16,6 @@ use Metro_Sitemap;
  */
 class FunctionsTest extends TestCase {
 	/**
-	 * Remove the sample posts and the sitemap posts
-	 */
-	public function teardown(): void {
-		_delete_all_posts();
-		$this->posts = array();
-		$sitemaps = get_posts( array(
-			'post_type' => Metro_Sitemap::SITEMAP_CPT,
-			'fields' => 'ids',
-			'posts_per_page' => -1,
-		) );
-		update_option( 'msm_sitemap_indexed_url_count' , 0 );
-		array_map( 'wp_delete_post', array_merge( $this->posts_created, $sitemaps ) );
-	}
-
-	/**
 	 * Custom post_status setup.
 	 */
 	public function custom_post_status_set_up(): void {
@@ -41,8 +26,7 @@ class FunctionsTest extends TestCase {
 			)
 		);
 
-		add_filter( 'msm_sitemap_post_status', array( $this, 'custom_post_status' ) );
-
+		$this->add_test_filter( 'msm_sitemap_post_status', array( $this, 'custom_post_status' ) );
 	}
 
 	/**
@@ -115,7 +99,7 @@ class FunctionsTest extends TestCase {
 			$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
 			$this->create_dummy_post( $cur_day );
 		}
-		$this->assertCount( 12, $this->posts );
+		$this->assertPostCount( 12 );
 		$this->build_sitemaps();
 
 		$stats     = Metro_Sitemap::get_recent_sitemap_url_counts( $days );
@@ -191,20 +175,6 @@ class FunctionsTest extends TestCase {
 		$year_range = Metro_Sitemap::get_post_year_range();
 		// var_dump( $year_range );
 		$this->assertCount( $expected_number_of_years_in_range, $year_range, 'Expected ' . $expected_number_of_years_in_range . ' years in range, got ' . count( $year_range ) );
-
-		// remove filter.
-		$this->custom_post_status_tear_down();
-	}
-
-	/**
-	 * Add a post for each day in the last x years.
-	 *
-	 * @param int $years Number of years.
-	 */
-	public function add_a_post_for_a_day_x_years_ago( $years, $status = 'publish' ): void {
-		$date = strtotime("-$years year");
-		$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
-		$this->create_dummy_post( $cur_day, $status );
 	}
 
 	/**
@@ -395,8 +365,6 @@ class FunctionsTest extends TestCase {
 		} else {
 			$this->assertNull( Metro_Sitemap::date_range_has_posts( $start_date, $end_date ) );
 		}
-
-		$this->custom_post_status_tear_down();
 	}
 
 
@@ -453,11 +421,9 @@ class FunctionsTest extends TestCase {
 			}
 		}
 
-
 		$post_ids = Metro_Sitemap::get_post_ids_for_date( $sitemap_date, $limit );
 		$this->assertCount($expected_count, $post_ids);
 		$this->assertEquals( array_slice( $created_post_ids, 0, $limit ), $post_ids );
-
 	}
 
 	/**
@@ -490,8 +456,6 @@ class FunctionsTest extends TestCase {
 		$post_ids = Metro_Sitemap::get_post_ids_for_date( $sitemap_date, $limit );
 		$this->assertCount($expected_count, $post_ids);
 		$this->assertEquals( array_slice( $created_post_ids, 0, $limit ), $post_ids );
-
-		$this->custom_post_status_tear_down();
 	}
 
 	/**
@@ -504,18 +468,10 @@ class FunctionsTest extends TestCase {
 
 		$this->assertEquals( 'live', Metro_Sitemap::get_post_status() );
 
-		add_filter( 'msm_sitemap_post_status', function() {
+		$this->add_test_filter( 'msm_sitemap_post_status', function() {
 			return 'bad_status';
 		} );
 		$this->assertEquals( 'publish', Metro_Sitemap::get_post_status() );
-
-		// remove filter.
-		remove_filter( 'msm_sitemap_post_status', static function() {
-			return 'bad_status';
-		} );
-
-		$this->custom_post_status_tear_down();
-
 	}
 
 	public function test_get_last_modified_posts_filter_no_change(): void {

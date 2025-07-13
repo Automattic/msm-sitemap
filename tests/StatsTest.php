@@ -27,34 +27,14 @@ class StatsTest extends TestCase {
 	/**
 	 * Generate posts and build initial sitemaps
 	 */
-	public function setup(): void {
-		// Add a post for each day in the last x years.
-		$dates = array();
-		$date = time();
+	public function setUp(): void {
+		parent::setUp();
 		for ( $i = 0; $i < $this->num_years_data; $i++ ) {
-			// Add a post for x years ago.
-			$dates[] = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
-			$date = strtotime( '-1 year', $date );
+			$this->add_a_post_for_a_day_x_years_ago( $i );
 		}
 
-		$this->create_dummy_posts( $dates );
-
-		$this->assertCount( $this->num_years_data, $this->posts );
+		$this->assertPostCount( $this->num_years_data );
 		$this->build_sitemaps();
-	}
-
-	/**
-	 * Remove created posts, Sitemaps and options
-	 */
-	public function teardown(): void {
-		$this->posts = array();
-		$sitemaps = get_posts( array(
-			'post_type' => Metro_Sitemap::SITEMAP_CPT,
-			'fields' => 'ids',
-			'posts_per_page' => -1,
-		) );
-		update_option( 'msm_sitemap_indexed_url_count' , 0 );
-		array_map( 'wp_delete_post', array_merge( $this->posts_created, $sitemaps ) );
 	}
 
 	/**
@@ -63,10 +43,10 @@ class StatsTest extends TestCase {
 	public function test_site_stats_creation(): void
 	{
 		// Check that we've indexed the proper total number of URLs.
-		$this->assertEquals( $this->num_years_data, Metro_Sitemap::get_total_indexed_url_count() );
+		$this->assertIndexedUrlCount( $this->num_years_data );
 
 		// Check specific stats.
-		$this->assertTrue( $this->check_stats_for_created_posts() );
+		$this->assertStatsForCreatedPosts();
 	}
 
 	/**
@@ -84,10 +64,10 @@ class StatsTest extends TestCase {
 		$this->build_sitemaps();
 
 		// Check stats.
-		$this->assertEquals( $this->num_years_data + 1, Metro_Sitemap::get_total_indexed_url_count() );
+		$this->assertIndexedUrlCount( $this->num_years_data + 1 );
 
 		// Check specific stats.
-		$this->assertTrue( $this->check_stats_for_created_posts() );
+		$this->assertStatsForCreatedPosts();
 	}
 
 	/**
@@ -105,13 +85,13 @@ class StatsTest extends TestCase {
 
 			if ( $post instanceof \WP_Post ) {
 				$this->update_sitemap_by_post( $post );
-				$this->assertEquals( $post_count, Metro_Sitemap::get_total_indexed_url_count() );
-				$this->assertTrue( $this->check_stats_for_created_posts() );
+				$this->assertIndexedUrlCount( $post_count );
+				$this->assertStatsForCreatedPosts();
 			}
 		}
 
-		$this->assertEquals( 0, Metro_Sitemap::count_sitemaps() );
-		$this->assertEquals( 0, Metro_Sitemap::get_total_indexed_url_count() );
+		$this->assertSitemapCount( 0 );
+		$this->assertIndexedUrlCount( 0 );
 	}
 }
 

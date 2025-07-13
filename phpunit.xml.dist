@@ -4,7 +4,7 @@
          bootstrap="tests/bootstrap.php"
          cacheResultFile=".phpunit.cache/test-results"
 		 colors="true"
-         executionOrder="depends,defects"
+         executionOrder="random"
          forceCoversAnnotation="false"
          beStrictAboutCoversAnnotation="true"
          beStrictAboutOutputDuringTests="true"

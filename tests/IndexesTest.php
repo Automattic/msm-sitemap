@@ -26,34 +26,12 @@ class IndexesTest extends TestCase {
 	/**
 	 * Generate posts and build initial sitemaps
 	 */
-	public function setup(): void {
-		// Add a post for each day in the last x years.
-		$dates = array();
-		$date = time();
-		for ( $i = 0; $i < $this->num_years_data; $i++ ) {
-			// Add a post for x years ago.
-			$dates[] = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
-			$date = strtotime( '-1 year', $date );
-		}
+	public function setUp(): void {
+		parent::setUp();
+		$this->add_a_post_for_each_of_the_last_x_years( $this->num_years_data );
 
-		$this->create_dummy_posts( $dates );
-
-		$this->assertCount( $this->num_years_data, $this->posts );
+		$this->assertPostCount( $this->num_years_data );
 		$this->build_sitemaps();
-	}
-
-	/**
-	 * Remove created posts, sitemaps and options
-	 */
-	public function teardown(): void {
-		$this->posts = array();
-		$sitemaps = get_posts( array(
-			'post_type' => Metro_Sitemap::SITEMAP_CPT,
-			'fields' => 'ids',
-			'posts_per_page' => -1,
-		) );
-		update_option( 'msm_sitemap_indexed_url_count' , 0 );
-		array_map( 'wp_delete_post', array_merge( $this->posts_created, $sitemaps ) );
 	}
 
 	/**
