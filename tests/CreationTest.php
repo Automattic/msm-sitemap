@@ -137,4 +137,31 @@ class CreationTest extends TestCase {
 		$this->assertEmpty( get_post( $sitemap->ID ), 'Sitemap with no posts was not deleted' );
 		$this->assertEquals( $expected_total_urls, Metro_Sitemap::get_total_indexed_url_count(), 'Mismatch in total indexed URLs' );
 	}
+
+	public function test_sitemap_deleted_if_all_posts_skipped(): void {
+		// Create a post for today.
+		$today = date( 'Y-m-d' ) . ' 00:00:00';
+		$this->create_dummy_post( $today );
+
+		// Build the sitemap for today (should create a sitemap post).
+		$this->build_sitemaps();
+
+		// Get the sitemap post ID for today.
+		list( $year, $month, $day ) = explode( '-', date( 'Y-m-d' ) );
+		$sitemap_id = Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
+		$this->assertNotFalse( $sitemap_id, 'Sitemap post should exist before skipping.' );
+
+		// Add a filter to skip all posts.
+		add_filter('msm_sitemap_skip_post', '__return_true', 10, 2);
+
+		// Rebuild the sitemap for today (should delete the sitemap post).
+		Metro_Sitemap::generate_sitemap_for_date( date( 'Y-m-d' ) );
+
+		// The sitemap post should now be deleted.
+		$sitemap_id_after = Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
+		$this->assertFalse( $sitemap_id_after, 'Sitemap post should be deleted if all posts are skipped.' );
+
+		// Clean up filter.
+		remove_all_filters( 'msm_sitemap_skip_post' );
+	}
 }

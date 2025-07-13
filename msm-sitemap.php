@@ -559,6 +559,13 @@ class Metro_Sitemap {
 			// TODO: add images to sitemap via <image:image> tag
 		}
 
+		// If all posts were skipped, remove the sitemap post.
+		if ( 0 === $url_count ) {
+			self::delete_sitemap_by_id( $sitemap_id );
+			wp_reset_postdata();
+			return;
+		}
+
 		$generated_xml_string = $xml->asXML();
 
 		// Save the sitemap
