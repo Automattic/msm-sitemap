@@ -461,8 +461,21 @@ class Metro_Sitemap {
 	 * @param int Number of post IDs to return
 	 * @return array IDs of posts
 	 */
-	public static function get_post_ids_for_date( $sitemap_date, $limit = 500 ) {
+	public static function get_post_ids_for_date( $sitemap_date, int $limit = 500 ) {
 		global $wpdb;
+
+		if ( $limit < 1 ) {
+			return array();
+		}
+
+		// Validate date format and existence
+		if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $sitemap_date ) ) {
+			return array();
+		}
+		list( $year, $month, $day ) = explode( '-', $sitemap_date );
+		if ( ! checkdate( (int) $month, (int) $day, (int) $year ) ) {
+			return array();
+		}
 
 		$post_status = self::get_post_status();
 		$start_date = $sitemap_date . ' 00:00:00';

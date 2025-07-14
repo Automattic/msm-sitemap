@@ -8,6 +8,7 @@
 namespace Automattic\MSM_Sitemap\Tests;
 
 use Metro_Sitemap;
+use Automattic\MSM_Sitemap\Tests\Includes\CustomPostStatusTestTrait;
 
 /**
  * Unit Tests to confirm Sitemaps are generated.
@@ -15,35 +16,7 @@ use Metro_Sitemap;
  * @author Matthew Denton (mdbitz)
  */
 class FunctionsTest extends TestCase {
-	/**
-	 * Custom post_status setup.
-	 */
-	public function custom_post_status_set_up(): void {
-		register_post_status(
-			$this->custom_post_status(),
-			array(
-				'public' => true,
-			)
-		);
-
-		$this->add_test_filter( 'msm_sitemap_post_status', array( $this, 'custom_post_status' ) );
-	}
-
-	/**
-	 * Custom post_status teardown.
-	 */
-	public function custom_post_status_tear_down(): void {
-		remove_filter( 'msm_sitemap_post_status', array( $this, 'custom_post_status' ) );
-	}
-
-	/**
-	 * Add post status to msm_sitemap.
-	 *
-	 * @return string Post status.
-	 */
-	public function custom_post_status(): string {
-		return 'live';
-	}
+	use CustomPostStatusTestTrait;
 
 	/**
 	 * Data provider providing map of recent variable and expected URL count.
@@ -386,97 +359,6 @@ class FunctionsTest extends TestCase {
 		} else {
 			$this->assertNull( Metro_Sitemap::date_range_has_posts( $start_date, $end_date ) );
 		}
-	}
-
-
-	/**
-	 * Data Provider for get_post_ids_for_date
-	 *
-	 * @return iterable<string, array<string, int|string>> Array of Test parameters.
-	 */
-	public function post_ids_for_date_data_provider(): iterable {
-		yield 'no posts' => array(
-			'sitemap_date' => '2016-10-01',
-			'limit' => 500,
-			'expected_count' => 0,
-		);
-
-		yield 'multiple posts for date' => array(
-			'sitemap_date' => '2016-10-02',
-			'limit' => 500,
-			'expected_count' => 20,
-		);
-
-		yield 'multiple posts for date, but get limited number' => array(
-			'sitemap_date' => '2016-10-02',
-			'limit' => 10,
-			'expected_count' => 10,
-		);
-
-		yield 'no published posts' => array(
-			'sitemap_date' => '2016-10-03',
-			'limit' => 500,
-			'expected_count' => 0,
-		);
-	}
-
-	/**
-	 * Verify get_post_ids_for_date() returns expected value
-	 *
-	 * @dataProvider post_ids_for_date_data_provider
-	 *
-	 * @param string $sitemap_date Date in Y-M-D format.
-	 * @param int $limit max number of posts to return.
-	 * @param int $expected_count Number of posts expected to be returned.
-	 */
-	public function test_get_post_ids_for_date( string $sitemap_date, int $limit, int $expected_count ): void {
-		// 1 for 2016-10-03 in "draft" status.
-		$this->create_dummy_post( '2016-10-01 00:00:00', 'draft' );
-
-		$created_post_ids = array();
-		// 20 for 2016-10-02.
-		for ( $i = 0; $i < 20; $i ++ ) {
-			$hour = $i < 10 ? '0' . $i : $i;
-			if ( '2016-10-02' === $sitemap_date ) {
-				$created_post_ids[] = $this->create_dummy_post( '2016-10-02 ' . $hour . ':00:00' );
-			}
-		}
-
-		$post_ids = Metro_Sitemap::get_post_ids_for_date( $sitemap_date, $limit );
-		$this->assertCount($expected_count, $post_ids);
-		$this->assertEquals( array_slice( $created_post_ids, 0, $limit ), $post_ids );
-	}
-
-	/**
-	 * Verify get_post_ids_for_date returns expected value with custom status hook
-	 *
-	 * @dataProvider post_ids_for_date_data_provider
-	 *
-	 * @param string $sitemap_date   Date in Y-M-D format.
-	 * @param int $limit          Max number of posts to return.
-	 * @param int $expected_count Number of posts expected to be returned.
-	 */
-	public function test_get_post_ids_for_date_custom_status( string $sitemap_date, int $limit, int $expected_count ): void {
-
-		// set msm_sitemap_post_status filter to custom_status.
-		$this->custom_post_status_set_up();
-
-		// 1 for 2016-10-03 in "draft" status.
-		$this->create_dummy_post( '2016-10-01 00:00:00', 'draft' );
-
-		$created_post_ids = array();
-		// 20 for 2016-10-02.
-		for ( $i = 0; $i < 20; $i ++ ) {
-			$hour = $i < 10 ? '0' . $i : $i;
-			if ( '2016-10-02' === $sitemap_date ) {
-				$created_post_ids[] = $this->create_dummy_post( '2016-10-02 ' . $hour . ':00:00', 'live' );
-			}
-		}
-
-
-		$post_ids = Metro_Sitemap::get_post_ids_for_date( $sitemap_date, $limit );
-		$this->assertCount($expected_count, $post_ids);
-		$this->assertEquals( array_slice( $created_post_ids, 0, $limit ), $post_ids );
 	}
 
 	/**
