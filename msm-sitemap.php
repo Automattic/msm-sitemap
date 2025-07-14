@@ -446,6 +446,22 @@ class Metro_Sitemap {
 	public static function date_range_has_posts( $start_date, $end_date ) {
 		global $wpdb;
 
+		// Validate date format and existence
+		if (
+			! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $start_date ) ||
+			! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $end_date )
+		) {
+			return null;
+		}
+		list( $start_year, $start_month, $start_day ) = explode( '-', $start_date );
+		list( $end_year, $end_month, $end_day ) = explode( '-', $end_date );
+		if (
+			! checkdate( (int)$start_month, (int)$start_day, (int)$start_year ) ||
+			! checkdate( (int)$end_month, (int)$end_day, (int)$end_year )
+		) {
+			return null;
+		}
+
 		$start_date .= ' 00:00:00';
 		$end_date .= ' 23:59:59';
 		$post_status = self::get_post_status();
