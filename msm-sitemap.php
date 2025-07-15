@@ -124,6 +124,20 @@ class Metro_Sitemap {
 		wp_enqueue_style( 'noticons', '//s0.wordpress.com/i/noticons/noticons.css' );
 	}
 
+	/**
+	 * Retrieve sitemap counts and stats for AJAX/REST endpoints.
+	 *
+	 * @param int $num_days Number of days of stats to retrieve.
+	 * @return array
+	 */
+	public static function get_sitemap_counts_data( $num_days = 10 ) {
+		return array(
+			'total_indexed_urls'   => number_format( self::get_total_indexed_url_count() ),
+			'total_sitemaps'       => number_format( self::count_sitemaps() ),
+			'sitemap_indexed_urls' => self::get_recent_sitemap_url_counts( $num_days ),
+		);
+	}
+
 	public static function ajax_get_sitemap_counts() {
 		check_admin_referer( 'msm-sitemap-action' );
 
@@ -136,11 +150,7 @@ class Metro_Sitemap {
 			$n = intval( $_REQUEST['num_days'] );
 		}
 
-		$data = array(
-			'total_indexed_urls'   => number_format( Metro_Sitemap::get_total_indexed_url_count() ),
-			'total_sitemaps'       => number_format( Metro_Sitemap::count_sitemaps() ),
-			'sitemap_indexed_urls' => self::get_recent_sitemap_url_counts( $n ),
-		);
+		$data = self::get_sitemap_counts_data( $n );
 
 		wp_send_json( $data );
 	}
@@ -156,13 +166,12 @@ class Metro_Sitemap {
 		// Array of possible user actions
 		$actions = apply_filters( 'msm_sitemap_actions', array() );
 
-		// Start outputting html
-		echo '<div class="wrap">';
-		screen_icon();
-		echo '<h2>' . __( 'Sitemap', 'msm-sitemap' ) . '</h2>';
-
+		?>
+		<div class="wrap">
+			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+		<?php
 		if ( ! self::is_blog_public() ) {
-			self::show_action_message( __( 'Oops! Sitemaps are not supported on private blogs. Please make your blog public and try again.', 'msm-sitemap' ), 'error' );
+			self::show_action_message( __( 'Oops! Sitemaps are not supported on private sites. Please make your site is public and try again.', 'msm-sitemap' ), 'error' );
 			echo '</div>';
 			return;
 		}
@@ -170,8 +179,9 @@ class Metro_Sitemap {
 		if ( isset( $_POST['action'] ) ) {
 			check_admin_referer( 'msm-sitemap-action' );
 			foreach ( $actions as $slug => $action ) {
-				if ( $action['text'] !== $_POST['action'] ) continue;
-
+				if ( $action['text'] !== $_POST['action'] ) {
+					continue;
+				}
 				do_action( 'msm_sitemap_action-' . $slug );
 				break;
 			}
@@ -194,7 +204,7 @@ class Metro_Sitemap {
 			<div class="stats-footer"><span><span class="noticon noticon-time"></span><?php esc_html_e( 'Updated', 'msm-sitemap' ); ?> <strong><?php echo human_time_diff( $sitemap_update_last_run ); ?> <?php esc_html_e( 'ago', 'msm-sitemap' ) ?></strong></span></div>
 		</div>
 
-		<h3><?php esc_html_e( 'Latest Sitemaps', 'msm-sitemap' ); ?></h3>
+		<h2><?php esc_html_e( 'Latest Sitemaps', 'msm-sitemap' ); ?></h2>
 		<div class="stats-container stats-placeholder"></div>
 		<div id="stats-graph-summary"><?php
 		printf(
@@ -205,8 +215,8 @@ class Metro_Sitemap {
 			'<span id="stats-graph-num-days"></span>',
 		); ?></div>
 
-		<h3><?php esc_html_e( 'Generate', 'msm-sitemap' ); ?></h3>
-		<p><strong><?php esc_html_e( 'Sitemap Create Status:', 'msm-sitemap' ) ?></strong> <?php echo esc_html( $sitemap_create_status ); ?></p>
+		<h2><?php esc_html_e( 'Generate', 'msm-sitemap' ); ?></h2>
+		<p><strong><?php esc_html_e( 'Sitemap Creation Status:', 'msm-sitemap' ) ?></strong> <?php echo esc_html( $sitemap_create_status ); ?></p>
 		<form action="<?php echo menu_page_url( 'metro-sitemap', false ) ?>" method="post" style="float: left;">
 			<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
 			<?php foreach ( $actions as $action ):
@@ -446,6 +456,22 @@ class Metro_Sitemap {
 	public static function date_range_has_posts( $start_date, $end_date ) {
 		global $wpdb;
 
+		// Validate date format and existence
+		if (
+			! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $start_date ) ||
+			! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $end_date )
+		) {
+			return null;
+		}
+		list( $start_year, $start_month, $start_day ) = explode( '-', $start_date );
+		list( $end_year, $end_month, $end_day ) = explode( '-', $end_date );
+		if (
+			! checkdate( (int)$start_month, (int)$start_day, (int)$start_year ) ||
+			! checkdate( (int)$end_month, (int)$end_day, (int)$end_year )
+		) {
+			return null;
+		}
+
 		$start_date .= ' 00:00:00';
 		$end_date .= ' 23:59:59';
 		$post_status = self::get_post_status();
@@ -461,8 +487,21 @@ class Metro_Sitemap {
 	 * @param int Number of post IDs to return
 	 * @return array IDs of posts
 	 */
-	public static function get_post_ids_for_date( $sitemap_date, $limit = 500 ) {
+	public static function get_post_ids_for_date( $sitemap_date, int $limit = 500 ) {
 		global $wpdb;
+
+		if ( $limit < 1 ) {
+			return array();
+		}
+
+		// Validate date format and existence
+		if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $sitemap_date ) ) {
+			return array();
+		}
+		list( $year, $month, $day ) = explode( '-', $sitemap_date );
+		if ( ! checkdate( (int) $month, (int) $day, (int) $year ) ) {
+			return array();
+		}
 
 		$post_status = self::get_post_status();
 		$start_date = $sitemap_date . ' 00:00:00';

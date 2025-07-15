@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2025-07-13T00:55:06+00:00\n"
+"POT-Creation-Date: 2025-07-15T09:40:42+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: msm-sitemap\n"
@@ -93,8 +93,7 @@ msgid "Every 15 minutes"
 msgstr ""
 
 #: msm-sitemap.php:114
-#: msm-sitemap.php:162
-#: msm-sitemap.php:609
+#: msm-sitemap.php:669
 msgid "Sitemap"
 msgstr ""
 
@@ -103,8 +102,8 @@ msgstr ""
 msgid "You do not have sufficient permissions to access this page."
 msgstr ""
 
-#: msm-sitemap.php:165
-msgid "Oops! Sitemaps are not supported on private blogs. Please make your blog public and try again."
+#: msm-sitemap.php:164
+msgid "Oops! Sitemaps are not supported on private sites. Please make your site is public and try again."
 msgstr ""
 
 #: msm-sitemap.php:187
@@ -116,7 +115,7 @@ msgid "Not Running"
 msgstr ""
 
 #: msm-sitemap.php:192
-#: msm-sitemap.php:608
+#: msm-sitemap.php:668
 msgid "Sitemaps"
 msgstr ""
 
@@ -147,11 +146,16 @@ msgid "Generate"
 msgstr ""
 
 #: msm-sitemap.php:209
-msgid "Sitemap Create Status:"
+msgid "Sitemap Creation Status:"
 msgstr ""
 
-#: msm-sitemap.php:218
-msgid "indexed urls"
+#: msm-sitemap.php:221
+msgid "indexed URL"
+msgstr ""
+
+#: msm-sitemap.php:222
+#: msm-sitemap.php:223
+msgid "indexed URLs"
 msgstr ""
 
 #: templates/full-sitemaps.php:5
