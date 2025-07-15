@@ -7,7 +7,7 @@
 
 namespace Automattic\MSM_Sitemap\Tests;
 
-require_once __DIR__ . '/includes/mock-wp-cli.php';
+require_once __DIR__ . '/Includes/mock-wp-cli.php';
 require_once __DIR__ . '/../includes/wp-cli.php';
 
 /**
