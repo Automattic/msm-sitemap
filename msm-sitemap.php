@@ -985,4 +985,9 @@ class Metro_Sitemap {
 	}
 }
 
+// Register custom permalink handler for msm_sitemap posts.
+// @see https://github.com/Automattic/msm-sitemap/issues/170
+require_once __DIR__ . '/includes/Permalinks.php';
+Automattic\MSM_Sitemap\Permalinks::register();
+
 add_action( 'after_setup_theme', array( 'Metro_Sitemap', 'setup' ) );
