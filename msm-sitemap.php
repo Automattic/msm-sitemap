@@ -156,13 +156,12 @@ class Metro_Sitemap {
 		// Array of possible user actions
 		$actions = apply_filters( 'msm_sitemap_actions', array() );
 
-		// Start outputting html
-		echo '<div class="wrap">';
-		screen_icon();
-		echo '<h2>' . __( 'Sitemap', 'msm-sitemap' ) . '</h2>';
-
+		?>
+		<div class="wrap">
+			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+		<?php
 		if ( ! self::is_blog_public() ) {
-			self::show_action_message( __( 'Oops! Sitemaps are not supported on private blogs. Please make your blog public and try again.', 'msm-sitemap' ), 'error' );
+			self::show_action_message( __( 'Oops! Sitemaps are not supported on private sites. Please make your site is public and try again.', 'msm-sitemap' ), 'error' );
 			echo '</div>';
 			return;
 		}
@@ -170,8 +169,9 @@ class Metro_Sitemap {
 		if ( isset( $_POST['action'] ) ) {
 			check_admin_referer( 'msm-sitemap-action' );
 			foreach ( $actions as $slug => $action ) {
-				if ( $action['text'] !== $_POST['action'] ) continue;
-
+				if ( $action['text'] !== $_POST['action'] ) {
+					continue;
+				}
 				do_action( 'msm_sitemap_action-' . $slug );
 				break;
 			}
@@ -194,7 +194,7 @@ class Metro_Sitemap {
 			<div class="stats-footer"><span><span class="noticon noticon-time"></span><?php esc_html_e( 'Updated', 'msm-sitemap' ); ?> <strong><?php echo human_time_diff( $sitemap_update_last_run ); ?> <?php esc_html_e( 'ago', 'msm-sitemap' ) ?></strong></span></div>
 		</div>
 
-		<h3><?php esc_html_e( 'Latest Sitemaps', 'msm-sitemap' ); ?></h3>
+		<h2><?php esc_html_e( 'Latest Sitemaps', 'msm-sitemap' ); ?></h2>
 		<div class="stats-container stats-placeholder"></div>
 		<div id="stats-graph-summary"><?php
 		printf(
@@ -205,8 +205,8 @@ class Metro_Sitemap {
 			'<span id="stats-graph-num-days"></span>',
 		); ?></div>
 
-		<h3><?php esc_html_e( 'Generate', 'msm-sitemap' ); ?></h3>
-		<p><strong><?php esc_html_e( 'Sitemap Create Status:', 'msm-sitemap' ) ?></strong> <?php echo esc_html( $sitemap_create_status ); ?></p>
+		<h2><?php esc_html_e( 'Generate', 'msm-sitemap' ); ?></h2>
+		<p><strong><?php esc_html_e( 'Sitemap Creation Status:', 'msm-sitemap' ) ?></strong> <?php echo esc_html( $sitemap_create_status ); ?></p>
 		<form action="<?php echo menu_page_url( 'metro-sitemap', false ) ?>" method="post" style="float: left;">
 			<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
 			<?php foreach ( $actions as $action ):
