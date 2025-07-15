@@ -1,112 +1,103 @@
-Comprehensive Sitemaps
-===========
+# Metro Sitemap
 
-Comprehensive sitemaps for your WordPress VIP site. Site-wide sitemaps on WordPress.com includes 1,000 entries by default. This plugin allows you to include all the entries on your site into your sitemap.
+Stable tag: 1.4.2  
+Requires at least: 5.9  
+Tested up to: 6.8  
+Requires PHP: 7.4  
+License: GPLv2 or later  
+License URI: https://www.gnu.org/licenses/gpl-2.0.html  
+Tags: sitemap, xml, seo, performance, multisite  
+Contributors: metro, automattic, alleyinteractive, makermedia, 10up  
 
-Joint collaboration between Metro.co.uk, WordPress.com VIP, Alley Interactive, Maker Media, 10up, and others.
+High-performance XML sitemaps for large-scale WordPress sites. Built for speed, extensibility, and reliability. Metro Sitemap generates robust, scalable XML sitemaps for WordPress sites of any size. Designed for high-traffic and enterprise environments, it ensures your content is discoverable by search engines without slowing down your site.
 
-## How It Works
+## At a Glance
 
-### Sitemap Data Storage
+* **Fast, reliable XML sitemaps** for large and small sites
+* **Asynchronous generation** avoids timeouts and memory issues
+* **Supports custom post types** (see FAQ)
+* **Multisite compatible**
+* **WP-CLI support** for advanced management
+* **Extensible** via hooks and filters ([see developer docs](./DEVELOPERS.md))
+* **Admin UI** for stats and manual actions
 
-* One post type entry for each date.
-* Sitemap XML is generated and stored in meta. This has several benefits:
- * Avoid memory and timeout problems when rendering heavy sitemap pages with lots of posts.
- * Older archives that are unlikely to change can be served up faster since we're not building them on-demand.
-* Archive pages are rendered on-demand.
+## Installation
 
-### Sitemap Generation
+1. Upload the plugin folder to `/wp-content/plugins/` or install via the WordPress admin.
+2. Activate the plugin through the 'Plugins' menu in WordPress.
+3. (Optional) Visit **Tools > Sitemap** in the admin for stats and manual actions.
+4. Sitemaps will be generated automatically in the background.
 
-We want to generate the entire sitemap catalogue async to avoid running into timeout and memory issues.
+## Usage
 
-Here's how the default WP-Cron approach works:
+* Your sitemap index will be available at `/sitemap.xml` (e.g., `https://example.com/sitemap.xml`).
+* Sitemaps are generated in the background and updated as you publish new content.
+* The admin UI (Tools > Sitemap) provides stats and lets you manually trigger generation if needed.
 
-* Get year range for content.
-* Store these years in options table.
-* Kick off a cron event for the first year.
-* Calculate the months to process for that year and store in an option.
-* Kick off a cron event for the first month in the year we're processing.
-* Calculate the days to process for that year and store in an option.
-* Kick off a cron event for the first day in the month we're processing.
-* Generate the sitemap for that day.
-* Find the next day to process and repeat until we run out of days.
-* Move on to the next month and repeat.
-* Move on to next year when we run out of months.
+## Frequently Asked Questions
 
-The Comprehensive Sitemap plugin will only update the standard sitemap. The [news sitemap ](https://en.support.wordpress.com/sitemaps/#news-sitemaps) will only contain posts from the last two days, based on [Google’s guidelines](https://support.google.com/news/publisher/answer/74288?hl=en).
+### Why isn’t my custom post type included in the sitemap?
 
-## CLI Commands
+By default, only the `post` post type is included. To add custom post types (like `page`, `news`, or others), see the [Developer Guide](./DEVELOPERS.md).
 
-The plugin ships with a bunch of wp-cli commands to simplify sitemap creation:
+### How do I include posts with a custom status?
 
-```
-$ wp msm-sitemap
-usage: wp msm-sitemap generate-sitemap
-   or: wp msm-sitemap generate-sitemap-for-year
-   or: wp msm-sitemap generate-sitemap-for-year-month
-   or: wp msm-sitemap generate-sitemap-for-year-month-day
-   or: wp msm-sitemap recount-indexed-posts
+By default, only published posts are included. You can change this via a filter. See the [Developer Guide](./DEVELOPERS.md).
 
-See 'wp help msm-sitemap <command>' for more information on a specific command.
-```
+### How do I regenerate the sitemap?
 
-## Custom post types
+Sitemaps are generated automatically, but you can:
 
-Include custom post types in the generated sitemap with the `msm_sitemap_entry_post_type` filter.
+* Use the admin UI (**Tools > Sitemap**) to trigger a manual rebuild
+* Use WP-CLI commands (see below)
 
-## Generate Sitemap with posts of a custom status other than 'publish'
+### Does it work on multisite?
 
-By default, the sitemap will only fetch posts with the status of 'publish'. To change this, use the `msm_sitemap_post_status` filter.
+Yes! Each site in your network will have its own sitemaps. The plugin can be network-activated.
 
-```
-function example_filter_msm_sitemap_post_status( $post_status ) {
-    return 'my_custom_status';
-}
-add_filter( 'msm_sitemap_post_status', 'example_filter_msm_sitemap_post_status', 10, 1 );
-```
+### How do I exclude specific posts or dates?
 
-## Filtering Sitemap URLs
+You can filter which posts or dates appear in the sitemap using hooks—see the [Developer Guide](./DEVELOPERS.md).
 
-If you need to filter the URLs displayed in a sitemap created via the Comprehensive Sitemap plugin, there are two considerations. First, if you are filtering the individual sitemaps, which display the URLs to the articles published on a specific date, you can use the `msm_sitemap_entry` hook to filter the URLs. An example for a reverse-proxy situation is below:
+### Where is the sitemap stored?
 
-```
-function example_filter_msm_sitemap_entry( $url ) {
-    $location = str_replace( 'example.wordpress.com', 'example.com/blog', $url->loc );
-    $url->loc = $location;
-    return $url;
-}
-add_filter( 'msm_sitemap_entry', 'example_filter_msm_sitemap_entry', 10, 1 );
-```
+Sitemap XML is stored in a custom post type (`msm_sitemap`) and served on-demand for fast performance.
 
-Second, if you are filtering the root sitemap, which displays the URLs to the individual sitemaps by date, you will need to filter the `home_url` directly. There is no plugin-specific hook to filter the URLs on the root sitemap.
+### Can I customize the number of posts per sitemap?
 
+Yes, this is filterable. See the [Developer Guide](./DEVELOPERS.md).
 
-## Filter Sitemap Index
+## WP-CLI Commands
 
-Use the `msm_sitemap_index` filter to exclude daily sitemaps from the index based on date.
+Metro Sitemap provides several WP-CLI commands for advanced users:
 
-```
-add_filter( 'msm_sitemap_index', function( $sitemaps ) {
-    $reference_date = strtotime( '2017-09-09' );
+~~~shell
+$ wp msm-sitemap generate-sitemap
+$ wp msm-sitemap generate-sitemap-for-year --year=2024
+$ wp msm-sitemap generate-sitemap-for-year-month --year=2024 --month=7
+$ wp msm-sitemap generate-sitemap-for-year-month-day --year=2024 --month=7 --day=13
+$ wp msm-sitemap recount-indexed-posts
+~~~
 
-    return array_filter( $sitemaps, function ( $date ) use ( $reference_date ) {
-        return ( $reference_date < strtotime( $date ) );
-    } );
-} );
-```
+See `wp help msm-sitemap <command>` for details and options.
 
-## Customize the last modified posts query
+## Support
 
-Use the `msm_pre_get_last_modified_posts` filter to customize the query that gets the last modified posts.
+* [GitHub Issues](https://github.com/Automattic/msm-sitemap/issues) (for bug reports and feature requests)
+* [WordPress VIP Support](https://wpvip.com/wordpress-vip-enterprise-support/) (for WPVIP customers)
 
-On large sites, this filter could be leveraged to enhance query efficiency by avoiding scanning older posts that don't get updated frequently and making better use of the `type_status_date` index.
+## Credits
 
-```
-function ( $query, $post_types_in, $date ) {
-    global $wpdb;
+Metro Sitemap is a joint collaboration between Metro.co.uk, WordPress VIP, Alley Interactive, Maker Media, 10up, and others. Special thanks to all contributors.
 
-    $query = $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_status = 'publish' AND post_date >= DATE_SUB(NOW(), INTERVAL 3 MONTH) AND post_modified_gmt >= %s LIMIT 1000", $date );
+## Changelog
 
-    return $query;
-};
-```
+See [CHANGELOG.md](./CHANGELOG.md) for a full history of changes.
+
+## License
+
+GPLv2 or later. See [LICENSE](./LICENSE) for details.
+
+## Developer Documentation
+
+For advanced customization, see [DEVELOPERS.md](./DEVELOPERS.md).
