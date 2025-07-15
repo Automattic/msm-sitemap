@@ -124,6 +124,20 @@ class Metro_Sitemap {
 		wp_enqueue_style( 'noticons', '//s0.wordpress.com/i/noticons/noticons.css' );
 	}
 
+	/**
+	 * Retrieve sitemap counts and stats for AJAX/REST endpoints.
+	 *
+	 * @param int $num_days Number of days of stats to retrieve.
+	 * @return array
+	 */
+	public static function get_sitemap_counts_data( $num_days = 10 ) {
+		return array(
+			'total_indexed_urls'   => number_format( self::get_total_indexed_url_count() ),
+			'total_sitemaps'       => number_format( self::count_sitemaps() ),
+			'sitemap_indexed_urls' => self::get_recent_sitemap_url_counts( $num_days ),
+		);
+	}
+
 	public static function ajax_get_sitemap_counts() {
 		check_admin_referer( 'msm-sitemap-action' );
 
@@ -136,11 +150,7 @@ class Metro_Sitemap {
 			$n = intval( $_REQUEST['num_days'] );
 		}
 
-		$data = array(
-			'total_indexed_urls'   => number_format( Metro_Sitemap::get_total_indexed_url_count() ),
-			'total_sitemaps'       => number_format( Metro_Sitemap::count_sitemaps() ),
-			'sitemap_indexed_urls' => self::get_recent_sitemap_url_counts( $n ),
-		);
+		$data = self::get_sitemap_counts_data( $n );
 
 		wp_send_json( $data );
 	}
