@@ -1,10 +1,72 @@
 {
-    "name"       : "automattic/msm-sitemap",
-    "description": "Comprehensive sitemaps for your WordPress.com VIP site.",
-    "homepage"   : "https://vip.wordpress.com/plugins/msm-sitemap/",
-    "type"       : "wordpress-plugin",
-    "license"    : "GPL-2.0+",
-    "require"    : {
-        "composer/installers": "~1.0"
-    }
+	"name": "automattic/msm-sitemap",
+	"type": "wordpress-plugin",
+	"description": "Comprehensive sitemaps for your WordPress.com VIP site.",
+	"homepage": "https://github.com/Automattic/msm-sitemap/",
+	"license": "GPL-2.0-or-later",
+	"authors": [
+		{
+			"name": "Automattic",
+			"homepage": "https://automattic.com/"
+		}
+	],
+	"require": {
+		"php": ">=7.4",
+		"composer/installers": "~1.0"
+	},
+	"require-dev": {
+		"automattic/vipwpcs": "^2.2",
+		"dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+		"php-parallel-lint/php-parallel-lint": "^1.0",
+		"phpcompatibility/phpcompatibility-wp": "^2.1",
+		"phpunit/phpunit": "^9",
+		"squizlabs/php_codesniffer": "^3.5",
+		"wp-coding-standards/wpcs": "^2.3.0",
+		"yoast/wp-test-utils": "^1.2.0"
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"Automattic\\MSM_Sitemap\\Tests\\": "tests/"
+		}
+	},
+	"scripts": {
+		"coverage": [
+			"@php ./vendor/bin/phpunit --coverage-html ./.phpunit.cache/code-coverage-html"
+		],
+		"coverage-ci": [
+			"@php ./vendor/bin/phpunit"
+		],
+		"cbf": [
+			"@php ./vendor/bin/phpcbf"
+		],
+		"cs": [
+			"@php ./vendor/bin/phpcs"
+		],
+		"lint": [
+			"@php ./vendor/php-parallel-lint/php-parallel-lint/parallel-lint . -e php --exclude vendor --exclude .git"
+		],
+		"lint-ci": [
+			"@php ./vendor/php-parallel-lint/php-parallel-lint/parallel-lint . -e php --exclude vendor --exclude .git --checkstyle"
+		],
+		"prepare-ci": [
+			"bash bin/install-wp-tests.sh wordpress_test root root localhost"
+		],
+		"test": [
+			"@php ./vendor/bin/phpunit --testsuite WP_Tests --no-coverage"
+		],
+		"test-ms": [
+			"@putenv WP_MULTISITE=1",
+			"@composer test"
+		]
+	},
+	"support": {
+		"issues": "https://github.com/Automattic/msm-sitemap/issues",
+		"source": "https://github.com/Automattic/msm-sitemap"
+	},
+	"config": {
+		"allow-plugins": {
+			"composer/installers": true,
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	}
 }
