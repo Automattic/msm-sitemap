@@ -4,6 +4,58 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] – 2025-07-16
+
+Requires:
+
+* WordPress: 5.9 or later
+* PHP 7.4 or later
+
+### Added
+
+* Adding hook for custom post status with tests by @elysium001 in <https://github.com/Automattic/msm-sitemap/pull/176>
+* Adding custom hook for generated xml properties by @elysium001 in <https://github.com/Automattic/msm-sitemap/pull/177>
+* Add `msm_pre_get_last_modified_posts` filter by @rbcorrales in <https://github.com/Automattic/msm-sitemap/pull/178>
+* Allow the post year range to be short-circuited and also cached by @srtfisher in <https://github.com/Automattic/msm-sitemap/pull/195>
+* feat: Add filters for sitemap index XML customization by @GaryJones in <https://github.com/Automattic/msm-sitemap/pull/197>
+* feat: Enhance WP-CLI commands for Metro Sitemap by @GaryJones in <https://github.com/Automattic/msm-sitemap/pull/202>
+
+### Changed
+
+* Substitute cal_days_in_month by @david-binda in <https://github.com/Automattic/msm-sitemap/pull/130>
+* Disables WordPress 5.5 Sitemaps by @kraftbj in <https://github.com/Automattic/msm-sitemap/pull/160>
+* Convert boolean options to bool before strict comparison by @rickhurst in <https://github.com/Automattic/msm-sitemap/pull/164>
+* Update supported PHP version to 7.4 and WP 5.9 minimum by @mchanDev in <https://github.com/Automattic/msm-sitemap/pull/175>
+* Respect `WPCOM_SKIP_DEFAULT_SITEMAP` constant by @renatonascalves in <https://github.com/Automattic/msm-sitemap/pull/180>
+* Refresh tests, up minimum WP version by @GaryJones in <https://github.com/Automattic/msm-sitemap/pull/181>
+* Add Post ID to `msm_sitmap_skip_posts` by @BrookeDot in <https://github.com/Automattic/msm-sitemap/pull/184>
+
+### Fixed
+
+* If all posts were skipped, remove the sitemap post by @adamsilverstein in <https://github.com/Automattic/msm-sitemap/pull/122/>
+* Temporary workaround for sitemaps returning 404 by @vaurdan in <https://github.com/Automattic/msm-sitemap/pull/161>
+* PHP 8.1 date error by @mchanDev in <https://github.com/Automattic/msm-sitemap/pull/174>
+* Update `WP_CLI::line()` to `WP_CLI::log()` by @raamdev in <https://github.com/Automattic/msm-sitemap/pull/185>
+* Install SVN before checking out tests by @whyisjake in <https://github.com/Automattic/msm-sitemap/pull/186>
+* fix: i18n issues by @GaryJones in <https://github.com/Automattic/msm-sitemap/pull/194>
+* fix: Enhance tooltip for indexed URLs with pluralization support by @GaryJones in <https://github.com/Automattic/msm-sitemap/pull/196>
+* Add custom post permalink handling for msm_sitemap posts by @GaryJones in <https://github.com/Automattic/msm-sitemap/pull/201>
+
+### Maintenance
+
+* Setup GitHub actions by @trepmal in <https://github.com/Automattic/msm-sitemap/pull/166>
+* Update plugin headers for clarity by @GaryJones in <https://github.com/Automattic/msm-sitemap/pull/187>
+* test: Add testdox argument by @GaryJones in <https://github.com/Automattic/msm-sitemap/pull/190>
+* Refactor FunctionsTest for clarity and consistency by @GaryJones in <https://github.com/Automattic/msm-sitemap/pull/191>
+* test: Increase WP max version for tests by @GaryJones in <https://github.com/Automattic/msm-sitemap/pull/192>
+* test: Refactor test methods into TestCase by @GaryJones in <https://github.com/Automattic/msm-sitemap/pull/193>
+* Add lots of tests by @GaryJones in <https://github.com/Automattic/msm-sitemap/pull/198>
+
+### Documentation
+
+* Migrating plugin instructions from old VIP Docs site to plugin's `README.md` by @yolih in <https://github.com/Automattic/msm-sitemap/pull/172>
+* Update plugins, update tests by @mchanDev in <https://github.com/Automattic/msm-sitemap/pull/173>
+
 ## [1.4.2] – 2020-01-10
 
 ### Fixed
@@ -115,6 +167,7 @@ Initial release.
 
 * Enable stable Composer installations from origin.
 
+[1.5.0]: https://github.com/automattic/msm-sitemap/compare/1.4.2...1.5.0
 [1.4.2]: https://github.com/automattic/msm-sitemap/compare/1.4.1...1.4.2
 [1.4.1]: https://github.com/automattic/msm-sitemap/compare/1.4.0...1.4.1
 [1.4]: https://github.com/automattic/msm-sitemap/compare/1.3.0...1.4.0
