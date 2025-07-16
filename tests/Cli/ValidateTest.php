@@ -63,7 +63,7 @@ final class ValidateTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
      */
     public function test_validate_valid_sitemap(): void {
         $cli = new Metro_Sitemap_CLI();
-        $this->expectOutputRegex( '/1 sitemap valid/' );
+        $this->expectOutputRegex( '/1 valid sitemap/' );
         $cli->validate( [], [ 'all' => true ] );
     }
 
@@ -87,7 +87,7 @@ final class ValidateTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
     public function test_validate_invalid_xml(): void {
         $cli = new Metro_Sitemap_CLI();
         update_post_meta($this->post_id, 'msm_sitemap_xml', '<urlset><url><loc>broken');
-        $this->expectOutputRegex('/invalid XML|0 sitemaps valid/');
+        $this->expectOutputRegex('/invalid XML|0 valid sitemaps/');
         $cli->validate([], ['all' => true]);
     }
 
@@ -99,7 +99,7 @@ final class ValidateTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
     public function test_validate_empty_xml(): void {
         $cli = new Metro_Sitemap_CLI();
         update_post_meta($this->post_id, 'msm_sitemap_xml', '');
-        $this->expectOutputRegex('/no XML|0 sitemaps valid/');
+        $this->expectOutputRegex('/no XML|0 valid sitemaps/');
         $cli->validate([], ['all' => true]);
     }
 
@@ -111,7 +111,7 @@ final class ValidateTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
     public function test_validate_no_url_entries(): void {
         $cli = new Metro_Sitemap_CLI();
         update_post_meta($this->post_id, 'msm_sitemap_xml', '<urlset></urlset>');
-        $this->expectOutputRegex('/no <url> entries|0 sitemaps valid/');
+        $this->expectOutputRegex('/no <url> entries|0 valid sitemaps/');
         $cli->validate([], ['all' => true]);
     }
 
@@ -133,7 +133,7 @@ final class ValidateTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
         ]);
         $this->assertIsInt($post_id2);
         update_post_meta($post_id2, 'msm_sitemap_xml', '<urlset></urlset>');
-        $this->expectOutputRegex('/1 sitemap valid.*1 sitemap invalid|1 sitemap valid|1 sitemap invalid/s');
+        $this->expectOutputRegex('/1 valid sitemap.*1 invalid sitemap|1 valid sitemap|1 invalid sitemap/s');
         $cli->validate([], ['all' => true]);
         wp_delete_post($post_id2, true);
     }
