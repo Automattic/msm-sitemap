@@ -22,6 +22,7 @@
 
 if ( defined( 'WP_CLI' ) && true === WP_CLI ) {
 	require dirname( __FILE__ ) . '/includes/wp-cli.php';
+	WP_CLI::add_command( 'msm-sitemap', 'Metro_Sitemap_CLI' );
 }
 
 class Metro_Sitemap {
