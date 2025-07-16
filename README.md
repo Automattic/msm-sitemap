@@ -69,17 +69,42 @@ Yes, this is filterable. See the [Developer Guide](./DEVELOPERS.md).
 
 ## WP-CLI Commands
 
-Metro Sitemap provides several WP-CLI commands for advanced users:
+Metro Sitemap supports advanced management via WP-CLI. Here are the most common commands:
 
-~~~shell
-$ wp msm-sitemap generate-sitemap
-$ wp msm-sitemap generate-sitemap-for-year --year=2024
-$ wp msm-sitemap generate-sitemap-for-year-month --year=2024 --month=7
-$ wp msm-sitemap generate-sitemap-for-year-month-day --year=2024 --month=7 --day=13
-$ wp msm-sitemap recount-indexed-posts
-~~~
+- **generate**: Generate sitemaps for all or specific dates.
+  ```shell
+  wp msm-sitemap generate --all
+  ```
+- **delete**: Delete sitemaps for all or specific dates.
+  ```shell
+  wp msm-sitemap delete --date=2024-07
+  ```
+- **list**: List sitemaps.
+  ```shell
+  wp msm-sitemap list --format=json
+  ```
+- **get**: Get details for a sitemap by ID or date.
+  ```shell
+  wp msm-sitemap get 579
+  ```
+- **validate**: Validate sitemaps for all or specific dates.
+  ```shell
+  wp msm-sitemap validate --all
+  ```
+- **export**: Export sitemaps to a directory.
+  ```shell
+  wp msm-sitemap export --all --output=/tmp
+  ```
+- **recount**: Recalculate and update the indexed URL count for all sitemap posts.
+  ```shell
+  wp msm-sitemap recount
+  ```
+- **stats**: Show sitemap statistics (total, most recent, etc).
+  ```shell
+  wp msm-sitemap stats --format=table
+  ```
 
-See `wp help msm-sitemap <command>` for details and options.
+For the full list of commands, options, and legacy command mapping, see [DEVELOPERS.md](./DEVELOPERS.md).
 
 ## Support
 
