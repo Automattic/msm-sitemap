@@ -144,6 +144,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 			}
 		}
 		if ( ! $quiet ) {
+			/* translators: %d is the number of sitemaps generated. */
 			\WP_CLI::success( sprintf( _n( 'Generated %d sitemap.', 'Generated %d sitemaps.', $total_generated, 'msm-sitemap' ), $total_generated ) );
 		}
 	}
@@ -258,6 +259,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 
 		if ( ! $quiet ) {
 			if ( $deleted ) {
+				/* translators: %d is the number of sitemaps deleted. */
 				WP_CLI::success( sprintf( _n( 'Deleted %d sitemap.', 'Deleted %d sitemaps.', $deleted, 'msm-sitemap' ), $deleted ) );
 			} else {
 				WP_CLI::log( __( 'No sitemaps found to delete.', 'msm-sitemap' ) );
@@ -443,6 +445,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		foreach ( $posts as $post_id ) {
 			$xml = get_post_meta($post_id, 'msm_sitemap_xml', true);
 			if ( ! $xml ) {
+				/* translators: %d is the sitemap ID. */
 				WP_CLI::warning( sprintf( __( 'Sitemap %d has no XML.', 'msm-sitemap' ), $post_id ) );
 				$invalid_count++;
 				continue;
@@ -450,20 +453,24 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 			libxml_use_internal_errors(true);
 			$doc = simplexml_load_string($xml);
 			if ( $doc === false ) {
+				/* translators: %d is the sitemap ID. */
 				WP_CLI::warning( sprintf( __( 'Sitemap %d has invalid XML.', 'msm-sitemap' ), $post_id ) );
 				$invalid_count++;
 				continue;
 			}
 			if ( !isset($doc->url) || count($doc->url) < 1 ) {
+				/* translators: %d is the sitemap ID. */
 				WP_CLI::warning( sprintf( __( 'Sitemap %d has no <url> entries.', 'msm-sitemap' ), $post_id ) );
 				$invalid_count++;
 				continue;
 			}
 			$valid_count++;
 		}
-		WP_CLI::success( sprintf( _n( '%d sitemap valid.', '%d sitemaps valid.', $valid_count, 'msm-sitemap' ), $valid_count ) );
+		/* translators: %d is the number of valid sitemaps. */
+		WP_CLI::success( sprintf( _n( '%d valid sitemap.', '%d valid sitemaps.', $valid_count, 'msm-sitemap' ), $valid_count ) );
 		if ( $invalid_count ) {
-			WP_CLI::warning( sprintf( _n( '%d sitemap invalid.', '%d sitemaps invalid.', $invalid_count, 'msm-sitemap' ), $invalid_count ) );
+			/* translators: %d is the number of invalid sitemaps. */
+			WP_CLI::warning( sprintf( _n( '%d invalid sitemap.', '%d invalid sitemaps.', $invalid_count, 'msm-sitemap' ), $invalid_count ) );
 		}
 	}
 
@@ -499,6 +506,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		}
 		if ( ! is_dir( $abs_output ) ) {
 			if ( ! mkdir( $abs_output, 0777, true ) ) {
+				/* translators: %s is the path to the export directory. */
 				WP_CLI::error( sprintf( __( 'Failed to create export directory: %s', 'msm-sitemap' ), $abs_output ) );
 			}
 		}
@@ -535,6 +543,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 			$post = get_post($post_id);
 			$filename = rtrim($abs_output, '/').'/'.$post->post_name.'.xml';
 			if ( file_put_contents($filename, $xml) === false ) {
+				/* translators: %s is the path to the exported sitemap. */
 				WP_CLI::error( sprintf( __( 'Failed to write file: %s', 'msm-sitemap' ), $filename ) );
 			}
 			$count++;
@@ -542,14 +551,18 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		if ( $count ) {
 			$dir = realpath($abs_output);
 			if ( ! $dir ) { $dir = $abs_output; }
-			$message = sprintf( _n( 'Exported %d sitemap to %s.', 'Exported %d sitemaps to %s.', $count, 'msm-sitemap' ), $count, $dir );
+			/* translators: %1$d is the number of sitemaps exported, %2$s is the path to the exported sitemaps. */
+			$message = sprintf( _n( 'Exported %1$d sitemap to %2$s.', 'Exported %1$d sitemaps to %2$s.', $count, 'msm-sitemap' ), $count, $dir );
 			WP_CLI::success( $message );
 			$quoted_dir = '"' . $dir . '"';
 			if ( strtoupper(substr(PHP_OS, 0, 3)) === 'DAR' ) {
+				/* translators: %s is the path to the exported sitemaps. */
 				WP_CLI::log( sprintf( __( 'To view the files, run: open %s', 'msm-sitemap' ), $quoted_dir ) );
 			} elseif ( strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ) {
+				/* translators: %s is the path to the exported sitemaps. */
 				WP_CLI::log( sprintf( __( 'To view the files, run: start %s', 'msm-sitemap' ), $quoted_dir ) );
 			} else {
+				/* translators: %s is the path to the exported sitemaps. */
 				WP_CLI::log( sprintf( __( 'To view the files, run: xdg-open %s', 'msm-sitemap' ), $quoted_dir ) );
 			}
 		} else {
@@ -594,7 +607,9 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		}
 
 		update_option( 'msm_sitemap_indexed_url_count', $total_count, false );
+		/* translators: %s is the total number of URLs found. */
 		WP_CLI::log( sprintf( __( 'Total URLs found: %s', 'msm-sitemap' ), $total_count ) );
+		/* translators: %s is the total number of sitemaps found. */
 		WP_CLI::log( sprintf( __( 'Number of sitemaps found: %s', 'msm-sitemap' ), $sitemap_count ) );
 	}
 
