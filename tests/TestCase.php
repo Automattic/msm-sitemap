@@ -1,9 +1,11 @@
 <?php
 /**
- * MSM_SiteMap_Test
+ * MSM_SiteMap_Test.
  *
- * @package Metro_Sitemap/unit_tests
+ * @package Automattic\MSM_Sitemap\Tests
  */
+
+declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests;
 
@@ -15,9 +17,6 @@ use WP_Post;
 
 /**
  * A base class for MSM SiteMap Tests that exposes a few handy functions for test cases.
- *
- * @author michaelblouin
- * @author Matthew Denton (mdbitz)
  */
 abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 
@@ -40,7 +39,7 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 	 *
 	 * @var array $added_filters
 	 */
-	protected $added_filters = [];
+	protected $added_filters = array();
 
 	/**
 	 * Remove the sample posts, sitemap posts, and filters before each test.
@@ -53,11 +52,13 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 		$this->posts = array();
 
 		// Remove all sitemaps created for the test.
-		$sitemaps = get_posts( array(
-			'post_type' => Metro_Sitemap::SITEMAP_CPT,
-			'fields' => 'ids',
-			'posts_per_page' => -1,
-		) );
+		$sitemaps = get_posts(
+			array(
+				'post_type'      => Metro_Sitemap::SITEMAP_CPT,
+				'fields'         => 'ids',
+				'posts_per_page' => -1,
+			) 
+		);
 
 		// Reset the indexed URL count.
 		// update_option( 'msm_sitemap_indexed_url_count' , 0 );
@@ -70,7 +71,7 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 			remove_filter( $filter[0], $filter[1], $filter[2] );
 		}
 
-		$this->added_filters = [];
+		$this->added_filters = array();
 
 		parent::setUp();
 	}
@@ -89,22 +90,22 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 	 */
 	public function create_dummy_post( string $day, string $post_status = 'publish', string $post_type = 'post' ): int {
 		$post_data = array(
-				'post_title' => uniqid( '', true ),
-				'post_type' => $post_type,
-				'post_content' => uniqid( '', true ),
-				'post_status' => $post_status,
-				'post_author' => 1,
+			'post_title'   => uniqid( '', true ),
+			'post_type'    => $post_type,
+			'post_content' => uniqid( '', true ),
+			'post_status'  => $post_status,
+			'post_author'  => 1,
 		);
 
 		$post_data['post_date'] = $post_data['post_modified'] = date_format( new DateTime( $day ), 'Y-m-d H:i:s' );
-		$post_data['ID'] = wp_insert_post( $post_data, true );
+		$post_data['ID']        = wp_insert_post( $post_data, true );
 
 		if ( is_wp_error( $post_data['ID'] ) || 0 === $post_data['ID'] ) {
 			throw new Exception( "Error: WP Error encountered inserting post. {$post_data['ID']->errors}, {$post_data['ID']->error_data}" );
 		}
 
 		$this->posts_created[] = $post_data['ID'];
-		$this->posts[] = $post_data;
+		$this->posts[]         = $post_data;
 
 		return $post_data['ID'];
 	}
@@ -119,7 +120,6 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 	 * @throws Exception Unable to insert posts.
 	 */
 	public function create_dummy_posts( array $dates ): void {
-
 		foreach ( $dates as $day ) {
 			$this->create_dummy_post( $day );
 		}
@@ -131,7 +131,7 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 	 * @param int $months Number of months.
 	 */
 	public function add_a_post_for_a_day_x_months_ago( $months, $status = 'publish', $post_type = 'post' ): void {
-		$date = strtotime("-$months month");
+		$date    = strtotime( "-$months month" );
 		$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
 		$this->create_dummy_post( $cur_day, $status, $post_type );
 	}
@@ -142,7 +142,7 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 	 * @param int $years Number of years.
 	 */
 	public function add_a_post_for_a_day_x_years_ago( $years, $status = 'publish', $post_type = 'post' ): void {
-		$date = strtotime("-$years year");
+		$date    = strtotime( "-$years year" );
 		$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
 		$this->create_dummy_post( $cur_day, $status, $post_type );
 	}
@@ -165,7 +165,7 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 	 */
 	public function add_a_post_for_each_of_the_last_x_days_before_today( $days, $status = 'publish', $post_type = 'post' ): void {
 		for ( $i = 1; $i <= $days; $i++ ) {
-			$date = strtotime("-$i day");
+			$date    = strtotime( "-$i day" );
 			$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
 			$this->create_dummy_post( $cur_day, $status, $post_type );
 		}
@@ -192,7 +192,7 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 			$date = date_format( new DateTime( $post['post_date'] ), 'Y-m-d' );
 
 			if ( isset( $dates[ $date ] ) ) {
-				$dates[ $date ] ++;
+				++$dates[ $date ];
 			} else {
 				$dates[ $date ] = 1;
 			}
@@ -218,15 +218,21 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 	public function build_sitemaps(): void {
 		global $wpdb;
 		$post_types_in = $this->get_supported_post_types_in();
-		$posts = $wpdb->get_results( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) ORDER BY post_date LIMIT 1000" );
-		$dates = array();
+		$posts         = $wpdb->get_results( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) ORDER BY post_date LIMIT 1000" );
+		$dates         = array();
 		foreach ( $posts as $post ) {
 			$dates[] = date( 'Y-m-d', strtotime( $post->post_date ) );
 		}
-		foreach (array_unique( $dates ) as $date ) {
+		foreach ( array_unique( $dates ) as $date ) {
 			list( $year, $month, $day ) = explode( '-', $date );
 
-			MSM_Sitemap_Builder_Cron::generate_sitemap_for_year_month_day( array( 'year' => $year, 'month' => $month, 'day' => $day ) );
+			MSM_Sitemap_Builder_Cron::generate_sitemap_for_year_month_day(
+				array(
+					'year'  => $year,
+					'month' => $month,
+					'day'   => $day,
+				) 
+			);
 		}
 	}
 
@@ -238,7 +244,7 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 	public function get_supported_post_types_in(): string {
 		global $wpdb;
 
-		$post_types = Metro_Sitemap::get_supported_post_types();
+		$post_types          = Metro_Sitemap::get_supported_post_types();
 		$post_types_prepared = array();
 
 		foreach ( $post_types as $post_type ) {
@@ -254,21 +260,27 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 	 * @param WP_Post $post Post.
 	 */
 	public function update_sitemap_by_post( WP_Post $post ): void {
-		$date = date( 'Y-m-d', strtotime( $post->post_date ) );
+		$date                       = date( 'Y-m-d', strtotime( $post->post_date ) );
 		list( $year, $month, $day ) = explode( '-', $date );
-		MSM_Sitemap_Builder_Cron::generate_sitemap_for_year_month_day( array( 'year' => $year, 'month' => $month, 'day' => $day ) );
+		MSM_Sitemap_Builder_Cron::generate_sitemap_for_year_month_day(
+			array(
+				'year'  => $year,
+				'month' => $month,
+				'day'   => $day,
+			) 
+		);
 	}
 
 	/**
 	 * Add a filter for a test.
 	 *
-	 * @param string $tag The filter tag.
+	 * @param string   $tag The filter tag.
 	 * @param callable $callback The callback function.
-	 * @param int $priority The priority of the filter.
+	 * @param int      $priority The priority of the filter.
 	 */
-	protected function add_test_filter($tag, $callback, $priority = 10, $accepted_args = 1) {
-		add_filter($tag, $callback, $priority, $accepted_args);
-		$this->added_filters[] = [$tag, $callback, $priority];
+	protected function add_test_filter( $tag, $callback, $priority = 10, $accepted_args = 1 ) {
+		add_filter( $tag, $callback, $priority, $accepted_args );
+		$this->added_filters[] = array( $tag, $callback, $priority );
 	}
 
 	/**
@@ -277,13 +289,13 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 	 * @param string $execute Execute the hook.
 	 */
 	public function fake_cron( string $execute = 'run' ): void {
-		foreach (_get_cron_array() as $timestamp => $cron ) {
+		foreach ( _get_cron_array() as $timestamp => $cron ) {
 			foreach ( $cron as $hook => $arg_wrapper ) {
 				if ( strpos( $hook, 'msm' ) !== 0 ) {
 					continue; // only run our own jobs.
 				}
 				$arg_struct = array_pop( $arg_wrapper );
-				$args = $arg_struct['args'][0];
+				$args       = $arg_struct['args'][0];
 				wp_unschedule_event( $timestamp, $hook, $arg_struct['args'] );
 				if ( 'run' === $execute ) {
 					do_action( $hook, $args );
@@ -297,8 +309,8 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 	 *
 	 * @param int $expected The expected number of sitemaps.
 	 */
-	protected function assertSitemapCount($expected) {
-		$this->assertEquals($expected, wp_count_posts( Metro_Sitemap::SITEMAP_CPT )->publish );
+	protected function assertSitemapCount( $expected ) {
+		$this->assertEquals( $expected, wp_count_posts( Metro_Sitemap::SITEMAP_CPT )->publish );
 	}
 
 	/**
@@ -306,7 +318,7 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 	 *
 	 * @param int $expected The expected number of posts.
 	 */
-	protected function assertPostCount($expected) {
+	protected function assertPostCount( $expected ) {
 		$this->assertCount( $expected, $this->posts );
 	}
 

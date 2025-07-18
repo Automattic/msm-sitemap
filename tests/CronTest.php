@@ -5,15 +5,14 @@
  * @package Metro_Sitemap/unit_tests
  */
 
+declare( strict_types=1 );
+
 namespace Automattic\MSM_Sitemap\Tests;
 
-use Metro_Sitemap;
 use MSM_Sitemap_Builder_Cron;
 
 /**
  * Unit Tests to confirm Cron is populated as expected
- *
- * @author Matthew Denton (mdbitz)
  */
 class CronTest extends TestCase {
 
@@ -39,8 +38,7 @@ class CronTest extends TestCase {
 	/**
 	 * Validate that Cron Jobs are scheduled as expected.
 	 */
-	public function test_cron_jobs_scheduling(): void
-	{
+	public function test_cron_jobs_scheduling(): void {
 
 		// Reset Cron SitemapBuilder.
 		MSM_Sitemap_Builder_Cron::reset_sitemap_data();
@@ -51,10 +49,10 @@ class CronTest extends TestCase {
 		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
 
 		// Validate initial Options is set to years for Posts.
-		$expected_years = [
+		$expected_years = array(
 			date( 'Y' ),
 			date( 'Y', strtotime( '-1 year' ) ),
-		];
+		);
 
 		// Validate initial option values.
 		$this->assertSame( array_diff( $expected_years, $years_being_processed ), array_diff( $years_being_processed, $expected_years ), "Years Scheduled for Processing don't align with Posts." );
@@ -71,7 +69,7 @@ class CronTest extends TestCase {
 		// fake_cron.
 		$this->fake_cron();
 
-		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
+		$days_being_processed  = (array) get_option( 'msm_days_to_process', array() );
 		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
 
 		$expected_days = range( 1, date( 'j' ) );
@@ -89,9 +87,9 @@ class CronTest extends TestCase {
 		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
 
 		// Validate initial Options is set to years for Posts.
-		$expected_years = [
+		$expected_years = array(
 			date( 'Y', strtotime( '-1 year' ) ),
-		];
+		);
 
 		// Validate initial option values.
 		$this->assertSame( array_diff( $expected_years, $years_being_processed ), array_diff( $years_being_processed, $expected_years ), "Years Scheduled for Processing don't align when year finishes processing" );
@@ -111,8 +109,5 @@ class CronTest extends TestCase {
 		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
 
 		$this->assertGreaterThanOrEqual( 27, count( $days_being_processed ), 'New Month Processing should star at end of Month' );
-
 	}
-
-
 }

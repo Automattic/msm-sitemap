@@ -29,21 +29,23 @@ final class DeleteTest extends TestCase {
 	public function setUp(): void {
 		parent::setUp();
 
-		$dates = [
+		$dates = array(
 			'2024-07-10',
 			'2024-07-11',
 			'2024-08-01',
 			'2023-12-25',
-		];
+		);
 
 		foreach ( $dates as $date ) {
-			$post_id = wp_insert_post([
-				'post_type' => 'msm_sitemap',
-				'post_name' => $date,
-				'post_title' => $date,
-				'post_status' => 'publish',
-				'post_date' => $date . ' 00:00:00',
-			]);
+			$post_id = wp_insert_post(
+				array(
+					'post_type'   => 'msm_sitemap',
+					'post_name'   => $date,
+					'post_title'  => $date,
+					'post_status' => 'publish',
+					'post_date'   => $date . ' 00:00:00',
+				)
+			);
 			$this->assertIsInt( $post_id );
 		}
 	}
@@ -52,13 +54,15 @@ final class DeleteTest extends TestCase {
 	 * Tear down the test environment.
 	 */
 	public function tearDown(): void {
-		$posts = get_posts([
-			'post_type' => 'msm_sitemap',
-			'numberposts' => -1,
-			'post_status' => 'any',
-		]);
-		foreach ($posts as $post) {
-			wp_delete_post($post->ID, true);
+		$posts = get_posts(
+			array(
+				'post_type'   => 'msm_sitemap',
+				'numberposts' => -1,
+				'post_status' => 'any',
+			)
+		);
+		foreach ( $posts as $post ) {
+			wp_delete_post( $post->ID, true );
 		}
 
 		parent::tearDown();
@@ -71,8 +75,8 @@ final class DeleteTest extends TestCase {
 	 */
 	public function test_delete_requires_date_or_all(): void {
 		$cli = new Metro_Sitemap_CLI();
-		$this->expectException(\WP_CLI\ExitException::class);
-		$cli->delete([], []);
+		$this->expectException( \WP_CLI\ExitException::class );
+		$cli->delete( array(), array() );
 	}
 
 	/**
@@ -80,9 +84,9 @@ final class DeleteTest extends TestCase {
 	 */
 	public function test_delete_all_prompts_for_confirmation() {
 		$cli = new Metro_Sitemap_CLI();
-		$this->expectException(\WP_CLI_ConfirmationException::class);
-		$this->expectOutputRegex('/Are you sure you want to delete ALL sitemaps?/');
-		$cli->delete([], ['all' => true]);
+		$this->expectException( \WP_CLI_ConfirmationException::class );
+		$this->expectOutputRegex( '/Are you sure you want to delete ALL sitemaps?/' );
+		$cli->delete( array(), array( 'all' => true ) );
 	}
 	
 
@@ -91,9 +95,15 @@ final class DeleteTest extends TestCase {
 	 */
 	public function test_delete_all(): void {
 		$cli = new Metro_Sitemap_CLI();
-		$cli->delete([], ['all' => true, 'yes' => true]);
-		$this->expectOutputRegex('/Deleted [0-9]+ sitemap/');
-		$this->assertSitemapCount(0);
+		$cli->delete(
+			array(),
+			array(
+				'all' => true,
+				'yes' => true,
+			) 
+		);
+		$this->expectOutputRegex( '/Deleted [0-9]+ sitemap/' );
+		$this->assertSitemapCount( 0 );
 	}
 
 	/**
@@ -101,9 +111,15 @@ final class DeleteTest extends TestCase {
 	 */
 	public function test_delete_by_year(): void {
 		$cli = new Metro_Sitemap_CLI();
-		$cli->delete([], ['date' => '2024', 'yes' => true]);
-		$this->expectOutputRegex('/Deleted [0-9]+ sitemap/');
-		$this->assertSitemapCount(1);
+		$cli->delete(
+			array(),
+			array(
+				'date' => '2024',
+				'yes'  => true,
+			) 
+		);
+		$this->expectOutputRegex( '/Deleted [0-9]+ sitemap/' );
+		$this->assertSitemapCount( 1 );
 	}
 	
 	/**
@@ -111,9 +127,15 @@ final class DeleteTest extends TestCase {
 	 */
 	public function test_delete_by_year_month(): void {
 		$cli = new Metro_Sitemap_CLI();
-		$cli->delete([], ['date' => '2024-07', 'yes' => true]);
-		$this->expectOutputRegex('/Deleted [0-9]+ sitemap/');
-		$this->assertSitemapCount(2);
+		$cli->delete(
+			array(),
+			array(
+				'date' => '2024-07',
+				'yes'  => true,
+			) 
+		);
+		$this->expectOutputRegex( '/Deleted [0-9]+ sitemap/' );
+		$this->assertSitemapCount( 2 );
 	}
 	
 	/**
@@ -121,10 +143,16 @@ final class DeleteTest extends TestCase {
 	 */
 	public function test_delete_by_year_month_day(): void {
 		$cli = new Metro_Sitemap_CLI();
-		$cli->delete([], ['date' => '2024-07-10', 'yes' => true]);
-		$this->expectOutputRegex('/Deleted [0-9]+ sitemap/');
-		$this->assertSitemapCount(3);
-		$this->assertNull(get_page_by_path('2024-07-10', OBJECT, 'msm_sitemap'));
+		$cli->delete(
+			array(),
+			array(
+				'date' => '2024-07-10',
+				'yes'  => true,
+			) 
+		);
+		$this->expectOutputRegex( '/Deleted [0-9]+ sitemap/' );
+		$this->assertSitemapCount( 3 );
+		$this->assertNull( get_page_by_path( '2024-07-10', OBJECT, 'msm_sitemap' ) );
 	}
 	
 	/**
@@ -134,9 +162,16 @@ final class DeleteTest extends TestCase {
 		$cli = new Metro_Sitemap_CLI();
 
 		ob_start();
-		$cli->delete([], ['date' => '2023-12-25', 'quiet' => true, 'yes' => true]);
+		$cli->delete(
+			array(),
+			array(
+				'date'  => '2023-12-25',
+				'quiet' => true,
+				'yes'   => true,
+			) 
+		);
 		$output = ob_get_clean();
-		$this->assertSame('', $output, 'Output should be empty with --quiet');
+		$this->assertSame( '', $output, 'Output should be empty with --quiet' );
 	}
 	
 	/**
@@ -145,8 +180,14 @@ final class DeleteTest extends TestCase {
 	public function test_delete_invalid_date(): void {
 		$cli = new Metro_Sitemap_CLI();
 
-		$this->expectException(\Exception::class);
-		$cli->delete([], ['date' => '2024-13-01', 'yes' => true]); // Invalid month
+		$this->expectException( \Exception::class );
+		$cli->delete(
+			array(),
+			array(
+				'date' => '2024-13-01',
+				'yes'  => true,
+			) 
+		); // Invalid month
 	}
 
 	/**
@@ -154,9 +195,15 @@ final class DeleteTest extends TestCase {
 	 */
 	public function test_delete_no_sitemaps_found(): void {
 		$cli = new Metro_Sitemap_CLI();
-		$cli->delete([], ['date' => '2022-01-01', 'yes' => true]);
-		$this->expectOutputRegex('/No sitemaps found to delete/');
-		$this->assertSitemapCount(4);
+		$cli->delete(
+			array(),
+			array(
+				'date' => '2022-01-01',
+				'yes'  => true,
+			) 
+		);
+		$this->expectOutputRegex( '/No sitemaps found to delete/' );
+		$this->assertSitemapCount( 4 );
 	}
 
 	/**
@@ -164,17 +211,25 @@ final class DeleteTest extends TestCase {
 	 */
 	public function test_delete_date_multiple() {
 		// Create extra sitemap for 2024-07-10
-		wp_insert_post([
-			'post_type' => 'msm_sitemap',
-			'post_name' => '2024-07-10', // WP will change this to 2024-07-1.
-			'post_title' => '2024-07-10',
-			'post_status' => 'publish',
-			'post_date' => '2024-07-10 00:00:00',
-		]);
+		wp_insert_post(
+			array(
+				'post_type'   => 'msm_sitemap',
+				'post_name'   => '2024-07-10', // WP will change this to 2024-07-10-2.
+				'post_title'  => '2024-07-10',
+				'post_status' => 'publish',
+				'post_date'   => '2024-07-10 00:00:00',
+			)
+		);
 
 		$cli = new Metro_Sitemap_CLI();
-		$cli->delete([], ['date' => '2024-07-10', 'yes' => true]);
-		$this->expectOutputRegex('/Deleted [0-9]+ sitemap/');
-		$this->assertSitemapCount(3); // Original 4 plus 1, minus the two with the same post_date we deleted
+		$cli->delete(
+			array(),
+			array(
+				'date' => '2024-07-10',
+				'yes'  => true,
+			) 
+		);
+		$this->expectOutputRegex( '/Deleted [0-9]+ sitemap/' );
+		$this->assertSitemapCount( 3 ); // Original 4 plus 1, minus the two with the same post_date we deleted
 	}
 } 
