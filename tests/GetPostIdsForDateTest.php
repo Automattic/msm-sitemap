@@ -5,11 +5,16 @@
  * @package Metro_Sitemap/unit_tests
  */
 
+declare( strict_types=1 );
+
 namespace Automattic\MSM_Sitemap\Tests;
 
 use Metro_Sitemap;
 use Automattic\MSM_Sitemap\Tests\Includes\CustomPostStatusTestTrait;
 
+/**
+ * Tests for Metro_Sitemap::get_post_ids_for_date edge cases.
+ */
 class GetPostIdsForDateTest extends TestCase {
 
 	use CustomPostStatusTestTrait;

@@ -3,16 +3,23 @@
  * Tests for Metro_Sitemap::generate_sitemap_for_date, delete_sitemap_for_date, and multi-day sitemap creation.
  *
  * @package Metro_Sitemap/unit_tests
- * @authors: michaelblouin, Matthew Denton (mdbitz), and contributors
  */
+
+declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests;
 
 use Metro_Sitemap;
 use WP_Post;
 
+/**
+ * Tests for Metro_Sitemap::generate_sitemap_for_date, delete_sitemap_for_date, and multi-day sitemap creation.
+ */
 class GenerateSitemapTest extends TestCase {
 
+	/**
+	 * Test that generate_sitemap_for_date creates a sitemap post with the correct URL.
+	 */
 	public function test_generate_sitemap_for_date_with_posts_creates_sitemap_post(): void {
 		$date = '2018-01-01';
 		$this->create_dummy_post( $date . ' 00:00:00', 'publish' );
@@ -26,6 +33,9 @@ class GenerateSitemapTest extends TestCase {
 		$this->assertEquals( 1, (int) $count );
 	}
 
+	/**
+	 * Test that generate_sitemap_for_date does not create a sitemap post if there are no posts.
+	 */
 	public function test_generate_sitemap_for_date_with_no_posts_does_not_create_sitemap_post(): void {
 		$date = '2018-01-02';
 		Metro_Sitemap::generate_sitemap_for_date( $date );
@@ -33,6 +43,9 @@ class GenerateSitemapTest extends TestCase {
 		$this->assertFalse( $sitemap_id );
 	}
 
+	/**
+	 * Test that delete_sitemap_for_date removes the sitemap post and updates the count.
+	 */
 	public function test_delete_sitemap_for_date_removes_post_and_updates_count(): void {
 		$date = '2018-01-03';
 		$this->create_dummy_post( $date . ' 00:00:00', 'publish' );
@@ -44,6 +57,9 @@ class GenerateSitemapTest extends TestCase {
 		$this->assertFalse( $sitemap_id2 );
 	}
 
+	/**
+	 * Test that generate_sitemap_for_date, delete_sitemap_for_date, and regenerate_sitemap_for_date work as expected.
+	 */
 	public function test_generate_delete_regenerate_sitemap_for_date(): void {
 		$date = '2018-01-04';
 		$this->create_dummy_post( $date . ' 00:00:00', 'publish' );
@@ -60,6 +76,9 @@ class GenerateSitemapTest extends TestCase {
 		$this->assertNotFalse( $sitemap_id3 );
 	}
 
+	/**
+	 * Test that generate_sitemap_for_date does not create a sitemap post if all posts are skipped by filter.
+	 */
 	public function test_generate_sitemap_for_date_all_posts_skipped_by_filter(): void {
 		$date = '2018-01-05';
 		$this->create_dummy_post( $date . ' 00:00:00', 'publish' );
@@ -70,6 +89,9 @@ class GenerateSitemapTest extends TestCase {
 		remove_all_filters( 'msm_sitemap_skip_post' );
 	}
 
+	/**
+	 * Test that generate_sitemap_for_date updates when posts change.
+	 */
 	public function test_generate_sitemap_for_date_updates_when_posts_change(): void {
 		$date = '2018-01-06';
 		$this->create_dummy_post( $date . ' 00:00:00', 'publish' );

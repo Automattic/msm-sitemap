@@ -1,7 +1,13 @@
 <?php
 /**
  * Metro Sitemap CLI
+ *
+ * @package Automattic\MSM_Sitemap
  */
+
+declare(strict_types=1);
+
+// namespace Automattic\MSM_Sitemap;
 
 use function WP_CLI\Utils\format_items;
 

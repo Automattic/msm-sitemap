@@ -36,7 +36,11 @@
 	<!-- Rules: WordPress Coding Standards - see
 		https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards -->
 	<!-- WordPress-Extra includes WordPress-Core -->
-	<rule ref="WordPress-Extra"/>
+	<rule ref="WordPress-Extra">
+		<exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
+		<exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+	</rule>
+
 	<rule ref="WordPress-Docs"/>
 	<!-- For help in understanding these custom sniff properties:
 		https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/wiki/Customizable-sniff-properties -->
@@ -50,6 +54,7 @@
 		<properties>
 			<property name="prefixes" type="array">
 				<element value="msm"/>
+				<element value="Automattic\MSM_Sitemap"/>
 			</property>
 		</properties>
 	</rule>

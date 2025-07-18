@@ -1,4 +1,11 @@
 <?php
+/**
+ * Mock WP-CLI classes for testing.
+ *
+ * @package Automattic\MSM_Sitemap\Tests\Includes
+ */
+
+declare( strict_types=1 );
 
 namespace WP_CLI {
 	// Define WP_CLI\ExitException if not already defined

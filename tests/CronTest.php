@@ -5,15 +5,14 @@
  * @package Metro_Sitemap/unit_tests
  */
 
+declare( strict_types=1 );
+
 namespace Automattic\MSM_Sitemap\Tests;
 
-use Metro_Sitemap;
 use MSM_Sitemap_Builder_Cron;
 
 /**
  * Unit Tests to confirm Cron is populated as expected
- *
- * @author Matthew Denton (mdbitz)
  */
 class CronTest extends TestCase {
 

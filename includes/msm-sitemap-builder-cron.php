@@ -1,5 +1,17 @@
 <?php
+/**
+ * Sitemap builder cron handler.
+ *
+ * @package Automattic\MSM_Sitemap
+ */
 
+declare(strict_types=1);
+
+// namespace Automattic\MSM_Sitemap;
+
+/**
+ * Sitemap builder cron handler.
+ */
 class MSM_Sitemap_Builder_Cron {
 
 	public static function setup() {

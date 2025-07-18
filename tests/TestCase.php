@@ -1,9 +1,11 @@
 <?php
 /**
- * MSM_SiteMap_Test
+ * MSM_SiteMap_Test.
  *
- * @package Metro_Sitemap/unit_tests
+ * @package Automattic\MSM_Sitemap\Tests
  */
+
+declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests;
 
@@ -15,9 +17,6 @@ use WP_Post;
 
 /**
  * A base class for MSM SiteMap Tests that exposes a few handy functions for test cases.
- *
- * @author michaelblouin
- * @author Matthew Denton (mdbitz)
  */
 abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 

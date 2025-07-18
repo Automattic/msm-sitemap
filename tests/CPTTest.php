@@ -5,14 +5,12 @@
  * @package Metro_Sitemap/unit_tests
  */
 
+declare( strict_types=1 );
+
 namespace Automattic\MSM_Sitemap\Tests;
 
-use Metro_Sitemap;
-
 /**
- * Unit Tests to confirm Sitemaps are properly handled for Custom Post Types
- *
- * @author Matthew Denton (mdbitz)
+ * Unit Tests to confirm Sitemaps are properly handled for Custom Post Types.
  */
 class CPTTest extends TestCase {
 

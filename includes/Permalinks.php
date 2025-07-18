@@ -1,16 +1,20 @@
 <?php
 /**
- * Permalinks handler for msm_sitemap posts.
+ * Permalinks handler
  *
- * Ensures that get_permalink() and related tooling return the correct public-facing URL for each sitemap.
- * Handles both daily and year-based index URLs.
- *
- * @see https://github.com/Automattic/msm-sitemap/issues/170
+ * @package Automattic\MSM_Sitemap
  */
+
 declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap;
 
+/**
+ * Permalinks handler for msm_sitemap posts.
+ *
+ * Ensures that get_permalink() and related tooling return the correct public-facing URL for each sitemap.
+ * Handles both daily and year-based index URLs.
+ */
 class Permalinks {
 	/**
 	 * Register the permalink filter.
@@ -27,11 +31,11 @@ class Permalinks {
 	 * @return string The corrected sitemap URL.
 	 */
 	public static function filter_post_type_link( string $permalink, \WP_Post $post ): string {
-		if ( $post->post_type !== 'msm_sitemap' ) {
+		if ( 'msm_sitemap' !== $post->post_type ) {
 			return $permalink;
 		}
 		
-		$date = $post->post_name; // e.g., '2022-11-11' or '2022'
+		$date = $post->post_name; // e.g., '2022-11-11' or '2022'.
 		
 		// Check if we should index by year (via filter).
 		$index_by_year = apply_filters( 'msm_sitemap_index_by_year', false );

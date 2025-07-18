@@ -5,15 +5,15 @@
  * @package Metro_Sitemap/unit_tests
  */
 
+declare( strict_types=1 );
+
 namespace Automattic\MSM_Sitemap\Tests;
 
 use Metro_Sitemap;
 use WP_Query;
 
 /**
- * Unit Tests to validate Filters applied when generating Sitemaps
- *
- * @author Matthew Denton (mdbitz)
+ * Unit Tests to validate Filters applied when generating Sitemaps.
  */
 class FiltersTest extends TestCase {
 
