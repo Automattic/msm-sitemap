@@ -21,7 +21,7 @@
  */
 
 if ( defined( 'WP_CLI' ) && true === WP_CLI ) {
-	require dirname( __FILE__ ) . '/includes/wp-cli.php';
+	require __DIR__ . '/includes/wp-cli.php';
 	WP_CLI::add_command( 'msm-sitemap', 'Metro_Sitemap_CLI' );
 }
 
@@ -58,7 +58,7 @@ class Metro_Sitemap {
 		// By default, we use wp-cron to help generate the full sitemap.
 		// However, this will let us override it, if necessary, like on WP.com
 		if ( true === apply_filters( 'msm_sitemap_use_cron_builder', true ) ) {
-			require dirname( __FILE__ ) . '/includes/msm-sitemap-builder-cron.php';
+			require __DIR__ . '/includes/msm-sitemap-builder-cron.php';
 			MSM_Sitemap_Builder_Cron::setup();
 		}
 	}
@@ -785,7 +785,7 @@ class Metro_Sitemap {
 	 */
 	public static function load_sitemap_template( $template ) {
 		if ( get_query_var( 'sitemap' ) === 'true' ) {
-			$template = dirname( __FILE__ ) . '/templates/full-sitemaps.php';
+			$template = __DIR__ . '/templates/full-sitemaps.php';
 		}
 		return $template;
 	}

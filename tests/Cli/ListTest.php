@@ -236,5 +236,4 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 
 		$this->assertStringContainsString( 'No sitemaps found', $output );
 	}
-
 } 

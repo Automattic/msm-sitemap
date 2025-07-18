@@ -66,4 +66,3 @@ class IndexesTest extends TestCase {
 		$this->assertCount( 3, $matches[0] );
 	}
 }
-

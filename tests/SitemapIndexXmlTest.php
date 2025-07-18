@@ -57,7 +57,7 @@ class SitemapIndexXmlTest extends TestCase {
 		Metro_Sitemap::generate_sitemap_for_date( $date );
 		add_filter(
 			'msm_sitemap_index',
-			function( $sitemaps ) {
+			function ( $sitemaps ) {
 				return array_reverse( $sitemaps );
 			},
 			10,
@@ -65,7 +65,7 @@ class SitemapIndexXmlTest extends TestCase {
 		);
 		add_filter(
 			'msm_sitemap_index_appended_xml',
-			function( $appended, $year, $sitemaps ) {
+			function ( $appended, $year, $sitemaps ) {
 				return '<!-- appended -->';
 			},
 			10,
@@ -73,7 +73,7 @@ class SitemapIndexXmlTest extends TestCase {
 		);
 		add_filter(
 			'msm_sitemap_index_xml',
-			function( $xml, $year, $sitemaps ) {
+			function ( $xml, $year, $sitemaps ) {
 				return str_replace( '<sitemapindex', '<sitemapindex test="1"', $xml );
 			},
 			10,

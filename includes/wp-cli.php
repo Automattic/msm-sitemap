@@ -77,7 +77,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 						\Metro_Sitemap::generate_sitemap_for_date( $date_stamp, $force );
 						$sitemap_id_after = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
 						if ( ( $force && $sitemap_id_after ) || ( ! $sitemap_id_before && $sitemap_id_after ) ) {
-							$total_generated++;
+							++$total_generated;
 						} elseif ( ! \Metro_Sitemap::date_range_has_posts( $date_stamp, $date_stamp ) ) {
 							\Metro_Sitemap::delete_sitemap_for_date( $date_stamp );
 						}
@@ -98,7 +98,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 					\Metro_Sitemap::generate_sitemap_for_date( $date_stamp, $force );
 					$sitemap_id_after = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
 					if ( ( $force && $sitemap_id_after ) || ( ! $sitemap_id_before && $sitemap_id_after ) ) {
-						$total_generated++;
+						++$total_generated;
 					} elseif ( ! \Metro_Sitemap::date_range_has_posts( $date_stamp, $date_stamp ) ) {
 						\Metro_Sitemap::delete_sitemap_for_date( $date_stamp );
 					}
@@ -119,7 +119,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 						\Metro_Sitemap::generate_sitemap_for_date( $date_stamp, $force );
 						$sitemap_id_after = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
 						if ( ( $force && $sitemap_id_after ) || ( ! $sitemap_id_before && $sitemap_id_after ) ) {
-							$total_generated++;
+							++$total_generated;
 						} elseif ( ! \Metro_Sitemap::date_range_has_posts( $date_stamp, $date_stamp ) ) {
 							\Metro_Sitemap::delete_sitemap_for_date( $date_stamp );
 						}
@@ -142,7 +142,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 							\Metro_Sitemap::generate_sitemap_for_date( $date_stamp, $force );
 							$sitemap_id_after = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
 							if ( ( $force && $sitemap_id_after ) || ( ! $sitemap_id_before && $sitemap_id_after ) ) {
-								$total_generated++;
+								++$total_generated;
 							} elseif ( ! \Metro_Sitemap::date_range_has_posts( $date_stamp, $date_stamp ) ) {
 								\Metro_Sitemap::delete_sitemap_for_date( $date_stamp );
 							}
@@ -266,7 +266,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 
 		foreach ( $to_delete as $post_id ) {
 			wp_delete_post( $post_id, true );
-			$deleted++;
+			++$deleted;
 		}
 
 		if ( ! $quiet ) {
@@ -459,7 +459,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 			if ( ! $xml ) {
 				/* translators: %d is the sitemap ID. */
 				WP_CLI::warning( sprintf( __( 'Sitemap %d has no XML.', 'msm-sitemap' ), $post_id ) );
-				$invalid_count++;
+				++$invalid_count;
 				continue;
 			}
 			libxml_use_internal_errors( true );
@@ -467,16 +467,16 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 			if ( $doc === false ) {
 				/* translators: %d is the sitemap ID. */
 				WP_CLI::warning( sprintf( __( 'Sitemap %d has invalid XML.', 'msm-sitemap' ), $post_id ) );
-				$invalid_count++;
+				++$invalid_count;
 				continue;
 			}
 			if ( ! isset( $doc->url ) || count( $doc->url ) < 1 ) {
 				/* translators: %d is the sitemap ID. */
 				WP_CLI::warning( sprintf( __( 'Sitemap %d has no <url> entries.', 'msm-sitemap' ), $post_id ) );
-				$invalid_count++;
+				++$invalid_count;
 				continue;
 			}
-			$valid_count++;
+			++$valid_count;
 		}
 		/* translators: %d is the number of valid sitemaps. */
 		WP_CLI::success( sprintf( _n( '%d valid sitemap.', '%d valid sitemaps.', $valid_count, 'msm-sitemap' ), $valid_count ) );
@@ -560,7 +560,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 				/* translators: %s is the path to the exported sitemap. */
 				WP_CLI::error( sprintf( __( 'Failed to write file: %s', 'msm-sitemap' ), $filename ) );
 			}
-			$count++;
+			++$count;
 		}
 		if ( $count ) {
 			$dir = realpath( $abs_output );

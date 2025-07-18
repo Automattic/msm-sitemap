@@ -56,7 +56,7 @@ class FiltersTest extends TestCase {
 
 		add_filter(
 			'msm_sitemap_index',
-			function() use ( &$ran ) {
+			function () use ( &$ran ) {
 				$ran = true;
 				return array();
 			} 
@@ -72,7 +72,7 @@ class FiltersTest extends TestCase {
 	public function test_pre_get_post_year_range_filter_short_circuits(): void {
 		add_filter(
 			'msm_sitemap_pre_get_post_year_range',
-			function() {
+			function () {
 				return array( 2000, 2001, 2002 );
 			} 
 		);
@@ -95,7 +95,7 @@ class FiltersTest extends TestCase {
 
 		add_filter(
 			'msm_sitemap_index_appended_xml',
-			function( $appended_xml, $year, $sitemaps ) use ( $append_xml, &$called_args ) {
+			function ( $appended_xml, $year, $sitemaps ) use ( $append_xml, &$called_args ) {
 				$called_args = array( $appended_xml, $year, $sitemaps );
 				return $append_xml;
 			},
@@ -127,7 +127,7 @@ class FiltersTest extends TestCase {
 
 		add_filter(
 			'msm_sitemap_index_xml',
-			function( $xml_string, $year, $sitemaps ) use ( $replacement_xml, &$called_args ) {
+			function ( $xml_string, $year, $sitemaps ) use ( $replacement_xml, &$called_args ) {
 				$called_args = array( $xml_string, $year, $sitemaps );
 				return $replacement_xml;
 			},
@@ -146,4 +146,3 @@ class FiltersTest extends TestCase {
 		remove_all_filters( 'msm_sitemap_index_xml' );
 	}
 }
-

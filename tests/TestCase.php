@@ -192,7 +192,7 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 			$date = date_format( new DateTime( $post['post_date'] ), 'Y-m-d' );
 
 			if ( isset( $dates[ $date ] ) ) {
-				$dates[ $date ] ++;
+				++$dates[ $date ];
 			} else {
 				$dates[ $date ] = 1;
 			}

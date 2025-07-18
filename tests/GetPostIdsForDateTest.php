@@ -65,7 +65,7 @@ class GetPostIdsForDateTest extends TestCase {
 
 		$created_post_ids = array();
 		// 20 for 2016-10-02.
-		for ( $i = 0; $i < 20; $i ++ ) {
+		for ( $i = 0; $i < 20; $i++ ) {
 			$hour = $i < 10 ? '0' . $i : $i;
 			if ( '2016-10-02' === $sitemap_date ) {
 				$created_post_ids[] = $this->create_dummy_post( '2016-10-02 ' . $hour . ':00:00' );
@@ -95,7 +95,7 @@ class GetPostIdsForDateTest extends TestCase {
 
 		$created_post_ids = array();
 		// 20 for 2016-10-02.
-		for ( $i = 0; $i < 20; $i ++ ) {
+		for ( $i = 0; $i < 20; $i++ ) {
 			$hour = $i < 10 ? '0' . $i : $i;
 			if ( '2016-10-02' === $sitemap_date ) {
 				$created_post_ids[] = $this->create_dummy_post( '2016-10-02 ' . $hour . ':00:00', 'live' );
@@ -184,7 +184,7 @@ class GetPostIdsForDateTest extends TestCase {
 		// Exclude all posts by filtering to a non-existent post type
 		add_filter(
 			'msm_sitemap_entry_post_type',
-			function() {
+			function () {
 				return array( 'nonexistent_type' );
 			} 
 		);
@@ -193,7 +193,7 @@ class GetPostIdsForDateTest extends TestCase {
 		if ( count( $post_ids ) !== 0 ) {
 			$posts    = array_map( 'get_post', $post_ids );
 			$statuses = array_map(
-				function( $p ) {
+				function ( $p ) {
 					return $p->post_status;
 				},
 				$posts 

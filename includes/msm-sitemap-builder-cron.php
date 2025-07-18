@@ -402,5 +402,4 @@ class MSM_Sitemap_Builder_Cron {
 			delete_option( 'msm_sitemap_create_in_progress' );
 		}
 	}
-
 }

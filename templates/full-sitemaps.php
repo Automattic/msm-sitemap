@@ -33,4 +33,3 @@ if ( $build_xml === false ) {
 }
 header( 'Content-type: application/xml; charset=UTF-8' );
 echo $build_xml;
-

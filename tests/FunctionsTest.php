@@ -251,7 +251,7 @@ class FunctionsTest extends TestCase {
 
 		$this->add_test_filter(
 			'msm_sitemap_post_status',
-			function() {
+			function () {
 				return 'bad_status';
 			} 
 		);

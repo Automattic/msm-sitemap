@@ -88,4 +88,3 @@ class StatsTest extends TestCase {
 		$this->assertIndexedUrlCount( 0 );
 	}
 }
-

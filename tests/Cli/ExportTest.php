@@ -197,5 +197,4 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$this->expectOutputRegex( '/Exported [0-9]+ sitemap.*' . preg_quote( $this->exportDir, '/' ) . '/s' );
 		$cli->export( array(), array( 'output' => $this->exportDir ) );
 	}
-
 } 

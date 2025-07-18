@@ -97,5 +97,4 @@ class CPTTest extends TestCase {
 		$cpts[] = self::TEST_CPT;
 		return $cpts;
 	}
-
 }

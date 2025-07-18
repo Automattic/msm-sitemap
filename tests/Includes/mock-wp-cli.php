@@ -100,4 +100,3 @@ namespace WP_CLI\Utils {
 		echo $out;
 	}
 }
-

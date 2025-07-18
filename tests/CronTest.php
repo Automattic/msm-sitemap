@@ -110,6 +110,4 @@ class CronTest extends TestCase {
 
 		$this->assertGreaterThanOrEqual( 27, count( $days_being_processed ), 'New Month Processing should star at end of Month' );
 	}
-
-
 }

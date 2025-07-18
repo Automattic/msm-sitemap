@@ -207,7 +207,7 @@ class DateRangeHasPostsTest extends TestCase {
 	public function test_date_range_has_posts_all_posts_excluded_by_filter(): void {
 		add_filter(
 			'msm_sitemap_entry_post_type',
-			function() {
+			function () {
 				return array( 'nonexistent_type' );
 			} 
 		);
