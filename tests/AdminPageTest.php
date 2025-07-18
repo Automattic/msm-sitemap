@@ -16,8 +16,8 @@ class AdminPageTest extends TestCase {
 	public function setUp(): void {
 		parent::setUp();
 		// Create admin and non-admin users
-		$this->admin_id = $this->factory->user->create(['role' => 'administrator']);
-		$this->editor_id = $this->factory->user->create(['role' => 'editor']);
+		$this->admin_id  = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		$this->editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
 	}
 
 	public function test_admin_page_loads_for_admin() {
@@ -46,7 +46,7 @@ class AdminPageTest extends TestCase {
 		global $plugin_page;
 		update_option( 'blog_public', 0 );
 		wp_set_current_user( $this->admin_id );
-  		$plugin_page = 'metro-sitemap';
+		$plugin_page = 'metro-sitemap';
 		ob_start();
 		Metro_Sitemap::render_sitemap_options_page();
 		$output = ob_get_clean();

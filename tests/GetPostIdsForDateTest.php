@@ -21,26 +21,26 @@ class GetPostIdsForDateTest extends TestCase {
 	 */
 	public function post_ids_for_date_data_provider(): iterable {
 		yield 'no posts' => array(
-			'sitemap_date' => '2016-10-01',
-			'limit' => 500,
+			'sitemap_date'   => '2016-10-01',
+			'limit'          => 500,
 			'expected_count' => 0,
 		);
 
 		yield 'multiple posts for date' => array(
-			'sitemap_date' => '2016-10-02',
-			'limit' => 500,
+			'sitemap_date'   => '2016-10-02',
+			'limit'          => 500,
 			'expected_count' => 20,
 		);
 
 		yield 'multiple posts for date, but get limited number' => array(
-			'sitemap_date' => '2016-10-02',
-			'limit' => 10,
+			'sitemap_date'   => '2016-10-02',
+			'limit'          => 10,
 			'expected_count' => 10,
 		);
 
 		yield 'no published posts' => array(
-			'sitemap_date' => '2016-10-03',
-			'limit' => 500,
+			'sitemap_date'   => '2016-10-03',
+			'limit'          => 500,
 			'expected_count' => 0,
 		);
 	}
@@ -51,8 +51,8 @@ class GetPostIdsForDateTest extends TestCase {
 	 * @dataProvider post_ids_for_date_data_provider
 	 *
 	 * @param string $sitemap_date Date in Y-M-D format.
-	 * @param int $limit max number of posts to return.
-	 * @param int $expected_count Number of posts expected to be returned.
+	 * @param int    $limit max number of posts to return.
+	 * @param int    $expected_count Number of posts expected to be returned.
 	 */
 	public function test_get_post_ids_for_date( string $sitemap_date, int $limit, int $expected_count ): void {
 		// 1 for 2016-10-03 in "draft" status.
@@ -68,7 +68,7 @@ class GetPostIdsForDateTest extends TestCase {
 		}
 
 		$post_ids = Metro_Sitemap::get_post_ids_for_date( $sitemap_date, $limit );
-		$this->assertCount($expected_count, $post_ids);
+		$this->assertCount( $expected_count, $post_ids );
 		$this->assertEquals( array_slice( $created_post_ids, 0, $limit ), $post_ids );
 	}
 
@@ -78,8 +78,8 @@ class GetPostIdsForDateTest extends TestCase {
 	 * @dataProvider post_ids_for_date_data_provider
 	 *
 	 * @param string $sitemap_date   Date in Y-M-D format.
-	 * @param int $limit          Max number of posts to return.
-	 * @param int $expected_count Number of posts expected to be returned.
+	 * @param int    $limit          Max number of posts to return.
+	 * @param int    $expected_count Number of posts expected to be returned.
 	 */
 	public function test_get_post_ids_for_date_custom_status( string $sitemap_date, int $limit, int $expected_count ): void {
 		// set msm_sitemap_post_status filter to custom_status.
@@ -98,7 +98,7 @@ class GetPostIdsForDateTest extends TestCase {
 		}
 
 		$post_ids = Metro_Sitemap::get_post_ids_for_date( $sitemap_date, $limit );
-		$this->assertCount($expected_count, $post_ids);
+		$this->assertCount( $expected_count, $post_ids );
 		$this->assertEquals( array_slice( $created_post_ids, 0, $limit ), $post_ids );
 	}
 
@@ -117,12 +117,12 @@ class GetPostIdsForDateTest extends TestCase {
 
 	/**
 	 * Posts with various statuses should be excluded unless status is supported.
-     * 
-     * We don't include a `future` status because we're using a date in the past, and
-     * WordPress immediately changes them to `publish`.
+	 * 
+	 * We don't include a `future` status because we're using a date in the past, and
+	 * WordPress immediately changes them to `publish`.
 	 */
 	public function test_get_post_ids_for_date_excludes_other_statuses(): void {
-		foreach ( [ 'draft', 'pending', 'private', 'publish', 'trash' ] as $status ) {
+		foreach ( array( 'draft', 'pending', 'private', 'publish', 'trash' ) as $status ) {
 			$this->create_dummy_post( '2016-10-05 00:00:00', $status );
 		}
 		// Only 'publish' should be included by default.
@@ -155,7 +155,7 @@ class GetPostIdsForDateTest extends TestCase {
 	 */
 	public function test_get_post_ids_for_date_with_zero_and_negative_limit(): void {
 		$this->create_dummy_post( '2016-10-06 00:00:00', 'publish' );
-		$post_ids_zero = Metro_Sitemap::get_post_ids_for_date( '2016-10-06', 0 );
+		$post_ids_zero     = Metro_Sitemap::get_post_ids_for_date( '2016-10-06', 0 );
 		$post_ids_negative = Metro_Sitemap::get_post_ids_for_date( '2016-10-06', -5 );
 		$this->assertCount( 0, $post_ids_zero );
 		$this->assertCount( 0, $post_ids_negative );
@@ -177,13 +177,23 @@ class GetPostIdsForDateTest extends TestCase {
 	 */
 	public function test_get_post_ids_for_date_all_posts_excluded_by_filter(): void {
 		// Exclude all posts by filtering to a non-existent post type
-		add_filter( 'msm_sitemap_entry_post_type', function() { return array( 'nonexistent_type' ); } );
+		add_filter(
+			'msm_sitemap_entry_post_type',
+			function() {
+				return array( 'nonexistent_type' );
+			} 
+		);
 		$this->create_dummy_post( '2016-10-07 00:00:00', 'publish' );
 		$post_ids = Metro_Sitemap::get_post_ids_for_date( '2016-10-07', 10 );
 		if ( count( $post_ids ) !== 0 ) {
-			$posts = array_map( 'get_post', $post_ids );
-			$statuses = array_map( function( $p ) { return $p->post_status; }, $posts );
-			fwrite( STDERR, "Expected 0 posts, got IDs: " . implode( ', ', $post_ids ) . ", statuses: " . implode( ', ', $statuses ) . "\n" );
+			$posts    = array_map( 'get_post', $post_ids );
+			$statuses = array_map(
+				function( $p ) {
+					return $p->post_status;
+				},
+				$posts 
+			);
+			fwrite( STDERR, 'Expected 0 posts, got IDs: ' . implode( ', ', $post_ids ) . ', statuses: ' . implode( ', ', $statuses ) . "\n" );
 		}
 		$this->assertCount( 0, $post_ids );
 		remove_all_filters( 'msm_sitemap_entry_post_type' );

@@ -19,7 +19,7 @@ class RobotsTest extends TestCase {
 
 	public function test_public_blog_year_indexing_off_outputs_single_sitemap() {
 		Metro_Sitemap::$index_by_year = false;
-		$output = Metro_Sitemap::robots_txt( '', '1' );
+		$output                       = Metro_Sitemap::robots_txt( '', '1' );
 		$this->assertStringContainsString( 'Sitemap: ', $output );
 		$this->assertStringContainsString( '/sitemap.xml', $output );
 		// Should not contain year-based sitemaps.
@@ -42,15 +42,20 @@ class RobotsTest extends TestCase {
 	public function test_private_blog_outputs_no_sitemap() {
 		update_option( 'blog_public', 0 );
 		Metro_Sitemap::$index_by_year = false;
-		$output = Metro_Sitemap::robots_txt( '', '0' );
+		$output                       = Metro_Sitemap::robots_txt( '', '0' );
 		$this->assertStringNotContainsString( 'Sitemap: ', $output );
 	}
 
 	public function test_custom_home_url_is_used_in_sitemap_lines() {
 		Metro_Sitemap::$index_by_year = false;
-		$custom_url = 'https://custom.example.com';
-		add_filter( 'home_url', function( $url ) use ( $custom_url ) { return $custom_url; } );
-		$output = Metro_Sitemap::robots_txt( '', '1' );
+		$custom_url                   = 'https://custom.example.com';
+		add_filter(
+			'home_url',
+			function( $url ) use ( $custom_url ) {
+				return $custom_url;
+			} 
+		);
+		$output       = Metro_Sitemap::robots_txt( '', '1' );
 		$expected_url = $custom_url; // Only the domain, not /sitemap.xml
 		$this->assertStringContainsString( $expected_url, $output );
 		remove_all_filters( 'home_url' );

@@ -37,8 +37,7 @@ class IndexesTest extends TestCase {
 	/**
 	 * Test that robots.txt has a single sitemap index when sitemaps by year are disabled
 	 */
-	public function test_single_sitemap_index(): void
-	{
+	public function test_single_sitemap_index(): void {
 		// Turn on indexing by year
 		Metro_Sitemap::$index_by_year = false;
 
@@ -48,14 +47,13 @@ class IndexesTest extends TestCase {
 		preg_match_all( '|sitemap\.xml|', apply_filters( 'robots_txt', '', true ), $matches );
 
 		// Check that we've indexed the proper total number of URLs.
-		$this->assertCount(1, $matches[0]);
+		$this->assertCount( 1, $matches[0] );
 	}
 
 	/**
 	 * Test that robots.txt has sitemap indexes for all years when sitemaps by year are enabled
 	 */
-	public function test_sitemap_index_by_year(): void
-	{
+	public function test_sitemap_index_by_year(): void {
 		// Turn on indexing by year
 		Metro_Sitemap::$index_by_year = true;
 
@@ -65,7 +63,7 @@ class IndexesTest extends TestCase {
 		preg_match_all( '|sitemap-(\d{4})\.xml|', apply_filters( 'robots_txt', '', true ), $matches );
 
 		// Check that we've indexed the proper total number of URLs.
-		$this->assertCount(3, $matches[0]);
+		$this->assertCount( 3, $matches[0] );
 	}
 }
 

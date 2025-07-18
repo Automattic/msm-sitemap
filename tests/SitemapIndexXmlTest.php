@@ -41,15 +41,30 @@ class SitemapIndexXmlTest extends TestCase {
 		$date = '2022-01-01';
 		$this->create_dummy_post( $date . ' 00:00:00', 'publish' );
 		Metro_Sitemap::generate_sitemap_for_date( $date );
-		add_filter( 'msm_sitemap_index', function( $sitemaps ) {
-			return array_reverse( $sitemaps );
-		}, 10, 1 );
-		add_filter( 'msm_sitemap_index_appended_xml', function( $appended, $year, $sitemaps ) {
-			return '<!-- appended -->';
-		}, 10, 3 );
-		add_filter( 'msm_sitemap_index_xml', function( $xml, $year, $sitemaps ) {
-			return str_replace( '<sitemapindex', '<sitemapindex test="1"', $xml );
-		}, 10, 3 );
+		add_filter(
+			'msm_sitemap_index',
+			function( $sitemaps ) {
+				return array_reverse( $sitemaps );
+			},
+			10,
+			1 
+		);
+		add_filter(
+			'msm_sitemap_index_appended_xml',
+			function( $appended, $year, $sitemaps ) {
+				return '<!-- appended -->';
+			},
+			10,
+			3 
+		);
+		add_filter(
+			'msm_sitemap_index_xml',
+			function( $xml, $year, $sitemaps ) {
+				return str_replace( '<sitemapindex', '<sitemapindex test="1"', $xml );
+			},
+			10,
+			3 
+		);
 		$xml = Metro_Sitemap::build_root_sitemap_xml();
 		$this->assertStringContainsString( '<sitemapindex test="1"', $xml );
 		$this->assertStringContainsString( '<!-- appended -->', $xml );

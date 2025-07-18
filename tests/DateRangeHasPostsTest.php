@@ -22,38 +22,38 @@ class DateRangeHasPostsTest extends TestCase {
 	public function date_range_has_posts_data_provider(): iterable {
 		yield 'no posts' => array(
 			'start_date' => '2016-11-01',
-			'end_date' => '2016-12-15',
-			'has_post' => false,
+			'end_date'   => '2016-12-15',
+			'has_post'   => false,
 		);
 
 		yield 'no published posts' => array(
 			'start_date' => '2016-10-01',
-			'end_date' => '2016-10-15',
-			'has_post' => false,
+			'end_date'   => '2016-10-15',
+			'has_post'   => false,
 		);
 		
 		yield 'one published post on exact date' => array(
 			'start_date' => '2016-01-01',
-			'end_date' => '2016-01-01',
-			'has_post' => true,
+			'end_date'   => '2016-01-01',
+			'has_post'   => true,
 		);
 
 		yield 'one published post at start of range' => array(
 			'start_date' => '2016-01-01',
-			'end_date' => '2016-01-10',
-			'has_post' => true,
+			'end_date'   => '2016-01-10',
+			'has_post'   => true,
 		);
 
 		yield 'one published post at end of range' => array(
 			'start_date' => '2015-12-28',
-			'end_date' => '2016-01-01',
-			'has_post' => true,
+			'end_date'   => '2016-01-01',
+			'has_post'   => true,
 		);
 
 		yield 'two published posts in range' => array(
 			'start_date' => '2014-12-28',
-			'end_date' => '2016-05-04',
-			'has_post' => true,
+			'end_date'   => '2016-05-04',
+			'has_post'   => true,
 		);
 	}
 
@@ -62,8 +62,8 @@ class DateRangeHasPostsTest extends TestCase {
 	 *
 	 * @dataProvider date_range_has_posts_data_provider
 	 *
-	 * @param string $start_date Start Date of Range in Y-M-D format.
-	 * @param string $end_date  End Date of Range in Y-M-D format.
+	 * @param string  $start_date Start Date of Range in Y-M-D format.
+	 * @param string  $end_date  End Date of Range in Y-M-D format.
 	 * @param boolean $has_post Does Range have Post.
 	 */
 	public function test_check_date_range_has_posts( string $start_date, string $end_date, bool $has_post ): void {
@@ -83,7 +83,6 @@ class DateRangeHasPostsTest extends TestCase {
 		} else {
 			$this->assertNull( Metro_Sitemap::date_range_has_posts( $start_date, $end_date ) );
 		}
-
 	}
 
 	/**
@@ -92,17 +91,16 @@ class DateRangeHasPostsTest extends TestCase {
 	 * @return iterable<string, array<string, int|string>> Array of Test parameters.
 	 */
 	public function date_range_has_posts_custom_status_data_provider(): iterable {
-
 		yield 'no live status posts' => array(
 			'start_date' => '2015-12-01',
-			'end_date' => '2016-12-15',
-			'has_post' => false,
+			'end_date'   => '2016-12-15',
+			'has_post'   => false,
 		);
 
 		yield 'one live status post' => array(
 			'start_date' => '2014-12-28',
-			'end_date' => '2016-05-04',
-			'has_post' => true,
+			'end_date'   => '2016-05-04',
+			'has_post'   => true,
 		);
 	}
 
@@ -111,8 +109,8 @@ class DateRangeHasPostsTest extends TestCase {
 	 *
 	 * @dataProvider date_range_has_posts_custom_status_data_provider
 	 *
-	 * @param string $start_date Start Date of Range in Y-M-D format.
-	 * @param string $end_date   End Date of Range in Y-M-D format.
+	 * @param string  $start_date Start Date of Range in Y-M-D format.
+	 * @param string  $end_date   End Date of Range in Y-M-D format.
 	 * @param boolean $has_post   Does Range have Post.
 	 */
 	public function test_check_date_range_has_posts_custom_status( string $start_date, string $end_date, bool $has_post ): void {
@@ -151,7 +149,7 @@ class DateRangeHasPostsTest extends TestCase {
 	 * Posts with various statuses in the range should not be counted unless status is 'publish'.
 	 */
 	public function test_date_range_has_posts_excludes_other_statuses(): void {
-		foreach ( [ 'draft', 'pending', 'private', 'trash' ] as $status ) {
+		foreach ( array( 'draft', 'pending', 'private', 'trash' ) as $status ) {
 			$this->create_dummy_post( '2017-02-01 00:00:00', $status );
 		}
 		// Only 'publish' should be counted.
@@ -202,7 +200,12 @@ class DateRangeHasPostsTest extends TestCase {
 	 * All posts excluded by filter should return null.
 	 */
 	public function test_date_range_has_posts_all_posts_excluded_by_filter(): void {
-		add_filter( 'msm_sitemap_entry_post_type', function() { return array( 'nonexistent_type' ); } );
+		add_filter(
+			'msm_sitemap_entry_post_type',
+			function() {
+				return array( 'nonexistent_type' );
+			} 
+		);
 		$this->create_dummy_post( '2017-05-01 00:00:00', 'publish' );
 		$this->assertNull( Metro_Sitemap::date_range_has_posts( '2017-05-01', '2017-05-01' ) );
 		remove_all_filters( 'msm_sitemap_entry_post_type' );

@@ -14,16 +14,16 @@ class AjaxEndpointTest extends TestCase {
 
 	public function setUp(): void {
 		parent::setUp();
-		$this->admin_id = $this->factory->user->create(['role' => 'administrator']);
+		$this->admin_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
 	}
 
 	public function test_get_sitemap_counts_data_returns_expected_keys() {
-		$data = Metro_Sitemap::get_sitemap_counts_data(5);
-		$this->assertIsArray($data);
-		$this->assertArrayHasKey('total_indexed_urls', $data);
-		$this->assertArrayHasKey('total_sitemaps', $data);
-		$this->assertArrayHasKey('sitemap_indexed_urls', $data);
-		$this->assertIsArray($data['sitemap_indexed_urls']);
-		$this->assertCount(5, $data['sitemap_indexed_urls']);
+		$data = Metro_Sitemap::get_sitemap_counts_data( 5 );
+		$this->assertIsArray( $data );
+		$this->assertArrayHasKey( 'total_indexed_urls', $data );
+		$this->assertArrayHasKey( 'total_sitemaps', $data );
+		$this->assertArrayHasKey( 'sitemap_indexed_urls', $data );
+		$this->assertIsArray( $data['sitemap_indexed_urls'] );
+		$this->assertCount( 5, $data['sitemap_indexed_urls'] );
 	}
 } 

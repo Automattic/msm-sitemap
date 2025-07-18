@@ -40,8 +40,7 @@ class StatsTest extends TestCase {
 	/**
 	 * Verify that indexed URL count is calculated correctly
 	 */
-	public function test_site_stats_creation(): void
-	{
+	public function test_site_stats_creation(): void {
 		// Check that we've indexed the proper total number of URLs.
 		$this->assertIndexedUrlCount( $this->num_years_data );
 
@@ -53,8 +52,7 @@ class StatsTest extends TestCase {
 	 * Checks that site stats are correct after inserting a new post on a day
 	 * that already has a sitemap.
 	 */
-	public function test_site_stats_for_new_post(): void
-	{
+	public function test_site_stats_for_new_post(): void {
 		$today_str = date( 'Y-m-d' );
 
 		// Insert a new post for today.
@@ -73,14 +71,13 @@ class StatsTest extends TestCase {
 	/**
 	 * Validate that Indexed URL Count is updated properly as posts are removed
 	 */
-	public function test_site_stats_for_deleted_post(): void
-	{
+	public function test_site_stats_for_deleted_post(): void {
 
 		// Delete all posts (going backwards in time).
 		$post_count = count( $this->posts );
 		while ( $post_count ) {
 			$last_post = array_pop( $this->posts );
-			$post = wp_delete_post( $last_post['ID'], true );
+			$post      = wp_delete_post( $last_post['ID'], true );
 			--$post_count;
 
 			if ( $post instanceof \WP_Post ) {

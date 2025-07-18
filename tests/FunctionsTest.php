@@ -25,17 +25,17 @@ class FunctionsTest extends TestCase {
 	 */
 	public function recent_sitemap_url_count_data_provider(): iterable {
 		yield '1 day' => array(
-			'days' => 1,
+			'days'      => 1,
 			'URL count' => 2,
 		);
 
 		yield '7 days' => array(
-			'days' => 7,
+			'days'      => 7,
 			'URL count' => 8,
 		);
 		
 		yield '31 days' => array(
-			'days' => 31,
+			'days'      => 31,
 			'URL count' => 11,
 		);
 	}
@@ -61,14 +61,14 @@ class FunctionsTest extends TestCase {
 
 		// 1  for each day in last week
 		for ( $i = 0; $i < 6; $i++ ) {
-			$date = strtotime( '-1 day', $date );
+			$date    = strtotime( '-1 day', $date );
 			$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
 			$this->create_dummy_post( $cur_day );
 		}
 
 		// 1 per week for previous 3 weeks
 		for ( $i = 0; $i < 3; $i++ ) {
-			$date = strtotime( '-7 day', $date );
+			$date    = strtotime( '-7 day', $date );
 			$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
 			$this->create_dummy_post( $cur_day );
 		}
@@ -91,22 +91,22 @@ class FunctionsTest extends TestCase {
 	 */
 	public function post_year_range_data_provider(): iterable {
 		yield 'no years' => array(
-			'years' => 'none',
+			'years'                    => 'none',
 			'number_of_years_in_range' => 0,
 		);
 
 		yield 'zero years' => array(
-			'years' => 0,
+			'years'                    => 0,
 			'number_of_years_in_range' => 1,
 		);
 		
 		yield 'one year' => array(
-			'years' => 1,
+			'years'                    => 1,
 			'number_of_years_in_range' => 2,
 		);
 		
 		yield 'ten years' => array(
-			'years' => 10,
+			'years'                    => 10,
 			'number_of_years_in_range' => 11,
 		);
 	}
@@ -175,10 +175,10 @@ class FunctionsTest extends TestCase {
 	 * Verify check_year_has_posts returns only years with posts
 	 */
 	public function test_check_year_has_posts(): void {
-		$prev_year = (int) date( 'Y', strtotime('-1 year') );
+		$prev_year = (int) date( 'Y', strtotime( '-1 year' ) );
 		$this->add_a_post_for_a_day_x_years_ago( 1 );
 
-		$prev5_year = (int) date( 'Y', strtotime('-5 year') );
+		$prev5_year = (int) date( 'Y', strtotime( '-5 year' ) );
 		$this->add_a_post_for_a_day_x_years_ago( 5 );
 
 		// Verify only Years for Posts are returned.
@@ -194,32 +194,31 @@ class FunctionsTest extends TestCase {
 	 * @return iterable<string, array<string, int|string>> Array of Test parameters.
 	 */
 	public function date_stamp_data_provider(): iterable {
-
 		yield 'old date' => array(
-			'year' => 1985,
-			'month' => 11,
-			'day' => 5,
+			'year'            => 1985,
+			'month'           => 11,
+			'day'             => 5,
 			'expected_string' => '1985-11-05',
 		);
 
 		yield 'sensible date' => array(
-			'year' => 2025,
-			'month' => 7,
-			'day' => 12,
+			'year'            => 2025,
+			'month'           => 7,
+			'day'             => 12,
 			'expected_string' => '2025-07-12',
 		);
 
 		yield 'future date' => array(
-			'year' => 2100,
-			'month' => 10,
-			'day' => 12,
+			'year'            => 2100,
+			'month'           => 10,
+			'day'             => 12,
 			'expected_string' => '2100-10-12',
 		);
 
 		yield 'invalid date' => array(
-			'year' => 0,
-			'month' => 10,
-			'day' => 12,
+			'year'            => 0,
+			'month'           => 10,
+			'day'             => 12,
 			'expected_string' => '0-10-12',
 		);
 	}
@@ -248,9 +247,12 @@ class FunctionsTest extends TestCase {
 
 		$this->assertEquals( 'live', Metro_Sitemap::get_post_status() );
 
-		$this->add_test_filter( 'msm_sitemap_post_status', function() {
-			return 'bad_status';
-		} );
+		$this->add_test_filter(
+			'msm_sitemap_post_status',
+			function() {
+				return 'bad_status';
+			} 
+		);
 		$this->assertEquals( 'publish', Metro_Sitemap::get_post_status() );
 	}
 
@@ -266,35 +268,39 @@ class FunctionsTest extends TestCase {
 		$posts_after = Metro_Sitemap::get_last_modified_posts();
 		remove_filter( $tag, $function );
 
-		$this->assertCount(count($posts_before), $posts_after);
+		$this->assertCount( count( $posts_before ), $posts_after );
 	}
 
 	public function test_get_last_modified_posts_filter_change_query(): void {
 		// Create 6 posts modified within the last 3 months
-		for ($i = 0; $i < 6; $i++) {
-			$date = date('Y-m-d H:i:s', strtotime("-" . ($i * 10) . " days"));
-			$post_id = $this->create_dummy_post($date);
+		for ( $i = 0; $i < 6; $i++ ) {
+			$date    = date( 'Y-m-d H:i:s', strtotime( '-' . ( $i * 10 ) . ' days' ) );
+			$post_id = $this->create_dummy_post( $date );
 			// Set post_modified_gmt to the same as post_date for simplicity
-			wp_update_post([
-				'ID' => $post_id,
-				'post_modified_gmt' => get_gmt_from_date($date),
-			]);
+			wp_update_post(
+				array(
+					'ID'                => $post_id,
+					'post_modified_gmt' => get_gmt_from_date( $date ),
+				)
+			);
 		}
 		// Create 6 posts modified more than 3 months ago
-		for ($i = 0; $i < 6; $i++) {
-			$date = date('Y-m-d H:i:s', strtotime("-" . (100 + $i * 10) . " days"));
-			$post_id = $this->create_dummy_post($date);
-			wp_update_post([
-				'ID' => $post_id,
-				'post_modified_gmt' => get_gmt_from_date($date),
-			]);
+		for ( $i = 0; $i < 6; $i++ ) {
+			$date    = date( 'Y-m-d H:i:s', strtotime( '-' . ( 100 + $i * 10 ) . ' days' ) );
+			$post_id = $this->create_dummy_post( $date );
+			wp_update_post(
+				array(
+					'ID'                => $post_id,
+					'post_modified_gmt' => get_gmt_from_date( $date ),
+				)
+			);
 		}
 
 		$posts_before = Metro_Sitemap::get_last_modified_posts();
 		$tag          = 'msm_pre_get_last_modified_posts';
 
 		// Modify query to fetch posts created in the last 3 months.
-		$function = static function ($query, $post_types_in, $date ) {
+		$function = static function ( $query, $post_types_in, $date ) {
 			global $wpdb;
 			return $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_date >= DATE_SUB(NOW(), INTERVAL 3 MONTH) AND post_modified_gmt >= %s LIMIT 1000", $date );
 		};
@@ -305,7 +311,7 @@ class FunctionsTest extends TestCase {
 
 		// Modify query as string to fetch only 10 posts.
 		$limit    = 10;
-		$function = static function ($query ) use ( $limit ) {
+		$function = static function ( $query ) use ( $limit ) {
 			return str_replace( 'LIMIT 1000', "LIMIT $limit", $query );
 		};
 
