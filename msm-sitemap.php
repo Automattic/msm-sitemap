@@ -52,15 +52,18 @@ class Metro_Sitemap {
 		add_filter( 'posts_pre_query', array( __CLASS__, 'disable_main_query_for_sitemap_xml' ), 10, 2 );
 		add_filter( 'template_include', array( __CLASS__, 'load_sitemap_template' ) );
 
-		// Disable WordPress 5.5-era sitemaps.
-		add_filter( 'wp_sitemaps_enabled', '__return_false' );
-
 		// By default, we use wp-cron to help generate the full sitemap.
 		// However, this will let us override it, if necessary, like on WP.com
 		if ( true === apply_filters( 'msm_sitemap_use_cron_builder', true ) ) {
 			require __DIR__ . '/includes/msm-sitemap-builder-cron.php';
 			MSM_Sitemap_Builder_Cron::setup();
 		}
+
+		// Setup WordPress core integration and stylesheet management
+		require_once __DIR__ . '/includes/CoreIntegration.php';
+		require_once __DIR__ . '/includes/StylesheetManager.php';
+		\Automattic\MSM_Sitemap\CoreIntegration::setup();
+		\Automattic\MSM_Sitemap\StylesheetManager::setup();
 	}
 
 	/**
@@ -578,6 +581,9 @@ class Metro_Sitemap {
 			update_option( 'msm_sitemap_indexed_url_count', $total_url_count, false );
 		}
 
+		// Get XSL stylesheet reference
+		$stylesheet = \Automattic\MSM_Sitemap\StylesheetManager::get_sitemap_stylesheet_reference();
+		// $stylesheet = '';
 		// SimpleXML doesn't allow us to define namespaces using addAttribute, so we need to specify them in the construction instead.
 		$namespaces = apply_filters(
 			'msm_sitemap_namespace',
@@ -590,7 +596,7 @@ class Metro_Sitemap {
 			) 
 		);
 
-		$namespace_str = '<?xml version="1.0" encoding="utf-8"?><urlset';
+		$namespace_str = '<?xml version="1.0" encoding="utf-8"?>' . $stylesheet . '<urlset';
 		foreach ( $namespaces as $ns => $value ) {
 			$namespace_str .= sprintf( ' %s="%s"', esc_attr( $ns ), esc_attr( $value ) );
 		}
@@ -811,6 +817,7 @@ class Metro_Sitemap {
 	 */
 	public static function build_root_sitemap_xml( $year = false ) {
 		$xml_prefix = '<?xml version="1.0" encoding="utf-8"?>';
+		$stylesheet = \Automattic\MSM_Sitemap\StylesheetManager::get_index_stylesheet_reference();
 		global $wpdb;
 
 		// Direct query because we just want dates of the sitemap entries and this is much faster than WP_Query
@@ -840,7 +847,7 @@ class Metro_Sitemap {
 		 */
 		$sitemaps = apply_filters( 'msm_sitemap_index', $sitemaps, $year );
 
-		$xml = new SimpleXMLElement( $xml_prefix . '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
+		$xml = new SimpleXMLElement( $xml_prefix . $stylesheet . '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
 		foreach ( $sitemaps as $sitemap_date ) {
 			$sitemap      = $xml->addChild( 'sitemap' );
 			$sitemap->loc = self::build_sitemap_url( $sitemap_date ); // manually set the child instead of addChild to prevent "unterminated entity reference" warnings due to encoded ampersands http://stackoverflow.com/a/555039/169478
