@@ -84,12 +84,15 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$cli = new Metro_Sitemap_CLI();
 
 		ob_start();
-		$cli->list( array(), array( 'all' => true ) );
+		$cli->list( array(), array( 'all' => true, 'format' => 'json' ) );
 		$output = ob_get_clean();
-
-		$this->assertStringContainsString( 'id', $output );
-		$this->assertStringContainsString( 'date', $output );
-		$this->assertStringContainsString( '2024-07-10', $output );
+		$data = json_decode( $output, true );
+		foreach ( $data as $row ) {
+			$this->assertStringContainsString( 'id', $output );
+			$this->assertStringContainsString( 'date', $output );
+			$this->assertStringContainsString( '2024-07-10', $output );
+			$this->assertStringContainsString( 'sitemap_url', $output );
+		}
 	}
 
 	/**
@@ -179,13 +182,16 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 			array(
 				'all'    => true,
 				'format' => 'json',
-			) 
+			)
 		);
 		$output = ob_get_clean();
-
-		$this->assertStringContainsString( '2024-07-10', $output );
-		$this->assertStringContainsString( '"id"', $output );
-		$this->assertStringContainsString( '"date"', $output );
+		$data = json_decode( $output, true );
+		foreach ( $data as $row ) {
+			$this->assertStringContainsString( '2024-07-10', $output );
+			$this->assertStringContainsString( '"id"', $output );
+			$this->assertStringContainsString( '"date"', $output );
+			$this->assertStringContainsString( '"sitemap_url"', $output );
+		}
 	}
 
 	/**
@@ -202,11 +208,11 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 			array(
 				'all'    => true,
 				'format' => 'csv',
-			) 
+			)
 		);
 		$output = ob_get_clean();
 
-		$this->assertStringContainsString( 'id,date,url_count,status', $output );
+		$this->assertStringContainsString( 'id,date,url_count,status,sitemap_url', $output );
 		$this->assertStringContainsString( '2024-07-10', $output );
 	}
 

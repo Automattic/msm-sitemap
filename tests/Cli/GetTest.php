@@ -135,10 +135,12 @@ final class GetTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		);
 		$this->assertIsInt( $post_id2 );
 		update_post_meta( $post_id2, 'msm_indexed_url_count', 1 );
-		// The output should be deterministic: warning + JSON array in order [2024-07-11, 2024-07-10]
-		$expected = 
-			'[{"id":' . $post_id2 . ',"date":"2024-07-11","url_count":1,"status":"publish","last_modified":"2024-07-11 00:00:00"},' .
-			'{"id":' . $this->post_id . ',"date":"2024-07-10","url_count":1,"status":"publish","last_modified":"2024-07-10 00:00:00"}]';
+
+		$sitemap_url_partial = \Metro_Sitemap::$index_by_year ? 'sitemap-2024.xml?' : 'sitemap.xml?yyyy=2024&';
+
+		$expected =
+				'[{"id":' . $post_id2 . ',"date":"2024-07-11","url_count":1,"status":"publish","last_modified":"2024-07-11 00:00:00","sitemap_url":"http:\/\/example.org\/' . $sitemap_url_partial . 'mm=07&dd=11"},' .
+				'{"id":' . $this->post_id . ',"date":"2024-07-10","url_count":1,"status":"publish","last_modified":"2024-07-10 00:00:00","sitemap_url":"http:\/\/example.org\/' . $sitemap_url_partial . 'mm=07&dd=10"}]';
 		$this->expectOutputString( $expected );
 		$cli->get( array( '2024-07' ), array( 'format' => 'json' ) );
 		wp_delete_post( $post_id2, true );
