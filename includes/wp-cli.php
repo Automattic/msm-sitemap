@@ -338,9 +338,20 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 					case 'status':
 						$row['status'] = $post->post_status;
 						break;
+					case 'sitemap_url':
+						$row['sitemap_url'] = \Metro_Sitemap::build_sitemap_url( $post->post_name );
+						break;
 				}
 			}
+			// Always add sitemap_url as last column if not already present
+			if ( ! isset( $row['sitemap_url'] ) ) {
+				$row['sitemap_url'] = \Metro_Sitemap::build_sitemap_url( $post->post_name );
+			}
 			$items[] = $row;
+		}
+		// Always add sitemap_url to fields if not present
+		if ( ! in_array( 'sitemap_url', $fields, true ) ) {
+			$fields[] = 'sitemap_url';
 		}
 		format_items( $format, $items, $fields );
 		return;
@@ -381,6 +392,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 				'url_count'     => (int) get_post_meta( $post->ID, 'msm_indexed_url_count', true ),
 				'status'        => $post->post_status,
 				'last_modified' => $post->post_modified_gmt,
+				'sitemap_url'   => \Metro_Sitemap::build_sitemap_url( $post->post_name ),
 			);
 		} else {
 			$date_queries = $this->parse_date_query( $input, false );
@@ -408,10 +420,11 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 					'url_count'     => (int) get_post_meta( $post->ID, 'msm_indexed_url_count', true ),
 					'status'        => $post->post_status,
 					'last_modified' => $post->post_modified_gmt,
+					'sitemap_url'   => \Metro_Sitemap::build_sitemap_url( $post->post_name ),
 				);
 			}
 		}
-		format_items( $format, $items, array( 'id', 'date', 'url_count', 'status', 'last_modified' ) );
+		format_items( $format, $items, array( 'id', 'date', 'url_count', 'status', 'last_modified', 'sitemap_url' ) );
 		return;
 	}
 
