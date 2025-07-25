@@ -26,6 +26,11 @@ jobs:
           coverage: none
           tools: cs2pr
 
+      - name: Install SVN
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y subversion
+
       # Show PHP lint violations inline in the file diff.
       # @link https://github.com/marketplace/actions/xmllint-problem-matcher
       - name: Register PHP lint violations to appear as file diff comments

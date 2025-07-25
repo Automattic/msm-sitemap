@@ -5,20 +5,19 @@
  * @package Metro_Sitemap/unit_tests
  */
 
+declare( strict_types=1 );
+
 namespace Automattic\MSM_Sitemap\Tests;
 
-use Metro_Sitemap;
 use MSM_Sitemap_Builder_Cron;
 
 /**
  * Unit Tests to confirm Cron is populated as expected
- *
- * @author Matthew Denton (mdbitz)
  */
 class CronTest extends TestCase {
 
 	/**
-	 * Humber of Posts to Create (1 per year)
+	 * Number of years to create posts for.
 	 *
 	 * @var Integer
 	 */
@@ -27,44 +26,19 @@ class CronTest extends TestCase {
 	/**
 	 * Generate posts and build the sitemap
 	 */
-	public function setup(): void {
-		if ( ! class_exists( 'MSM_Sitemap_Builder_Cron' ) ) {
-			require dirname( __FILE__, 2 ) . '/includes/msm-sitemap-builder-cron.php';
-			MSM_Sitemap_Builder_Cron::setup();
-		}
+	public function setUp(): void {
+		parent::setUp();
+		MSM_Sitemap_Builder_Cron::setup();
 
-		// Add a post for each day in the last x years.
-		$dates = array();
-		$date = time();
-		for ( $i = 0; $i < $this->num_years_data; $i++ ) {
-			// Add a post for x years ago.
-			$dates[] = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
-			$date = strtotime( '-1 year', $date );
-		}
+		$this->add_a_post_for_each_of_the_last_x_years( $this->num_years_data );
 
-		$this->create_dummy_posts( $dates );
-		$this->assertCount( $this->num_years_data, $this->posts );
-	}
-
-	/**
-	 * Remove the sample posts and the sitemap posts
-	 */
-	public function teardown(): void {
-		$this->posts = array();
-		$sitemaps = get_posts( array(
-			'post_type' => Metro_Sitemap::SITEMAP_CPT,
-			'fields' => 'ids',
-			'posts_per_page' => -1,
-		) );
-		update_option( 'msm_sitemap_indexed_url_count' , 0 );
-		array_map( 'wp_delete_post', array_merge( $this->posts_created, $sitemaps ) );
+		$this->assertPostCount( $this->num_years_data );
 	}
 
 	/**
 	 * Validate that Cron Jobs are scheduled as expected.
 	 */
-	public function test_cron_jobs_scheduling(): void
-	{
+	public function test_cron_jobs_scheduling(): void {
 
 		// Reset Cron SitemapBuilder.
 		MSM_Sitemap_Builder_Cron::reset_sitemap_data();
@@ -75,10 +49,10 @@ class CronTest extends TestCase {
 		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
 
 		// Validate initial Options is set to years for Posts.
-		$expected_years = [
+		$expected_years = array(
 			date( 'Y' ),
 			date( 'Y', strtotime( '-1 year' ) ),
-		];
+		);
 
 		// Validate initial option values.
 		$this->assertSame( array_diff( $expected_years, $years_being_processed ), array_diff( $years_being_processed, $expected_years ), "Years Scheduled for Processing don't align with Posts." );
@@ -95,7 +69,7 @@ class CronTest extends TestCase {
 		// fake_cron.
 		$this->fake_cron();
 
-		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
+		$days_being_processed  = (array) get_option( 'msm_days_to_process', array() );
 		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
 
 		$expected_days = range( 1, date( 'j' ) );
@@ -113,9 +87,9 @@ class CronTest extends TestCase {
 		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
 
 		// Validate initial Options is set to years for Posts.
-		$expected_years = [
+		$expected_years = array(
 			date( 'Y', strtotime( '-1 year' ) ),
-		];
+		);
 
 		// Validate initial option values.
 		$this->assertSame( array_diff( $expected_years, $years_being_processed ), array_diff( $years_being_processed, $expected_years ), "Years Scheduled for Processing don't align when year finishes processing" );
@@ -135,8 +109,5 @@ class CronTest extends TestCase {
 		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
 
 		$this->assertGreaterThanOrEqual( 27, count( $days_being_processed ), 'New Month Processing should star at end of Month' );
-
 	}
-
-
 }

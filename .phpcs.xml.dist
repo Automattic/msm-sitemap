@@ -10,7 +10,6 @@
 	<!-- Ignoring Files and Folders:
 		https://github.com/squizlabs/PHP_CodeSniffer/wiki/Advanced-Usage#ignoring-files-and-folders -->
 	<exclude-pattern>/vendor/</exclude-pattern>
-	<exclude-pattern>/tests/</exclude-pattern>
 
 	<!-- How to scan -->
 	<!-- Usage instructions: https://github.com/squizlabs/PHP_CodeSniffer/wiki/Usage -->
@@ -36,8 +35,12 @@
 	<!-- Rules: WordPress Coding Standards - see
 		https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards -->
 	<!-- WordPress-Extra includes WordPress-Core -->
-	<rule ref="WordPress-Extra"/>
-	<rule ref="WordPress-Docs"/>
+	<rule ref="WordPress-Extra">
+		<exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
+		<exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+	</rule>
+
+	<!-- <rule ref="WordPress-Docs"/> -->
 	<!-- For help in understanding these custom sniff properties:
 		https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/wiki/Customizable-sniff-properties -->
 	<config name="minimum_supported_wp_version" value="5.9"/>
@@ -50,6 +53,7 @@
 		<properties>
 			<property name="prefixes" type="array">
 				<element value="msm"/>
+				<element value="Automattic\MSM_Sitemap"/>
 			</property>
 		</properties>
 	</rule>
@@ -57,7 +61,6 @@
 	<rule ref="WordPress.WP.I18n">
 		<properties>
 			<property name="text_domain" type="array">
-				<element value="metro-sitemap"/>
 				<element value="msm-sitemap"/>
 			</property>
 		</properties>
