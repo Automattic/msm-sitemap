@@ -980,30 +980,21 @@ class Metro_Sitemap {
 	}
 
 	/**
-	 * Convert an array to a string of comma-separated values to be used in a query.
-	 *
-	 * @param string[] $values Array of values to be converted.
-	 * @return string Comma-separated prepared values.
-	 */
-	private static function prepare_where_in( $values ) {
-		global $wpdb;
-
-		$prepared = array();
-
-		foreach ( $values as $value ) {
-			$prepared[] = $wpdb->prepare( '%s', $value );
-		}
-
-		return implode( ', ', $prepared );
-	}
-
-	/**
 	 * Retrieve supported post types for inclusion in sitemap.
 	 *
 	 * @return string[]
 	 */
 	private static function get_supported_post_types_in() {
-		return self::prepare_where_in( self::get_supported_post_types() );
+		global $wpdb;
+
+		$post_types          = self::get_supported_post_types();
+		$post_types_prepared = array();
+
+		foreach ( $post_types as $post_type ) {
+			$post_types_prepared[] = $wpdb->prepare( '%s', $post_type );
+		}
+
+		return implode( ', ', $post_types_prepared );
 	}
 
 	/**
