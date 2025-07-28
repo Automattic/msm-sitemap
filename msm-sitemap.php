@@ -10,7 +10,7 @@
  * @wordpress-plugin
  * Plugin Name:       Metro Sitemap
  * Plugin URI:        https://github.com/Automattic/msm-sitemap
- * Description:       Comprehensive sitemaps for your WordPress site. 
+ * Description:       Comprehensive sitemaps for your WordPress site.
  * Version:           1.5.0
  * Requires at least: 5.9
  * Requires PHP:      7.4
@@ -417,9 +417,9 @@ class Metro_Sitemap {
 		if ( false === $oldest_post_date_year ) {
 			global $wpdb;
 
-			$post_status = self::get_post_status();
+			$post_types_in = self::get_supported_post_types_in();
 
-			$oldest_post_date_year = $wpdb->get_var( $wpdb->prepare( "SELECT DISTINCT YEAR(post_date) as year FROM $wpdb->posts WHERE post_status = %s AND post_date > 0 ORDER BY year ASC LIMIT 1", $post_status ) );
+			$oldest_post_date_year = $wpdb->get_var( $wpdb->prepare( "SELECT DISTINCT YEAR(post_date) as year FROM $wpdb->posts WHERE post_status = %s AND post_type IN ( {$post_types_in} ) AND post_date > 0 ORDER BY year ASC LIMIT 1", self::get_post_status() ) );
 
 			wp_cache_set( 'oldest_post_date_year', $oldest_post_date_year, 'msm_sitemap', WEEK_IN_SECONDS );
 		}
@@ -593,7 +593,7 @@ class Metro_Sitemap {
 				'xmlns:n'            => 'http://www.google.com/schemas/sitemap-news/0.9',
 				'xmlns:image'        => 'http://www.google.com/schemas/sitemap-image/1.1',
 				'xsi:schemaLocation' => 'http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd',
-			) 
+			)
 		);
 
 		$namespace_str = '<?xml version="1.0" encoding="utf-8"?>' . $stylesheet . '<urlset';
@@ -730,7 +730,7 @@ class Metro_Sitemap {
 
 		$post_types_in = self::get_supported_post_types_in();
 
-		$query = $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_modified_gmt >= %s LIMIT 1000", $date );
+		$query = $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_status = %s AND post_modified_gmt >= %s LIMIT 1000", self::get_post_status(), $date );
 
 		/**
 		 * Filter the query used to get the last modified posts.
@@ -979,6 +979,11 @@ class Metro_Sitemap {
 		return apply_filters( 'msm_sitemap_entry_post_type', array( 'post' ) );
 	}
 
+	/**
+	 * Retrieve supported post types for inclusion in sitemap.
+	 *
+	 * @return string[]
+	 */
 	private static function get_supported_post_types_in() {
 		global $wpdb;
 
