@@ -5,14 +5,12 @@
  * @package Metro_Sitemap/unit_tests
  */
 
+declare( strict_types=1 );
+
 namespace Automattic\MSM_Sitemap\Tests;
 
-use Metro_Sitemap;
-
 /**
- * Unit Tests to confirm Sitemaps are properly handled for Custom Post Types
- *
- * @author Matthew Denton (mdbitz)
+ * Unit Tests to confirm Sitemaps are properly handled for Custom Post Types.
  */
 class CPTTest extends TestCase {
 
@@ -33,7 +31,7 @@ class CPTTest extends TestCase {
 				'labels'       => array(
 					'name'          => __( 'Sitemaps' ),
 					'singular_name' => __( 'Sitemap' ),
-					),
+				),
 				'public'       => false,
 				'has_archive'  => false,
 				'rewrite'      => false,
@@ -44,7 +42,6 @@ class CPTTest extends TestCase {
 				),
 			)
 		);
-
 	}
 
 	/**
@@ -80,8 +77,7 @@ class CPTTest extends TestCase {
 	 * Verify Custom Post Types included when "msm_sitemap_entry_post_type"
 	 * filter applied
 	 */
-	public function test_cpt_included_by_filter(): void
-	{
+	public function test_cpt_included_by_filter(): void {
 		$this->add_test_filter( 'msm_sitemap_entry_post_type', array( $this, 'add_cpt_to_msm_sitemap' ) );
 
 		$this->build_sitemaps();
@@ -97,10 +93,8 @@ class CPTTest extends TestCase {
 	 *
 	 * @return array<string> Array of Post Types.
 	 */
-	public function add_cpt_to_msm_sitemap( array $cpts ): array
-	{
+	public function add_cpt_to_msm_sitemap( array $cpts ): array {
 		$cpts[] = self::TEST_CPT;
 		return $cpts;
 	}
-
 }

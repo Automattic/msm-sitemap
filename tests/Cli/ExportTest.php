@@ -20,160 +20,181 @@ require_once __DIR__ . '/../../includes/wp-cli.php';
  */
 final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 
-    /**
-     * Temporary export directory for test files.
-     *
-     * @var string
-     */
-    private string $exportDir;
+	/**
+	 * Temporary export directory for test files.
+	 *
+	 * @var string
+	 */
+	private string $exportDir;
 
-    /**
-     * Test date string used for sitemap posts.
-     *
-     * @var string
-     */
-    private string $date;
+	/**
+	 * Test date string used for sitemap posts.
+	 *
+	 * @var string
+	 */
+	private string $date;
 
-    /**
-     * Set up test environment.
-     *
-     * @return void
-     */
-    public function setUp(): void {
-        parent::setUp();
-        $this->date = '2024-07-10';
-        $this->exportDir = sys_get_temp_dir() . '/msm-sitemap-export-test';
-        if ( is_dir( $this->exportDir ) ) {
-            array_map( 'unlink', glob( $this->exportDir . '/*' ) );
-            rmdir( $this->exportDir );
-        }
-        $post_id = wp_insert_post( [
-            'post_type'   => 'msm_sitemap',
-            'post_name'   => $this->date,
-            'post_title'  => $this->date,
-            'post_status' => 'publish',
-            'post_date'   => $this->date . ' 00:00:00',
-        ] );
-        $this->assertIsInt( $post_id );
-        update_post_meta( $post_id, 'msm_sitemap_xml', '<urlset><url><loc>https://example.com/</loc></url></urlset>' );
-    }
+	/**
+	 * Set up test environment.
+	 *
+	 * @return void
+	 */
+	public function setUp(): void {
+		parent::setUp();
+		$this->date      = '2024-07-10';
+		$this->exportDir = sys_get_temp_dir() . '/msm-sitemap-export-test';
+		if ( is_dir( $this->exportDir ) ) {
+			array_map( 'unlink', glob( $this->exportDir . '/*' ) );
+			rmdir( $this->exportDir );
+		}
+		$post_id = wp_insert_post(
+			array(
+				'post_type'   => 'msm_sitemap',
+				'post_name'   => $this->date,
+				'post_title'  => $this->date,
+				'post_status' => 'publish',
+				'post_date'   => $this->date . ' 00:00:00',
+			) 
+		);
+		$this->assertIsInt( $post_id );
+		update_post_meta( $post_id, 'msm_sitemap_xml', '<urlset><url><loc>https://example.com/</loc></url></urlset>' );
+	}
 
-    /**
-     * Clean up after tests.
-     *
-     * @return void
-     */
-    public function tearDown(): void {
-        $query = new \WP_Query( [
-            'post_type'      => 'msm_sitemap',
-            'post_status'    => 'any',
-            'fields'         => 'ids',
-            'posts_per_page' => -1,
-        ] );
-        foreach ( $query->posts as $post_id ) {
-            wp_delete_post( $post_id, true );
-        }
-        if ( is_dir( $this->exportDir ) ) {
-            array_map( 'unlink', glob( $this->exportDir . '/*' ) );
-            rmdir( $this->exportDir );
-        }
-        parent::tearDown();
-    }
+	/**
+	 * Clean up after tests.
+	 *
+	 * @return void
+	 */
+	public function tearDown(): void {
+		$query = new \WP_Query(
+			array(
+				'post_type'      => 'msm_sitemap',
+				'post_status'    => 'any',
+				'fields'         => 'ids',
+				'posts_per_page' => -1,
+			) 
+		);
+		foreach ( $query->posts as $post_id ) {
+			wp_delete_post( $post_id, true );
+		}
+		if ( is_dir( $this->exportDir ) ) {
+			array_map( 'unlink', glob( $this->exportDir . '/*' ) );
+			rmdir( $this->exportDir );
+		}
+		parent::tearDown();
+	}
 
-    /**
-     * Test that export requires the output argument.
-     *
-     * @return void
-     */
-    public function test_export_requires_output(): void {
-        $cli = new Metro_Sitemap_CLI();
-        $this->expectException( \Exception::class );
-        $cli->export( [], [] );
-    }
+	/**
+	 * Test that export requires the output argument.
+	 *
+	 * @return void
+	 */
+	public function test_export_requires_output(): void {
+		$cli = new Metro_Sitemap_CLI();
+		$this->expectException( \Exception::class );
+		$cli->export( array(), array() );
+	}
 
-    /**
-     * Test that export creates the output directory if it does not exist.
-     *
-     * @return void
-     */
-    public function test_export_creates_directory(): void {
-        $cli = new Metro_Sitemap_CLI();
-        $this->expectOutputRegex( '/Exported [0-9]+ sitemap/' );
-        if ( is_dir( $this->exportDir ) ) {
-            array_map( 'unlink', glob( $this->exportDir . '/*' ) );
-            rmdir( $this->exportDir );
-        }
-        $cli->export( [], [ 'output' => $this->exportDir ] );
-        $this->assertDirectoryExists( $this->exportDir );
-    }
+	/**
+	 * Test that export creates the output directory if it does not exist.
+	 *
+	 * @return void
+	 */
+	public function test_export_creates_directory(): void {
+		$cli = new Metro_Sitemap_CLI();
+		$this->expectOutputRegex( '/Exported [0-9]+ sitemap/' );
+		if ( is_dir( $this->exportDir ) ) {
+			array_map( 'unlink', glob( $this->exportDir . '/*' ) );
+			rmdir( $this->exportDir );
+		}
+		$cli->export( array(), array( 'output' => $this->exportDir ) );
+		$this->assertDirectoryExists( $this->exportDir );
+	}
 
-    /**
-     * Test that export writes a file to the output directory.
-     *
-     * @return void
-     */
-    public function test_export_file_written(): void {
-        $cli = new Metro_Sitemap_CLI();
-        $this->expectOutputRegex( '/Exported [0-9]+ sitemap/' );
-        $cli->export( [], [ 'output' => $this->exportDir ] );
-        $files = glob( $this->exportDir . '/*.xml' );
-        $this->assertNotEmpty( $files );
-        $xml = file_get_contents( $files[0] );
-        $this->assertStringContainsString( '<urlset>', $xml );
-    }
+	/**
+	 * Test that export writes a file to the output directory.
+	 *
+	 * @return void
+	 */
+	public function test_export_file_written(): void {
+		$cli = new Metro_Sitemap_CLI();
+		$this->expectOutputRegex( '/Exported [0-9]+ sitemap/' );
+		$cli->export( array(), array( 'output' => $this->exportDir ) );
+		$files = glob( $this->exportDir . '/*.xml' );
+		$this->assertNotEmpty( $files );
+		$xml = file_get_contents( $files[0] );
+		$this->assertStringContainsString( '<urlset>', $xml );
+	}
 
-    /**
-     * Test that export pretty prints XML when the pretty flag is set.
-     *
-     * @return void
-     */
-    public function test_export_pretty_print(): void {
-        $cli = new Metro_Sitemap_CLI();
-        $this->expectOutputRegex( '/Exported [0-9]+ sitemap/' );
-        $cli->export( [], [ 'output' => $this->exportDir, 'pretty' => true ] );
-        $files = glob( $this->exportDir . '/*.xml' );
-        $this->assertNotEmpty( $files );
-        $xml = file_get_contents( $files[0] );
-        // Pretty XML should have indents/newlines.
-        $this->assertStringContainsString( "\n", $xml );
-        $this->assertStringContainsString( '  <url>', $xml );
-    }
+	/**
+	 * Test that export pretty prints XML when the pretty flag is set.
+	 *
+	 * @return void
+	 */
+	public function test_export_pretty_print(): void {
+		$cli = new Metro_Sitemap_CLI();
+		$this->expectOutputRegex( '/Exported [0-9]+ sitemap/' );
+		$cli->export(
+			array(),
+			array(
+				'output' => $this->exportDir,
+				'pretty' => true,
+			) 
+		);
+		$files = glob( $this->exportDir . '/*.xml' );
+		$this->assertNotEmpty( $files );
+		$xml = file_get_contents( $files[0] );
+		// Pretty XML should have indents/newlines.
+		$this->assertStringContainsString( "\n", $xml );
+		$this->assertStringContainsString( '  <url>', $xml );
+	}
 
-    /**
-     * Test that export by date only exports the specified date.
-     *
-     * @return void
-     */
-    public function test_export_by_date(): void {
-        $cli = new Metro_Sitemap_CLI();
-        $this->expectOutputRegex( '/Exported [0-9]+ sitemap/' );
-        $cli->export( [], [ 'output' => $this->exportDir, 'date' => $this->date ] );
-        $files = glob( $this->exportDir . '/*.xml' );
-        $this->assertNotEmpty( $files );
-    }
+	/**
+	 * Test that export by date only exports the specified date.
+	 *
+	 * @return void
+	 */
+	public function test_export_by_date(): void {
+		$cli = new Metro_Sitemap_CLI();
+		$this->expectOutputRegex( '/Exported [0-9]+ sitemap/' );
+		$cli->export(
+			array(),
+			array(
+				'output' => $this->exportDir,
+				'date'   => $this->date,
+			) 
+		);
+		$files = glob( $this->exportDir . '/*.xml' );
+		$this->assertNotEmpty( $files );
+	}
 
-    /**
-     * Test that export with --all exports all sitemaps.
-     *
-     * @return void
-     */
-    public function test_export_all(): void {
-        $cli = new Metro_Sitemap_CLI();
-        $this->expectOutputRegex( '/Exported [0-9]+ sitemap/' );
-        $cli->export( [], [ 'output' => $this->exportDir, 'all' => true ] );
-        $files = glob( $this->exportDir . '/*.xml' );
-        $this->assertNotEmpty( $files );
-    }
+	/**
+	 * Test that export with --all exports all sitemaps.
+	 *
+	 * @return void
+	 */
+	public function test_export_all(): void {
+		$cli = new Metro_Sitemap_CLI();
+		$this->expectOutputRegex( '/Exported [0-9]+ sitemap/' );
+		$cli->export(
+			array(),
+			array(
+				'output' => $this->exportDir,
+				'all'    => true,
+			) 
+		);
+		$files = glob( $this->exportDir . '/*.xml' );
+		$this->assertNotEmpty( $files );
+	}
 
-    /**
-     * Test that export outputs the correct message including the directory path.
-     *
-     * @return void
-     */
-    public function test_export_output_message(): void {
-        $cli = new Metro_Sitemap_CLI();
-        $this->expectOutputRegex( '/Exported [0-9]+ sitemap.*' . preg_quote( $this->exportDir, '/' ) . '/s' );
-        $cli->export( [], [ 'output' => $this->exportDir ] );
-    }
-
+	/**
+	 * Test that export outputs the correct message including the directory path.
+	 *
+	 * @return void
+	 */
+	public function test_export_output_message(): void {
+		$cli = new Metro_Sitemap_CLI();
+		$this->expectOutputRegex( '/Exported [0-9]+ sitemap.*' . preg_quote( $this->exportDir, '/' ) . '/s' );
+		$cli->export( array(), array( 'output' => $this->exportDir ) );
+	}
 } 
