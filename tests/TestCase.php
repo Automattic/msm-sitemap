@@ -179,7 +179,7 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 	 * @param string $post_type The post type.
 	 */
 	public function add_a_post_for_today( $status = 'publish', $post_type = 'post' ): void {
-		$this->create_dummy_post( date( 'Y-m-d' ), $status, $post_type );
+		$this->create_dummy_post( wp_date( 'Y-m-d' ), $status, $post_type );
 	}
 
 	/**
