@@ -166,7 +166,7 @@ class DateRangeHasPostsTest extends TestCase {
 	 * Range with only future-dated posts should not be counted.
 	 */
 	public function test_date_range_has_posts_with_only_future_posts(): void {
-		$future_date = date( 'Y-m-d', strtotime( '+2 years' ) );
+		$future_date = wp_date( 'Y-m-d', strtotime( '+2 years' ) );
 		$this->create_dummy_post( $future_date . ' 00:00:00', 'publish' );
 		$this->assertNull( Metro_Sitemap::date_range_has_posts( $future_date, $future_date ) );
 	}
