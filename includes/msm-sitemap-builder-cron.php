@@ -9,11 +9,16 @@ declare(strict_types=1);
 
 // namespace Automattic\MSM_Sitemap;
 
+use Automattic\MSM_Sitemap\Cron_Service;
+
 /**
  * Sitemap builder cron handler.
  */
 class MSM_Sitemap_Builder_Cron {
 
+	/**
+	 * Setup the cron functionality
+	 */
 	public static function setup() {
 		add_action( 'msm_update_sitemap_for_year_month_date', array( __CLASS__, 'schedule_sitemap_update_for_year_month_date' ), 10, 2 );
 
@@ -32,6 +37,8 @@ class MSM_Sitemap_Builder_Cron {
 		}
 	}
 
+
+
 	/**
 	 * Adds the builder cron actions to the sitemaps admin page.
 	 *
@@ -48,6 +55,20 @@ class MSM_Sitemap_Builder_Cron {
 
 		$sitemap_create_in_progress = (bool) get_option( 'msm_sitemap_create_in_progress' ) === true;
 		$sitemap_halt_in_progress   = (bool) get_option( 'msm_stop_processing' ) === true;
+		$cron_status = Cron_Service::get_cron_status();
+
+		// Add cron management actions
+		if ( ! $cron_status['enabled'] ) {
+			$actions['enable_cron'] = array(
+				'text'    => __( 'Enable Automatic Updates', 'msm-sitemap' ),
+				'enabled' => true,
+			);
+		} else {
+			$actions['disable_cron'] = array(
+				'text'    => __( 'Disable Automatic Updates', 'msm-sitemap' ),
+				'enabled' => true,
+			);
+		}
 
 		$actions['generate']             = array(
 			'text'    => __( 'Generate from all articles', 'msm-sitemap' ),
@@ -179,6 +200,8 @@ class MSM_Sitemap_Builder_Cron {
 		delete_option( 'msm_sitemap_indexed_url_count' );
 	}
 
+
+
 	public static function schedule_sitemap_update_for_year_month_date( $date, $time ) {
 		list( $year, $month, $day ) = $date;
 
@@ -212,6 +235,11 @@ class MSM_Sitemap_Builder_Cron {
 	 * Generate full sitemap
 	 */
 	public static function generate_full_sitemap() {
+		// Check if cron is enabled before processing
+		if ( ! Cron_Service::is_cron_enabled() ) {
+			return;
+		}
+
 		global $wpdb;
 
 		$is_partial_or_running = get_option( 'msm_years_to_process' );
@@ -247,6 +275,11 @@ class MSM_Sitemap_Builder_Cron {
 	 * @param mixed[] $args
 	 */
 	public static function generate_sitemap_for_year( $args ) {
+		// Check if cron is enabled before processing
+		if ( ! Cron_Service::is_cron_enabled() ) {
+			return;
+		}
+
 		$is_partial_or_running = get_option( 'msm_months_to_process' );
 
 		$year      = $args['year'];
@@ -283,6 +316,11 @@ class MSM_Sitemap_Builder_Cron {
 	 * @param mixed[] $args
 	 */
 	public static function generate_sitemap_for_year_month( $args ) {
+		// Check if cron is enabled before processing
+		if ( ! Cron_Service::is_cron_enabled() ) {
+			return;
+		}
+
 		$is_partial_or_running = get_option( 'msm_days_to_process' );
 
 		$year  = $args['year'];
@@ -329,6 +367,11 @@ class MSM_Sitemap_Builder_Cron {
 	 * @param mixed[] $args
 	 */
 	public static function generate_sitemap_for_year_month_day( $args ) {
+		// Check if cron is enabled before processing
+		if ( ! Cron_Service::is_cron_enabled() ) {
+			return;
+		}
+
 		$year  = $args['year'];
 		$month = $args['month'];
 		$day   = $args['day'];

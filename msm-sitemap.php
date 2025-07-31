@@ -59,7 +59,11 @@ class Metro_Sitemap {
 		// By default, we use wp-cron to help generate the full sitemap.
 		// However, this will let us override it, if necessary, like on WP.com
 		if ( true === apply_filters( 'msm_sitemap_use_cron_builder', true ) ) {
+			require __DIR__ . '/includes/CronService.php';
+			require __DIR__ . '/includes/AdminUI.php';
 			require __DIR__ . '/includes/msm-sitemap-builder-cron.php';
+			
+			\Automattic\MSM_Sitemap\Admin_UI::setup();
 			MSM_Sitemap_Builder_Cron::setup();
 		}
 
@@ -227,6 +231,11 @@ class Metro_Sitemap {
 		?>
 		</div>
 
+		<?php
+		// Cron Management section
+		\Automattic\MSM_Sitemap\Admin_UI::render_cron_section();
+		?>
+
 		<h2><?php esc_html_e( 'Generate', 'msm-sitemap' ); ?></h2>
 		<p><strong><?php esc_html_e( 'Sitemap Creation Status:', 'msm-sitemap' ); ?></strong> <?php echo esc_html( $sitemap_create_status ); ?></p>
 		<form action="<?php echo menu_page_url( 'metro-sitemap', false ); ?>" method="post" style="float: left;">
@@ -350,10 +359,16 @@ class Metro_Sitemap {
 
 	/**
 	 * Add cron jobs required to generate these sitemaps
+	 * 
+	 * Note: Cron is NOT auto-enabled on fresh installs to prevent resource issues
+	 * on large sites. Users must explicitly enable via CLI or admin interface.
 	 */
 	public static function sitemap_init_cron() {
-		if ( self::is_blog_public() && ! wp_next_scheduled( 'msm_cron_update_sitemap' ) ) {
-			wp_schedule_event( time(), 'ms-sitemap-15-min-cron-interval', 'msm_cron_update_sitemap' );
+		// Cron is NOT auto-enabled - users must explicitly enable it
+		// This prevents resource issues on sites with millions of articles
+		// Use the service to check if auto-enable should happen
+		if ( \Automattic\MSM_Sitemap\Cron_Service::should_auto_enable_cron() ) {
+			\Automattic\MSM_Sitemap\Cron_Service::enable_cron();
 		}
 	}
 
@@ -771,6 +786,11 @@ class Metro_Sitemap {
 	 * Update the sitemap with changes from recently modified posts
 	 */
 	public static function update_sitemap_from_modified_posts() {
+		// Check if cron is enabled before processing
+		if ( ! \Automattic\MSM_Sitemap\Cron_Service::is_cron_enabled() ) {
+			return;
+		}
+
 		$time                = time();
 		$last_modified_posts = self::get_last_modified_posts();
 		$dates               = self::get_post_dates( $last_modified_posts );
