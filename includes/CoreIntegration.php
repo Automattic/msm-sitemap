@@ -41,28 +41,31 @@ class CoreIntegration {
 		$core_providers = array( 'posts', 'taxonomies', 'users' );
 		
 		foreach ( $core_providers as $provider_name ) {
-			$wp_sitemaps->registry->add_provider( $provider_name, new class extends \WP_Sitemaps_Provider {
-				/**
-				 * Get URL list for the provider.
-				 *
-				 * @param int    $page_num Page of results.
-				 * @param string $subtype  Subtype to query.
-				 * @return array Array of URL data.
-				 */
-				public function get_url_list( $page_num, $subtype = '' ): array {
-					return array(); // Return empty array to prevent core sitemaps from working
-				}
+			$wp_sitemaps->registry->add_provider(
+				$provider_name,
+				new class() extends \WP_Sitemaps_Provider {
+					/**
+					 * Get URL list for the provider.
+					 *
+					 * @param int    $page_num Page of results.
+					 * @param string $subtype  Subtype to query.
+					 * @return array Array of URL data.
+					 */
+					public function get_url_list( $page_num, $subtype = '' ): array {
+						return array(); // Return empty array to prevent core sitemaps from working
+					}
 				
-				/**
-				 * Get the maximum number of pages available for the provider.
-				 *
-				 * @param string $subtype Subtype to query.
-				 * @return int Number of pages.
-				 */
-				public function get_max_num_pages( $subtype = '' ): int {
-					return 0; // No pages
-				}
-			} );
+					/**
+					 * Get the maximum number of pages available for the provider.
+					 *
+					 * @param string $subtype Subtype to query.
+					 * @return int Number of pages.
+					 */
+					public function get_max_num_pages( $subtype = '' ): int {
+						return 0; // No pages
+					}
+				} 
+			);
 		}
 	}
 } 

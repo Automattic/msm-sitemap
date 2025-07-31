@@ -25,7 +25,7 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 *
 	 * @var string
 	 */
-	private string $exportDir;
+	private string $export_dir;
 
 	/**
 	 * Test date string used for sitemap posts.
@@ -41,11 +41,12 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function setUp(): void {
 		parent::setUp();
-		$this->date      = '2024-07-10';
-		$this->exportDir = sys_get_temp_dir() . '/msm-sitemap-export-test';
-		if ( is_dir( $this->exportDir ) ) {
-			array_map( 'unlink', glob( $this->exportDir . '/*' ) );
-			rmdir( $this->exportDir );
+		$this->date       = '2024-07-10';
+		$this->export_dir = sys_get_temp_dir() . '/msm-sitemap-export-test';
+		if ( is_dir( $this->export_dir ) ) {
+			array_map( 'unlink', glob( $this->export_dir . '/*' ) );
+			// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.directory_rmdir
+			rmdir( $this->export_dir );
 		}
 		$post_id = wp_insert_post(
 			array(
@@ -77,9 +78,10 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		foreach ( $query->posts as $post_id ) {
 			wp_delete_post( $post_id, true );
 		}
-		if ( is_dir( $this->exportDir ) ) {
-			array_map( 'unlink', glob( $this->exportDir . '/*' ) );
-			rmdir( $this->exportDir );
+		if ( is_dir( $this->export_dir ) ) {
+			array_map( 'unlink', glob( $this->export_dir . '/*' ) );
+			// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.directory_rmdir
+			rmdir( $this->export_dir );
 		}
 		parent::tearDown();
 	}
@@ -103,12 +105,13 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function test_export_creates_directory(): void {
 		$cli = new Metro_Sitemap_CLI();
 		$this->expectOutputRegex( '/Exported [0-9]+ sitemap/' );
-		if ( is_dir( $this->exportDir ) ) {
-			array_map( 'unlink', glob( $this->exportDir . '/*' ) );
-			rmdir( $this->exportDir );
+		if ( is_dir( $this->export_dir ) ) {
+			array_map( 'unlink', glob( $this->export_dir . '/*' ) );
+			// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.directory_rmdir
+			rmdir( $this->export_dir );
 		}
-		$cli->export( array(), array( 'output' => $this->exportDir ) );
-		$this->assertDirectoryExists( $this->exportDir );
+		$cli->export( array(), array( 'output' => $this->export_dir ) );
+		$this->assertDirectoryExists( $this->export_dir );
 	}
 
 	/**
@@ -119,9 +122,10 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function test_export_file_written(): void {
 		$cli = new Metro_Sitemap_CLI();
 		$this->expectOutputRegex( '/Exported [0-9]+ sitemap/' );
-		$cli->export( array(), array( 'output' => $this->exportDir ) );
-		$files = glob( $this->exportDir . '/*.xml' );
+		$cli->export( array(), array( 'output' => $this->export_dir ) );
+		$files = glob( $this->export_dir . '/*.xml' );
 		$this->assertNotEmpty( $files );
+		// phpcs:ignore WordPressVIPMinimum.Performance.FetchingRemoteData.FileGetContentsUnknown
 		$xml = file_get_contents( $files[0] );
 		$this->assertStringContainsString( '<urlset>', $xml );
 	}
@@ -137,12 +141,13 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$cli->export(
 			array(),
 			array(
-				'output' => $this->exportDir,
+				'output' => $this->export_dir,
 				'pretty' => true,
 			) 
 		);
-		$files = glob( $this->exportDir . '/*.xml' );
+		$files = glob( $this->export_dir . '/*.xml' );
 		$this->assertNotEmpty( $files );
+		// phpcs:ignore WordPressVIPMinimum.Performance.FetchingRemoteData.FileGetContentsUnknown
 		$xml = file_get_contents( $files[0] );
 		// Pretty XML should have indents/newlines.
 		$this->assertStringContainsString( "\n", $xml );
@@ -160,11 +165,11 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$cli->export(
 			array(),
 			array(
-				'output' => $this->exportDir,
+				'output' => $this->export_dir,
 				'date'   => $this->date,
 			) 
 		);
-		$files = glob( $this->exportDir . '/*.xml' );
+		$files = glob( $this->export_dir . '/*.xml' );
 		$this->assertNotEmpty( $files );
 	}
 
@@ -179,11 +184,11 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$cli->export(
 			array(),
 			array(
-				'output' => $this->exportDir,
+				'output' => $this->export_dir,
 				'all'    => true,
 			) 
 		);
-		$files = glob( $this->exportDir . '/*.xml' );
+		$files = glob( $this->export_dir . '/*.xml' );
 		$this->assertNotEmpty( $files );
 	}
 
@@ -194,7 +199,7 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function test_export_output_message(): void {
 		$cli = new Metro_Sitemap_CLI();
-		$this->expectOutputRegex( '/Exported [0-9]+ sitemap.*' . preg_quote( $this->exportDir, '/' ) . '/s' );
-		$cli->export( array(), array( 'output' => $this->exportDir ) );
+		$this->expectOutputRegex( '/Exported [0-9]+ sitemap.*' . preg_quote( $this->export_dir, '/' ) . '/s' );
+		$cli->export( array(), array( 'output' => $this->export_dir ) );
 	}
 } 

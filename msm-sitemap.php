@@ -11,7 +11,7 @@
  * Plugin Name:       Metro Sitemap
  * Plugin URI:        https://github.com/Automattic/msm-sitemap
  * Description:       Comprehensive sitemaps for your WordPress site.
- * Version:           1.5.1
+ * Version:           1.5.2
  * Requires at least: 5.9
  * Requires PHP:      7.4
  * Author:            Metro.co.uk, MAKE, Alley Interactive, WordPress VIP.
@@ -51,6 +51,10 @@ class Metro_Sitemap {
 		add_action( 'init', array( __CLASS__, 'create_post_type' ) );
 		add_filter( 'posts_pre_query', array( __CLASS__, 'disable_main_query_for_sitemap_xml' ), 10, 2 );
 		add_filter( 'template_include', array( __CLASS__, 'load_sitemap_template' ) );
+
+		// Hook into post deletion/trashing to trigger sitemap updates
+		add_action( 'deleted_post', array( __CLASS__, 'handle_post_deletion' ), 10, 2 );
+		add_action( 'trashed_post', array( __CLASS__, 'handle_post_deletion' ), 10, 1 );
 
 		// By default, we use wp-cron to help generate the full sitemap.
 		// However, this will let us override it, if necessary, like on WP.com
@@ -1012,6 +1016,49 @@ class Metro_Sitemap {
 			return 0;
 		}
 		return ( $a_date < $b_date ) ? -1 : 1;
+	}
+
+	/**
+	 * Handle post deletion/trashing to trigger sitemap updates.
+	 *
+	 * This method is called when a post is deleted or trashed. It queues
+	 * sitemap updates to be processed by the existing 15-minute cron job,
+	 * avoiding performance issues when many posts are deleted at once.
+	 *
+	 * @param int     $post_id The ID of the post being deleted/trashed.
+	 * @param WP_Post $post    The post object (optional, only passed by deleted_post hook).
+	 */
+	public static function handle_post_deletion( $post_id, $post = null ) {
+		// If post object is not provided, try to get it from the database
+		if ( ! $post || ! is_a( $post, 'WP_Post' ) ) {
+			$post = get_post( $post_id );
+			if ( ! $post ) {
+				return;
+			}
+		}
+		
+		// Only process supported post types
+		$supported_post_types = self::get_supported_post_types();
+		if ( ! in_array( $post->post_type, $supported_post_types ) ) {
+			return;
+		}
+
+		// Get the post date to determine the sitemap date
+		$post_date                  = date( 'Y-m-d', strtotime( $post->post_date ) );
+		list( $year, $month, $day ) = explode( '-', $post_date );
+
+		// Validate the date
+		if ( ! checkdate( (int) $month, (int) $day, (int) $year ) ) {
+			return;
+		}
+
+		// We can either generate the sitemap immediately or queue it for processing by the existing cron job.
+
+		// Immediately regenerate the sitemap for this date to ensure the deleted/trashed post is removed
+		// self::generate_sitemap_for_date( $post_date );
+
+		// Queue the sitemap update to be processed by the existing cron job
+		do_action( 'msm_update_sitemap_for_year_month_date', array( $year, $month, $day ), current_time( 'timestamp' ) );
 	}
 }
 

@@ -130,9 +130,12 @@ class StylesheetManagerTest extends TestCase {
 		$custom_content   = 'Custom MSM content';
 
 		// Add a custom filter
-		add_filter( 'msm_sitemaps_stylesheet_content', function( $content ) use ( $custom_content ) {
-			return $custom_content;
-		} );
+		add_filter(
+			'msm_sitemaps_stylesheet_content',
+			function () use ( $custom_content ) {
+				return $custom_content;
+			} 
+		);
 
 		$modified_content = StylesheetManager::modify_core_stylesheet( $original_content );
 
@@ -150,9 +153,12 @@ class StylesheetManagerTest extends TestCase {
 		$custom_content   = 'Custom MSM index content';
 
 		// Add a custom filter
-		add_filter( 'msm_sitemaps_stylesheet_index_content', function( $content ) use ( $custom_content ) {
-			return $custom_content;
-		} );
+		add_filter(
+			'msm_sitemaps_stylesheet_index_content',
+			function () use ( $custom_content ) {
+				return $custom_content;
+			} 
+		);
 
 		$modified_content = StylesheetManager::modify_core_index_stylesheet( $original_content );
 

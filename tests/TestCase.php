@@ -86,7 +86,6 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 	 * @param string $post_type The Post Type Slug.
 	 *
 	 * @return int ID of created post.
-	 * @throws Exception Unable to insert posts.
 	 */
 	public function create_dummy_post( string $day, string $post_status = 'publish', string $post_type = 'post' ): int {
 		$post_data = array(
@@ -97,11 +96,12 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 			'post_author'  => 1,
 		);
 
-		$post_data['post_date'] = $post_data['post_modified'] = date_format( new DateTime( $day ), 'Y-m-d H:i:s' );
-		$post_data['ID']        = wp_insert_post( $post_data, true );
+		$post_data['post_date']     = date_format( new DateTime( $day ), 'Y-m-d H:i:s' );
+		$post_data['post_modified'] = $post_data['post_date'];
+		$post_data['ID']            = wp_insert_post( $post_data, true );
 
 		if ( is_wp_error( $post_data['ID'] ) || 0 === $post_data['ID'] ) {
-			throw new Exception( "Error: WP Error encountered inserting post. {$post_data['ID']->errors}, {$post_data['ID']->error_data}" );
+			$this->fail( "Error: WP Error encountered inserting post. {$post_data['ID']->errors}, {$post_data['ID']->error_data}" );
 		}
 
 		$this->posts_created[] = $post_data['ID'];
@@ -116,8 +116,6 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 	 * Does not trigger building of sitemaps.
 	 *
 	 * @param array<string> $dates The days to create posts on.
-	 *
-	 * @throws Exception Unable to insert posts.
 	 */
 	public function create_dummy_posts( array $dates ): void {
 		foreach ( $dates as $day ) {
@@ -204,7 +202,7 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 
 			$indexed_url_count = Metro_Sitemap::get_indexed_url_count( $year, $month, $day );
 			if ( $indexed_url_count !== $count ) {
-				echo "\nExpected url count of $indexed_url_count but had count of $count on $year-$month-$day\n";
+				$this->fail( "Expected url count of $indexed_url_count but had count of $count on $year-$month-$day" );
 				return false;
 			}
 		}
@@ -298,6 +296,7 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 				$args       = $arg_struct['args'][0];
 				wp_unschedule_event( $timestamp, $hook, $arg_struct['args'] );
 				if ( 'run' === $execute ) {
+					// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
 					do_action( $hook, $args );
 				}
 			}
