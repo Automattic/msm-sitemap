@@ -77,10 +77,12 @@ class CoreIntegrationTest extends TestCase {
 		// Capture the provider instances
 		$captured_providers = array();
 		$registry->method( 'add_provider' )
-			->willReturnCallback( function( $name, $provider ) use ( &$captured_providers ) {
-				$captured_providers[ $name ] = $provider;
-				return true;
-			} );
+			->willReturnCallback(
+				function ( $name, $provider ) use ( &$captured_providers ) {
+					$captured_providers[ $name ] = $provider;
+					return true;
+				} 
+			);
 
 		$wp_sitemaps->registry = $registry;
 

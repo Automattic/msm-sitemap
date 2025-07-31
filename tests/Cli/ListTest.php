@@ -84,9 +84,15 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$cli = new Metro_Sitemap_CLI();
 
 		ob_start();
-		$cli->list( array(), array( 'all' => true, 'format' => 'json' ) );
+		$cli->list(
+			array(),
+			array(
+				'all'    => true,
+				'format' => 'json',
+			) 
+		);
 		$output = ob_get_clean();
-		$data = json_decode( $output, true );
+		$data   = json_decode( $output, true );
 		foreach ( $data as $row ) {
 			$this->assertStringContainsString( 'id', $output );
 			$this->assertStringContainsString( 'date', $output );
@@ -185,7 +191,7 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 			)
 		);
 		$output = ob_get_clean();
-		$data = json_decode( $output, true );
+		$data   = json_decode( $output, true );
 		foreach ( $data as $row ) {
 			$this->assertStringContainsString( '2024-07-10', $output );
 			$this->assertStringContainsString( '"id"', $output );
