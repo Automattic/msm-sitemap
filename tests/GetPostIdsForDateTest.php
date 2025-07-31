@@ -64,7 +64,7 @@ class GetPostIdsForDateTest extends TestCase {
 		$this->create_dummy_post( '2016-10-01 00:00:00', 'draft' );
 
 		$created_post_ids = array();
-		// 20 for 2016-10-02.
+		// 20 posts for 2016-10-02.
 		for ( $i = 0; $i < 20; $i++ ) {
 			$hour = $i < 10 ? '0' . $i : $i;
 			if ( '2016-10-02' === $sitemap_date ) {
@@ -94,7 +94,7 @@ class GetPostIdsForDateTest extends TestCase {
 		$this->create_dummy_post( '2016-10-01 00:00:00', 'draft' );
 
 		$created_post_ids = array();
-		// 20 for 2016-10-02.
+		// 20 posts for 2016-10-02.
 		for ( $i = 0; $i < 20; $i++ ) {
 			$hour = $i < 10 ? '0' . $i : $i;
 			if ( '2016-10-02' === $sitemap_date ) {
@@ -198,7 +198,7 @@ class GetPostIdsForDateTest extends TestCase {
 				},
 				$posts 
 			);
-			fwrite( STDERR, 'Expected 0 posts, got IDs: ' . implode( ', ', $post_ids ) . ', statuses: ' . implode( ', ', $statuses ) . "\n" );
+			$this->fail( 'Expected 0 posts, got IDs: ' . implode( ', ', $post_ids ) . ', statuses: ' . implode( ', ', $statuses ) );
 		}
 		$this->assertCount( 0, $post_ids );
 		remove_all_filters( 'msm_sitemap_entry_post_type' );

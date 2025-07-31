@@ -73,13 +73,13 @@ class DateRangeHasPostsTest extends TestCase {
 	 */
 	public function test_check_date_range_has_posts( string $start_date, string $end_date, bool $has_post ): void {
 
-		// 1 for 2016-10-12 in "draft" status.
+		// 1 post for 2016-10-12 in "draft" status.
 		$this->create_dummy_post( '2016-10-12 00:00:00', 'draft' );
 
-		// 1 for 2016-01-01.
+		// 1 post for 2016-01-01.
 		$this->create_dummy_post( '2016-01-01 00:00:00' );
 
-		// 1 for 2015-06-02.
+		// 1 post for 2015-06-02.
 		$this->create_dummy_post( '2015-06-02 00:00:00' );
 
 		// Validate Range result.
@@ -122,13 +122,13 @@ class DateRangeHasPostsTest extends TestCase {
 		// set msm_sitemap_post_status filter to custom_status.
 		$this->custom_post_status_set_up();
 
-		// 1 for 2016-10-12 in "live" status.
+		// 1 post for 2016-10-12 in "live" status.
 		$this->create_dummy_post( '2015-10-12 00:00:00', 'live' );
 
-		// 1 for 2016-01-01.
+		// 1 post for 2016-01-01.
 		$this->create_dummy_post( '2016-01-01 00:00:00' );
 
-		// // 1 for 2015-06-02.
+		// 1 post for 2015-06-02.
 		$this->create_dummy_post( '2015-06-02 00:00:00' );
 
 		// Validate Range result.

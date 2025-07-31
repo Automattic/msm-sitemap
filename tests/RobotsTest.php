@@ -71,7 +71,7 @@ class RobotsTest extends TestCase {
 		$custom_url                   = 'https://custom.example.com';
 		add_filter(
 			'home_url',
-			function ( $url ) use ( $custom_url ) {
+			function () use ( $custom_url ) {
 				return $custom_url;
 			} 
 		);

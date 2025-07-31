@@ -18,7 +18,7 @@ namespace {
 	if ( false === class_exists( 'WP_CLI' ) ) {
 		class WP_CLI {
 			public function __call( $method, $params ) {
-				if ( $method === 'error' ) {
+				if ( 'error' === $method ) {
 					throw new \WP_CLI\ExitException( 'WP_CLI error' );
 				}
 				if ( in_array( $method, array( 'log', 'success', 'warning' ) ) ) {
@@ -29,14 +29,13 @@ namespace {
 			}
 
 			public static function __callStatic( $method, $params ) {
-				if ( $method === 'error' ) {
+				if ( 'error' === $method ) {
 					throw new \WP_CLI\ExitException( 'WP_CLI error' );
 				}
 				if ( in_array( $method, array( 'log', 'success', 'warning' ) ) ) {
 					echo $params[0] . "\n";
 					return;
 				}
-				return;
 			}
 
 			public static function confirm( $question, $assoc_args = array() ) {
@@ -53,13 +52,8 @@ namespace {
 
 	if ( false === class_exists( 'WP_CLI_Command' ) ) {
 		class WP_CLI_Command {
-			public function __call( $method, $params ) {
-				return;
-			}
-
-			public static function __callStatic( $method, $params ) {
-				return;
-			}
+			public function __call( $method, $params ) {}
+			public static function __callStatic( $method, $params ) {}
 		}
 	}
 
@@ -72,7 +66,7 @@ namespace WP_CLI\Utils {
 	 * Returns a simple string for test assertions.
 	 */
 	function format_items( $format, $items, $fields ) {
-		if ( $format === 'csv' ) {
+		if ( 'csv' === $format ) {
 			$out = implode( ',', $fields ) . "\n";
 			foreach ( $items as $item ) {
 				$row = array();
@@ -84,7 +78,7 @@ namespace WP_CLI\Utils {
 			echo $out;
 			return;
 		}
-		if ( $format === 'json' ) {
+		if ( 'json' === $format ) {
 			echo json_encode( $items );
 			return;
 		}

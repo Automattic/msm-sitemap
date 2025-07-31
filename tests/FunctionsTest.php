@@ -148,7 +148,7 @@ class FunctionsTest extends TestCase {
 		}
 
 		$year_range = Metro_Sitemap::get_post_year_range();
-		// var_dump( $year_range );
+
 		$this->assertCount( $expected_number_of_years_in_range, $year_range, 'Expected ' . $expected_number_of_years_in_range . ' years in range, got ' . count( $year_range ) );
 	}
 
