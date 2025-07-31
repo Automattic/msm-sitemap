@@ -177,10 +177,10 @@ class FunctionsTest extends TestCase {
 	 * Verify check_year_has_posts returns only years with posts
 	 */
 	public function test_check_year_has_posts(): void {
-		$prev_year = (int) date( 'Y', strtotime( '-1 year' ) );
+		$prev_year = (int) wp_date( 'Y', strtotime( '-1 year' ) );
 		$this->add_a_post_for_a_day_x_years_ago( 1 );
 
-		$prev5_year = (int) date( 'Y', strtotime( '-5 year' ) );
+		$prev5_year = (int) wp_date( 'Y', strtotime( '-5 year' ) );
 		$this->add_a_post_for_a_day_x_years_ago( 5 );
 
 		// Verify only Years for Posts are returned.

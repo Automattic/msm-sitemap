@@ -50,8 +50,8 @@ class CronTest extends TestCase {
 
 		// Validate initial Options is set to years for Posts.
 		$expected_years = array(
-			date( 'Y' ),
-			date( 'Y', strtotime( '-1 year' ) ),
+			wp_date( 'Y' ),
+			wp_date( 'Y', strtotime( '-1 year' ) ),
 		);
 
 		// Validate initial option values.
@@ -63,7 +63,7 @@ class CronTest extends TestCase {
 		$months_being_processed = (array) get_option( 'msm_months_to_process', array() );
 
 		// Validate Current Month is added to months_to_process.
-		$month = (int) date( 'n' );
+		$month = (int) wp_date( 'n' );
 		$this->assertContains( $month, $months_being_processed, 'Initial Year Processing should use Current Month if same year' );
 
 		// fake_cron.
@@ -72,7 +72,7 @@ class CronTest extends TestCase {
 		$days_being_processed  = (array) get_option( 'msm_days_to_process', array() );
 		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
 
-		$expected_days = range( 1, date( 'j' ) );
+		$expected_days = range( 1, wp_date( 'j' ) );
 
 		// Validate Current Month only processes days that have passed and today.
 		$this->assertSame( array_diff( $expected_days, $days_being_processed ), array_diff( $days_being_processed, $expected_days ), "Current Month shouldn't process days in future." );
