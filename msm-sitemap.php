@@ -25,6 +25,8 @@ if ( defined( 'WP_CLI' ) && true === WP_CLI ) {
 	WP_CLI::add_command( 'msm-sitemap', 'Metro_Sitemap_CLI' );
 }
 
+use Automattic\MSM_Sitemap\Admin\UI;
+
 class Metro_Sitemap {
 
 	const DEFAULT_POSTS_PER_SITEMAP_PAGE = 500;
@@ -59,17 +61,10 @@ class Metro_Sitemap {
 		// By default, we use wp-cron to help generate the full sitemap.
 		// However, this will let us override it, if necessary, like on WP.com
 		if ( true === apply_filters( 'msm_sitemap_use_cron_builder', true ) ) {
-			require __DIR__ . '/includes/CronService.php';
-			require __DIR__ . '/includes/AdminUI.php';
-			require __DIR__ . '/includes/msm-sitemap-builder-cron.php';
-			
-			\Automattic\MSM_Sitemap\Admin_UI::setup();
 			MSM_Sitemap_Builder_Cron::setup();
 		}
 
-		// Setup WordPress core integration and stylesheet management
-		require_once __DIR__ . '/includes/CoreIntegration.php';
-		require_once __DIR__ . '/includes/StylesheetManager.php';
+		\Automattic\MSM_Sitemap\Permalinks::setup();
 		\Automattic\MSM_Sitemap\CoreIntegration::setup();
 		\Automattic\MSM_Sitemap\StylesheetManager::setup();
 	}
@@ -124,7 +119,7 @@ class Metro_Sitemap {
 	 * Register admin menu for sitemap
 	 */
 	public static function metro_sitemap_menu() {
-		$page_hook = add_management_page( __( 'Sitemap', 'msm-sitemap' ), __( 'Sitemap', 'msm-sitemap' ), 'manage_options', 'metro-sitemap', array( __CLASS__, 'render_sitemap_options_page' ) );
+		$page_hook = add_management_page( __( 'Sitemap', 'msm-sitemap' ), __( 'Sitemap', 'msm-sitemap' ), 'manage_options', 'metro-sitemap', array( UI::class, 'render_options_page' ) );
 		add_action( 'admin_print_scripts-' . $page_hook, array( __CLASS__, 'add_admin_scripts' ) );
 	}
 
@@ -166,98 +161,6 @@ class Metro_Sitemap {
 		$data = self::get_sitemap_counts_data( $n );
 
 		wp_send_json( $data );
-	}
-
-	/**
-	 * Render admin options page
-	 */
-	public static function render_sitemap_options_page() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( __( 'You do not have sufficient permissions to access this page.', 'msm-sitemap' ) );
-		}
-
-		// Array of possible user actions
-		$actions = apply_filters( 'msm_sitemap_actions', array() );
-
-		?>
-		<div class="wrap">
-			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
-		<?php
-		if ( ! self::is_blog_public() ) {
-			self::show_action_message( __( 'Oops! Sitemaps are not supported on private sites. Please make your site is public and try again.', 'msm-sitemap' ), 'error' );
-			echo '</div>';
-			return;
-		}
-
-		if ( isset( $_POST['action'] ) ) {
-			check_admin_referer( 'msm-sitemap-action' );
-			foreach ( $actions as $slug => $action ) {
-				if ( $action['text'] !== $_POST['action'] ) {
-					continue;
-				}
-				do_action( 'msm_sitemap_action-' . $slug );
-				break;
-			}
-		}
-
-		// All the settings we need to read to display the page
-		$sitemap_create_in_progress = (bool) get_option( 'msm_sitemap_create_in_progress' ) === true;
-		$sitemap_update_last_run    = get_option( 'msm_sitemap_update_last_run' );
-
-		// Determine sitemap status text
-		$sitemap_create_status = apply_filters(
-			'msm_sitemap_create_status',
-			$sitemap_create_in_progress ? __( 'Running', 'msm-sitemap' ) : __( 'Not Running', 'msm-sitemap' )
-		);
-
-		?>
-		<div class="stats-container">
-			<div class="stats-box"><strong id="sitemap-count"><?php echo number_format( self::count_sitemaps() ); ?></strong><?php esc_html_e( 'Sitemaps', 'msm-sitemap' ); ?></div>
-			<div class="stats-box"><strong id="sitemap-indexed-url-count"><?php echo number_format( self::get_total_indexed_url_count() ); ?></strong><?php esc_html_e( 'Indexed URLs', 'msm-sitemap' ); ?></div>
-			<div class="stats-footer"><span><span class="noticon noticon-time"></span><?php esc_html_e( 'Updated', 'msm-sitemap' ); ?> <strong><?php echo human_time_diff( $sitemap_update_last_run ); ?> <?php esc_html_e( 'ago', 'msm-sitemap' ); ?></strong></span></div>
-		</div>
-
-		<h2><?php esc_html_e( 'Latest Sitemaps', 'msm-sitemap' ); ?></h2>
-		<div class="stats-container stats-placeholder"></div>
-		<div id="stats-graph-summary">
-		<?php
-		printf(
-			/* translators: 1: max number of indexed URLs, 2: date of max indexed URLs, 3: number of days to show */
-			__( 'Max: %1$s on %2$s. Showing the last %3$s days.', 'msm-sitemap' ),
-			'<span id="stats-graph-max"></span>',
-			'<span id="stats-graph-max-date"></span>',
-			'<span id="stats-graph-num-days"></span>',
-		);
-		?>
-		</div>
-
-		<?php
-		// Cron Management section
-		\Automattic\MSM_Sitemap\Admin_UI::render_cron_section();
-		?>
-
-		<h2><?php esc_html_e( 'Generate', 'msm-sitemap' ); ?></h2>
-		<p><strong><?php esc_html_e( 'Sitemap Creation Status:', 'msm-sitemap' ); ?></strong> <?php echo esc_html( $sitemap_create_status ); ?></p>
-		<form action="<?php echo menu_page_url( 'metro-sitemap', false ); ?>" method="post" style="float: left;">
-			<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
-			<?php
-			foreach ( $actions as $action ) :
-				if ( ! $action['enabled'] ) {
-					continue;
-				}
-				?>
-				<input type="submit" name="action" class="button-secondary" value="<?php echo esc_attr( $action['text'] ); ?>">
-			<?php endforeach; ?>
-		</form>
-		</div>
-		<div id="tooltip">
-			<strong class="content"></strong>
-				<span class="url-label"
-					data-singular="<?php esc_attr_e( 'indexed URL', 'msm-sitemap' ); ?>"
-					data-plural="<?php esc_attr_e( 'indexed URLs', 'msm-sitemap' ); ?>"
-				><?php esc_html_e( 'indexed URLs', 'msm-sitemap' ); ?></span>
-		</div>
-		<?php
 	}
 
 	/**
@@ -1081,10 +984,13 @@ class Metro_Sitemap {
 		do_action( 'msm_update_sitemap_for_year_month_date', array( $year, $month, $day ), current_time( 'timestamp' ) );
 	}
 }
-
-// Register custom permalink handler for msm_sitemap posts.
-// @see https://github.com/Automattic/msm-sitemap/issues/170
-require_once __DIR__ . '/includes/Permalinks.php';
-Automattic\MSM_Sitemap\Permalinks::register();
-
 add_action( 'after_setup_theme', array( 'Metro_Sitemap', 'setup' ) );
+
+require __DIR__ . '/includes/Admin/ActionHandlers.php';
+require __DIR__ . '/includes/Admin/Notifications.php';
+require __DIR__ . '/includes/Admin/UI.php';
+require __DIR__ . '/includes/CoreIntegration.php';
+require __DIR__ . '/includes/StylesheetManager.php';
+require __DIR__ . '/includes/Permalinks.php';
+require __DIR__ . '/includes/CronService.php';
+require __DIR__ . '/includes/msm-sitemap-builder-cron.php';

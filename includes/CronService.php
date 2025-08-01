@@ -91,10 +91,17 @@ class Cron_Service {
 			if ( wp_next_scheduled( 'msm_cron_update_sitemap' ) ) {
 				wp_unschedule_hook( 'msm_cron_update_sitemap' );
 			}
-			return false;
+			$enabled = false;
+		} else {
+			$enabled = (bool) $option;
 		}
 		
-		return (bool) $option;
+		/**
+		 * Filter to override cron enabled status
+		 *
+		 * @param bool $enabled Whether cron is enabled
+		 */
+		return apply_filters( 'msm_sitemap_cron_enabled', $enabled );
 	}
 
 	/**
@@ -103,11 +110,11 @@ class Cron_Service {
 	 * @return array Status information about the cron
 	 */
 	public static function get_cron_status() {
-		$is_enabled = self::is_cron_enabled();
+		$is_enabled     = self::is_cron_enabled();
 		$next_scheduled = wp_next_scheduled( 'msm_cron_update_sitemap' );
 		$is_blog_public = \Metro_Sitemap::is_blog_public();
-		$is_generating = (bool) get_option( 'msm_sitemap_create_in_progress' );
-		$is_halted = (bool) get_option( 'msm_stop_processing' );
+		$is_generating  = (bool) get_option( 'msm_sitemap_create_in_progress' );
+		$is_halted      = (bool) get_option( 'msm_stop_processing' );
 
 		// Ensure consistency - if enabled is false but there's a scheduled event, clear it
 		if ( ! $is_enabled && $next_scheduled ) {
@@ -116,13 +123,13 @@ class Cron_Service {
 		}
 
 		return array(
-			'enabled' => $is_enabled,
+			'enabled'        => $is_enabled,
 			'next_scheduled' => $next_scheduled,
-			'blog_public' => $is_blog_public,
-			'generating' => $is_generating,
-			'halted' => $is_halted,
-			'can_enable' => $is_blog_public && ! $is_enabled,
-			'can_disable' => $is_enabled,
+			'blog_public'    => $is_blog_public,
+			'generating'     => $is_generating,
+			'halted'         => $is_halted,
+			'can_enable'     => $is_blog_public && ! $is_enabled,
+			'can_disable'    => $is_enabled,
 		);
 	}
 

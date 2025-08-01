@@ -760,7 +760,6 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		$result = Cron_Service::enable_cron();
 		if ( $result ) {
 			WP_CLI::success( __( '✅ Sitemap cron enabled successfully.', 'msm-sitemap' ) );
-
 		} else {
 			WP_CLI::warning( __( '⚠️ Cron is already enabled.', 'msm-sitemap' ) );
 		}
@@ -796,11 +795,11 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		$fields = array( 'enabled', 'next_scheduled', 'blog_public', 'generating', 'halted' );
 		$items  = array(
 			array(
-				'enabled'         => $status['enabled'] ? 'Yes' : 'No',
-				'next_scheduled'  => $status['next_scheduled'] ? date( 'Y-m-d H:i:s T', $status['next_scheduled'] ) : 'Not scheduled',
-				'blog_public'     => $status['blog_public'] ? 'Yes' : 'No',
-				'generating'      => $status['generating'] ? 'Yes' : 'No',
-				'halted'          => $status['halted'] ? 'Yes' : 'No',
+				'enabled'        => $status['enabled'] ? 'Yes' : 'No',
+				'next_scheduled' => $status['next_scheduled'] ? date( 'Y-m-d H:i:s T', $status['next_scheduled'] ) : 'Not scheduled',
+				'blog_public'    => $status['blog_public'] ? 'Yes' : 'No',
+				'generating'     => $status['generating'] ? 'Yes' : 'No',
+				'halted'         => $status['halted'] ? 'Yes' : 'No',
 			),
 		);
 		format_items( $format, $items, $fields );
