@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 // namespace Automattic\MSM_Sitemap;
 
+use Automattic\MSM_Sitemap\Cron_Service;
 use function WP_CLI\Utils\format_items;
 
 /**
@@ -686,6 +687,137 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		);
 		format_items( $format, $items, $fields );
 		return;
+	}
+
+	/**
+	 * Manage the sitemap cron functionality.
+	 *
+	 * ## SUBCOMMANDS
+	 *
+	 * [<command>]
+	 * : Subcommand to run.
+	 * ---
+	 * default: status
+	 * options:
+	 *   - enable
+	 *   - disable
+	 *   - status
+	 *   - reset
+	 * ---
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--format=<format>]
+	 * : Output format for status command: table, json, or csv. Default: table.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp msm-sitemap cron
+	 *     wp msm-sitemap cron enable
+	 *     wp msm-sitemap cron disable
+	 *     wp msm-sitemap cron status --format=json
+	 *     wp msm-sitemap cron reset
+	 *
+	 * @when before_wp_load
+	 */
+	public function cron( $args, $assoc_args ) {
+		// If no command provided, default to status
+		if ( empty( $args ) ) {
+			$this->cron_status( array(), $assoc_args );
+			return;
+		}
+		
+		$command = $args[0];
+		
+		switch ( $command ) {
+			case 'enable':
+				$this->cron_enable( array(), $assoc_args );
+				break;
+			case 'disable':
+				$this->cron_disable( array(), $assoc_args );
+				break;
+			case 'status':
+				$this->cron_status( array(), $assoc_args );
+				break;
+			case 'reset':
+				$this->cron_reset( array(), $assoc_args );
+				break;
+			default:
+				WP_CLI::error( sprintf( __( 'Unknown subcommand: %s', 'msm-sitemap' ), $command ) );
+		}
+	}
+
+	/**
+	 * Enable the sitemap cron functionality.
+	 */
+	private function cron_enable( $args, $assoc_args ) {
+		$status = Cron_Service::get_cron_status();
+		
+		if ( ! $status['blog_public'] ) {
+			WP_CLI::error( __( '❌ Cannot enable cron: blog is not public.', 'msm-sitemap' ) );
+		}
+		
+		$result = Cron_Service::enable_cron();
+		if ( $result ) {
+			WP_CLI::success( __( '✅ Sitemap cron enabled successfully.', 'msm-sitemap' ) );
+		} else {
+			WP_CLI::warning( __( '⚠️ Cron is already enabled.', 'msm-sitemap' ) );
+		}
+	}
+
+	/**
+	 * Disable the sitemap cron functionality.
+	 */
+	private function cron_disable( $args, $assoc_args ) {
+		$result = Cron_Service::disable_cron();
+		if ( $result ) {
+			WP_CLI::success( __( '✅ Sitemap cron disabled successfully.', 'msm-sitemap' ) );
+			
+			// Check if cron was actually cleared
+			$next_scheduled = wp_next_scheduled( 'msm_cron_update_sitemap' );
+			if ( $next_scheduled ) {
+				WP_CLI::warning( __( '⚠️ Warning: Cron event still scheduled. This may be a WordPress cron system delay.', 'msm-sitemap' ) );
+			} else {
+				WP_CLI::log( __( '✅ Cron events cleared successfully.', 'msm-sitemap' ) );
+			}
+		} else {
+			WP_CLI::warning( __( '⚠️ Cron is already disabled.', 'msm-sitemap' ) );
+		}
+	}
+
+	/**
+	 * Show the current status of the sitemap cron functionality.
+	 */
+	private function cron_status( $args, $assoc_args ) {
+		$status = Cron_Service::get_cron_status();
+		
+		$format = $assoc_args['format'] ?? 'table';
+		$fields = array( 'enabled', 'next_scheduled', 'blog_public', 'generating', 'halted' );
+		$items  = array(
+			array(
+				'enabled'        => $status['enabled'] ? 'Yes' : 'No',
+				'next_scheduled' => $status['next_scheduled'] ? date( 'Y-m-d H:i:s T', $status['next_scheduled'] ) : 'Not scheduled',
+				'blog_public'    => $status['blog_public'] ? 'Yes' : 'No',
+				'generating'     => $status['generating'] ? 'Yes' : 'No',
+				'halted'         => $status['halted'] ? 'Yes' : 'No',
+			),
+		);
+		format_items( $format, $items, $fields );
+		return;
+	}
+
+	/**
+	 * Reset the sitemap cron to a clean state (for testing).
+	 */
+	private function cron_reset( $args, $assoc_args ) {
+		$result = Cron_Service::reset_cron();
+		
+		if ( $result ) {
+			WP_CLI::success( __( '✅ Sitemap cron reset to clean state.', 'msm-sitemap' ) );
+			WP_CLI::log( __( '📝 This simulates a fresh install state.', 'msm-sitemap' ) );
+		} else {
+			WP_CLI::error( __( '❌ Failed to reset sitemap cron.', 'msm-sitemap' ) );
+		}
 	}
 
 	// LEGACY Commands:

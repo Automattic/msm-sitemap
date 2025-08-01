@@ -73,6 +73,9 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 
 		$this->added_filters = array();
 
+		// Force cron to be enabled during tests
+		$this->add_test_filter( 'msm_sitemap_cron_enabled', '__return_true' );
+
 		parent::setUp();
 	}
 

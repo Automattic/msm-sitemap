@@ -19,7 +19,7 @@ class Permalinks {
 	/**
 	 * Register the permalink filter.
 	 */
-	public static function register(): void {
+	public static function setup(): void {
 		add_filter( 'post_type_link', array( __CLASS__, 'filter_post_type_link' ), 10, 2 );
 	}
 
