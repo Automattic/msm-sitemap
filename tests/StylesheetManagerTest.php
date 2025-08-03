@@ -18,6 +18,11 @@ use Automattic\MSM_Sitemap\Tests\TestCase;
 class StylesheetManagerTest extends TestCase {
 
 	/**
+	 * @var string
+	 */
+	private $site_url = 'http://example.org';
+
+	/**
 	 * Test that setup method registers the correct filters.
 	 */
 	public function test_setup_registers_filters(): void {
@@ -51,7 +56,7 @@ class StylesheetManagerTest extends TestCase {
 		$this->assertStringContainsString( 'type="text/xsl"', $reference );
 		$this->assertStringContainsString( 'href="', $reference );
 		$this->assertStringContainsString( '/wp-sitemap.xsl', $reference );
-		$this->assertStringContainsString( home_url(), $reference );
+		$this->assertStringContainsString( $this->site_url, $reference );
 	}
 
 	/**
@@ -64,7 +69,7 @@ class StylesheetManagerTest extends TestCase {
 		$this->assertStringContainsString( 'type="text/xsl"', $reference );
 		$this->assertStringContainsString( 'href="', $reference );
 		$this->assertStringContainsString( '/wp-sitemap-index.xsl', $reference );
-		$this->assertStringContainsString( home_url(), $reference );
+		$this->assertStringContainsString( $this->site_url, $reference );
 	}
 
 	/**
@@ -176,8 +181,8 @@ class StylesheetManagerTest extends TestCase {
 		$index_reference   = StylesheetManager::get_index_stylesheet_reference();
 
 		// Both should use the same home URL
-		$this->assertStringContainsString( home_url(), $sitemap_reference );
-		$this->assertStringContainsString( home_url(), $index_reference );
+		$this->assertStringContainsString( $this->site_url, $sitemap_reference );
+		$this->assertStringContainsString( $this->site_url, $index_reference );
 
 		// URLs should be different
 		$this->assertStringContainsString( '/wp-sitemap.xsl', $sitemap_reference );

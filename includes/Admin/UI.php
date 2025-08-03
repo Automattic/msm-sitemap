@@ -8,6 +8,7 @@
 namespace Automattic\MSM_Sitemap\Admin;
 
 use Automattic\MSM_Sitemap\Cron_Service;
+use Automattic\MSM_Sitemap\Site;
 
 /**
  * Handles all admin page UI rendering
@@ -23,7 +24,7 @@ class UI {
 		}
 
 		// Check if blog is public
-		if ( ! \Metro_Sitemap::is_blog_public() ) {
+		if ( ! Site::is_public() ) {
 			self::render_private_site_message();
 			return;
 		}

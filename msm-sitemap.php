@@ -20,6 +20,11 @@
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.txt
  */
 
+use Automattic\MSM_Sitemap\Site;
+
+// Include the Site class early to ensure it's available
+require_once __DIR__ . '/includes/Site.php';
+
 if ( defined( 'WP_CLI' ) && true === WP_CLI ) {
 	require __DIR__ . '/includes/wp-cli.php';
 	WP_CLI::add_command( 'msm-sitemap', 'Metro_Sitemap_CLI' );
@@ -218,10 +223,6 @@ class Metro_Sitemap {
 		return $stats;
 	}
 
-	public static function is_blog_public() {
-		return ( 1 == get_option( 'blog_public' ) );
-	}
-
 	/**
 	 * Gets the number of URLs indexed for the given sitemap.
 	 *
@@ -249,12 +250,12 @@ class Metro_Sitemap {
 			if ( self::$index_by_year ) {
 				$years = self::check_year_has_posts();
 				foreach ( $years as $year ) {
-					$output .= 'Sitemap: ' . home_url( '/sitemap-' . absint( $year ) . '.xml' ) . PHP_EOL;
+					$output .= 'Sitemap: ' . Site::get_home_url( '/sitemap-' . absint( $year ) . '.xml' ) . PHP_EOL;
 				}
 
 				$output .= PHP_EOL;
 			} else {
-				$output .= 'Sitemap: ' . home_url( '/sitemap.xml' ) . PHP_EOL . PHP_EOL;
+				$output .= 'Sitemap: ' . Site::get_home_url( '/sitemap.xml' ) . PHP_EOL . PHP_EOL;
 			}
 		}
 		return $output;
@@ -820,7 +821,7 @@ class Metro_Sitemap {
 					'mm' => date( 'm', $sitemap_time ),
 					'dd' => date( 'd', $sitemap_time ),
 				),
-				home_url( '/sitemap-' . date( 'Y', $sitemap_time ) . '.xml' )
+				Site::get_home_url( '/sitemap-' . date( 'Y', $sitemap_time ) . '.xml' )
 			);
 		} else {
 			$sitemap_url = add_query_arg(
@@ -829,7 +830,7 @@ class Metro_Sitemap {
 					'mm'   => date( 'm', $sitemap_time ),
 					'dd'   => date( 'd', $sitemap_time ),
 				),
-				home_url( '/sitemap.xml' )
+				Site::get_home_url( '/sitemap.xml' )
 			);
 		}
 

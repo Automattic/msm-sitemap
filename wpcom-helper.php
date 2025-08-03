@@ -1,5 +1,7 @@
 <?php
 
+use Automattic\MSM_Sitemap\Site;
+
 add_filter( 'msm_sitemap_use_cron_builder', '__return_false', 9999 ); // On WP.com we're going to use the jobs system
 
 if ( function_exists( 'queue_async_job' ) ) {
@@ -23,7 +25,7 @@ function msm_wpcom_schedule_sitemap_update_for_year_month_date( $date, $time ) {
  * @param string $day
  */
 function msm_sitemap_wpcom_queue_cache_invalidation( $sitemap_id, $year, $month, $day ) {
-	$sitemap_url = home_url( '/sitemap.xml' );
+	$sitemap_url = Site::get_home_url( '/sitemap.xml' );
 
 	$sitemap_urls = array(
 		$sitemap_url,

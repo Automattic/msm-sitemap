@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap;
 
+use Automattic\MSM_Sitemap\Site;
+
 /**
  * Service class for managing sitemap cron functionality.
  * 
@@ -112,7 +114,7 @@ class Cron_Service {
 	public static function get_cron_status() {
 		$is_enabled     = self::is_cron_enabled();
 		$next_scheduled = wp_next_scheduled( 'msm_cron_update_sitemap' );
-		$is_blog_public = \Metro_Sitemap::is_blog_public();
+		$is_blog_public = Site::is_public();
 		$is_generating  = (bool) get_option( 'msm_sitemap_create_in_progress' );
 		$is_halted      = (bool) get_option( 'msm_stop_processing' );
 
