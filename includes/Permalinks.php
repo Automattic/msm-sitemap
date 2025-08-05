@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap;
 
+use Automattic\MSM_Sitemap\Site;
+
 /**
  * Permalinks handler for msm_sitemap posts.
  *
@@ -42,13 +44,13 @@ class Permalinks {
 
 		if ( $index_by_year && preg_match( '/^(\d{4})$/', $date, $matches ) ) {
 			$year = $matches[1];
-			return home_url( "/sitemap-$year.xml" );
+			return Site::get_home_url( "/sitemap-$year.xml" );
 		}
 		if ( preg_match( '/^(\d{4})-(\d{2})-(\d{2})$/', $date, $matches ) ) {
 			$year  = $matches[1];
 			$month = $matches[2];
 			$day   = $matches[3];
-			return home_url( "/sitemap.xml?yyyy=$year&mm=$month&dd=$day" );
+			return Site::get_home_url( "/sitemap.xml?yyyy=$year&mm=$month&dd=$day" );
 		}
 		// Fallback: return the default permalink if the date format is unexpected.
 		return $permalink;

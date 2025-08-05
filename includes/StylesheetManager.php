@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap;
 
+use Automattic\MSM_Sitemap\Site;
+
 /**
  * Manages MSM-specific stylesheet modifications and references.
  *
@@ -34,7 +36,7 @@ class StylesheetManager {
 	 * @return string XSL stylesheet reference for sitemap.
 	 */
 	public static function get_sitemap_stylesheet_reference(): string {
-		return "\n" . '<?xml-stylesheet type="text/xsl" href="' . home_url( '/wp-sitemap.xsl' ) . '"?>' . "\n";
+		return "\n" . '<?xml-stylesheet type="text/xsl" href="' . Site::get_home_url( '/wp-sitemap.xsl' ) . '"?>' . "\n";
 	}
 
 	/**
@@ -43,7 +45,7 @@ class StylesheetManager {
 	 * @return string XSL stylesheet reference for sitemap index.
 	 */
 	public static function get_index_stylesheet_reference(): string {
-		return "\n" . '<?xml-stylesheet type="text/xsl" href="' . home_url( '/wp-sitemap-index.xsl' ) . '"?>' . "\n";
+		return "\n" . '<?xml-stylesheet type="text/xsl" href="' . Site::get_home_url( '/wp-sitemap-index.xsl' ) . '"?>' . "\n";
 	}
 
 	/**
