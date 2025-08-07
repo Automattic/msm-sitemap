@@ -21,16 +21,28 @@
  */
 
 use Automattic\MSM_Sitemap\Site;
+use Automattic\MSM_Sitemap\Admin\UI;
+use Automattic\MSM_Sitemap\Infrastructure\Factories\UrlEntryFactory;
 
 // Include the Site class early to ensure it's available
 require_once __DIR__ . '/includes/Site.php';
+require __DIR__ . '/includes/Admin/ActionHandlers.php';
+require __DIR__ . '/includes/Admin/Notifications.php';
+require __DIR__ . '/includes/Admin/UI.php';
+require __DIR__ . '/includes/CoreIntegration.php';
+require __DIR__ . '/includes/StylesheetManager.php';
+require __DIR__ . '/includes/Permalinks.php';
+require __DIR__ . '/includes/CronService.php';
+require __DIR__ . '/includes/msm-sitemap-builder-cron.php';
+require __DIR__ . '/includes/Domain/ValueObjects/UrlEntry.php';
+require __DIR__ . '/includes/Domain/ValueObjects/UrlSet.php';
+require __DIR__ . '/includes/Infrastructure/Factories/UrlEntryFactory.php';
+require __DIR__ . '/includes/Infrastructure/Factories/UrlSetFactory.php';
 
 if ( defined( 'WP_CLI' ) && true === WP_CLI ) {
 	require __DIR__ . '/includes/wp-cli.php';
 	WP_CLI::add_command( 'msm-sitemap', 'Metro_Sitemap_CLI' );
 }
-
-use Automattic\MSM_Sitemap\Admin\UI;
 
 class Metro_Sitemap {
 
@@ -529,19 +541,24 @@ class Metro_Sitemap {
 		$xml = new SimpleXMLElement( $namespace_str );
 
 		$url_count = 0;
-		foreach ( $post_ids as $post_id ) {
-			$GLOBALS['post'] = get_post( $post_id );
-			setup_postdata( $GLOBALS['post'] );
+		$url_entries = \Automattic\MSM_Sitemap\Infrastructure\Factories\UrlEntryFactory::from_posts( $post_ids );
 
-			if ( apply_filters( 'msm_sitemap_skip_post', false, $post_id ) ) {
-				continue;
-			}
-
+		// Add URL entries to XML
+		foreach ( $url_entries as $url_entry ) {
 			$url = $xml->addChild( 'url' );
-			$url->addChild( 'loc', esc_url( get_permalink() ) );
-			$url->addChild( 'lastmod', get_post_modified_time( 'c', true ) );
-			$url->addChild( 'changefreq', 'monthly' );
-			$url->addChild( 'priority', '0.7' );
+			$url->addChild( 'loc', esc_url( $url_entry->loc() ) );
+			
+			if ( $url_entry->lastmod() ) {
+				$url->addChild( 'lastmod', $url_entry->lastmod() );
+			}
+			
+			if ( $url_entry->changefreq() ) {
+				$url->addChild( 'changefreq', $url_entry->changefreq() );
+			}
+			
+			if ( $url_entry->priority() ) {
+				$url->addChild( 'priority', (string) $url_entry->priority() );
+			}
 
 			apply_filters( 'msm_sitemap_entry', $url );
 
@@ -986,12 +1003,3 @@ class Metro_Sitemap {
 	}
 }
 add_action( 'after_setup_theme', array( 'Metro_Sitemap', 'setup' ) );
-
-require __DIR__ . '/includes/Admin/ActionHandlers.php';
-require __DIR__ . '/includes/Admin/Notifications.php';
-require __DIR__ . '/includes/Admin/UI.php';
-require __DIR__ . '/includes/CoreIntegration.php';
-require __DIR__ . '/includes/StylesheetManager.php';
-require __DIR__ . '/includes/Permalinks.php';
-require __DIR__ . '/includes/CronService.php';
-require __DIR__ . '/includes/msm-sitemap-builder-cron.php';
