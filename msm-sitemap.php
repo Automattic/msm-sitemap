@@ -263,15 +263,15 @@ class Metro_Sitemap {
 		if ( '1' == $public ) {
 			$output .= '# Sitemap archive' . PHP_EOL;
 
-			if ( self::$index_by_year ) {
+			if ( Site::is_indexed_by_year() ) {
 				$years = self::check_year_has_posts();
 				foreach ( $years as $year ) {
-					$output .= 'Sitemap: ' . Site::get_home_url( '/sitemap-' . absint( $year ) . '.xml' ) . PHP_EOL;
+					$output .= 'Sitemap: ' . Site::get_sitemap_index_url( (int) $year ) . PHP_EOL;
 				}
 
 				$output .= PHP_EOL;
 			} else {
-				$output .= 'Sitemap: ' . Site::get_home_url( '/sitemap.xml' ) . PHP_EOL . PHP_EOL;
+				$output .= 'Sitemap: ' . Site::get_sitemap_index_url() . PHP_EOL . PHP_EOL;
 			}
 		}
 		return $output;
@@ -301,7 +301,7 @@ class Metro_Sitemap {
 	 * @return string URL to redirect
 	 */
 	public static function disable_canonical_redirects_for_sitemap_xml( $redirect_url, $requested_url ) {
-		if ( self::$index_by_year ) {
+		if ( Site::is_indexed_by_year() ) {
 			$pattern = '|sitemap-([0-9]{4})\.xml|';
 		} else {
 			$pattern = '|sitemap\.xml|';

@@ -143,11 +143,8 @@ class SitemapIndexEntryFactoryTest extends TestCase {
 	 * Test creating sitemap index entries from sitemap dates with index by year enabled.
 	 */
 	public function test_from_sitemap_dates_with_index_by_year() {
-		// Store original value
-		$original_index_by_year = \Metro_Sitemap::$index_by_year;
-		
-		// Enable index by year
-		\Metro_Sitemap::$index_by_year = true;
+		// Enable index by year for this test
+		add_filter( 'msm_sitemap_index_by_year', '__return_true' );
 
 		$sitemap_dates = array(
 			'2024-01-15 00:00:00',
@@ -174,8 +171,8 @@ class SitemapIndexEntryFactoryTest extends TestCase {
 		$this->assertStringNotContainsString( 'yyyy=', $entries[1]->loc() );
 		$this->assertEquals( '2024-01-16T00:00:00+00:00', $entries[1]->lastmod() );
 
-		// Restore original value
-		\Metro_Sitemap::$index_by_year = $original_index_by_year;
+		// Remove the filter
+		remove_filter( 'msm_sitemap_index_by_year', '__return_true' );
 	}
 
 	/**
