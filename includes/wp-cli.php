@@ -10,6 +10,7 @@ declare(strict_types=1);
 // namespace Automattic\MSM_Sitemap;
 
 use Automattic\MSM_Sitemap\Cron_Service;
+use Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapIndexEntryFactory;
 use function WP_CLI\Utils\format_items;
 
 /**
@@ -340,13 +341,13 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 						$row['status'] = $post->post_status;
 						break;
 					case 'sitemap_url':
-						$row['sitemap_url'] = \Metro_Sitemap::build_sitemap_url( $post->post_name );
+						$row['sitemap_url'] = $this->build_sitemap_url_from_post_name( $post->post_name );
 						break;
 				}
 			}
 			// Always add sitemap_url as last column if not already present
 			if ( ! isset( $row['sitemap_url'] ) ) {
-				$row['sitemap_url'] = \Metro_Sitemap::build_sitemap_url( $post->post_name );
+				$row['sitemap_url'] = $this->build_sitemap_url_from_post_name( $post->post_name );
 			}
 			$items[] = $row;
 		}
@@ -393,7 +394,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 				'url_count'     => (int) get_post_meta( $post->ID, 'msm_indexed_url_count', true ),
 				'status'        => $post->post_status,
 				'last_modified' => $post->post_modified_gmt,
-				'sitemap_url'   => \Metro_Sitemap::build_sitemap_url( $post->post_name ),
+				'sitemap_url'   => $this->build_sitemap_url_from_post_name( $post->post_name ),
 			);
 		} else {
 			$date_queries = $this->parse_date_query( $input, false );
@@ -421,7 +422,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 					'url_count'     => (int) get_post_meta( $post->ID, 'msm_indexed_url_count', true ),
 					'status'        => $post->post_status,
 					'last_modified' => $post->post_modified_gmt,
-					'sitemap_url'   => \Metro_Sitemap::build_sitemap_url( $post->post_name ),
+					'sitemap_url'   => $this->build_sitemap_url_from_post_name( $post->post_name ),
 				);
 			}
 		}
@@ -999,5 +1000,25 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		} else {
 			WP_CLI::error( __( 'Invalid date format. Use YYYY, YYYY-MM, or YYYY-MM-DD.', 'msm-sitemap' ) );
 		}
+	}
+
+	/**
+	 * Build sitemap URL from post name (date format).
+	 *
+	 * @param string $post_name The post name in YYYY-MM-DD format.
+	 * @return string The sitemap URL.
+	 */
+	private function build_sitemap_url_from_post_name( string $post_name ): string {
+		// Convert YYYY-MM-DD to MySQL DATETIME format
+		$sitemap_date = $post_name . ' 00:00:00';
+		
+		// Use our factory to create a single entry and extract the URL
+		$entries = SitemapIndexEntryFactory::from_sitemap_dates( array( $sitemap_date ) );
+		
+		if ( empty( $entries ) ) {
+			return '';
+		}
+		
+		return $entries[0]->loc();
 	}
 }

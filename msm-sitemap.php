@@ -25,7 +25,7 @@ use Automattic\MSM_Sitemap\Admin\UI;
 use Automattic\MSM_Sitemap\Infrastructure\Factories\UrlEntryFactory;
 
 // Include the Site class early to ensure it's available
-require_once __DIR__ . '/includes/Site.php';
+require __DIR__ . '/includes/Site.php';
 require __DIR__ . '/includes/Admin/ActionHandlers.php';
 require __DIR__ . '/includes/Admin/Notifications.php';
 require __DIR__ . '/includes/Admin/UI.php';
@@ -36,8 +36,12 @@ require __DIR__ . '/includes/CronService.php';
 require __DIR__ . '/includes/msm-sitemap-builder-cron.php';
 require __DIR__ . '/includes/Domain/ValueObjects/UrlEntry.php';
 require __DIR__ . '/includes/Domain/ValueObjects/UrlSet.php';
+require __DIR__ . '/includes/Domain/ValueObjects/SitemapIndexEntry.php';
+require __DIR__ . '/includes/Domain/ValueObjects/SitemapIndexCollection.php';
 require __DIR__ . '/includes/Infrastructure/Factories/UrlEntryFactory.php';
 require __DIR__ . '/includes/Infrastructure/Factories/UrlSetFactory.php';
+require __DIR__ . '/includes/Infrastructure/Factories/SitemapIndexEntryFactory.php';
+require __DIR__ . '/includes/Infrastructure/Factories/SitemapIndexCollectionFactory.php';
 
 if ( defined( 'WP_CLI' ) && true === WP_CLI ) {
 	require __DIR__ . '/includes/wp-cli.php';
@@ -792,10 +796,17 @@ class Metro_Sitemap {
 		 */
 		$sitemaps = apply_filters( 'msm_sitemap_index', $sitemaps, $year );
 
+		// Create sitemap index entries using our domain objects
+		$entries = \Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapIndexEntryFactory::from_sitemap_dates( $sitemaps );
+		$collection = \Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapIndexCollectionFactory::from_entries( $entries );
+
 		$xml = new SimpleXMLElement( $xml_prefix . $stylesheet . '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
-		foreach ( $sitemaps as $sitemap_date ) {
+		foreach ( $collection->get_entries() as $entry ) {
 			$sitemap      = $xml->addChild( 'sitemap' );
-			$sitemap->loc = self::build_sitemap_url( $sitemap_date ); // manually set the child instead of addChild to prevent "unterminated entity reference" warnings due to encoded ampersands http://stackoverflow.com/a/555039/169478
+			$sitemap->loc = $entry->loc(); // manually set the child instead of addChild to prevent "unterminated entity reference" warnings due to encoded ampersands http://stackoverflow.com/a/555039/169478
+			if ( $entry->lastmod() ) {
+				$sitemap->lastmod = $entry->lastmod();
+			}
 		}
 		$xml_string = $xml->asXML();
 
@@ -823,36 +834,7 @@ class Metro_Sitemap {
 		return $xml_string;
 	}
 
-	/**
-	 * Build the sitemap URL for a given date
-	 *
-	 * @param string $sitemap_date
-	 * @return string
-	 */
-	public static function build_sitemap_url( $sitemap_date ) {
-		$sitemap_time = strtotime( $sitemap_date );
 
-		if ( self::$index_by_year ) {
-			$sitemap_url = add_query_arg(
-				array(
-					'mm' => date( 'm', $sitemap_time ),
-					'dd' => date( 'd', $sitemap_time ),
-				),
-				Site::get_home_url( '/sitemap-' . date( 'Y', $sitemap_time ) . '.xml' )
-			);
-		} else {
-			$sitemap_url = add_query_arg(
-				array(
-					'yyyy' => date( 'Y', $sitemap_time ),
-					'mm'   => date( 'm', $sitemap_time ),
-					'dd'   => date( 'd', $sitemap_time ),
-				),
-				Site::get_home_url( '/sitemap.xml' )
-			);
-		}
-
-		return $sitemap_url;
-	}
 
 	public static function get_sitemap_post_id( $year, $month, $day ) {
 		$ymd = self::get_date_stamp( $year, $month, $day );
