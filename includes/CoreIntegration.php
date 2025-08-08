@@ -25,7 +25,18 @@ class CoreIntegration {
 	public static function setup(): void {
 		// Enable WordPress core sitemaps for stylesheet support, but prevent them from interfering with MSM
 		add_action( 'wp_sitemaps_init', array( __CLASS__, 'disable_core_providers' ), 999 );
+		add_action( 'wp_sitemaps_init', array( __CLASS__, 'remove_core_robots_hook' ), 1000 );
 		add_filter( 'wp_sitemaps_robots', '__return_empty_string' ); // Prevent core sitemaps from being added to robots.txt
+	}
+
+	/**
+	 * Remove the core sitemaps' robots.txt hook to prevent them from adding entries.
+	 *
+	 * @param \WP_Sitemaps $wp_sitemaps WordPress core sitemaps instance.
+	 */
+	public static function remove_core_robots_hook( \WP_Sitemaps $wp_sitemaps ): void {
+		// Remove the core sitemaps' robots.txt hook to prevent them from adding entries
+		remove_filter( 'robots_txt', array( $wp_sitemaps, 'add_robots' ), 0 );
 	}
 
 	/**
