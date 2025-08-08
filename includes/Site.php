@@ -41,4 +41,26 @@ class Site {
 	public static function get_home_url( string $path = '' ): string {
 		return home_url( $path );
 	}
+
+	/**
+	 * Check if sitemaps are indexed by year.
+	 *
+	 * @return bool True if indexed by year, false otherwise.
+	 */
+	public static function is_indexed_by_year(): bool {
+		return apply_filters( 'msm_sitemap_index_by_year', false );
+	}
+
+	/**
+	 * Get the sitemap index URL based on configuration.
+	 *
+	 * @param int|null $year Optional year for year-based indexing.
+	 * @return string The complete sitemap index URL.
+	 */
+	public static function get_sitemap_index_url( ?int $year = null ): string {
+		if ( self::is_indexed_by_year() && $year ) {
+			return home_url( "/sitemap-{$year}.xml" );
+		}
+		return home_url( '/sitemap.xml' );
+	}
 } 

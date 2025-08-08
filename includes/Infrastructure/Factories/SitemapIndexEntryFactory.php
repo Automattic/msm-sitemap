@@ -11,7 +11,6 @@ namespace Automattic\MSM_Sitemap\Infrastructure\Factories;
 
 use Automattic\MSM_Sitemap\Site;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapIndexEntry;
-use Metro_Sitemap;
 use InvalidArgumentException;
 
 /**
@@ -108,14 +107,15 @@ class SitemapIndexEntryFactory {
 	 */
 	private static function build_sitemap_url( string $sitemap_date ): string {
 		$sitemap_time = strtotime( $sitemap_date );
+		$year = (int) date( 'Y', $sitemap_time );
 
-		if ( Metro_Sitemap::$index_by_year ) {
+		if ( Site::is_indexed_by_year() ) {
 			$sitemap_url = add_query_arg(
 				array(
 					'mm' => date( 'm', $sitemap_time ),
 					'dd' => date( 'd', $sitemap_time ),
 				),
-				Site::get_home_url( '/sitemap-' . date( 'Y', $sitemap_time ) . '.xml' )
+				Site::get_sitemap_index_url( $year )
 			);
 		} else {
 			$sitemap_url = add_query_arg(
@@ -124,7 +124,7 @@ class SitemapIndexEntryFactory {
 					'mm'   => date( 'm', $sitemap_time ),
 					'dd'   => date( 'd', $sitemap_time ),
 				),
-				Site::get_home_url( '/sitemap.xml' )
+				Site::get_sitemap_index_url()
 			);
 		}
 

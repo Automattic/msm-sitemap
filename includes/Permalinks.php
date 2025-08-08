@@ -39,12 +39,9 @@ class Permalinks {
 		
 		$date = $post->post_name; // e.g., '2022-11-11' or '2022'.
 		
-		// Check if we should index by year (via filter).
-		$index_by_year = apply_filters( 'msm_sitemap_index_by_year', false );
-
-		if ( $index_by_year && preg_match( '/^(\d{4})$/', $date, $matches ) ) {
-			$year = $matches[1];
-			return Site::get_home_url( "/sitemap-$year.xml" );
+		if ( Site::is_indexed_by_year() && preg_match( '/^(\d{4})$/', $date, $matches ) ) {
+			$year = (int) $matches[1];
+			return Site::get_sitemap_index_url( $year );
 		}
 		if ( preg_match( '/^(\d{4})-(\d{2})-(\d{2})$/', $date, $matches ) ) {
 			$year  = $matches[1];

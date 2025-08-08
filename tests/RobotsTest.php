@@ -29,7 +29,8 @@ class RobotsTest extends TestCase {
 	 * Test that a public blog with year indexing off outputs a single sitemap.
 	 */
 	public function test_public_blog_year_indexing_off_outputs_single_sitemap() {
-		Metro_Sitemap::$index_by_year = false;
+		remove_filter( 'msm_sitemap_index_by_year', '__return_true' );
+		add_filter( 'msm_sitemap_index_by_year', '__return_false' );
 		$output                       = Metro_Sitemap::robots_txt( '', '1' );
 		$this->assertStringContainsString( 'Sitemap: ', $output );
 		$this->assertStringContainsString( '/sitemap.xml', $output );
@@ -41,7 +42,8 @@ class RobotsTest extends TestCase {
 	 * Test that a public blog with year indexing on outputs a sitemap per year.
 	 */
 	public function test_public_blog_year_indexing_on_outputs_sitemap_per_year() {
-		Metro_Sitemap::$index_by_year = true;
+		remove_filter( 'msm_sitemap_index_by_year', '__return_false' );
+		add_filter( 'msm_sitemap_index_by_year', '__return_true' );
 		// Add posts for 3 years.
 		$this->add_a_post_for_each_of_the_last_x_years( 3 );
 		$this->build_sitemaps();
@@ -58,7 +60,8 @@ class RobotsTest extends TestCase {
 	 */
 	public function test_private_blog_outputs_no_sitemap() {
 		update_option( 'blog_public', 0 );
-		Metro_Sitemap::$index_by_year = false;
+		remove_filter( 'msm_sitemap_index_by_year', '__return_true' );
+		add_filter( 'msm_sitemap_index_by_year', '__return_false' );
 		$output                       = Metro_Sitemap::robots_txt( '', '0' );
 		$this->assertStringNotContainsString( 'Sitemap: ', $output );
 	}
@@ -67,7 +70,8 @@ class RobotsTest extends TestCase {
 	 * Test that a custom home URL is used in sitemap lines.
 	 */
 	public function test_custom_home_url_is_used_in_sitemap_lines() {
-		Metro_Sitemap::$index_by_year = false;
+		remove_filter( 'msm_sitemap_index_by_year', '__return_true' );
+		add_filter( 'msm_sitemap_index_by_year', '__return_false' );
 		$custom_url                   = 'https://custom.example.com';
 		add_filter(
 			'home_url',

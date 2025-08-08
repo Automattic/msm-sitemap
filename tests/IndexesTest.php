@@ -39,7 +39,8 @@ class IndexesTest extends TestCase {
 	 */
 	public function test_single_sitemap_index(): void {
 		// Turn on indexing by year
-		Metro_Sitemap::$index_by_year = false;
+		remove_filter( 'msm_sitemap_index_by_year', '__return_true' );
+		add_filter( 'msm_sitemap_index_by_year', '__return_false' );
 
 		// Check that we have a single instance of sitemap.xml in robots.txt
 		// We can't actually use the core function since it outputs headers,
@@ -55,7 +56,8 @@ class IndexesTest extends TestCase {
 	 */
 	public function test_sitemap_index_by_year(): void {
 		// Turn on indexing by year
-		Metro_Sitemap::$index_by_year = true;
+		remove_filter( 'msm_sitemap_index_by_year', '__return_false' );
+		add_filter( 'msm_sitemap_index_by_year', '__return_true' );
 
 		// Check that we have a single instance of sitemap.xml in robots.txt
 		// We can't actually use the core function since it outputs headers,

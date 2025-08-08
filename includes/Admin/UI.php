@@ -37,7 +37,7 @@ class UI {
 		<div class="wrap">
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 			<p>
-				<a href="<?php echo esc_url( home_url( '/sitemap.xml' ) ); ?>" target="_blank" class="button button-secondary">
+				<a href="<?php echo esc_url( Site::get_sitemap_index_url() ); ?>" target="_blank" class="button button-secondary">
 					<?php esc_html_e( 'View XML Sitemap Index', 'msm-sitemap' ); ?>
 					<span class="dashicons dashicons-external" style="vertical-align: middle;"></span>
 				</a>

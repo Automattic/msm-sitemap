@@ -9,6 +9,7 @@ declare( strict_types=1 );
 namespace Automattic\MSM_Sitemap\Tests\Cli;
 
 use Metro_Sitemap_CLI;
+use Automattic\MSM_Sitemap\Site;
 
 require_once __DIR__ . '/../Includes/mock-wp-cli.php';
 require_once __DIR__ . '/../../includes/wp-cli.php';
@@ -136,7 +137,7 @@ final class GetTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$this->assertIsInt( $post_id2 );
 		update_post_meta( $post_id2, 'msm_indexed_url_count', 1 );
 
-		$sitemap_url_partial = \Metro_Sitemap::$index_by_year ? 'sitemap-2024.xml?' : 'sitemap.xml?yyyy=2024&';
+		$sitemap_url_partial = Site::is_indexed_by_year() ? 'sitemap-2024.xml?' : 'sitemap.xml?yyyy=2024&';
 
 		$expected =
 				'[{"id":' . $post_id2 . ',"date":"2024-07-11","url_count":1,"status":"publish","last_modified":"2024-07-11 00:00:00","sitemap_url":"http:\/\/example.org\/' . $sitemap_url_partial . 'mm=07&dd=11"},' .
