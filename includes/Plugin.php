@@ -89,6 +89,9 @@ class Plugin {
 		\Automattic\MSM_Sitemap\Admin\UI::setup_admin();
 
 		\Automattic\MSM_Sitemap\Infrastructure\Cron\MissingSitemapGenerationHandler::setup();
+
+		// Register REST API routes
+		add_action( 'rest_api_init', array( $this, 'register_rest_api_routes' ) );
 	}
 
 	/**
@@ -181,5 +184,14 @@ class Plugin {
 			$post_repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository();
 		}
 		return $post_repository->get_years_with_posts();
+	}
+
+	/**
+	 * Register REST API routes.
+	 */
+	public function register_rest_api_routes(): void {
+		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
+		$rest_controller = $container->get( \Automattic\MSM_Sitemap\Infrastructure\WordPress\REST_API_Controller::class );
+		$rest_controller->register_routes();
 	}
 }

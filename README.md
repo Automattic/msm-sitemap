@@ -83,6 +83,76 @@ Sitemap XML is stored in a custom post type (`msm_sitemap`) and served on-demand
 
 Yes, this is filterable. See the [Developer Guide](./DEVELOPERS.md).
 
+## REST API
+
+MSM Sitemap provides a comprehensive REST API for programmatic access to sitemap management features. All endpoints require authentication and the `manage_options` capability.
+
+### Base URL
+```
+/wp-json/msm-sitemap/v1/
+```
+
+### Authentication
+All endpoints require WordPress authentication via nonce or user session with `manage_options` capability.
+
+### Core Endpoints
+
+#### Sitemap Management
+- **`GET /sitemaps`** - List all sitemaps
+- **`POST /sitemaps`** - Create a new sitemap for a specific date
+- **`GET /sitemaps/{date}`** - Get sitemap details for a specific date
+- **`DELETE /sitemaps/{date}`** - Delete sitemap for a specific date
+
+#### Statistics
+- **`GET /stats`** - Get comprehensive sitemap statistics
+
+#### Health Check
+- **`GET /health`** - Check API health and basic information
+
+#### Validation
+- **`POST /validate`** - Validate sitemaps for specified dates
+- **`GET /validate/{date}`** - Get validation status for a specific date
+
+#### Export
+- **`GET /export`** - Export sitemaps in various formats (JSON, CSV, XML)
+
+#### Cron Management
+- **`GET /cron/status`** - Get cron status and configuration
+- **`POST /cron/enable`** - Enable automatic sitemap updates
+- **`POST /cron/disable`** - Disable automatic sitemap updates
+- **`POST /cron/reset`** - Reset cron to clean state
+- **`POST /cron/frequency`** - Update automatic update frequency
+
+#### Generation
+- **`POST /generate-missing`** - Generate missing/outdated sitemaps
+- **`POST /generate-full`** - Start full sitemap generation
+- **`POST /halt-generation`** - Halt ongoing sitemap generation
+- **`POST /recount`** - Recount URLs in sitemaps
+- **`GET /recent-urls`** - Get recent URL counts
+
+#### Data Management
+- **`POST /reset`** - Reset all sitemap data
+
+### Example Usage
+
+```bash
+# List all sitemaps
+curl -X GET "https://example.com/wp-json/msm-sitemap/v1/sitemaps" \
+  -H "X-WP-Nonce: your-nonce-here"
+
+# Create sitemap for today
+curl -X POST "https://example.com/wp-json/msm-sitemap/v1/sitemaps" \
+  -H "Content-Type: application/json" \
+  -H "X-WP-Nonce: your-nonce-here" \
+  -d '{"date": "2024-08-12"}'
+
+# Get cron status
+curl -X GET "https://example.com/wp-json/msm-sitemap/v1/cron/status" \
+  -H "X-WP-Nonce: your-nonce-here"
+```
+
+For detailed API documentation, see [DEVELOPERS.md](./DEVELOPERS.md).
+
 ## WP-CLI Commands
 
 MSM Sitemap supports advanced management via WP-CLI. Here are the most common commands:
