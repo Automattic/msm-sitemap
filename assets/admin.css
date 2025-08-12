@@ -1,0 +1,151 @@
+/**
+ * MSM Sitemap Admin Styles
+ */
+
+/* Loading animation for missing sitemaps */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.dashicons-update {
+    animation: spin 1s linear infinite;
+}
+
+/* Grid layout for cards */
+.insight-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+/* Responsive grid adjustments */
+@media (max-width: 768px) {
+    .insight-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+}
+
+/* Insight cards styling */
+.insight-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 0; /* Remove margin since grid handles spacing */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.insight-card h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+    font-size: 16px;
+}
+
+/* Insight items styling for key-value pairs */
+.insight-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0;
+    padding: 4px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.insight-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.insight-label {
+    font-weight: 500;
+    color: #333;
+    color: #666;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.insight-value {
+    text-align: right;
+    color: #666;
+    font-weight: 500;
+    color: #23282d;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.insight-value.warning {
+    color: #d63638;
+}
+
+/* Stat descriptor styling */
+.stat-descriptor {
+    font-size: 11px;
+    color: #666;
+    font-style: italic;
+    margin-top: -0.6rem;
+    margin-bottom: 1rem;
+}
+
+.insight-content {
+    color: #666;
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Date range filter styling */
+.date-range-filter {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.date-range-filter label {
+    display: inline-block;
+    margin-right: 10px;
+    font-weight: 500;
+    font-weight: 600;
+    vertical-align: middle;
+}
+
+.date-range-filter select,
+.date-range-filter input[type="date"] {
+    margin-right: 10px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    vertical-align: middle;
+}
+
+.date-range-filter button {
+    margin-left: 5px;
+    vertical-align: middle;
+}
+
+
+/* Detailed Stats Section */
+.detailed-stats-section {
+    margin-top: 20px;
+    padding: 20px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* Trend indicators */
+.trend-increasing {
+    color: #00a32a;
+}
+
+.trend-decreasing {
+    color: #d63638;
+}
+
+.trend-stable {
+    color: #50575e;
+}
