@@ -129,7 +129,7 @@ class SitemapGenerationService {
 			1,
 			sprintf(
 				/* translators: 1: Date in YYYY-MM-DD format, 2: Number of URLs */
-				__( 'Sitemap created for %1$s with %2$d URLs.', 'msm-sitemap' ),
+				_n( 'Sitemap created for %1$s with %2$d URL.', 'Sitemap created for %1$s with %2$d URLs.', $content->count(), 'msm-sitemap' ),
 				$date,
 				$content->count()
 			),
