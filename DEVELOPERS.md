@@ -522,8 +522,9 @@ MSM Sitemap provides a flexible WP-CLI interface for advanced management:
     ```shell
     # Enable automatic sitemap updates
     $ wp msm-sitemap cron enable
-    Success: ✅ Sitemap cron enabled successfully.
+    Success: ✅ Automatic sitemap updates enabled successfully.
     ```
+    **Note:** If already enabled, shows: `Warning: ⚠️ Automatic updates are already enabled.`
 
 - **cron disable**: Disable automatic sitemap updates.
   - No arguments.
@@ -531,9 +532,10 @@ MSM Sitemap provides a flexible WP-CLI interface for advanced management:
     ```shell
     # Disable automatic sitemap updates
     $ wp msm-sitemap cron disable
-    Success: ✅ Sitemap cron disabled successfully.
+    Success: ✅ Automatic sitemap updates disabled successfully.
     ✅ Cron events cleared successfully.
     ```
+    **Note:** If already disabled, shows: `Warning: ⚠️ Automatic updates are already disabled.`
 
 - **cron status**: Check the status of automatic updates.
   - `--format=<format>` – table, json, csv.
@@ -541,11 +543,33 @@ MSM Sitemap provides a flexible WP-CLI interface for advanced management:
     ```shell
     # Check cron status in table format
     $ wp msm-sitemap cron status --format=table
-    +---------+-------------------------+-------------+------------+--------+
-    | enabled | next_scheduled          | blog_public | generating | halted |
-    +---------+-------------------------+-------------+------------+--------+
-    | Yes     | 2025-08-01 14:30:00 UTC | Yes         | No         | No     |
-    +---------+-------------------------+-------------+------------+--------+
+    +---------+-------------------------+-------------+------------+--------+-------------------+
+    | enabled | next_scheduled          | blog_public | generating | halted | current_frequency |
+    +---------+-------------------------+-------------+------------+--------+-------------------+
+    | Yes     | 2025-08-01 14:30:00 UTC | Yes         | No         | No     | 15min             |
+    +---------+-------------------------+-------------+------------+--------+-------------------+
+    ```
+
+- **cron frequency**: View or update the automatic update frequency.
+  - `[<frequency>]` – Optional frequency to set. If not provided, shows current frequency and valid options.
+  - Valid frequencies: `5min`, `10min`, `15min`, `30min`, `hourly`, `2hourly`, `3hourly`
+  - **Examples:**
+    ```shell
+    # Show current frequency and valid options
+    $ wp msm-sitemap cron frequency
+    Current cron frequency: 15min
+    Valid frequencies:
+      - 5min
+      - 10min
+      - 15min
+      - 30min
+      - hourly
+      - 2hourly
+      - 3hourly
+
+    # Update to hourly frequency
+    $ wp msm-sitemap cron frequency hourly
+    Success: ✅ Automatic update frequency successfully changed.
     ```
 
 - **cron reset**: Reset cron to clean state (for testing).

@@ -128,18 +128,36 @@ MSM Sitemap supports advanced management via WP-CLI. Here are the most common co
   ```shell
   wp msm-sitemap cron enable
   ```
+  Output: `✅ Automatic sitemap updates enabled successfully.` or `⚠️ Automatic updates are already enabled.`
+
 - **cron disable**: Disable automatic sitemap updates.
   ```shell
   wp msm-sitemap cron disable
   ```
+  Output: `✅ Automatic sitemap updates disabled successfully.` or `⚠️ Automatic updates are already disabled.`
+
 - **cron status**: Check the status of automatic updates.
   ```shell
   wp msm-sitemap cron status
   ```
+  Shows: enabled status, next scheduled time, blog public status, generation status, halt status, and current frequency.
+
+- **cron frequency**: View or update the automatic update frequency.
+  ```shell
+  # Show current frequency and valid options
+  wp msm-sitemap cron frequency
+  
+  # Update to a specific frequency
+  wp msm-sitemap cron frequency hourly
+  ```
+  Valid frequencies: `5min`, `10min`, `15min`, `30min`, `hourly`, `2hourly`, `3hourly`
+  Output: `✅ Automatic update frequency successfully changed.` or `❌ Invalid frequency specified.`
+
 - **cron reset**: Reset cron to clean state (for testing).
   ```shell
   wp msm-sitemap cron reset
   ```
+  Output: `✅ Sitemap cron reset to clean state.`
 
 For the full list of commands, options, and legacy command mapping, see [DEVELOPERS.md](./DEVELOPERS.md).
 

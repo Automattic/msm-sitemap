@@ -611,6 +611,7 @@ class CLI_Command extends WP_CLI_Command {
 	 *   - disable
 	 *   - status
 	 *   - reset
+	 *   - frequency
 	 * ---
 	 *
 	 * ## OPTIONS
@@ -625,6 +626,8 @@ class CLI_Command extends WP_CLI_Command {
 	 *     wp msm-sitemap cron disable
 	 *     wp msm-sitemap cron status --format=json
 	 *     wp msm-sitemap cron reset
+	 *     wp msm-sitemap cron frequency
+	 *     wp msm-sitemap cron frequency hourly
 	 *
 	 * @when before_wp_load
 	 */
@@ -649,6 +652,9 @@ class CLI_Command extends WP_CLI_Command {
 				break;
 			case 'reset':
 				$this->cron_reset( array(), $assoc_args );
+				break;
+			case 'frequency':
+				$this->cron_frequency( $args, $assoc_args );
 				break;
 			default:
 				WP_CLI::error( sprintf(
@@ -729,6 +735,60 @@ class CLI_Command extends WP_CLI_Command {
 			WP_CLI::log( __( '📝 This simulates a fresh install state.', 'msm-sitemap' ) );
 		} else {
 			WP_CLI::error( __( '❌ Failed to reset sitemap cron.', 'msm-sitemap' ) );
+		}
+	}
+
+	/**
+	 * Manage the sitemap cron frequency.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [<frequency>]
+	 * : The frequency to set. If not provided, shows current frequency.
+	 * ---
+	 * options:
+	 *   - 5min
+	 *   - 10min
+	 *   - 15min
+	 *   - 30min
+	 *   - hourly
+	 *   - 2hourly
+	 *   - 3hourly
+	 * ---
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp msm-sitemap cron frequency
+	 *     wp msm-sitemap cron frequency hourly
+	 *     wp msm-sitemap cron frequency 15min
+	 *
+	 * @when before_wp_load
+	 */
+	private function cron_frequency( $args, $assoc_args ) {
+		// If no frequency provided, show current frequency
+		if ( empty( $args ) ) {
+			$current_frequency = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::get_current_frequency();
+			$valid_frequencies = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::get_valid_frequencies();
+			
+			WP_CLI::log( sprintf(
+				/* translators: %s: Current frequency */
+				__( 'Current cron frequency: %s', 'msm-sitemap' ),
+				$current_frequency
+			) );
+			WP_CLI::log( __( 'Valid frequencies:', 'msm-sitemap' ) );
+			foreach ( $valid_frequencies as $frequency ) {
+				WP_CLI::log( sprintf( '  - %s', $frequency ) );
+			}
+			return;
+		}
+		
+		$frequency = $args[0];
+		$result = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::update_frequency( $frequency );
+		
+		if ( $result['success'] ) {
+			WP_CLI::success( $result['message'] );
+		} else {
+			WP_CLI::error( $result['message'] );
 		}
 	}
 
