@@ -2,14 +2,13 @@
 /**
  * WP_Test_Sitemap_Filter Query
  *
- * @package Metro_Sitemap/unit_tests
+ * @package Automattic\MSM_Sitemap\Tests
  */
 
 declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests;
 
-use Metro_Sitemap;
 use WP_Query;
 
 /**
@@ -49,7 +48,7 @@ class FiltersTest extends TestCase {
 	}
 
 	/**
-	 * Verify that msm_sitemap_index filter runs when build_root_sitemap_xml is called.
+	 * Verify that msm_sitemap_index filter runs when sitemap index is generated.
 	 */
 	public function test_msm_sitemap_index_filter_ran(): void {
 		$ran = false;
@@ -61,7 +60,8 @@ class FiltersTest extends TestCase {
 				return array();
 			} 
 		);
-		Metro_Sitemap::build_root_sitemap_xml();
+		
+		\Automattic\MSM_Sitemap\Infrastructure\WordPress\SitemapEndpointHandler::get_sitemap_index_xml();
 
 		$this->assertTrue( $ran );
 	}
@@ -77,7 +77,10 @@ class FiltersTest extends TestCase {
 			} 
 		);
 
-		$this->assertEquals( array( 2000, 2001, 2002 ), Metro_Sitemap::get_post_year_range() );
+		$post_repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository();
+		$years = $post_repository->get_post_year_range();
+
+		$this->assertEquals( array( 2000, 2001, 2002 ), $years );
 
 		remove_all_filters( 'msm_sitemap_pre_get_post_year_range' );
 	}
@@ -103,7 +106,8 @@ class FiltersTest extends TestCase {
 			3
 		);
 
-		$xml = Metro_Sitemap::build_root_sitemap_xml();
+		$xml = \Automattic\MSM_Sitemap\Infrastructure\WordPress\SitemapEndpointHandler::get_sitemap_index_xml();
+		
 		$this->assertStringContainsString( $append_xml, $xml );
 		$this->assertIsArray( $called_args );
 		$this->assertEquals( '', $called_args[0] );
@@ -135,7 +139,8 @@ class FiltersTest extends TestCase {
 			3
 		);
 
-		$xml = Metro_Sitemap::build_root_sitemap_xml();
+		$xml = \Automattic\MSM_Sitemap\Infrastructure\WordPress\SitemapEndpointHandler::get_sitemap_index_xml();
+		
 		$this->assertEquals( $replacement_xml, $xml );
 		$this->assertIsArray( $called_args );
 		$this->assertStringContainsString( '<sitemapindex', $called_args[0] );

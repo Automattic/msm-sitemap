@@ -9,7 +9,7 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests\Includes;
 
-use Automattic\MSM_Sitemap\CoreIntegration;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\CoreIntegration;
 use Automattic\MSM_Sitemap\Tests\TestCase;
 use WP_Sitemaps;
 use WP_Sitemaps_Provider;

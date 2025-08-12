@@ -10,9 +10,6 @@ declare( strict_types=1 );
 namespace Automattic\MSM_Sitemap\Tests;
 
 use DateTime;
-use Exception;
-use Metro_Sitemap;
-use MSM_Sitemap_Builder_Cron;
 use WP_Post;
 
 /**
@@ -51,20 +48,10 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 		// Remove all posts created for the test.
 		$this->posts = array();
 
-		// Remove all sitemaps created for the test.
-		$sitemaps = get_posts(
-			array(
-				'post_type'      => Metro_Sitemap::SITEMAP_CPT,
-				'fields'         => 'ids',
-				'posts_per_page' => -1,
-			) 
-		);
+		$this->delete_all_sitemaps();
 
-		// Reset the indexed URL count.
-		// update_option( 'msm_sitemap_indexed_url_count' , 0 );
-
-		// Remove all sitemaps created for the test.
-		array_map( 'wp_delete_post', array_merge( $this->posts_created, $sitemaps ) );
+		// Remove all posts created for the test.
+		array_map( 'wp_delete_post', $this->posts_created );
 
 		// Remove all filters added for the test.
 		foreach ( $this->added_filters as $filter ) {
@@ -77,6 +64,37 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 		$this->add_test_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 
 		parent::setUp();
+	}
+
+	/**
+	 * Clean up after each test.
+	 */
+	public function tearDown(): void {
+		$this->delete_all_sitemaps();
+
+		parent::tearDown();
+	}
+
+	/**
+	 * Delete all sitemap posts and reset the indexed URL count.
+	 */
+	public function delete_all_sitemaps(): void {
+		$sitemaps = get_posts(
+			array(
+				'post_type'      => \Automattic\MSM_Sitemap\Plugin::SITEMAP_CPT,
+				'fields'         => 'ids',
+				'posts_per_page' => -1,
+				'post_status'    => 'any', // Include all statuses
+			) 
+		);
+
+		// Delete all sitemap posts
+		foreach ( $sitemaps as $sitemap_id ) {
+			wp_delete_post( $sitemap_id, true );
+		}
+
+		// Reset the indexed URL count.
+		update_option( 'msm_sitemap_indexed_url_count', 0 );
 	}
 
 	/**
@@ -203,7 +221,8 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 		foreach ( $dates as $date => $count ) {
 			list( $year, $month, $day ) = explode( '-', $date, 3 );
 
-			$indexed_url_count = Metro_Sitemap::get_indexed_url_count( $year, $month, $day );
+			$post_id = $this->get_sitemap_post_id( $year, $month, $day );
+			$indexed_url_count = $post_id ? (int) get_post_meta( $post_id, 'msm_indexed_url_count', true ) : 0;
 			if ( $indexed_url_count !== $count ) {
 				$this->fail( "Expected url count of $indexed_url_count but had count of $count on $year-$month-$day" );
 				return false;
@@ -214,7 +233,7 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 	}
 
 	/**
-	 * Generate sitemaps for all Posts
+	 * Build sitemaps for all posts using the new DDD system.
 	 */
 	public function build_sitemaps(): void {
 		global $wpdb;
@@ -224,28 +243,27 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 		foreach ( $posts as $post ) {
 			$dates[] = date( 'Y-m-d', strtotime( $post->post_date ) );
 		}
+		
+		// Use the new service instead of the old method
+		$generator = msm_sitemap_plugin()->get_sitemap_generator();
+		$repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
+		$service = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
+		
 		foreach ( array_unique( $dates ) as $date ) {
-			list( $year, $month, $day ) = explode( '-', $date );
-
-			MSM_Sitemap_Builder_Cron::generate_sitemap_for_year_month_day(
-				array(
-					'year'  => $year,
-					'month' => $month,
-					'day'   => $day,
-				) 
-			);
+			$service->create_for_date( $date, true ); // Force regeneration
 		}
 	}
 
 	/**
-	 * Duplicate of Metro_Sitemap get_supported_post_types_in
+	 * Get supported post types in a format that can be used in a SQL query.
 	 *
 	 * @return string
 	 */
 	public function get_supported_post_types_in(): string {
 		global $wpdb;
 
-		$post_types          = Metro_Sitemap::get_supported_post_types();
+		$post_repository     = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository();
+		$post_types          = $post_repository->get_supported_post_types();
 		$post_types_prepared = array();
 
 		foreach ( $post_types as $post_type ) {
@@ -256,20 +274,19 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 	}
 
 	/**
-	 * Generate sitemap for an individual post
+	 * Generate sitemap for an individual post using the new DDD system.
 	 *
 	 * @param WP_Post $post Post.
 	 */
 	public function update_sitemap_by_post( WP_Post $post ): void {
-		$date                       = date( 'Y-m-d', strtotime( $post->post_date ) );
-		list( $year, $month, $day ) = explode( '-', $date );
-		MSM_Sitemap_Builder_Cron::generate_sitemap_for_year_month_day(
-			array(
-				'year'  => $year,
-				'month' => $month,
-				'day'   => $day,
-			) 
-		);
+		$date = date( 'Y-m-d', strtotime( $post->post_date ) );
+		
+		// Use the new service instead of the old method
+		$generator = msm_sitemap_plugin()->get_sitemap_generator();
+		$repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
+		$service = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
+		
+		$service->create_for_date( $date, true ); // Force regeneration
 	}
 
 	/**
@@ -296,11 +313,11 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 					continue; // only run our own jobs.
 				}
 				$arg_struct = array_pop( $arg_wrapper );
-				$args       = $arg_struct['args'][0];
+				$args       = $arg_struct['args'];
 				wp_unschedule_event( $timestamp, $hook, $arg_struct['args'] );
 				if ( 'run' === $execute ) {
 					// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
-					do_action( $hook, $args );
+					call_user_func_array( 'do_action', array_merge( array( $hook ), $args ) );
 				}
 			}
 		}
@@ -312,7 +329,7 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 	 * @param int $expected The expected number of sitemaps.
 	 */
 	protected function assertSitemapCount( $expected ) {
-		$this->assertEquals( $expected, wp_count_posts( Metro_Sitemap::SITEMAP_CPT )->publish );
+		$this->assertEquals( $expected, wp_count_posts( \Automattic\MSM_Sitemap\Plugin::SITEMAP_CPT )->publish );
 	}
 
 	/**
@@ -329,14 +346,49 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 	 *
 	 * @param int $expected The expected number of indexed URLs.
 	 */
-	protected function assertIndexedUrlCount( $expected ) {
-		$this->assertEquals( $expected, Metro_Sitemap::get_total_indexed_url_count() );
-	}
+    protected function assertIndexedUrlCount( $expected ) {
+        $this->assertEquals( $expected, (int) get_option( 'msm_sitemap_indexed_url_count', 0 ) );
+    }
 
 	/**
 	 * Assert that the stats are correct for each individual created post
 	 */
 	protected function assertStatsForCreatedPosts(): bool {
 		return $this->check_stats_for_created_posts();
+	}
+
+		/**
+	 * Generate a sitemap for a specific date using the proper DDD services.
+	 *
+	 * @param string $sitemap_date The sitemap date (YYYY-MM-DD format).
+	 * @param bool   $force Whether to force regeneration even if sitemap exists.
+	 * @return bool True if sitemap was generated or already exists, false if generation failed.
+	 */
+	protected function generate_sitemap_for_date( string $sitemap_date, bool $force = false ): bool {
+		$generator = msm_sitemap_plugin()->get_sitemap_generator();
+		$repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
+		$service = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
+
+		// Convert datetime format to date format (YYYY-MM-DD HH:MM:SS -> YYYY-MM-DD) if needed
+		$date = substr( $sitemap_date, 0, 10 );
+
+		$result = $service->create_for_date( $date, $force );
+		return $result->is_success();
+	}
+
+	/**
+	 * Get a sitemap post ID by year, month, and day using the repository.
+	 *
+	 * @param int|string $year The year.
+	 * @param int|string $month The month.
+	 * @param int|string $day The day.
+	 * @return int|false The post ID if found, false otherwise.
+	 */
+	protected function get_sitemap_post_id( $year, $month, $day ) {
+		$date = \Automattic\MSM_Sitemap\Domain\Utilities\DateUtility::format_date_stamp( (int) $year, (int) $month, (int) $day );
+		$repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
+		$post_id = $repository->find_by_date( $date );
+		
+		return $post_id ? $post_id : false;
 	}
 }

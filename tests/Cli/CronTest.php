@@ -8,11 +8,11 @@ declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap\Tests\Cli;
 
-use Metro_Sitemap_CLI;
-use Automattic\MSM_Sitemap\Cron_Service;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\CLI_Command;
+use Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService;
 
 require_once __DIR__ . '/../Includes/mock-wp-cli.php';
-require_once __DIR__ . '/../../includes/wp-cli.php';
+require_once __DIR__ . '/../../includes/Infrastructure/CLI/CLI_Command.php';
 
 /**
  * Class CronTest
@@ -29,7 +29,7 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function setUp(): void {
 		parent::setUp();
 		// Clear any existing cron options
-		delete_option( Cron_Service::CRON_ENABLED_OPTION );
+		delete_option( CronSchedulingService::CRON_ENABLED_OPTION );
 		wp_unschedule_hook( 'msm_cron_update_sitemap' );
 	}
 
@@ -40,7 +40,7 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function tearDown(): void {
 		// Clean up cron options and events
-		delete_option( Cron_Service::CRON_ENABLED_OPTION );
+		delete_option( CronSchedulingService::CRON_ENABLED_OPTION );
 		wp_unschedule_hook( 'msm_cron_update_sitemap' );
 		parent::tearDown();
 	}
@@ -54,14 +54,14 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		// Remove the filter that forces cron enabled in tests
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 
 		ob_start();
 		$cli->cron( array( 'enable' ), array() );
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'Sitemap cron enabled successfully', $output );
-		$this->assertTrue( (bool) get_option( Cron_Service::CRON_ENABLED_OPTION ) );
+		$this->assertTrue( (bool) get_option( CronSchedulingService::CRON_ENABLED_OPTION ) );
 		$this->assertNotFalse( wp_next_scheduled( 'msm_cron_update_sitemap' ) );
 		
 		// Restore the filter for other tests
@@ -78,9 +78,9 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
 		// Enable cron first
-		Cron_Service::enable_cron();
+		CronSchedulingService::enable_cron();
 
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 
 		ob_start();
 		$cli->cron( array( 'enable' ), array() );
@@ -102,16 +102,16 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
 		// Enable cron first
-		Cron_Service::enable_cron();
+		CronSchedulingService::enable_cron();
 
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 
 		ob_start();
 		$cli->cron( array( 'disable' ), array() );
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'Sitemap cron disabled successfully', $output );
-		$this->assertFalse( (bool) get_option( Cron_Service::CRON_ENABLED_OPTION ) );
+		$this->assertFalse( (bool) get_option( CronSchedulingService::CRON_ENABLED_OPTION ) );
 		$this->assertFalse( wp_next_scheduled( 'msm_cron_update_sitemap' ) );
 		
 		// Restore the filter for other tests
@@ -127,7 +127,7 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		// Remove the filter that forces cron enabled in tests
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 
 		ob_start();
 		$cli->cron( array( 'disable' ), array() );
@@ -146,9 +146,9 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function test_cron_status_when_enabled(): void {
 		// Enable cron first
-		Cron_Service::enable_cron();
+		CronSchedulingService::enable_cron();
 
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 
 		ob_start();
 		$cli->cron( array( 'status' ), array() );
@@ -167,7 +167,7 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		// Remove the filter that forces cron enabled in tests
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 
 		ob_start();
 		$cli->cron( array( 'status' ), array() );
@@ -187,9 +187,9 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function test_cron_status_json_format(): void {
 		// Enable cron first
-		Cron_Service::enable_cron();
+		CronSchedulingService::enable_cron();
 
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 
 		ob_start();
 		$cli->cron( array( 'status' ), array( 'format' => 'json' ) );
@@ -216,26 +216,26 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
 		// Enable cron and add some processing options
-		Cron_Service::enable_cron();
+		CronSchedulingService::enable_cron();
 		update_option( 'msm_years_to_process', array( '2024' ) );
 		update_option( 'msm_months_to_process', array( 1 ) );
 		update_option( 'msm_days_to_process', array( 1 ) );
-		update_option( 'msm_sitemap_create_in_progress', true );
+		update_option( 'msm_generation_in_progress', true );
 		update_option( 'msm_stop_processing', true );
 
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 
 		ob_start();
 		$cli->cron( array( 'reset' ), array() );
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'Sitemap cron reset to clean state', $output );
-		$this->assertFalse( (bool) get_option( Cron_Service::CRON_ENABLED_OPTION ) );
+		$this->assertFalse( (bool) get_option( CronSchedulingService::CRON_ENABLED_OPTION ) );
 		$this->assertFalse( wp_next_scheduled( 'msm_cron_update_sitemap' ) );
 		$this->assertEmpty( get_option( 'msm_years_to_process' ) );
 		$this->assertEmpty( get_option( 'msm_months_to_process' ) );
 		$this->assertEmpty( get_option( 'msm_days_to_process' ) );
-		$this->assertFalse( (bool) get_option( 'msm_sitemap_create_in_progress' ) );
+		$this->assertFalse( (bool) get_option( 'msm_generation_in_progress' ) );
 		$this->assertFalse( (bool) get_option( 'msm_stop_processing' ) );
 		
 		// Restore the filter for other tests
@@ -248,7 +248,7 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_cron_without_subcommand(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 
 		ob_start();
 		$cli->cron( array(), array() );
@@ -264,7 +264,7 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_cron_with_invalid_subcommand(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 
 		// This test expects an exception to be thrown
 		$this->expectException( 'WP_CLI\ExitException' );

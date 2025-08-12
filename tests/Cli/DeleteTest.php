@@ -8,11 +8,11 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests\Cli;
 
-use Metro_Sitemap_CLI;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\CLI_Command;
 use Automattic\MSM_Sitemap\Tests\TestCase;
 
 require_once __DIR__ . '/../Includes/mock-wp-cli.php';
-require_once __DIR__ . '/../../includes/wp-cli.php';
+require_once __DIR__ . '/../../includes/Infrastructure/CLI/CLI_Command.php';
 
 /**
  * DeleteTest
@@ -74,7 +74,7 @@ final class DeleteTest extends TestCase {
 	 * @return void
 	 */
 	public function test_delete_requires_date_or_all(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 		$this->expectException( \WP_CLI\ExitException::class );
 		$cli->delete( array(), array() );
 	}
@@ -83,7 +83,7 @@ final class DeleteTest extends TestCase {
 	 * Test that deleting all sitemaps prompts for confirmation.
 	 */
 	public function test_delete_all_prompts_for_confirmation() {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 		$this->expectException( \WP_CLI_ConfirmationException::class );
 		$this->expectOutputRegex( '/Are you sure you want to delete ALL sitemaps?/' );
 		$cli->delete( array(), array( 'all' => true ) );
@@ -94,7 +94,7 @@ final class DeleteTest extends TestCase {
 	 * Test deleting all sitemaps using the --all flag.
 	 */
 	public function test_delete_all(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 		$cli->delete(
 			array(),
 			array(
@@ -110,7 +110,7 @@ final class DeleteTest extends TestCase {
 	 * Test deleting all sitemaps for a given year.
 	 */
 	public function test_delete_by_year(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 		$cli->delete(
 			array(),
 			array(
@@ -126,7 +126,7 @@ final class DeleteTest extends TestCase {
 	 * Test deleting all sitemaps for a given year and month.
 	 */
 	public function test_delete_by_year_month(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 		$cli->delete(
 			array(),
 			array(
@@ -142,7 +142,7 @@ final class DeleteTest extends TestCase {
 	 * Test deleting a sitemap by year, month, and day.
 	 */
 	public function test_delete_by_year_month_day(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 		$cli->delete(
 			array(),
 			array(
@@ -159,7 +159,7 @@ final class DeleteTest extends TestCase {
 	 * Test that --quiet suppresses output for the delete command.
 	 */
 	public function test_delete_quiet(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 
 		ob_start();
 		$cli->delete(
@@ -178,7 +178,7 @@ final class DeleteTest extends TestCase {
 	 * Test that an invalid date (e.g., month=13) throws an exception.
 	 */
 	public function test_delete_invalid_date(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 
 		$this->expectException( \Exception::class );
 		$cli->delete(
@@ -194,7 +194,7 @@ final class DeleteTest extends TestCase {
 	 * Test that deleting a date with no sitemaps does not throw and leaves no sitemaps for that date.
 	 */
 	public function test_delete_no_sitemaps_found(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 		$cli->delete(
 			array(),
 			array(
@@ -221,7 +221,7 @@ final class DeleteTest extends TestCase {
 			)
 		);
 
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 		$cli->delete(
 			array(),
 			array(

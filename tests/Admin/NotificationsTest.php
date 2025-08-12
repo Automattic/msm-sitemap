@@ -2,7 +2,7 @@
 /**
  * NotificationsTest
  *
- * @package Metro_Sitemap/unit_tests
+ * @package Automattic\MSM_Sitemap\Tests
  */
 
 declare( strict_types=1 );

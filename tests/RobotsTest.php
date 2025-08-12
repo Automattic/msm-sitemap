@@ -1,18 +1,18 @@
 <?php
 /**
- * Robots.txt integration tests for Metro Sitemap
+ * Robots.txt integration tests for MSM Sitemap
  *
- * @package Metro_Sitemap/unit_tests
+ * @package Automattic\MSM_Sitemap\Tests
  */
 
 declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests;
 
-use Metro_Sitemap;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\CoreIntegration;
 
 /**
- * Robots.txt integration tests for Metro Sitemap.
+ * Robots.txt integration tests for MSM Sitemap.
  */
 class RobotsTest extends TestCase {
 
@@ -31,7 +31,7 @@ class RobotsTest extends TestCase {
 	public function test_public_blog_year_indexing_off_outputs_single_sitemap() {
 		remove_filter( 'msm_sitemap_index_by_year', '__return_true' );
 		add_filter( 'msm_sitemap_index_by_year', '__return_false' );
-		$output                       = Metro_Sitemap::robots_txt( '', '1' );
+		$output = CoreIntegration::robots_txt( '', '1' );
 		$this->assertStringContainsString( 'Sitemap: ', $output );
 		$this->assertStringContainsString( '/sitemap.xml', $output );
 		// Should not contain year-based sitemaps.
@@ -47,7 +47,7 @@ class RobotsTest extends TestCase {
 		// Add posts for 3 years.
 		$this->add_a_post_for_each_of_the_last_x_years( 3 );
 		$this->build_sitemaps();
-		$output = Metro_Sitemap::robots_txt( '', '1' );
+		$output = CoreIntegration::robots_txt( '', '1' );
 		// Should contain at least 3 year-based sitemap lines.
 		preg_match_all( '/Sitemap: .*\/sitemap-\d{4}\.xml/', $output, $matches );
 		$this->assertTrue( count( $matches[0] ) >= 3, 'Expected at least 3 year-based sitemap lines.' );
@@ -62,7 +62,7 @@ class RobotsTest extends TestCase {
 		update_option( 'blog_public', 0 );
 		remove_filter( 'msm_sitemap_index_by_year', '__return_true' );
 		add_filter( 'msm_sitemap_index_by_year', '__return_false' );
-		$output                       = Metro_Sitemap::robots_txt( '', '0' );
+		$output = CoreIntegration::robots_txt( '', '0' );
 		$this->assertStringNotContainsString( 'Sitemap: ', $output );
 	}
 
@@ -79,7 +79,7 @@ class RobotsTest extends TestCase {
 				return $custom_url;
 			} 
 		);
-		$output       = Metro_Sitemap::robots_txt( '', '1' );
+		$output       = CoreIntegration::robots_txt( '', '1' );
 		$expected_url = $custom_url; // Only the domain, not /sitemap.xml
 		$this->assertStringContainsString( $expected_url, $output );
 		remove_all_filters( 'home_url' );

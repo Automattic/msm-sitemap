@@ -2,7 +2,7 @@
 /**
  * ActionHandlersTest
  *
- * @package Metro_Sitemap/unit_tests
+ * @package Automattic\MSM_Sitemap\Tests
  */
 
 declare( strict_types=1 );
@@ -10,8 +10,7 @@ declare( strict_types=1 );
 namespace Automattic\MSM_Sitemap\Tests\Admin;
 
 use Automattic\MSM_Sitemap\Admin\Action_Handlers;
-use Automattic\MSM_Sitemap\Cron_Service;
-use MSM_Sitemap_Builder_Cron;
+use Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService;
 
 /**
  * Unit Tests for Admin\Action_Handlers class
@@ -24,10 +23,10 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function setUp(): void {
 		parent::setUp();
 		// Clear any existing cron options
-		delete_option( Cron_Service::CRON_ENABLED_OPTION );
+		delete_option( CronSchedulingService::CRON_ENABLED_OPTION );
 		wp_unschedule_hook( 'msm_cron_update_sitemap' );
 		// Clear any generation progress
-		delete_option( 'msm_sitemap_create_in_progress' );
+		delete_option( 'msm_generation_in_progress' );
 		delete_option( 'msm_stop_processing' );
 	}
 
@@ -36,9 +35,9 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function tearDown(): void {
 		// Clean up cron options and events
-		delete_option( Cron_Service::CRON_ENABLED_OPTION );
+		delete_option( CronSchedulingService::CRON_ENABLED_OPTION );
 		wp_unschedule_hook( 'msm_cron_update_sitemap' );
-		delete_option( 'msm_sitemap_create_in_progress' );
+		delete_option( 'msm_generation_in_progress' );
 		delete_option( 'msm_stop_processing' );
 		parent::tearDown();
 	}
@@ -54,7 +53,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		Action_Handlers::handle_enable_cron();
 		$output = ob_get_clean();
 
-		$this->assertTrue( (bool) get_option( Cron_Service::CRON_ENABLED_OPTION ) );
+		$this->assertTrue( (bool) get_option( CronSchedulingService::CRON_ENABLED_OPTION ) );
 		$this->assertNotFalse( wp_next_scheduled( 'msm_cron_update_sitemap' ) );
 		$this->assertStringContainsString( 'Automatic sitemap updates enabled successfully', $output );
 		
@@ -70,7 +69,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
 		// Enable cron first
-		Cron_Service::enable_cron();
+		CronSchedulingService::enable_cron();
 
 		ob_start();
 		Action_Handlers::handle_enable_cron();
@@ -90,13 +89,13 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
 		// Enable cron first
-		Cron_Service::enable_cron();
+		CronSchedulingService::enable_cron();
 
 		ob_start();
 		Action_Handlers::handle_disable_cron();
 		$output = ob_get_clean();
 
-		$this->assertFalse( (bool) get_option( Cron_Service::CRON_ENABLED_OPTION ) );
+		$this->assertFalse( (bool) get_option( CronSchedulingService::CRON_ENABLED_OPTION ) );
 		$this->assertFalse( wp_next_scheduled( 'msm_cron_update_sitemap' ) );
 		$this->assertStringContainsString( 'Automatic sitemap updates disabled successfully', $output );
 		
@@ -126,13 +125,23 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function test_handle_generate_full(): void {
 		// Enable cron first
-		Cron_Service::enable_cron();
+		CronSchedulingService::enable_cron();
+
+		// Create a post to ensure there are years with posts
+		$post_id = wp_insert_post(
+			array(
+				'post_title'   => 'Test Post for Full Generation',
+				'post_content' => 'Test content',
+				'post_status'  => 'publish',
+				'post_date'    => '2024-01-15 10:00:00',
+			) 
+		);
 
 		ob_start();
 		Action_Handlers::handle_generate_full();
 		$output = ob_get_clean();
 
-		$this->assertTrue( (bool) get_option( 'msm_sitemap_create_in_progress' ) );
+		$this->assertTrue( (bool) get_option( 'msm_generation_in_progress' ) );
 		$this->assertStringContainsString( 'Starting sitemap generation', $output );
 	}
 
@@ -148,18 +157,18 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'Cannot generate sitemap: automatic updates must be enabled', $output );
-		$this->assertFalse( (bool) get_option( 'msm_sitemap_create_in_progress' ) );
+		$this->assertFalse( (bool) get_option( 'msm_generation_in_progress' ) );
 		
 		// Restore the filter for other tests
 		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 	}
 
 	/**
-	 * Test that handle_generate_from_latest() starts generation and shows success message.
+	 * Test that handle_generate_missing_sitemaps() starts generation and shows success message.
 	 */
 	public function test_handle_generate_from_latest(): void {
 		// Enable cron first
-		Cron_Service::enable_cron();
+		CronSchedulingService::enable_cron();
 
 		// Create a recent post to ensure there are latest posts
 		$post_id = wp_insert_post(
@@ -172,24 +181,35 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		);
 
 		ob_start();
-		Action_Handlers::handle_generate_from_latest();
+		Action_Handlers::handle_generate_missing_sitemaps();
 		$output = ob_get_clean();
 
-		$this->assertStringContainsString( 'Updating sitemap from recently modified posts', $output );
+		$this->assertStringContainsString( 'Scheduled generation', $output );
 	}
 
 	/**
-	 * Test that handle_generate_from_latest() shows error when cron is disabled.
+	 * Test that handle_generate_missing_sitemaps() works directly when cron is disabled.
 	 */
 	public function test_handle_generate_from_latest_when_cron_disabled(): void {
 		// Remove the filter that forces cron enabled in tests
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
+		// Create a recent post to ensure there are latest posts
+		$post_id = wp_insert_post(
+			array(
+				'post_title'   => 'Test Post',
+				'post_content' => 'Test content',
+				'post_status'  => 'publish',
+				'post_date'    => current_time( 'mysql' ),
+			) 
+		);
+
 		ob_start();
-		Action_Handlers::handle_generate_from_latest();
+		Action_Handlers::handle_generate_missing_sitemaps();
 		$output = ob_get_clean();
 
-		$this->assertStringContainsString( 'Cannot generate sitemap: Automatic updates must be enabled', $output );
+		// Should work directly when cron is disabled
+		$this->assertStringContainsString( 'Generated', $output );
 		
 		// Restore the filter for other tests
 		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
@@ -200,13 +220,13 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function test_handle_halt_generation(): void {
 		// Set generation in progress
-		update_option( 'msm_sitemap_create_in_progress', true );
+		update_option( 'msm_generation_in_progress', true );
 
 		ob_start();
 		Action_Handlers::handle_halt_generation();
 		$output = ob_get_clean();
 
-		$this->assertTrue( (bool) get_option( 'msm_stop_processing' ) );
+		$this->assertTrue( (bool) get_option( 'msm_sitemap_stop_generation' ) );
 		$this->assertStringContainsString( 'Stopping sitemap generation', $output );
 	}
 
@@ -229,8 +249,8 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		update_option( 'msm_years_to_process', array( '2024' ) );
 		update_option( 'msm_months_to_process', array( 1 ) );
 		update_option( 'msm_days_to_process', array( 1 ) );
-		update_option( 'msm_sitemap_create_in_progress', true );
-		update_option( 'msm_stop_processing', true );
+		update_option( 'msm_generation_in_progress', true );
+		update_option( 'msm_sitemap_stop_generation', true );
 
 		ob_start();
 		Action_Handlers::handle_reset_data();
@@ -239,8 +259,8 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$this->assertEmpty( get_option( 'msm_years_to_process' ) );
 		$this->assertEmpty( get_option( 'msm_months_to_process' ) );
 		$this->assertEmpty( get_option( 'msm_days_to_process' ) );
-		$this->assertFalse( (bool) get_option( 'msm_sitemap_create_in_progress' ) );
-		$this->assertFalse( (bool) get_option( 'msm_stop_processing' ) );
+		$this->assertFalse( (bool) get_option( 'msm_generation_in_progress' ) );
+		$this->assertFalse( (bool) get_option( 'msm_sitemap_stop_generation' ) );
 		$this->assertStringContainsString( 'Sitemap data reset', $output );
 	}
 } 

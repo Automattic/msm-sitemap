@@ -1,18 +1,17 @@
 <?php
 /**
- * Admin page UI and permissions tests for Metro Sitemap
+ * Admin page UI and permissions tests for MSM Sitemap
  *
- * @package Metro_Sitemap/unit_tests
+ * @package Automattic\MSM_Sitemap\Tests
  */
 
 declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests;
 
-use Metro_Sitemap;
 use Automattic\MSM_Sitemap\Admin\UI;
 /**
- * Admin page UI and permissions tests for Metro Sitemap
+ * Admin page UI and permissions tests for MSM Sitemap
  */
 class AdminPageTest extends TestCase {
 	/**
@@ -45,7 +44,7 @@ class AdminPageTest extends TestCase {
 	public function test_admin_page_loads_for_admin() {
 		global $plugin_page;
 		wp_set_current_user( $this->admin_id );
-		$plugin_page = 'metro-sitemap';
+		$plugin_page = 'msm-sitemap';
 		ob_start();
 		UI::render_options_page();
 		$output = ob_get_clean();
@@ -58,7 +57,7 @@ class AdminPageTest extends TestCase {
 	 */
 	public function test_admin_page_denied_for_non_admin() {
 		wp_set_current_user( $this->editor_id );
-		$_GET['page'] = 'metro-sitemap';
+		$_GET['page'] = 'msm-sitemap';
 		// WP will call wp_die, which in the test suite throws WPDieException.
 		if ( ! class_exists( 'WPDieException' ) ) {
 			$this->markTestSkipped( 'WPDieException not available in this environment.' );
@@ -74,7 +73,7 @@ class AdminPageTest extends TestCase {
 		global $plugin_page;
 		update_option( 'blog_public', 0 );
 		wp_set_current_user( $this->admin_id );
-		$plugin_page = 'metro-sitemap';
+		$plugin_page = 'msm-sitemap';
 		ob_start();
 		UI::render_options_page();
 		$output = ob_get_clean();
@@ -89,12 +88,12 @@ class AdminPageTest extends TestCase {
 	public function test_cron_section_rendered() {
 		global $plugin_page;
 		wp_set_current_user( $this->admin_id );
-		$plugin_page = 'metro-sitemap';
+		$plugin_page = 'msm-sitemap';
 		ob_start();
 		UI::render_options_page();
 		$output = ob_get_clean();
 		$this->assertStringContainsString( 'Automatic Sitemap Updates', $output );
-		$this->assertStringContainsString( 'Disable Automatic Updates', $output );
+		$this->assertStringContainsString( 'Disable', $output );
 	}
 
 	/**
@@ -103,13 +102,14 @@ class AdminPageTest extends TestCase {
 	public function test_generate_section_rendered() {
 		global $plugin_page;
 		wp_set_current_user( $this->admin_id );
-		$plugin_page = 'metro-sitemap';
+		$plugin_page = 'msm-sitemap';
 		ob_start();
 		UI::render_options_page();
 		$output = ob_get_clean();
 		$this->assertStringContainsString( 'Generate', $output );
-		$this->assertStringContainsString( 'Generate from all articles', $output );
-		$this->assertStringContainsString( 'Generate from recently modified posts', $output );
+		$this->assertStringContainsString( 'Generate All Sitemaps (Force)', $output );
+		// Generate Missing Sitemaps is loaded via AJAX, so it's not in the initial HTML
+		$this->assertStringContainsString( 'Loading missing sitemaps', $output );
 	}
 
 	/**
@@ -118,7 +118,7 @@ class AdminPageTest extends TestCase {
 	public function test_generate_buttons_disabled_when_cron_disabled() {
 		global $plugin_page;
 		wp_set_current_user( $this->admin_id );
-		$plugin_page = 'metro-sitemap';
+		$plugin_page = 'msm-sitemap';
 		
 		// Remove the filter that forces cron enabled in tests
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
@@ -133,8 +133,9 @@ class AdminPageTest extends TestCase {
 		
 		// The UI doesn't show the disabled message in the rendered output
 		// The buttons are still rendered but would be disabled via JavaScript
-		$this->assertStringContainsString( 'Generate from all articles', $output );
-		$this->assertStringContainsString( 'Generate from recently modified posts', $output );
+		$this->assertStringContainsString( 'Generate All Sitemaps (Force)', $output );
+		// Generate Missing Sitemaps is loaded via AJAX, so it's not in the initial HTML
+		$this->assertStringContainsString( 'Loading missing sitemaps', $output );
 		
 		// Restore the filter for other tests
 		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );

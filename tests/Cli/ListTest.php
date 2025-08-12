@@ -8,10 +8,9 @@ declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap\Tests\Cli;
 
-use Metro_Sitemap_CLI;
-
+use Automattic\MSM_Sitemap\Infrastructure\CLI\CLI_Command;
 require_once __DIR__ . '/../Includes/mock-wp-cli.php';
-require_once __DIR__ . '/../../includes/wp-cli.php';
+require_once __DIR__ . '/../../includes/Infrastructure/CLI/CLI_Command.php';
 
 /**
  * Class ListTest
@@ -81,7 +80,7 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_list_all(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 
 		ob_start();
 		$cli->list(
@@ -107,7 +106,7 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_list_by_year(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 
 		ob_start();
 		$cli->list( array(), array( 'date' => '2024' ) );
@@ -124,7 +123,7 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_list_by_year_month(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 
 		ob_start();
 		$cli->list( array(), array( 'date' => '2024-07' ) );
@@ -141,7 +140,7 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_list_by_year_month_day(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 
 		ob_start();
 		$cli->list( array(), array( 'date' => '2024-07-10' ) );
@@ -157,7 +156,7 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_list_with_fields(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 
 		ob_start();
 		$cli->list(
@@ -180,7 +179,7 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_list_format_json(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 
 		ob_start();
 		$cli->list(
@@ -206,7 +205,7 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_list_format_csv(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 
 		ob_start();
 		$cli->list(
@@ -228,7 +227,7 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_list_no_sitemaps(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 		// Delete all sitemaps
 		$query = new \WP_Query(
 			array(

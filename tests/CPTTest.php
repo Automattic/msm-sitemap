@@ -2,7 +2,7 @@
 /**
  * WP_Test_Sitemap_CPT
  *
- * @package Metro_Sitemap/unit_tests
+ * @package Automattic\MSM_Sitemap\Tests
  */
 
 declare( strict_types=1 );
@@ -87,7 +87,7 @@ class CPTTest extends TestCase {
 	}
 
 	/**
-	 * Filter hook to add TEST_CPT to Metro_Sitemap supported post types
+	 * Filter hook to add TEST_CPT to supported post types
 	 *
 	 * @param array $cpts Array of Post Types.
 	 *
