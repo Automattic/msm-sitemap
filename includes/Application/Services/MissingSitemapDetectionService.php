@@ -51,22 +51,28 @@ class MissingSitemapDetectionService {
 			)
 		);
 
-		// Find missing dates
+		// Find missing dates (dates with posts but no sitemaps)
 		$missing_dates = array_diff($post_dates, $sitemap_dates);
 		$missing_dates = array_values($missing_dates); // Re-index array
 
-		// Count posts for missing dates
-		$missing_posts_count = 0;
-		if ( ! empty( $missing_dates ) ) {
-			$placeholders = implode( ',', array_fill( 0, count( $missing_dates ), '%s' ) );
-			$missing_posts_count = $wpdb->get_var(
+		// Find dates that need updates (have sitemaps but posts were modified recently)
+		$dates_needing_updates = self::get_dates_needing_updates( $sitemap_dates );
+
+		// Combine missing dates and dates needing updates
+		$all_dates_to_generate = array_unique( array_merge( $missing_dates, $dates_needing_updates ) );
+
+		// Count posts for all dates that need generation
+		$total_posts_count = 0;
+		if ( ! empty( $all_dates_to_generate ) ) {
+			$placeholders = implode( ',', array_fill( 0, count( $all_dates_to_generate ), '%s' ) );
+			$total_posts_count = $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT COUNT(*)
 					FROM {$wpdb->posts}
 					WHERE post_type IN (%s, %s)
 					AND post_status = %s
 					AND DATE(post_date) IN ($placeholders)",
-					array_merge( array( 'post', 'page', 'publish' ), $missing_dates )
+					array_merge( array( 'post', 'page', 'publish' ), $all_dates_to_generate )
 				)
 			);
 		}
@@ -96,11 +102,56 @@ class MissingSitemapDetectionService {
 
 		return array(
 			'missing_dates'        => $missing_dates,
-			'missing_dates_count'  => count($missing_dates),
-			'missing_posts_count'  => (int) $missing_posts_count,
+			'missing_dates_count'  => count( $missing_dates ),
+			'dates_needing_updates' => $dates_needing_updates,
+			'dates_needing_updates_count' => count($dates_needing_updates),
+			'all_dates_to_generate' => $all_dates_to_generate,
+			'all_dates_count'      => count($all_dates_to_generate),
+			'missing_posts_count'  => (int) $total_posts_count,
 			'recently_modified_count' => (int) $recently_modified_count,
 			'last_run'            => $last_run,
 		);
+	}
+
+	/**
+	 * Get dates that have sitemaps but need to be updated due to recently modified posts
+	 *
+	 * @param array $sitemap_dates Array of dates that currently have sitemaps
+	 * @return array Array of dates that need updates
+	 */
+	private static function get_dates_needing_updates( array $sitemap_dates ): array {
+		global $wpdb;
+
+		if ( empty( $sitemap_dates ) ) {
+			return array();
+		}
+
+		// Get the last time sitemaps were updated
+		$last_update = get_option('msm_sitemap_last_update');
+		if (!$last_update) {
+			// If no last update time, consider all sitemaps as potentially needing updates
+			// This is a fallback for when the option doesn't exist
+			return $sitemap_dates;
+		}
+
+		// Ensure $last_update is an integer timestamp
+		$last_update_timestamp = is_numeric($last_update) ? (int) $last_update : strtotime($last_update);
+
+		// Find dates that have posts modified since the last sitemap update
+		$placeholders = implode(',', array_fill(0, count($sitemap_dates), '%s'));
+		$dates_with_recent_modifications = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT DISTINCT DATE(post_date) as post_date
+				FROM {$wpdb->posts}
+				WHERE post_type IN (%s, %s)
+				AND post_status = %s
+				AND DATE(post_date) IN ($placeholders)
+				AND post_modified_gmt > %s",
+				array_merge(array('post', 'page', 'publish'), $sitemap_dates, array(gmdate('Y-m-d H:i:s', $last_update_timestamp)))
+			)
+		);
+
+		return $dates_with_recent_modifications;
 	}
 
 	/**
@@ -110,7 +161,7 @@ class MissingSitemapDetectionService {
 	 */
 	public static function has_missing_content(): bool {
 		$missing_data = self::get_missing_sitemaps();
-		return $missing_data['missing_dates_count'] > 0 || $missing_data['recently_modified_count'] > 0;
+		return $missing_data['all_dates_count'] > 0 || $missing_data['recently_modified_count'] > 0;
 	}
 
 	/**
@@ -127,18 +178,13 @@ class MissingSitemapDetectionService {
 			'counts'      => array(),
 		);
 
-		if ( $missing_data['missing_dates_count'] > 0 || $missing_data['recently_modified_count'] > 0 ) {
+		if ( $missing_data['all_dates_count'] > 0 || $missing_data['recently_modified_count'] > 0 ) {
 			$summary['has_missing'] = true;
-			$counts = array();
+			
+			// Use the centralized method for message parts
+			$counts = self::get_success_message_parts();
 
-			if ( $missing_data['missing_dates_count'] > 0 ) {
-				$counts[] = sprintf(
-					/* translators: %d is the number of missing sitemap dates */
-					_n( '%d missing sitemap date', '%d missing sitemap dates', $missing_data['missing_dates_count'], 'msm-sitemap' ),
-					$missing_data['missing_dates_count']
-				);
-			}
-
+			// Add recently modified posts count if any
 			if ( $missing_data['recently_modified_count'] > 0 ) {
 				$counts[] = sprintf(
 					/* translators: %d is the number of recently modified posts */
@@ -154,5 +200,33 @@ class MissingSitemapDetectionService {
 		}
 
 		return $summary;
+	}
+
+	/**
+	 * Get message parts for success notifications
+	 *
+	 * @return array Array of message parts for display
+	 */
+	public static function get_success_message_parts(): array {
+		$missing_data = self::get_missing_sitemaps();
+		$message_parts = array();
+
+		if ( $missing_data['missing_dates_count'] > 0 ) {
+			$message_parts[] = sprintf(
+				/* translators: %d is the number of missing sitemaps */
+				_n( '%d missing sitemap', '%d missing sitemaps', $missing_data['missing_dates_count'], 'msm-sitemap' ),
+				$missing_data['missing_dates_count']
+			);
+		}
+
+		if ( $missing_data['dates_needing_updates_count'] > 0 ) {
+			$message_parts[] = sprintf(
+				/* translators: %d is the number of sitemaps needing updates */
+				_n( '%d sitemap that needs updating', '%d sitemaps that need updating', $missing_data['dates_needing_updates_count'], 'msm-sitemap' ),
+				$missing_data['dates_needing_updates_count']
+			);
+		}
+
+		return $message_parts;
 	}
 }

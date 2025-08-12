@@ -9,6 +9,7 @@ namespace Automattic\MSM_Sitemap\Admin;
 
 use Automattic\MSM_Sitemap\Admin\Notifications;
 use Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService;
+use Automattic\MSM_Sitemap\Domain\Contracts\SitemapRepositoryInterface;
 
 /**
  * Handles all admin form action submissions
@@ -72,30 +73,41 @@ class Action_Handlers {
 		$missing_service = new \Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService();
 		$missing_data = $missing_service::get_missing_sitemaps();
 
-		if ( $missing_data['missing_dates_count'] > 0 ) {
+		// Get message parts to determine if there's actually something to generate
+		$message_parts = \Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService::get_success_message_parts();
+
+		if ( ! empty( $message_parts ) ) {
 			// If cron is enabled, use the cron handler for better performance
 			if ( CronSchedulingService::is_cron_enabled() ) {
 				// Delegate to the cron handler
 				\Automattic\MSM_Sitemap\Infrastructure\Cron\MissingSitemapGenerationHandler::handle_missing_sitemap_generation();
 				
+				$message = implode( ' and ', $message_parts );
 				Notifications::show_success( 
 					sprintf( 
-						/* translators: %d is the number of missing sitemaps */
-						_n( 'Scheduled generation of %d missing sitemap via cron.', 'Scheduled generation of %d missing sitemaps via cron.', $missing_data['missing_dates_count'], 'msm-sitemap' ), 
-						$missing_data['missing_dates_count']
+						/* translators: %s is the description of what will be generated */
+						__( 'Scheduled generation of %s.', 'msm-sitemap' ), 
+						$message
 					) 
 				);
 			} else {
 				// Direct generation when cron is disabled
+				$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
 				$service = new \Automattic\MSM_Sitemap\Application\Services\SitemapService(
 					msm_sitemap_plugin()->get_sitemap_generator(),
-					new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository()
+					$container->get( SitemapRepositoryInterface::class )
 				);
 				
 				$generated_count = 0;
-				foreach ( $missing_data['missing_dates'] as $date ) {
-					$result = $service->create_for_date( $date, true );
-					if ( $result ) {
+				$all_dates_to_generate = $missing_data['all_dates_to_generate'] ?? array();
+				$dates_needing_updates = $missing_data['dates_needing_updates'] ?? array();
+				
+				foreach ( $all_dates_to_generate as $date ) {
+					// Check if this date needs force generation (has sitemap but needs update)
+					$force_generation = in_array( $date, $dates_needing_updates, true );
+					
+					$result = $service->create_for_date( $date, $force_generation );
+					if ( $result && $result->is_success() ) {
 						$generated_count++;
 					}
 				}
@@ -108,10 +120,13 @@ class Action_Handlers {
 					update_option( 'msm_sitemap_last_update', current_time( 'timestamp' ) );
 				}
 				
+				// Always update the last run timestamp since we checked for missing/outdated sitemaps
+				update_option( 'msm_sitemap_update_last_run', current_time( 'timestamp' ) );
+				
 				Notifications::show_success( 
 					sprintf( 
 						/* translators: %d is the number of sitemaps generated */
-						_n( 'Generated %d missing sitemap successfully.', 'Generated %d missing sitemaps successfully.', $generated_count, 'msm-sitemap' ), 
+						_n( 'Generated %d sitemap successfully.', 'Generated %d sitemaps successfully.', $generated_count, 'msm-sitemap' ), 
 						$generated_count
 					) 
 				);
