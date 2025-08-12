@@ -9,7 +9,7 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Infrastructure\Factories;
 
-use Automattic\MSM_Sitemap\Site;
+use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapIndexEntry;
 use InvalidArgumentException;
 

@@ -2,14 +2,14 @@
 /**
  * Permalinks handler
  *
- * @package Automattic\MSM_Sitemap
+ * @package Automattic\MSM_Sitemap\Infrastructure\WordPress
  */
 
 declare(strict_types=1);
 
-namespace Automattic\MSM_Sitemap;
+namespace Automattic\MSM_Sitemap\Infrastructure\WordPress;
 
-use Automattic\MSM_Sitemap\Site;
+use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
 
 /**
  * Permalinks handler for msm_sitemap posts.
@@ -52,4 +52,4 @@ class Permalinks {
 		// Fallback: return the default permalink if the date format is unexpected.
 		return $permalink;
 	}
-} 
+}

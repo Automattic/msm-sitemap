@@ -2,14 +2,14 @@
 /**
  * StylesheetManager.php
  *
- * @package Automattic\MSM_Sitemap
+ * @package Automattic\MSM_Sitemap\Infrastructure\WordPress
  */
 
 declare(strict_types=1);
 
-namespace Automattic\MSM_Sitemap;
+namespace Automattic\MSM_Sitemap\Infrastructure\WordPress;
 
-use Automattic\MSM_Sitemap\Site;
+use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
 
 /**
  * Manages MSM-specific stylesheet modifications and references.
@@ -17,7 +17,7 @@ use Automattic\MSM_Sitemap\Site;
  * This class handles the integration with WordPress core stylesheets,
  * providing MSM-specific branding and namespace support.
  *
- * @package Automattic\MSM_Sitemap
+ * @package Automattic\MSM_Sitemap\Infrastructure\WordPress
  */
 class StylesheetManager {
 
@@ -37,7 +37,7 @@ class StylesheetManager {
 		// Add rewrite rules for our XSL files
 		add_rewrite_rule( '^msm-sitemap\.xsl$', 'index.php?msm-sitemap-stylesheet=sitemap', 'top' );
 		add_rewrite_rule( '^msm-sitemap-index\.xsl$', 'index.php?msm-sitemap-stylesheet=index', 'top' );
-		
+
 		// Add query vars
 		add_filter( 'query_vars', array( __CLASS__, 'add_query_vars' ) );
 	}
@@ -58,14 +58,14 @@ class StylesheetManager {
 	 */
 	public static function handle_xsl_requests(): void {
 		$stylesheet_type = get_query_var( 'msm-sitemap-stylesheet' );
-		
+
 		if ( ! $stylesheet_type ) {
 			return;
 		}
 
 		// Set proper headers
 		header( 'Content-Type: application/xml; charset=UTF-8' );
-		
+
 		if ( 'sitemap' === $stylesheet_type ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- XSL content is properly escaped in generation
 			echo self::get_msm_sitemap_stylesheet();
@@ -73,7 +73,7 @@ class StylesheetManager {
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- XSL content is properly escaped in generation
 			echo self::get_msm_sitemap_index_stylesheet();
 		}
-		
+
 		exit;
 	}
 
@@ -94,7 +94,7 @@ class StylesheetManager {
 			return '';
 		}
 
-		return "\n" . '<?xml-stylesheet type="text/xsl" href="' . home_url( '/msm-sitemap.xsl' ) . '"?>' . "\n";
+		return "\n" . '<?xml-stylesheet type="text/xsl" href="' . Site::get_home_url( '/msm-sitemap.xsl' ) . '"?>' . "\n";
 	}
 
 	/**
@@ -114,7 +114,7 @@ class StylesheetManager {
 			return '';
 		}
 
-		return "\n" . '<?xml-stylesheet type="text/xsl" href="' . home_url( '/msm-sitemap-index.xsl' ) . '"?>' . "\n";
+		return "\n" . '<?xml-stylesheet type="text/xsl" href="' . Site::get_home_url( '/msm-sitemap-index.xsl' ) . '"?>' . "\n";
 	}
 
 	/**
@@ -390,4 +390,4 @@ EOF;
 		 */
 		return apply_filters( 'msm_sitemaps_stylesheet_css', $css );
 	}
-} 
+}

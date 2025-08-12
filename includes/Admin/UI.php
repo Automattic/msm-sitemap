@@ -7,8 +7,9 @@
 
 namespace Automattic\MSM_Sitemap\Admin;
 
-use Automattic\MSM_Sitemap\Cron_Service;
-use Automattic\MSM_Sitemap\Site;
+use Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService;
+use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
+
 
 /**
  * Handles all admin page UI rendering
@@ -16,11 +17,72 @@ use Automattic\MSM_Sitemap\Site;
 class UI {
 
 	/**
+	 * Setup admin menu and hooks for the sitemap admin interface
+	 */
+	public static function setup_admin() {
+		add_action( 'admin_menu', array( __CLASS__, 'register_admin_menu' ) );
+		add_action( 'wp_ajax_msm-sitemap-get-sitemap-counts', array( __CLASS__, 'ajax_get_sitemap_counts' ) );
+		self::init_ajax_handlers();
+	}
+
+	/**
+	 * Register admin menu for sitemap
+	 */
+	public static function register_admin_menu() {
+		$page_hook = add_options_page( 
+			__( 'MSM Sitemap', 'msm-sitemap' ), 
+			__( 'Sitemap', 'msm-sitemap' ), 
+			'manage_options', 
+			'msm-sitemap', 
+			array( __CLASS__, 'render_options_page' ) 
+		);
+		add_action( 'admin_print_scripts-' . $page_hook, array( __CLASS__, 'enqueue_admin_assets' ) );
+	}
+
+	/**
+	 * Enqueue admin scripts and styles
+	 */
+	public static function enqueue_admin_assets(): void {
+		$plugin_url = plugin_dir_url( dirname( dirname( __DIR__ ) ) . '/msm-sitemap.php' );
+		
+		wp_enqueue_style(
+			'msm-sitemap-admin',
+			$plugin_url . 'assets/admin.css',
+			array(),
+			'1.0.1'
+		);
+
+		wp_enqueue_script(
+			'msm-sitemap-admin',
+			$plugin_url . 'assets/admin.js',
+			array( 'jquery' ),
+			'1.0.1',
+			true
+		);
+
+		// Localize script for AJAX
+		wp_localize_script(
+			'msm-sitemap-admin',
+			'msmSitemapAjax',
+			array(
+				'ajaxurl' => admin_url( 'admin-ajax.php' ),
+				'nonce'   => wp_create_nonce( 'msm_sitemap_ajax_nonce' ),
+				'generateMissingText' => __( 'Generate Missing Sitemaps', 'msm-sitemap' ),
+			)
+		);
+	}
+
+	/**
+	 * Handle AJAX request for sitemap counts and statistics
+	 */
+
+
+	/**
 	 * Render the complete admin options page
 	 */
 	public static function render_options_page() {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( __( 'You do not have sufficient permissions to access this page.', 'msm-sitemap' ) );
+			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'msm-sitemap' ) );
 		}
 
 		// Check if blog is public
@@ -36,27 +98,50 @@ class UI {
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
-			<p>
-				<a href="<?php echo esc_url( Site::get_sitemap_index_url() ); ?>" target="_blank" class="button button-secondary">
-					<?php esc_html_e( 'View XML Sitemap Index', 'msm-sitemap' ); ?>
-					<span class="dashicons dashicons-external" style="vertical-align: middle;"></span>
-				</a>
-			</p>
 
-			<?php self::render_stats_section(); ?>
-			<?php self::render_latest_sitemaps_section(); ?>
 			<?php self::render_cron_section(); ?>
 			<?php self::render_generate_section(); ?>
+			<?php self::render_stats_section(); ?>
+			<?php self::render_dangerous_actions_section(); ?>
 			
 		</div>
-		<div id="tooltip">
-			<strong class="content"></strong>
-			<span class="url-label"
-				data-singular="<?php esc_attr_e( 'indexed URL', 'msm-sitemap' ); ?>"
-				data-plural="<?php esc_attr_e( 'indexed URLs', 'msm-sitemap' ); ?>"
-			><?php esc_html_e( 'indexed URLs', 'msm-sitemap' ); ?></span>
-		</div>
 		<?php
+	}
+
+	/**
+	 * Initialize AJAX handlers
+	 */
+	public static function init_ajax_handlers(): void {
+		add_action( 'wp_ajax_msm_get_missing_sitemaps', array( __CLASS__, 'ajax_get_missing_sitemaps' ) );
+	}
+
+	/**
+	 * AJAX handler for getting missing sitemaps count
+	 */
+	public static function ajax_get_missing_sitemaps(): void {
+		check_ajax_referer( 'msm_sitemap_ajax_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( __( 'You do not have sufficient permissions to access this page.', 'msm-sitemap' ) );
+		}
+
+		$missing_data = \Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService::get_missing_sitemaps();
+		$summary = \Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService::get_missing_content_summary();
+
+		// Determine button text based on cron status
+		$cron_status = \Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService::get_cron_status();
+		$button_text = $cron_status['enabled'] 
+			? __( 'Generate Missing Sitemaps', 'msm-sitemap' )
+			: __( 'Generate Missing Sitemaps (Direct)', 'msm-sitemap' );
+
+		wp_send_json_success(
+			array(
+				'missing_dates_count' => $missing_data['missing_dates_count'],
+				'recently_modified_count' => $missing_data['recently_modified_count'],
+				'summary' => $summary,
+				'button_text' => $button_text,
+			)
+		);
 	}
 
 	/**
@@ -73,21 +158,31 @@ class UI {
 		
 		// Route to appropriate action handler
 		switch ( $action ) {
-			case 'Enable Automatic Updates':
+			case 'Enable':
 				Action_Handlers::handle_enable_cron();
 				break;
-			case 'Disable Automatic Updates':
+			case 'Disable':
 				Action_Handlers::handle_disable_cron();
 				break;
-			case 'Generate from all articles':
+			case 'Update Frequency':
+				Action_Handlers::handle_update_frequency();
+				break;
+
+			case 'Generate Full Sitemap (All Content)':
 				Action_Handlers::handle_generate_full();
 				break;
-			case 'Generate from recently modified posts':
-				Action_Handlers::handle_generate_from_latest();
+			case 'Generate Missing Sitemaps':
+			case 'Generate Missing Sitemaps (Direct)':
+				Action_Handlers::handle_generate_missing_sitemaps();
 				break;
-			case 'Halt Sitemap Generation':
+			case 'Generate All Sitemaps (Force)':
+				Action_Handlers::handle_generate_full();
+				break;
+			case 'Stop adding missing sitemaps...':
+			case 'Stop full sitemaps generation...':
 				Action_Handlers::handle_halt_generation();
 				break;
+			// Content validation removed for now
 			case 'Reset Sitemap Data':
 				Action_Handlers::handle_reset_data();
 				break;
@@ -111,102 +206,587 @@ class UI {
 	 */
 	private static function render_stats_section() {
 		$sitemap_update_last_run = get_option( 'msm_sitemap_update_last_run' );
+		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
+		$stats_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SitemapStatsService::class );
+		$date_range = $_GET['date_range'] ?? 'all';
+		$start_date = $_GET['start_date'] ?? '';
+		$end_date = $_GET['end_date'] ?? '';
+		$comprehensive_stats = $stats_service->get_comprehensive_stats( $date_range, $start_date, $end_date );
+		$sitemap_count = $comprehensive_stats['overview']['total_sitemaps'];
 		?>
-		<div class="stats-container">
-			<div class="stats-box"><strong id="sitemap-count"><?php echo number_format( \Metro_Sitemap::count_sitemaps() ); ?></strong><?php esc_html_e( 'Sitemaps', 'msm-sitemap' ); ?></div>
-			<div class="stats-box"><strong id="sitemap-indexed-url-count"><?php echo number_format( \Metro_Sitemap::get_total_indexed_url_count() ); ?></strong><?php esc_html_e( 'Indexed URLs', 'msm-sitemap' ); ?></div>
-			<div class="stats-footer"><span><span class="noticon noticon-time"></span><?php esc_html_e( 'Updated', 'msm-sitemap' ); ?> <strong><?php echo human_time_diff( $sitemap_update_last_run ); ?> <?php esc_html_e( 'ago', 'msm-sitemap' ); ?></strong></span></div>
+		<h2><?php esc_html_e( 'Sitemap Statistics', 'msm-sitemap' ); ?></h2>
+		
+		<!-- Date Range Filter -->
+		<div class="date-range-filter">
+			<form method="get" style="display: inline;">
+				<input type="hidden" name="page" value="msm-sitemap">
+				<label for="stats-date-range"><?php esc_html_e( 'Date Range:', 'msm-sitemap' ); ?></label>
+				<select id="stats-date-range" name="date_range" onchange="toggleCustomDateRange(this.value)">
+					<option value="all" <?php selected( $_GET['date_range'] ?? 'all', 'all' ); ?>><?php esc_html_e( 'All Time', 'msm-sitemap' ); ?></option>
+					<option value="7" <?php selected( $_GET['date_range'] ?? 'all', '7' ); ?>><?php esc_html_e( 'Last 7 Days', 'msm-sitemap' ); ?></option>
+					<option value="30" <?php selected( $_GET['date_range'] ?? 'all', '30' ); ?>><?php esc_html_e( 'Last 30 Days', 'msm-sitemap' ); ?></option>
+					<option value="90" <?php selected( $_GET['date_range'] ?? 'all', '90' ); ?>><?php esc_html_e( 'Last 90 Days', 'msm-sitemap' ); ?></option>
+					<option value="180" <?php selected( $_GET['date_range'] ?? 'all', '180' ); ?>><?php esc_html_e( 'Last 6 Months', 'msm-sitemap' ); ?></option>
+					<option value="365" <?php selected( $_GET['date_range'] ?? 'all', '365' ); ?>><?php esc_html_e( 'Last 12 Months', 'msm-sitemap' ); ?></option>
+					<?php
+					// Get available years from sitemap data
+					$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
+					$repository = $container->get( \Automattic\MSM_Sitemap\Domain\Contracts\SitemapRepositoryInterface::class );
+					$all_sitemap_dates = $repository->get_all_sitemap_dates();
+					$years = array();
+					foreach ( $all_sitemap_dates as $date ) {
+						$year = substr( $date, 0, 4 );
+						if ( ! in_array( $year, $years, true ) ) {
+							$years[] = $year;
+						}
+					}
+					rsort( $years ); // Sort years in descending order (newest first)
+					
+					// Add year options
+					foreach ( $years as $year ) {
+						$year_option = 'year_' . $year;
+						?>
+						<option value="<?php echo esc_attr( $year_option ); ?>" <?php selected( $_GET['date_range'] ?? 'all', $year_option ); ?>><?php echo esc_html( $year ); ?></option>
+						<?php
+					}
+					?>
+					<option value="custom" <?php selected( $_GET['date_range'] ?? 'all', 'custom' ); ?>><?php esc_html_e( 'Custom Range', 'msm-sitemap' ); ?></option>
+				</select>
+				
+				<span id="custom-date-range" style="display: <?php echo ( $_GET['date_range'] ?? 'all' ) === 'custom' ? 'inline' : 'none'; ?>; margin-left: 10px;">
+					<label for="start-date"><?php esc_html_e( 'From:', 'msm-sitemap' ); ?></label>
+					<input type="date" id="start-date" name="start_date" value="<?php echo esc_attr( $_GET['start_date'] ?? '' ); ?>" style="margin-right: 10px;">
+					<label for="end-date"><?php esc_html_e( 'To:', 'msm-sitemap' ); ?></label>
+					<input type="date" id="end-date" name="end_date" value="<?php echo esc_attr( $_GET['end_date'] ?? '' ); ?>" style="margin-right: 10px;">
+					<button type="submit" class="button button-secondary"><?php esc_html_e( 'Apply', 'msm-sitemap' ); ?></button>
+				</span>
+			</form>
+		</div>
+		
+		<!-- Detailed Stats Section - Always Visible -->
+		<div class="detailed-stats-section">
+			<?php self::render_detailed_stats( $comprehensive_stats ); ?>
 		</div>
 		<?php
 	}
 
 	/**
-	 * Render the latest sitemaps section
+	 * Render detailed statistics in the expandable section
+	 *
+	 * @param array $comprehensive_stats The comprehensive statistics data.
 	 */
-	private static function render_latest_sitemaps_section() {
+	private static function render_detailed_stats( array $comprehensive_stats ) {
+		// Extract key stats for easy access
+		$overview = $comprehensive_stats['overview'];
+		$performance = $comprehensive_stats['performance'];
+		$coverage = $comprehensive_stats['coverage'];
+		$storage = $comprehensive_stats['storage'];
+		$url_counts = $comprehensive_stats['url_counts'];
+		$health = $comprehensive_stats['health'];
+		$content_analysis = $comprehensive_stats['content_analysis'];
 		?>
-		<h2><?php esc_html_e( 'Latest Sitemaps', 'msm-sitemap' ); ?></h2>
-		<div class="stats-container stats-placeholder"></div>
-		<div id="stats-graph-summary">
+		
+		<!-- Performance and Health Indicators -->
+		<div class="stats-insights insight-grid">
+			<div class="insight-card">
+				<h3><?php esc_html_e( 'Health', 'msm-sitemap' ); ?></h3>
+				<div class="insight-content">
+					<!-- Key metrics moved to top of Health section -->
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Total Sitemaps:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value"><?php echo esc_html( number_format( $overview['total_sitemaps'] ) ); ?></span>
+					</div>
+					<div class="insight-item stat-descriptor">
+						<?php esc_html_e( 'Total number of sitemaps generated', 'msm-sitemap' ); ?>
+					</div>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Total Indexed URLs:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value"><?php echo esc_html( number_format( $overview['total_urls'] ) ); ?></span>
+					</div>
+					<div class="insight-item stat-descriptor">
+						<?php esc_html_e( 'Total number of URLs across all sitemaps', 'msm-sitemap' ); ?>
+					</div>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Success Rate:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value"><?php echo esc_html( $health['success_rate'] ); ?>%</span>
+					</div>
+					<div class="insight-item stat-descriptor">
+						<?php esc_html_e( 'Percentage of expected sitemaps that were successfully generated', 'msm-sitemap' ); ?>
+					</div>
+					<?php if ( $health['last_error'] ) : ?>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Last Error:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value"><?php echo esc_html( $health['last_error']['human_time'] ); ?></span>
+					</div>
+					<div class="insight-item stat-descriptor">
+						<?php echo esc_html( $health['last_error']['message'] ); ?>
+					</div>
+					<?php endif; ?>
+					<?php if ( $health['average_generation_time'] > 0 ) : ?>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Avg Generation Time:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value"><?php echo esc_html( $health['average_generation_time'] ); ?>s</span>
+					</div>
+					<div class="insight-item stat-descriptor">
+						<?php esc_html_e( 'Average time to generate a sitemap in seconds', 'msm-sitemap' ); ?>
+					</div>
+					<?php endif; ?>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Processing Queue:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value"><?php echo esc_html( $health['processing_queue'] ); ?></span>
+					</div>
+					<div class="insight-item stat-descriptor">
+						<?php esc_html_e( 'Number of sitemap generations currently in progress', 'msm-sitemap' ); ?>
+					</div>
+				</div>
+			</div>
+
+			<div class="insight-card">
+				<h3><?php esc_html_e( 'Trends', 'msm-sitemap' ); ?></h3>
+				<div class="insight-content">
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'URL Counts per Sitemap:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value">
+							<?php 
+							$trend_icons = array(
+								'increasing' => '↗️',
+								'decreasing' => '↘️', 
+								'stable' => '→',
+							);
+							echo esc_html( $trend_icons[ $performance['recent_trend'] ] ?? '→' );
+							echo ' ' . esc_html( ucfirst( $performance['recent_trend'] ) );
+							?>
+						</span>
+					</div>
+					<div class="insight-item stat-descriptor">
+						<?php esc_html_e( 'Whether the number of URLs per sitemap is growing, declining, or stable', 'msm-sitemap' ); ?>
+					</div>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Average URLs per Sitemap:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value"><?php echo esc_html( number_format( $performance['recent_average'] ) ); ?> <?php echo esc_html( _n( 'URL', 'URLs', $performance['recent_average'], 'msm-sitemap' ) ); ?></span>
+					</div>
+					<div class="insight-item stat-descriptor">
+						<?php esc_html_e( 'Average URLs per sitemap in the selected date range', 'msm-sitemap' ); ?>
+					</div>
+					<?php if ( ! empty( $coverage['longest_streak'] ) ) : ?>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Longest Streak:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value"><?php echo esc_html( $coverage['longest_streak']['length'] ); ?> <?php echo esc_html( _n( 'day', 'days', $coverage['longest_streak']['length'], 'msm-sitemap' ) ); ?></span>
+					</div>
+					<div class="insight-item stat-descriptor">
+						<?php esc_html_e( 'Longest consecutive run of daily sitemap generation', 'msm-sitemap' ); ?>
+					</div>
+					<?php endif; ?>
+					<?php if ( $url_counts['max_urls'] > 0 ) : ?>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Peak URLs:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value"><?php echo esc_html( number_format( $url_counts['max_urls'] ) ); ?></span>
+					</div>
+					<div class="insight-item stat-descriptor">
+						<?php esc_html_e( 'Highest number of URLs ever in a single sitemap', 'msm-sitemap' ); ?>
+					</div>
+					<?php endif; ?>
+				</div>
+			</div>
+
+			<div class="insight-card">
+				<h3><?php esc_html_e( 'Content Analysis', 'msm-sitemap' ); ?></h3>
+				<div class="insight-content">
+					<?php if ( ! empty( $content_analysis['url_types'] ) ) : ?>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'URL Types Breakdown:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value">
+							<?php 
+							$type_counts = array();
+							foreach ( $content_analysis['url_types'] as $type => $count ) {
+								$type_counts[] = $type . ': ' . number_format( $count );
+							}
+							echo esc_html( implode( ', ', $type_counts ) );
+							?>
+						</span>
+					</div>
+					<div class="insight-item stat-descriptor">
+						<?php esc_html_e( 'How many posts, pages, categories, tags, etc.', 'msm-sitemap' ); ?>
+					</div>
+					<?php endif; ?>
+					<?php if ( ! empty( $content_analysis['post_type_counts'] ) ) : ?>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Most Active Content:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value">
+							<?php 
+							$post_type_counts = array();
+							$count = 0;
+							foreach ( $content_analysis['post_type_counts'] as $post_type => $post_count ) {
+								if ( $count++ < 3 ) { // Show top 3
+									$post_type_obj = get_post_type_object( $post_type );
+									$post_type_name = $post_type_obj ? $post_type_obj->labels->singular_name : $post_type;
+									$post_type_counts[] = $post_type_name . ': ' . number_format( $post_count );
+								}
+							}
+							echo esc_html( implode( ', ', $post_type_counts ) );
+							?>
+						</span>
+					</div>
+					<div class="insight-item stat-descriptor">
+						<?php esc_html_e( 'Which post types generate the most URLs', 'msm-sitemap' ); ?>
+					</div>
+					<?php endif; ?>
+					<?php if ( $content_analysis['content_freshness'] > 0 ) : ?>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Content Freshness:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value"><?php echo esc_html( $content_analysis['content_freshness'] ); ?> <?php echo esc_html( _n( 'day', 'days', $content_analysis['content_freshness'], 'msm-sitemap' ) ); ?></span>
+					</div>
+					<div class="insight-item stat-descriptor">
+						<?php esc_html_e( 'Average age of content in sitemaps', 'msm-sitemap' ); ?>
+					</div>
+					<?php endif; ?>
+					<?php if ( $content_analysis['duplicate_urls'] > 0 ) : ?>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Duplicate Detection:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value"><?php echo esc_html( number_format( $content_analysis['duplicate_urls'] ) ); ?></span>
+					</div>
+					<div class="insight-item stat-descriptor">
+						<?php esc_html_e( 'Number of duplicate URLs found', 'msm-sitemap' ); ?>
+					</div>
+					<?php endif; ?>
+					<?php if ( ! empty( $content_analysis['yearly_breakdown'] ) ) : ?>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Yearly Breakdown:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value">
+							<?php 
+							$year_counts = array();
+							foreach ( $content_analysis['yearly_breakdown'] as $year => $count ) {
+								$year_counts[] = $year . ': ' . $count;
+							}
+							echo esc_html( implode( ', ', $year_counts ) );
+							?>
+						</span>
+					</div>
+					<div class="insight-item stat-descriptor">
+						<?php esc_html_e( 'Number of sitemaps generated per year', 'msm-sitemap' ); ?>
+					</div>
+					<?php endif; ?>
+				</div>
+			</div>
+
+			<div class="insight-card">
+				<h3><?php esc_html_e( 'Coverage', 'msm-sitemap' ); ?></h3>
+				<div class="insight-content">
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Date Range:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value">
+							<?php 
+							$timeline = $comprehensive_stats['timeline'];
+							if ( ! empty( $timeline['date_range']['start'] ) && ! empty( $timeline['date_range']['end'] ) ) {
+								echo esc_html( $timeline['date_range']['start'] ) . ' - ' . esc_html( $timeline['date_range']['end'] );
+							} else {
+								esc_html_e( 'No data', 'msm-sitemap' );
+							}
+							?>
+						</span>
+					</div>
+					<div class="insight-item stat-descriptor">
+						<?php esc_html_e( 'Full date range from first to last sitemap', 'msm-sitemap' ); ?>
+					</div>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Covered Days:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value"><?php echo esc_html( $coverage['covered_days'] ?? 0 ); ?> / <?php echo esc_html( $coverage['total_days'] ?? 0 ); ?></span>
+					</div>
+					<div class="insight-item stat-descriptor">
+						<?php esc_html_e( 'Days with sitemaps vs total days in range', 'msm-sitemap' ); ?>
+					</div>
+					<?php if ( ! empty( $coverage['gaps'] ) ) : ?>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Gaps:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value"><?php echo esc_html( count( $coverage['gaps'] ) ); ?> <?php echo esc_html( _n( 'day', 'days', count( $coverage['gaps'] ), 'msm-sitemap' ) ); ?></span>
+					</div>
+					<div class="insight-item stat-descriptor">
+						<?php esc_html_e( 'Days without sitemap generation (may indicate issues)', 'msm-sitemap' ); ?>
+					</div>
+					<?php endif; ?>
+
+				</div>
+			</div>
+
+			<div class="insight-card">
+				<h3><?php esc_html_e( 'Storage', 'msm-sitemap' ); ?></h3>
+				<div class="insight-content">
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Total Size:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value"><?php echo esc_html( $storage['total_size_human'] ); ?></span>
+					</div>
+					<div class="insight-item stat-descriptor">
+						<?php esc_html_e( 'Total database storage used by all sitemap posts and metadata', 'msm-sitemap' ); ?>
+					</div>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Average Size:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value"><?php echo esc_html( $storage['average_size_human'] ); ?></span>
+					</div>
+					<div class="insight-item stat-descriptor">
+						<?php esc_html_e( 'Average storage per individual sitemap post', 'msm-sitemap' ); ?>
+					</div>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Content Coverage:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value"><?php echo esc_html( $coverage['coverage_quality'] ?? 0 ); ?>%</span>
+					</div>
+					<div class="insight-item stat-descriptor">
 		<?php
 		printf(
-			/* translators: 1: max number of indexed URLs, 2: date of max indexed URLs, 3: number of days to show */
-			__( 'Max: %1$s on %2$s. Showing the last %3$s days.', 'msm-sitemap' ),
-			'<span id="stats-graph-max"></span>',
-			'<span id="stats-graph-max-date"></span>',
-			'<span id="stats-graph-num-days"></span>',
-		);
-		?>
+							/* translators: %d is the number of posts per sitemap */
+							esc_html__( 'Percentage of site content included in sitemaps (limited to %d posts per sitemap)', 'msm-sitemap' ),
+							esc_html( $coverage['posts_per_sitemap_limit'] ?? 1000 )
+						); 
+						?>
+					</div>
+				</div>
+			</div>
+
+			<!-- Latest Sitemaps Card -->
+			<div class="insight-card">
+				<h3><?php esc_html_e( 'Latest Sitemaps', 'msm-sitemap' ); ?></h3>
+				<div class="insight-content">
+					<?php
+					$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
+					$repository = $container->get( \Automattic\MSM_Sitemap\Domain\Contracts\SitemapRepositoryInterface::class );
+					$sitemap_dates = $repository->get_all_sitemap_dates();
+					$recent_dates = array_slice( $sitemap_dates, -5, null, true );
+					?>
+					
+					<!-- Sitemap Index Link -->
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Sitemap Index:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value">
+							<a href="<?php echo esc_url( home_url( '/sitemap.xml' ) ); ?>" target="_blank">
+								<?php echo esc_url( home_url( '/sitemap.xml' ) ); ?>
+							</a>
+						</span>
+					</div>
+					
+					<!-- Recent Sitemaps -->
+					<?php if ( ! empty( $recent_dates ) ) : ?>
+						<div class="insight-item">
+							<span class="insight-label"><?php esc_html_e( 'Recent Sitemaps:', 'msm-sitemap' ); ?></span>
+							<span class="insight-value">
+								<?php 
+								$sitemap_links = array();
+								foreach ( array_reverse( $recent_dates ) as $date ) {
+									$post_id = $repository->find_by_date( $date );
+									$url_count = 0;
+									if ( $post_id ) {
+										$url_count = get_post_meta( $post_id, 'msm_indexed_url_count', true );
+										if ( ! $url_count ) {
+											$url_count = 0;
+										}
+									}
+									$sitemap_url = home_url( '/sitemap.xml?yyyy=' . substr( $date, 0, 4 ) . '&mm=' . substr( $date, 5, 2 ) . '&dd=' . substr( $date, 8, 2 ) );
+									/* translators: %s: number of URLs */
+									$sitemap_links[] = '<a href="' . esc_url( $sitemap_url ) . '" target="_blank">' . esc_html( $date ) . '</a> (' . sprintf( _n( '%s URL', '%s URLs', $url_count, 'msm-sitemap' ), number_format( $url_count ) ) . ')';
+								}
+								echo wp_kses_post( implode( '<br>', $sitemap_links ) );
+								?>
+							</span>
+						</div>
+					<?php else : ?>
+						<div class="insight-item">
+							<span class="insight-label"><?php esc_html_e( 'Recent Sitemaps:', 'msm-sitemap' ); ?></span>
+							<span class="insight-value"><?php esc_html_e( 'No sitemaps have been generated yet.', 'msm-sitemap' ); ?></span>
+						</div>
+					<?php endif; ?>
+				</div>
+			</div>
 		</div>
 		<?php
 	}
 
 	/**
-	 * Render the cron management section
+	 * Render the automatic sitemap updates section
 	 */
 	private static function render_cron_section() {
-		$cron_status    = Cron_Service::get_cron_status();
+		$cron_status    = CronSchedulingService::get_cron_status();
 		$cron_enabled   = $cron_status['enabled'];
 		$next_scheduled = $cron_status['next_scheduled'];
-		?>
-		<h2><?php esc_html_e( 'Cron Management', 'msm-sitemap' ); ?></h2>
-		<p><strong><?php esc_html_e( 'Automatic Sitemap Updates:', 'msm-sitemap' ); ?></strong> 
-			<?php echo $cron_enabled ? '<span style="color: green;">✅ Enabled</span>' : '<span style="color: red;">❌ Disabled</span>'; ?>
-		</p>
-		<?php if ( $next_scheduled ) : ?>
-			<p><strong><?php esc_html_e( 'Next Update:', 'msm-sitemap' ); ?></strong> <?php echo esc_html( date( 'Y-m-d H:i:s T', $next_scheduled ) ); ?></p>
-		<?php endif; ?>
+		$current_frequency = get_option( 'msm_sitemap_cron_frequency', '15min' );
 		
-		<form action="<?php echo menu_page_url( 'metro-sitemap', false ); ?>" method="post" style="margin-bottom: 20px;">
+		// Calculate relative time for next check
+		$next_check_relative = $next_scheduled ? human_time_diff( current_time( 'timestamp' ), $next_scheduled ) : '';
+		
+		// Get last check time (when cron last ran)
+		$last_check = get_option( 'msm_sitemap_last_check' );
+		if ( ! $last_check ) {
+			// Migrate from old option name if it exists
+			$old_last_run = get_option( 'msm_sitemap_update_last_run' );
+			if ( $old_last_run ) {
+				update_option( 'msm_sitemap_last_check', $old_last_run, false );
+				$last_check = $old_last_run;
+			}
+		}
+		$last_check_timestamp = is_numeric( $last_check ) ? (int) $last_check : strtotime( $last_check );
+		$last_check_text = $last_check ? gmdate( 'Y-m-d H:i:s T', $last_check_timestamp ) : __( 'Never', 'msm-sitemap' );
+		$last_check_relative = $last_check ? human_time_diff( $last_check_timestamp, current_time( 'timestamp' ) ) : '';
+		
+		// Get last update time (when sitemaps were actually generated)
+		$last_update = get_option( 'msm_sitemap_last_update' );
+		// For existing installations, we don't have historical data about when sitemaps were actually generated
+		// So we'll show "Never" for now, and it will be populated on the next cron run that generates sitemaps
+		$last_update_timestamp = is_numeric( $last_update ) ? (int) $last_update : strtotime( $last_update );
+		$last_update_text = $last_update ? gmdate( 'Y-m-d H:i:s T', $last_update_timestamp ) : __( 'Never', 'msm-sitemap' );
+		$last_update_relative = $last_update ? human_time_diff( $last_update_timestamp, current_time( 'timestamp' ) ) : '';
+		?>
+		<h2><?php esc_html_e( 'Automatic Sitemap Updates', 'msm-sitemap' ); ?></h2>
+		
+		<div style="display: table; width: 100%; margin-bottom: 20px;">
+			<div style="display: table-row;">
+				<div style="display: table-cell; width: 120px; padding: 8px 0; font-weight: bold; vertical-align: text-bottom;">
+					<?php esc_html_e( 'Status:', 'msm-sitemap' ); ?>
+				</div>
+				<div style="display: table-cell; padding: 8px 0; vertical-align: text-bottom;">
+					<?php echo $cron_enabled ? '<span style="color: green;">✅ Enabled</span>' : '<span style="color: red;">❌ Disabled</span>'; ?>
+					
+					<form action="<?php echo esc_url( menu_page_url( 'msm-sitemap', false ) ); ?>" method="post" style="display: inline; margin-left: 15px;vertical-align: text-bottom;">
 			<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
 			<?php if ( ! $cron_enabled ) : ?>
-				<input type="submit" name="action" class="button-primary" value="<?php esc_attr_e( 'Enable Automatic Updates', 'msm-sitemap' ); ?>">
+							<input type="submit" name="action" class="button-primary" value="<?php esc_attr_e( 'Enable', 'msm-sitemap' ); ?>">
 			<?php else : ?>
-				<input type="submit" name="action" class="button-secondary" value="<?php esc_attr_e( 'Disable Automatic Updates', 'msm-sitemap' ); ?>">
+							<input type="submit" name="action" class="button-secondary" value="<?php esc_attr_e( 'Disable', 'msm-sitemap' ); ?>">
+						<?php endif; ?>
+					</form>
+				</div>
+			</div>
+			
+			<div style="display: table-row;">
+				<div style="display: table-cell; width: 120px; padding: 8px 0; font-weight: bold; vertical-align: middle;">
+					<?php esc_html_e( 'Last Checked:', 'msm-sitemap' ); ?>
+				</div>
+				<div style="display: table-cell; padding: 8px 0; vertical-align: middle;">
+					<?php if ( $last_check_relative ) : ?>
+						<?php
+						/* translators: %s: Time ago (e.g., "2 hours ago", "3 days ago") */
+						printf( esc_html__( '%s ago', 'msm-sitemap' ), esc_html( $last_check_relative ) );
+						?>
+						<br><small style="color: #666;">(<?php echo esc_html( $last_check_text ); ?>)</small>
+					<?php else : ?>
+						<?php echo esc_html( $last_check_text ); ?>
+					<?php endif; ?>
+				</div>
+			</div>
+			
+			<div style="display: table-row;">
+				<div style="display: table-cell; width: 120px; padding: 8px 0; font-weight: bold; vertical-align: middle;">
+					<?php esc_html_e( 'Last Updated:', 'msm-sitemap' ); ?>
+				</div>
+				<div style="display: table-cell; padding: 8px 0; vertical-align: middle;">
+					<?php if ( $last_update_relative ) : ?>
+						<?php
+						/* translators: %s: Time ago (e.g., "2 hours ago", "3 days ago") */
+						printf( esc_html__( '%s ago', 'msm-sitemap' ), esc_html( $last_update_relative ) );
+						?>
+						<br><small style="color: #666;">(<?php echo esc_html( $last_update_text ); ?>)</small>
+					<?php else : ?>
+						<?php echo esc_html( $last_update_text ); ?>
+					<?php endif; ?>
+				</div>
+			</div>
+			
+			<?php if ( $next_scheduled ) : ?>
+			<div style="display: table-row;">
+				<div style="display: table-cell; width: 120px; padding: 8px 0; font-weight: bold; vertical-align: middle;">
+					<?php esc_html_e( 'Next Check:', 'msm-sitemap' ); ?>
+				</div>
+				<div style="display: table-cell; padding: 8px 0; vertical-align: middle;">
+					<?php if ( $next_check_relative ) : ?>
+						<?php
+						/* translators: %s: Time until next check (e.g., "2 hours", "3 days") */
+						printf( esc_html__( 'in %s', 'msm-sitemap' ), esc_html( $next_check_relative ) );
+						?>
+						<br><small style="color: #666;">(<?php echo esc_html( gmdate( 'Y-m-d H:i:s T', $next_scheduled ) ); ?>)</small>
+					<?php else : ?>
+						<?php echo esc_html( gmdate( 'Y-m-d H:i:s T', $next_scheduled ) ); ?>
+					<?php endif; ?>
+				</div>
+			</div>
 			<?php endif; ?>
-		</form>
+		</div>
+		
+		<?php if ( $cron_enabled ) : ?>
+			<form action="<?php echo esc_url( menu_page_url( 'msm-sitemap', false ) ); ?>" method="post" style="margin-bottom: 20px;">
+				<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
+				<div style="display: table; width: 100%;">
+					<div style="display: table-row;">
+						<div style="display: table-cell; width: 120px; padding: 8px 0; font-weight: bold; vertical-align: middle;">
+							<label for="cron-frequency"><?php esc_html_e( 'Frequency:', 'msm-sitemap' ); ?></label>
+						</div>
+						<div style="display: table-cell; padding: 8px 0; vertical-align: middle;">
+							<select id="cron-frequency" name="cron_frequency" style="margin-right: 10px;">
+								<option value="5min" <?php selected( $current_frequency, '5min' ); ?>><?php esc_html_e( 'Every 5 minutes', 'msm-sitemap' ); ?></option>
+								<option value="10min" <?php selected( $current_frequency, '10min' ); ?>><?php esc_html_e( 'Every 10 minutes', 'msm-sitemap' ); ?></option>
+								<option value="15min" <?php selected( $current_frequency, '15min' ); ?>><?php esc_html_e( 'Every 15 minutes', 'msm-sitemap' ); ?></option>
+								<option value="30min" <?php selected( $current_frequency, '30min' ); ?>><?php esc_html_e( 'Every 30 minutes', 'msm-sitemap' ); ?></option>
+								<option value="hourly" <?php selected( $current_frequency, 'hourly' ); ?>><?php esc_html_e( 'Every hour', 'msm-sitemap' ); ?></option>
+								<option value="2hourly" <?php selected( $current_frequency, '2hourly' ); ?>><?php esc_html_e( 'Every 2 hours', 'msm-sitemap' ); ?></option>
+								<option value="3hourly" <?php selected( $current_frequency, '3hourly' ); ?>><?php esc_html_e( 'Every 3 hours', 'msm-sitemap' ); ?></option>
+							</select>
+							<input type="submit" name="action" class="button-secondary" value="<?php esc_attr_e( 'Update Frequency', 'msm-sitemap' ); ?>">
+						</div>
+					</div>
+				</div>
+			</form>
+			
+
+		<?php endif; ?>
 		<?php
 	}
 
 	/**
-	 * Render the generate section with buttons
+	 * Render the manual generation section
 	 */
 	private static function render_generate_section() {
-		$cron_status                = Cron_Service::get_cron_status();
-		$sitemap_create_in_progress = (bool) get_option( 'msm_sitemap_create_in_progress' );
-		$sitemap_halt_in_progress   = (bool) get_option( 'msm_stop_processing' );
+		$cron_status                = CronSchedulingService::get_cron_status();
+		$sitemap_create_in_progress = (bool) get_option( 'msm_generation_in_progress' );
+		$sitemap_halt_in_progress   = (bool) get_option( 'msm_sitemap_stop_generation' );
+		
+		// Clear the halt flag if generation is not actually running
+		if ( $sitemap_halt_in_progress && ! $sitemap_create_in_progress ) {
+			delete_option( 'msm_sitemap_stop_generation' );
+			$sitemap_halt_in_progress = false;
+		}
 		
 		// Determine if generate buttons should be enabled
-		$buttons_enabled = $cron_status['enabled'] && ! $sitemap_create_in_progress;
+		$buttons_enabled = ! $sitemap_create_in_progress && ! $sitemap_halt_in_progress;
 		
-		// Determine sitemap status text
-		$sitemap_create_status = apply_filters(
-			'msm_sitemap_create_status',
-			$sitemap_create_in_progress ? __( 'Running', 'msm-sitemap' ) : __( 'Not Running', 'msm-sitemap' )
-		);
+		// Get missing content summary
+		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
+		$missing_service = new \Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService();
+		$missing_data = $missing_service::get_missing_sitemaps();
+		$missing_summary = $missing_service::get_missing_content_summary();
+		
+		// Determine button text based on cron status
+		$button_text = $cron_status['enabled'] 
+			? __( 'Generate Missing Sitemaps', 'msm-sitemap' )
+			: __( 'Generate Missing Sitemaps (Direct)', 'msm-sitemap' );
 		
 		?>
-		<form action="<?php echo menu_page_url( 'metro-sitemap', false ); ?>" method="post">
-			<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
+		<h2><?php esc_html_e( 'Missing Sitemaps', 'msm-sitemap' ); ?></h2>
+		
+		<div style="display: table; width: 100%; margin-bottom: 20px;">
+			<div style="display: table-row;">
+				<div style="display: table-cell; width: 120px; padding: 8px 0; font-weight: bold; vertical-align: text-bottom;">
+					<?php esc_html_e( 'Status:', 'msm-sitemap' ); ?>
+				</div>
+				<div style="display: table-cell; padding: 8px 0;">
+					<div id="missing-sitemaps-content" style="display: inline; vertical-align: text-bottom;">
+						<span class="dashicons dashicons-update" style="animation: spin 1s linear infinite;"></span>
+						<?php esc_html_e( 'Loading missing sitemaps...', 'msm-sitemap' ); ?>
+					</div>
+					
+					<form action="<?php echo esc_url( menu_page_url( 'msm-sitemap', false ) ); ?>" method="post" style="display: inline; margin-left: 15px; vertical-align: text-bottom;">
+						<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
+						<input type="submit" name="action" id="generate-missing-button" class="button-secondary" value="<?php echo esc_attr( $button_text ); ?>" disabled="disabled">
+					</form>
+				</div>
+			</div>
+		</div>
 			
-			<h2><?php esc_html_e( 'Generate', 'msm-sitemap' ); ?></h2>
-			<p><strong><?php esc_html_e( 'Sitemap Creation Status:', 'msm-sitemap' ); ?></strong> <?php echo esc_html( $sitemap_create_status ); ?></p>
-			
-			<?php if ( $buttons_enabled ) : ?>
-				<input type="submit" name="action" class="button-secondary" value="<?php esc_attr_e( 'Generate from all articles', 'msm-sitemap' ); ?>">
-				<input type="submit" name="action" class="button-secondary" value="<?php esc_attr_e( 'Generate from recently modified posts', 'msm-sitemap' ); ?>">
-			<?php else : ?>
-				<input type="submit" name="action" class="button-secondary button-disabled" value="<?php esc_attr_e( 'Generate from all articles', 'msm-sitemap' ); ?>" disabled="disabled">
-				<input type="submit" name="action" class="button-secondary button-disabled" value="<?php esc_attr_e( 'Generate from recently modified posts', 'msm-sitemap' ); ?>" disabled="disabled">
-			<?php endif; ?>
-			
-			<?php if ( $sitemap_create_in_progress && ! $sitemap_halt_in_progress ) : ?>
-				<input type="submit" name="action" class="button-secondary" value="<?php esc_attr_e( 'Halt Sitemap Generation', 'msm-sitemap' ); ?>">
-			<?php endif; ?>
-			
-			<?php if ( ! $sitemap_create_in_progress && ! $sitemap_halt_in_progress ) : ?>
-				<input type="submit" name="action" class="button-secondary" value="<?php esc_attr_e( 'Reset Sitemap Data', 'msm-sitemap' ); ?>">
-			<?php endif; ?>
+
 			
 			<?php self::render_generate_note(); ?>
 		</form>
@@ -217,7 +797,7 @@ class UI {
 	 * Render a note about enabling automatic updates when generate buttons are disabled
 	 */
 	private static function render_generate_note() {
-		$cron_status = Cron_Service::get_cron_status();
+		$cron_status = CronSchedulingService::get_cron_status();
 		
 		if ( ! $cron_status['enabled'] ) {
 			echo '<p style="margin-top: 10px; color: #666; font-style: italic;">';
@@ -225,4 +805,148 @@ class UI {
 			echo '</p>';
 		}
 	}
+
+	/**
+	 * Render the dangerous actions section
+	 */
+	private static function render_dangerous_actions_section() {
+		$cron_status                = CronSchedulingService::get_cron_status();
+		$sitemap_create_in_progress = (bool) get_option( 'msm_generation_in_progress' );
+		$sitemap_halt_in_progress   = (bool) get_option( 'msm_sitemap_stop_generation' );
+		
+		// Determine if buttons should be disabled
+		$buttons_enabled = $cron_status['enabled'] && ! $sitemap_create_in_progress && ! $sitemap_halt_in_progress;
+		$reset_disabled = $sitemap_create_in_progress || $sitemap_halt_in_progress;
+		?>
+		<div style="margin-top: 40px; border: 1px solid #dc3232; border-radius: 4px; padding: 15px; background-color: #fef7f7;">
+			<div style="display: flex; align-items: center; margin-bottom: 15px;">
+				<h2 style="margin: 0; color: #dc3232;"><?php esc_html_e( 'Danger Zone', 'msm-sitemap' ); ?></h2>
+				<button type="button" class="button button-secondary" onclick="toggleDangerZone()" style="font-size: 12px; margin-left: 10px;">
+					<span class="dashicons dashicons-arrow-down-alt2" id="danger-zone-icon" style="vertical-align: middle;"></span>
+					<span id="danger-zone-toggle-text" style="vertical-align: middle;"><?php esc_html_e( 'Show', 'msm-sitemap' ); ?></span>
+				</button>
+			</div>
+			
+			<div id="danger-zone-content" style="display: none; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+				<!-- Full Generation Section -->
+				<div style="padding: 15px; background-color: #fff; border: 1px solid #dc3232; border-radius: 4px;">
+					<h3 style="margin: 0 0 10px 0; color: #dc3232;">
+						<span class="dashicons dashicons-warning" style="color: #dc3232;"></span>
+						<?php esc_html_e( 'Full Generation', 'msm-sitemap' ); ?>
+					</h3>
+					<p style="margin: 0 0 10px 0; color: #666; font-size: 13px;">
+						<strong><?php esc_html_e( '⚠️ Warning:', 'msm-sitemap' ); ?></strong> <?php esc_html_e( 'This will spend a while brute-force checking each date for posts, and is only really needed if existing sitemaps need to be force generated without deleting them first.', 'msm-sitemap' ); ?>
+					</p>
+					<p style="margin: 0 0 15px 0; color: #666; font-size: 13px; font-style: italic;">
+						<?php esc_html_e( 'For most cases, use "Generate Missing Sitemaps" instead.', 'msm-sitemap' ); ?>
+					</p>
+					
+					<form action="<?php echo esc_url( menu_page_url( 'msm-sitemap', false ) ); ?>" method="post" style="display: inline;">
+						<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
+						<?php if ( $buttons_enabled ) : ?>
+							<input type="submit" name="action" class="button button-secondary" value="<?php esc_attr_e( 'Generate All Sitemaps (Force)', 'msm-sitemap' ); ?>">
+						<?php elseif ( $sitemap_create_in_progress && ! $sitemap_halt_in_progress ) : ?>
+							<input type="submit" name="action" class="button button-secondary" value="<?php esc_attr_e( 'Stop full sitemaps generation...', 'msm-sitemap' ); ?>">
+						<?php elseif ( $sitemap_halt_in_progress ) : ?>
+							<p style="margin-top: 10px; color: #666; font-style: italic;">
+								<?php esc_html_e( 'Sitemap generation is being halted. The process will stop at the next available checkpoint.', 'msm-sitemap' ); ?>
+							</p>
+						<?php else : ?>
+							<input type="submit" name="action" class="button button-secondary button-disabled" value="<?php esc_attr_e( 'Generate All Sitemaps (Force)', 'msm-sitemap' ); ?>" disabled="disabled">
+						<?php endif; ?>
+					</form>
+				</div>
+				
+				<!-- Reset Sitemap Data Section -->
+				<div style="padding: 15px; background-color: #fff; border: 1px solid #dc3232; border-radius: 4px;">
+					<h3 style="margin: 0 0 8px 0; color: #dc3232;">
+						<span class="dashicons dashicons-warning" style="color: #dc3232;"></span>
+						<?php esc_html_e( 'Reset Sitemap Data', 'msm-sitemap' ); ?>
+					</h3>
+					<p style="margin: 0; color: #666;">
+						<?php esc_html_e( 'This action will permanently delete:', 'msm-sitemap' ); ?>
+					</p>
+					<ul style="margin: 8px 0 0 20px; color: #666;">
+						<li><?php esc_html_e( 'All sitemap post entries', 'msm-sitemap' ); ?></li>
+						<li><?php esc_html_e( 'All sitemap metadata and statistics', 'msm-sitemap' ); ?></li>
+						<li><?php esc_html_e( 'All processing options and progress', 'msm-sitemap' ); ?></li>
+					</ul>
+					<p style="margin: 8px 0 0 0; color: #666; font-style: italic;">
+						<?php esc_html_e( 'This action cannot be undone. Your sitemaps will need to be regenerated from scratch.', 'msm-sitemap' ); ?>
+					</p>
+					
+					<?php if ( $reset_disabled ) : ?>
+						<p style="margin-top: 10px; color: #dc3232; font-style: italic;">
+							<span class="dashicons dashicons-info" style="color: #dc3232;"></span>
+							<?php esc_html_e( 'Reset is disabled while sitemap generation is in progress.', 'msm-sitemap' ); ?>
+						</p>
+						<input type="button" class="button button-link-delete button-disabled" value="<?php esc_attr_e( 'Reset Sitemap Data', 'msm-sitemap' ); ?>" disabled="disabled">
+					<?php else : ?>
+						<form action="<?php echo esc_url( menu_page_url( 'msm-sitemap', false ) ); ?>" method="post" onsubmit="return confirmReset();" style="margin-top: 10px;">
+							<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
+							<input type="submit" name="action" class="button button-link-delete" value="<?php esc_attr_e( 'Reset Sitemap Data', 'msm-sitemap' ); ?>">
+						</form>
+					<?php endif; ?>
+				</div>
+			</div>
+			
+
+				
+				<script type="text/javascript">
+				function confirmReset() {
+					return confirm('<?php echo esc_js( __( 'Are you sure you want to reset all sitemap data? This action cannot be undone and will delete all sitemaps, metadata, and statistics.', 'msm-sitemap' ) ); ?>');
+				}
+				
+				function toggleDetailedStats() {
+					const content = document.querySelector('.detailed-stats-content');
+					const button = document.querySelector('.detailed-stats-toggle');
+					const icon = button.querySelector('.dashicons');
+					const text = button.querySelector('span:not(.dashicons)');
+					
+					if (content.style.display === 'none') {
+						content.style.display = 'block';
+						icon.className = 'dashicons dashicons-arrow-up-alt2';
+						text.textContent = '<?php echo esc_js( __( 'Hide Detailed Statistics', 'msm-sitemap' ) ); ?>';
+					} else {
+						content.style.display = 'none';
+						icon.className = 'dashicons dashicons-arrow-down-alt2';
+						text.textContent = '<?php echo esc_js( __( 'Show Detailed Statistics', 'msm-sitemap' ) ); ?>';
+					}
+				}
+				
+
+				
+				function toggleCustomDateRange(value) {
+					var customRange = document.getElementById('custom-date-range');
+					if (value === 'custom') {
+						customRange.style.display = 'inline-block';
+					} else {
+						customRange.style.display = 'none';
+						// Auto-submit for non-custom ranges
+						document.querySelector('#stats-date-range').form.submit();
+					}
+				}
+				
+				function toggleDangerZone() {
+					const content = document.getElementById('danger-zone-content');
+					const icon = document.getElementById('danger-zone-icon');
+					const text = document.getElementById('danger-zone-toggle-text');
+					
+					if (content.style.display === 'none') {
+						content.style.display = 'grid';
+						icon.className = 'dashicons dashicons-arrow-up-alt2';
+						text.textContent = '<?php echo esc_js( __( 'Hide', 'msm-sitemap' ) ); ?>';
+					} else {
+						content.style.display = 'none';
+						icon.className = 'dashicons dashicons-arrow-down-alt2';
+						text.textContent = '<?php echo esc_js( __( 'Show', 'msm-sitemap' ) ); ?>';
+					}
+				}
+				</script>
+		</div>
+		<?php
+	}
+
+	// Validation results method removed for now
 } 
+

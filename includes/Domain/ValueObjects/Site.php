@@ -2,12 +2,12 @@
 /**
  * Site information and configuration handler.
  *
- * @package Automattic\MSM_Sitemap
+ * @package Automattic\MSM_Sitemap\Domain\ValueObjects
  */
 
 declare(strict_types=1);
 
-namespace Automattic\MSM_Sitemap;
+namespace Automattic\MSM_Sitemap\Domain\ValueObjects;
 
 /**
  * Site class for handling site-related information and configuration.
@@ -63,4 +63,4 @@ class Site {
 		}
 		return home_url( '/sitemap.xml' );
 	}
-} 
+}
