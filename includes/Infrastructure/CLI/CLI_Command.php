@@ -654,6 +654,8 @@ class CLI_Command extends WP_CLI_Command {
 				$this->cron_reset( array(), $assoc_args );
 				break;
 			case 'frequency':
+				// Remove 'frequency' from args and pass the remaining arguments
+				array_shift( $args );
 				$this->cron_frequency( $args, $assoc_args );
 				break;
 			default:
@@ -669,17 +671,16 @@ class CLI_Command extends WP_CLI_Command {
 	 * Enable the sitemap cron functionality.
 	 */
 	private function cron_enable( $args, $assoc_args ) {
-		$status = CronSchedulingService::get_cron_status();
+		$result = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::enable_cron();
 		
-		if ( ! $status['blog_public'] ) {
-			WP_CLI::error( __( '❌ Cannot enable cron: blog is not public.', 'msm-sitemap' ) );
-		}
-		
-		$result = CronSchedulingService::enable_cron();
-		if ( $result ) {
-			WP_CLI::success( __( '✅ Sitemap cron enabled successfully.', 'msm-sitemap' ) );
+		if ( $result['success'] ) {
+			WP_CLI::success( '✅ ' . $result['message'] );
 		} else {
-			WP_CLI::warning( __( '⚠️ Cron is already enabled.', 'msm-sitemap' ) );
+			if ( isset( $result['error_code'] ) && 'blog_not_public' === $result['error_code'] ) {
+				WP_CLI::error( '❌ ' . $result['message'] );
+			} else {
+				WP_CLI::warning( '⚠️ ' . $result['message'] );
+			}
 		}
 	}
 
@@ -687,9 +688,10 @@ class CLI_Command extends WP_CLI_Command {
 	 * Disable the sitemap cron functionality.
 	 */
 	private function cron_disable( $args, $assoc_args ) {
-		$result = CronSchedulingService::disable_cron();
-		if ( $result ) {
-			WP_CLI::success( __( '✅ Sitemap cron disabled successfully.', 'msm-sitemap' ) );
+		$result = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::disable_cron();
+		
+		if ( $result['success'] ) {
+			WP_CLI::success( '✅ ' . $result['message'] );
 			
 			// Check if cron was actually cleared
 			$next_scheduled = wp_next_scheduled( 'msm_cron_update_sitemap' );
@@ -699,7 +701,7 @@ class CLI_Command extends WP_CLI_Command {
 				WP_CLI::log( __( '✅ Cron events cleared successfully.', 'msm-sitemap' ) );
 			}
 		} else {
-			WP_CLI::warning( __( '⚠️ Cron is already disabled.', 'msm-sitemap' ) );
+			WP_CLI::warning( '⚠️ ' . $result['message'] );
 		}
 	}
 
@@ -707,17 +709,18 @@ class CLI_Command extends WP_CLI_Command {
 	 * Show the current status of the sitemap cron functionality.
 	 */
 	private function cron_status( $args, $assoc_args ) {
-		$status = CronSchedulingService::get_cron_status();
+		$status = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::get_cron_status();
 		
 		$format = $assoc_args['format'] ?? 'table';
-		$fields = array( 'enabled', 'next_scheduled', 'blog_public', 'generating', 'halted' );
+		$fields = array( 'enabled', 'next_scheduled', 'blog_public', 'generating', 'halted', 'current_frequency' );
 		$items  = array(
 			array(
-				'enabled'        => $status['enabled'] ? 'Yes' : 'No',
-				'next_scheduled' => $status['next_scheduled'] ? date( 'Y-m-d H:i:s T', $status['next_scheduled'] ) : 'Not scheduled',
-				'blog_public'    => $status['blog_public'] ? 'Yes' : 'No',
-				'generating'     => $status['generating'] ? 'Yes' : 'No',
-				'halted'         => $status['halted'] ? 'Yes' : 'No',
+				'enabled'           => $status['enabled'] ? 'Yes' : 'No',
+				'next_scheduled'    => $status['next_scheduled'] ? date( 'Y-m-d H:i:s T', $status['next_scheduled'] ) : 'Not scheduled',
+				'blog_public'       => $status['blog_public'] ? 'Yes' : 'No',
+				'generating'        => $status['generating'] ? 'Yes' : 'No',
+				'halted'            => $status['halted'] ? 'Yes' : 'No',
+				'current_frequency' => $status['current_frequency'],
 			),
 		);
 		format_items( $format, $items, $fields );
@@ -728,13 +731,13 @@ class CLI_Command extends WP_CLI_Command {
 	 * Reset the sitemap cron to a clean state (for testing).
 	 */
 	private function cron_reset( $args, $assoc_args ) {
-		$result = CronSchedulingService::reset_cron();
+		$result = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::reset_cron();
 		
-		if ( $result ) {
-			WP_CLI::success( __( '✅ Sitemap cron reset to clean state.', 'msm-sitemap' ) );
+		if ( $result['success'] ) {
+			WP_CLI::success( '✅ ' . $result['message'] );
 			WP_CLI::log( __( '📝 This simulates a fresh install state.', 'msm-sitemap' ) );
 		} else {
-			WP_CLI::error( __( '❌ Failed to reset sitemap cron.', 'msm-sitemap' ) );
+			WP_CLI::error( '❌ ' . $result['message'] );
 		}
 	}
 
@@ -786,9 +789,9 @@ class CLI_Command extends WP_CLI_Command {
 		$result = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::update_frequency( $frequency );
 		
 		if ( $result['success'] ) {
-			WP_CLI::success( $result['message'] );
+			WP_CLI::success( '✅ ' . $result['message'] );
 		} else {
-			WP_CLI::error( $result['message'] );
+			WP_CLI::error( '❌ ' . $result['message'] );
 		}
 	}
 
