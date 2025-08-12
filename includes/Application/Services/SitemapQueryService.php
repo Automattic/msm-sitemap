@@ -70,6 +70,13 @@ class SitemapQueryService {
 		} elseif ( isset( $query['year'], $query['month'] ) ) {
 			$year = $query['year'];
 			$month = $query['month'];
+			
+			// Validate month before calling cal_days_in_month to avoid ValueError in PHP 8.0+
+			if ( $month < 1 || $month > 12 ) {
+				// Invalid month - return empty array
+				return array();
+			}
+			
 			$max_day = ( $year == date( 'Y' ) && $month == date( 'n' ) ) ? date( 'j' ) : cal_days_in_month( CAL_GREGORIAN, $month, $year );
 			
 			for ( $day = 1; $day <= $max_day; $day++ ) {
@@ -112,6 +119,13 @@ class SitemapQueryService {
 			} elseif ( isset( $query['year'], $query['month'] ) ) {
 				$year = $query['year'];
 				$month = $query['month'];
+				
+				// Validate month before calling cal_days_in_month to avoid ValueError in PHP 8.0+
+				if ( $month < 1 || $month > 12 ) {
+					// Invalid month - skip this query
+					continue;
+				}
+				
 				$max_day = ( $year == date( 'Y' ) && $month == date( 'n' ) ) ? date( 'j' ) : cal_days_in_month( CAL_GREGORIAN, $month, $year );
 				
 				for ( $day = 1; $day <= $max_day; $day++ ) {

@@ -140,7 +140,10 @@ class FullGenerationHandler implements CronHandlerInterface {
 		$months_with_posts = array();
 		for ( $month = 1; $month <= 12; $month++ ) {
 			$start_date = sprintf( '%04d-%02d-01', $year, $month );
-			$end_date = sprintf( '%04d-%02d-%02d', $year, $month, cal_days_in_month( CAL_GREGORIAN, $month, $year ) );
+			
+			// Validate month before calling cal_days_in_month to avoid ValueError in PHP 8.0+
+			$days_in_month = cal_days_in_month( CAL_GREGORIAN, $month, $year );
+			$end_date = sprintf( '%04d-%02d-%02d', $year, $month, $days_in_month );
 			
 			$post_repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository();
 			if ( $post_repository->date_range_has_posts( $start_date, $end_date ) ) {
@@ -148,20 +151,18 @@ class FullGenerationHandler implements CronHandlerInterface {
 			}
 		}
 
+		if ( ! empty( $months_with_posts ) ) {
+			// Store months to process and schedule the first month
+			update_option( 'msm_months_to_process', $months_with_posts );
+			update_option( 'msm_current_year', $year );
 
+			// Prefer the current month when processing the current year
+			$current_month = (int) gmdate( 'n' );
+			$month = in_array( $current_month, $months_with_posts, true ) ? $current_month : $months_with_posts[0];
 
-        if ( ! empty( $months_with_posts ) ) {
-            // Store months to process and schedule the first month
-            update_option( 'msm_months_to_process', $months_with_posts );
-            update_option( 'msm_current_year', $year );
-
-            // Prefer the current month when processing the current year
-            $current_month = (int) date( 'n' );
-            $month = in_array( $current_month, $months_with_posts, true ) ? $current_month : $months_with_posts[0];
-
-            // Schedule month generation without removing it from the stored list
-            wp_schedule_single_event( time() + MSM_INTERVAL_PER_GENERATION_EVENT, 'msm_cron_generate_sitemap_for_year_month', array( $year, $month ) );
-        } else {
+			// Schedule month generation without removing it from the stored list
+			wp_schedule_single_event( time() + MSM_INTERVAL_PER_GENERATION_EVENT, 'msm_cron_generate_sitemap_for_year_month', array( $year, $month ) );
+		} else {
 			// No months with posts, continue to next year
 			self::continue_to_next_year();
 		}
@@ -201,22 +202,22 @@ class FullGenerationHandler implements CronHandlerInterface {
 			}
 		}
 
-        if ( ! empty( $days_with_posts ) ) {
-            // Store days to process and schedule the first day
-            update_option( 'msm_days_to_process', $days_with_posts );
-            update_option( 'msm_current_month', $month );
+		if ( ! empty( $days_with_posts ) ) {
+			// Store days to process and schedule the first day
+			update_option( 'msm_days_to_process', $days_with_posts );
+			update_option( 'msm_current_month', $month );
 
-            // Prefer current day (or latest past day) when processing current month
-            $today = (int) date( 'j' );
-            $preferred = $today;
-            // If today is not in the list (e.g., no posts today), choose the first available day
-            if ( ! in_array( $preferred, $days_with_posts, true ) ) {
-                $preferred = $days_with_posts[0];
-            }
+			// Prefer current day (or latest past day) when processing current month
+			$today = (int) gmdate( 'j' );
+			$preferred = $today;
+			// If today is not in the list (e.g., no posts today), choose the first available day
+			if ( ! in_array( $preferred, $days_with_posts, true ) ) {
+				$preferred = $days_with_posts[0];
+			}
 
-            // Schedule day generation without removing it from the stored list
-            wp_schedule_single_event( time() + MSM_INTERVAL_PER_GENERATION_EVENT, 'msm_cron_generate_sitemap_for_year_month_day', array( $year, $month, $preferred ) );
-        } else {
+			// Schedule day generation without removing it from the stored list
+			wp_schedule_single_event( time() + MSM_INTERVAL_PER_GENERATION_EVENT, 'msm_cron_generate_sitemap_for_year_month_day', array( $year, $month, $preferred ) );
+		} else {
 			// No days with posts, continue to next month
 			self::continue_to_next_month();
 		}
