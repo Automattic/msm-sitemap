@@ -20,7 +20,8 @@
 		"phpcompatibility/phpcompatibility-wp": "^2.1",
 		"phpunit/phpunit": "^9",
 		"wp-coding-standards/wpcs": "^3.0",
-		"yoast/wp-test-utils": "^1.2.0"
+		"yoast/wp-test-utils": "^1.2.0",
+		"ergebnis/phpunit-slow-test-detector": "^2.19"
 	},
 	"autoload-dev": {
 		"psr-4": {
@@ -51,6 +52,9 @@
 		],
 		"test": [
 			"@php ./vendor/bin/phpunit --testsuite WP_Tests --no-coverage"
+		],
+		"test-slow": [
+			"@php ./vendor/bin/phpunit --testsuite WP_Tests --no-coverage --group slow"
 		],
 		"test-ms": [
 			"@putenv WP_MULTISITE=1",
