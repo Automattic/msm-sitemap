@@ -23,6 +23,7 @@ use Automattic\MSM_Sitemap\Infrastructure\CLI\CLI_Command;
 use Automattic\MSM_Sitemap\Infrastructure\Cron\MissingSitemapGenerationHandler;
 use Automattic\MSM_Sitemap\Infrastructure\Cron\FullGenerationHandler;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\SitemapEndpointHandler;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\REST_API_Controller;
 use Automattic\MSM_Sitemap\Admin\UI;
 use Automattic\MSM_Sitemap\Admin\ActionHandlers;
 
@@ -227,6 +228,20 @@ class SitemapContainer {
 			$sitemap_service = $container->get( SitemapService::class );
 			
 			return new SitemapEndpointHandler( $sitemap_service );
+		} );
+
+		$this->register( REST_API_Controller::class, function( $container ) {
+			$sitemap_service = $container->get( SitemapService::class );
+			$stats_service = $container->get( SitemapStatsService::class );
+			$validation_service = $container->get( SitemapValidationService::class );
+			$export_service = $container->get( SitemapExportService::class );
+			
+			return new REST_API_Controller(
+				$sitemap_service,
+				$stats_service,
+				$validation_service,
+				$export_service
+			);
 		} );
 
 		// Register admin services
