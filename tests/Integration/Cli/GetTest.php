@@ -6,20 +6,20 @@
  */
 declare( strict_types=1 );
 
-namespace Automattic\MSM_Sitemap\Tests\Integration\Cli;
+namespace Automattic\MSM_Sitemap\Tests\Cli;
 
-use Metro_Sitemap_CLI;
-use Automattic\MSM_Sitemap\Site;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\CLI_Command;
+use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
 
 require_once __DIR__ . '/../Includes/mock-wp-cli.php';
-require_once __DIR__ . '/../../../includes/wp-cli.php';
+require_once __DIR__ . '/../../includes/Infrastructure/CLI/CLI_Command.php';
 
 /**
  * Class GetTest
  *
  * @package Automattic\MSM_Sitemap\Tests\Cli
  */
-final class GetTest extends \Automattic\MSM_Sitemap\Tests\Integration\TestCase {
+final class GetTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 
 	/**
 	 * Test sitemap post ID.
@@ -65,7 +65,7 @@ final class GetTest extends \Automattic\MSM_Sitemap\Tests\Integration\TestCase {
 	 * @return void
 	 */
 	public function test_get_by_id(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 		$this->expectOutputRegex( '/"id".*' . $this->post_id . '/s' );
 		$cli->get( array( (string) $this->post_id ), array( 'format' => 'json' ) );
 	}
@@ -76,7 +76,7 @@ final class GetTest extends \Automattic\MSM_Sitemap\Tests\Integration\TestCase {
 	 * @return void
 	 */
 	public function test_get_invalid_id(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 		$this->expectException( \Exception::class );
 		$cli->get( array( '999999' ), array( 'format' => 'json' ) );
 	}
@@ -87,7 +87,7 @@ final class GetTest extends \Automattic\MSM_Sitemap\Tests\Integration\TestCase {
 	 * @return void
 	 */
 	public function test_get_by_date_day(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 		$this->expectOutputRegex( '/"date".*2024-07-10/s' );
 		$cli->get( array( '2024-07-10' ), array( 'format' => 'json' ) );
 	}
@@ -98,7 +98,7 @@ final class GetTest extends \Automattic\MSM_Sitemap\Tests\Integration\TestCase {
 	 * @return void
 	 */
 	public function test_get_by_date_month(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 		$this->expectOutputRegex( '/"date".*2024-07-10/s' );
 		$cli->get( array( '2024-07' ), array( 'format' => 'json' ) );
 	}
@@ -109,7 +109,7 @@ final class GetTest extends \Automattic\MSM_Sitemap\Tests\Integration\TestCase {
 	 * @return void
 	 */
 	public function test_get_by_date_year(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 		// Delete the only sitemap so none exist for the year
 		wp_delete_post( $this->post_id, true );
 		$this->expectException( \WP_CLI\ExitException::class );
@@ -122,7 +122,7 @@ final class GetTest extends \Automattic\MSM_Sitemap\Tests\Integration\TestCase {
 	 * @return void
 	 */
 	public function test_get_multiple_results(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 		// Add another sitemap for the same year
 		$date2    = '2024-07-11';
 		$post_id2 = wp_insert_post(
@@ -138,11 +138,10 @@ final class GetTest extends \Automattic\MSM_Sitemap\Tests\Integration\TestCase {
 		update_post_meta( $post_id2, 'msm_indexed_url_count', 1 );
 
 		$sitemap_url_partial = Site::is_indexed_by_year() ? 'sitemap-2024.xml?' : 'sitemap.xml?yyyy=2024&';
-		$home_url_escaped    = str_replace( '/', '\\/', home_url() );
 
 		$expected =
-				'[{"id":' . $post_id2 . ',"date":"2024-07-11","url_count":1,"status":"publish","last_modified":"2024-07-11 00:00:00","sitemap_url":"' . $home_url_escaped . '\/' . $sitemap_url_partial . 'mm=07&dd=11"},' .
-				'{"id":' . $this->post_id . ',"date":"2024-07-10","url_count":1,"status":"publish","last_modified":"2024-07-10 00:00:00","sitemap_url":"' . $home_url_escaped . '\/' . $sitemap_url_partial . 'mm=07&dd=10"}]';
+				'[{"id":' . $post_id2 . ',"date":"2024-07-11","url_count":1,"status":"publish","last_modified":"2024-07-11 00:00:00","sitemap_url":"http:\/\/example.org\/' . $sitemap_url_partial . 'mm=07&dd=11"},' .
+				'{"id":' . $this->post_id . ',"date":"2024-07-10","url_count":1,"status":"publish","last_modified":"2024-07-10 00:00:00","sitemap_url":"http:\/\/example.org\/' . $sitemap_url_partial . 'mm=07&dd=10"}]';
 		$this->expectOutputString( $expected );
 		$cli->get( array( '2024-07' ), array( 'format' => 'json' ) );
 		wp_delete_post( $post_id2, true );
@@ -154,7 +153,7 @@ final class GetTest extends \Automattic\MSM_Sitemap\Tests\Integration\TestCase {
 	 * @return void
 	 */
 	public function test_get_invalid_date_format(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 		$this->expectException( \Exception::class );
 		$cli->get( array( '2024-99-99' ), array( 'format' => 'json' ) );
 	}
@@ -165,7 +164,7 @@ final class GetTest extends \Automattic\MSM_Sitemap\Tests\Integration\TestCase {
 	 * @return void
 	 */
 	public function test_get_no_argument(): void {
-		$cli = new Metro_Sitemap_CLI();
+		$cli = CLI_Command::create();
 		$this->expectException( \WP_CLI\ExitException::class );
 		$cli->get( array(), array( 'format' => 'json' ) );
 	}

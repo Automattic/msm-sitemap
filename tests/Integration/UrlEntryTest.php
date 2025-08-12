@@ -2,7 +2,7 @@
 /**
  * WP_Test_Sitemap_UrlEntry
  *
- * @package Metro_Sitemap/unit_tests
+ * @package Automattic\MSM_Sitemap\Tests
  */
 
 declare( strict_types=1 );
@@ -249,56 +249,79 @@ class UrlEntryTest extends TestCase {
 
 	/**
 	 * Test valid changefreq values.
+	 *
+	 * @dataProvider valid_changefreq_values_data_provider
 	 */
-	public function test_valid_changefreq_values(): void {
-		$valid_values = array( 'always', 'hourly', 'daily', 'weekly', 'monthly', 'yearly', 'never' );
+	public function test_valid_changefreq_values( string $changefreq ): void {
+		$url_entry = new UrlEntry(
+			'https://example.com/post/',
+			null,
+			$changefreq
+		);
 
-		foreach ( $valid_values as $changefreq ) {
-			$url_entry = new UrlEntry(
-				'https://example.com/post/',
-				null,
-				$changefreq
-			);
+		$this->assertEquals( $changefreq, $url_entry->changefreq() );
+	}
 
-			$this->assertEquals( $changefreq, $url_entry->changefreq() );
-		}
+	/**
+	 * Data provider for valid changefreq values.
+	 */
+	public function valid_changefreq_values_data_provider(): iterable {
+		yield 'always' => array( 'changefreq' => 'always' );
+		yield 'hourly' => array( 'changefreq' => 'hourly' );
+		yield 'daily' => array( 'changefreq' => 'daily' );
+		yield 'weekly' => array( 'changefreq' => 'weekly' );
+		yield 'monthly' => array( 'changefreq' => 'monthly' );
+		yield 'yearly' => array( 'changefreq' => 'yearly' );
+		yield 'never' => array( 'changefreq' => 'never' );
 	}
 
 	/**
 	 * Test valid priority values.
+	 *
+	 * @dataProvider valid_priority_values_data_provider
 	 */
-	public function test_valid_priority_values(): void {
-		$valid_values = array( 0.0, 0.1, 0.5, 0.9, 1.0 );
+	public function test_valid_priority_values( float $priority ): void {
+		$url_entry = new UrlEntry(
+			'https://example.com/post/',
+			null,
+			null,
+			$priority
+		);
 
-		foreach ( $valid_values as $priority ) {
-			$url_entry = new UrlEntry(
-				'https://example.com/post/',
-				null,
-				null,
-				$priority
-			);
+		$this->assertEquals( $priority, $url_entry->priority() );
+	}
 
-			$this->assertEquals( $priority, $url_entry->priority() );
-		}
+	/**
+	 * Data provider for valid priority values.
+	 */
+	public function valid_priority_values_data_provider(): iterable {
+		yield 'minimum priority' => array( 'priority' => 0.0 );
+		yield 'low priority' => array( 'priority' => 0.1 );
+		yield 'medium priority' => array( 'priority' => 0.5 );
+		yield 'high priority' => array( 'priority' => 0.9 );
+		yield 'maximum priority' => array( 'priority' => 1.0 );
 	}
 
 	/**
 	 * Test valid lastmod formats.
+	 *
+	 * @dataProvider valid_lastmod_formats_data_provider
 	 */
-	public function test_valid_lastmod_formats(): void {
-		$valid_formats = array(
-			'2024-01-15',
-			'2024-01-15T10:30:00+00:00',
-			'2024-01-15T10:30:00-05:00',
+	public function test_valid_lastmod_formats( string $lastmod ): void {
+		$url_entry = new UrlEntry(
+			'https://example.com/post/',
+			$lastmod
 		);
 
-		foreach ( $valid_formats as $lastmod ) {
-			$url_entry = new UrlEntry(
-				'https://example.com/post/',
-				$lastmod
-			);
+		$this->assertEquals( $lastmod, $url_entry->lastmod() );
+	}
 
-			$this->assertEquals( $lastmod, $url_entry->lastmod() );
-		}
+	/**
+	 * Data provider for valid lastmod formats.
+	 */
+	public function valid_lastmod_formats_data_provider(): iterable {
+		yield 'date only' => array( 'lastmod' => '2024-01-15' );
+		yield 'ISO 8601 with timezone' => array( 'lastmod' => '2024-01-15T10:30:00+00:00' );
+		yield 'ISO 8601 with negative timezone' => array( 'lastmod' => '2024-01-15T10:30:00-05:00' );
 	}
 } 

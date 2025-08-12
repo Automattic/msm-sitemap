@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap\Tests\Includes;
 
-use Automattic\MSM_Sitemap\Permalinks;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\Permalinks;
 use PHPUnit\Framework\TestCase;
 
 class PermalinksTest extends TestCase {

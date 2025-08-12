@@ -2,7 +2,7 @@
 /**
  * WP_Test_Sitemap_SitemapIndexEntry
  *
- * @package Metro_Sitemap/unit_tests
+ * @package Automattic\MSM_Sitemap\Tests
  */
 
 declare( strict_types=1 );
@@ -145,35 +145,41 @@ class SitemapIndexEntryTest extends TestCase {
 
 	/**
 	 * Test valid URL formats.
+	 *
+	 * @dataProvider valid_url_formats_data_provider
 	 */
-	public function test_valid_url_formats(): void {
-		$valid_urls = array(
-			'https://example.com/sitemap.xml',
-			'http://example.com/sitemap.xml',
-			'https://example.com/sitemap-2024-01-15.xml',
-			'https://example.com/sitemaps/sitemap.xml',
-		);
+	public function test_valid_url_formats( string $url ): void {
+		$entry = new SitemapIndexEntry( $url );
+		$this->assertEquals( $url, $entry->loc() );
+	}
 
-		foreach ( $valid_urls as $url ) {
-			$entry = new SitemapIndexEntry( $url );
-			$this->assertEquals( $url, $entry->loc() );
-		}
+	/**
+	 * Data provider for valid URL formats.
+	 */
+	public function valid_url_formats_data_provider(): iterable {
+		yield 'https sitemap' => array( 'url' => 'https://example.com/sitemap.xml' );
+		yield 'http sitemap' => array( 'url' => 'http://example.com/sitemap.xml' );
+		yield 'dated sitemap' => array( 'url' => 'https://example.com/sitemap-2024-01-15.xml' );
+		yield 'nested sitemap' => array( 'url' => 'https://example.com/sitemaps/sitemap.xml' );
 	}
 
 	/**
 	 * Test valid lastmod formats.
+	 *
+	 * @dataProvider valid_lastmod_formats_data_provider
 	 */
-	public function test_valid_lastmod_formats(): void {
-		$valid_lastmods = array(
-			'2024-01-15T00:00:00+00:00',
-			'2024-01-15T12:30:45Z',
-			'2024-01-15',
-			'2024-01-15T12:30:45-05:00',
-		);
+	public function test_valid_lastmod_formats( string $lastmod ): void {
+		$entry = new SitemapIndexEntry( 'https://example.com/sitemap.xml', $lastmod );
+		$this->assertEquals( $lastmod, $entry->lastmod() );
+	}
 
-		foreach ( $valid_lastmods as $lastmod ) {
-			$entry = new SitemapIndexEntry( 'https://example.com/sitemap.xml', $lastmod );
-			$this->assertEquals( $lastmod, $entry->lastmod() );
-		}
+	/**
+	 * Data provider for valid lastmod formats.
+	 */
+	public function valid_lastmod_formats_data_provider(): iterable {
+		yield 'ISO 8601 with timezone' => array( 'lastmod' => '2024-01-15T00:00:00+00:00' );
+		yield 'ISO 8601 with Z' => array( 'lastmod' => '2024-01-15T12:30:45Z' );
+		yield 'date only' => array( 'lastmod' => '2024-01-15' );
+		yield 'ISO 8601 with negative timezone' => array( 'lastmod' => '2024-01-15T12:30:45-05:00' );
 	}
 }
