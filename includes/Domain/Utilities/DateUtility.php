@@ -49,6 +49,11 @@ class DateUtility {
 	 * @return int Number of days in the month
 	 */
 	public static function get_days_in_month( int $year, int $month ): int {
+		// Validate month before calling cal_days_in_month to avoid ValueError in PHP 8.0+
+		if ( $month < 1 || $month > 12 ) {
+			throw new \InvalidArgumentException( sprintf( 'Invalid month: %d. Month must be between 1 and 12.', esc_html( (string) $month ) ) );
+		}
+		
 		return (int) cal_days_in_month( CAL_GREGORIAN, $month, $year );
 	}
 }

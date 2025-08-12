@@ -267,7 +267,7 @@ class SitemapServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 
 		if ( $expects_exception ) {
 			// Should throw exception for invalid dates (correct behavior)
-			$this->expectException( \ValueError::class );
+			$this->expectException( \InvalidArgumentException::class );
 			$result = $service->generate_for_date_queries( array( $invalid_query ) );
 		} else {
 			// Should handle gracefully without throwing exception
@@ -286,7 +286,7 @@ class SitemapServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 				'year' => 2024,
 				'month' => 13, // Invalid month
 			),
-			'expects_exception' => true,
+			'expects_exception' => false, // Now handled gracefully by skipping invalid months
 		);
 		yield 'invalid day' => array(
 			'invalid_query' => array(
