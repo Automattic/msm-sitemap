@@ -151,7 +151,13 @@ curl -X GET "https://example.com/wp-json/msm-sitemap/v1/cron/status" \
   -H "X-WP-Nonce: your-nonce-here"
 ```
 
-For detailed API documentation, see [DEVELOPERS.md](./DEVELOPERS.md).
+For detailed documentation, see the [docs](./docs/) directory:
+
+- **[Hooks and Filters](./docs/hooks.md)** - Customization and extensibility
+- **[REST API Reference](./docs/rest-api.md)** - Complete API documentation
+- **[WP-CLI Commands](./docs/wp-cli.md)** - Command-line interface
+- **[Cron Management](./docs/cron.md)** - Automatic update configuration
+- **[Contributing Guidelines](./CONTRIBUTING.md)** - Development and contribution guidelines
 
 ## WP-CLI Commands
 
