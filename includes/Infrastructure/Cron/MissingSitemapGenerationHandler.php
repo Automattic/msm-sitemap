@@ -72,25 +72,29 @@ class MissingSitemapGenerationHandler implements CronHandlerInterface {
 		$missing_service = $container->get( MissingSitemapDetectionService::class );
 		$sitemap_service = $container->get( SitemapService::class );
 
-		// Get missing sitemap dates
+		// Get missing sitemap dates and dates needing updates
 		$missing_data = $missing_service->get_missing_sitemaps();
-		$missing_dates = $missing_data['missing_dates'] ?? array();
+		$all_dates_to_generate = $missing_data['all_dates_to_generate'] ?? array();
 
-		if ( empty( $missing_dates ) ) {
+		if ( empty( $all_dates_to_generate ) ) {
 			return;
 		}
 
 		// Track that we're about to generate sitemaps
 		$sitemaps_generated = false;
 
-		// Generate sitemaps for missing dates
-		foreach ( $missing_dates as $date ) {
+		// Generate sitemaps for all dates that need generation
+		foreach ( $all_dates_to_generate as $date ) {
 			// Check if generation should be stopped
 			if ( (bool) get_option( 'msm_sitemap_stop_generation', false ) ) {
 				break;
 			}
 
-			$sitemap_service->create_for_date( $date );
+			// Check if this date needs force generation (has sitemap but needs update)
+			$dates_needing_updates = $missing_data['dates_needing_updates'] ?? array();
+			$force_generation = in_array( $date, $dates_needing_updates, true );
+
+			$sitemap_service->create_for_date( $date, $force_generation );
 			$sitemaps_generated = true;
 		}
 
@@ -98,6 +102,9 @@ class MissingSitemapGenerationHandler implements CronHandlerInterface {
 		if ( $sitemaps_generated ) {
 			update_option( 'msm_sitemap_last_update', time(), false );
 		}
+		
+		// Always update the last run timestamp since we checked for missing/outdated sitemaps
+		update_option( 'msm_sitemap_update_last_run', time(), false );
 
 		// Clean up orphaned sitemaps for dates that no longer have posts
 		$cleanup_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SitemapCleanupService::class );
