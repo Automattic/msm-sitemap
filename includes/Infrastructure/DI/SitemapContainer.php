@@ -168,6 +168,24 @@ class SitemapContainer {
 			return new \Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService( $repository, $post_repository );
 		} );
 
+		$this->register( \Automattic\MSM_Sitemap\Application\Services\MissingSitemapGenerationService::class, function( $container ) {
+			// This is a static service, so we don't need to instantiate it
+			// But we can register it for consistency
+			return new \Automattic\MSM_Sitemap\Application\Services\MissingSitemapGenerationService();
+		} );
+
+		$this->register( \Automattic\MSM_Sitemap\Application\Services\CronManagementService::class, function( $container ) {
+			// This is a static service, so we don't need to instantiate it
+			// But we can register it for consistency
+			return new \Automattic\MSM_Sitemap\Application\Services\CronManagementService();
+		} );
+
+		$this->register( \Automattic\MSM_Sitemap\Application\Services\FullSitemapGenerationService::class, function( $container ) {
+			// This is a static service, so we don't need to instantiate it
+			// But we can register it for consistency
+			return new \Automattic\MSM_Sitemap\Application\Services\FullSitemapGenerationService();
+		} );
+
 		$this->register( \Automattic\MSM_Sitemap\Application\Services\SitemapGenerationService::class, function( $container ) {
 			$generator = msm_sitemap_plugin()->get_sitemap_generator();
 			$repository = $container->get( SitemapRepositoryInterface::class );
