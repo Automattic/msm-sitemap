@@ -1,4 +1,4 @@
-# Metro Sitemap
+# MSM Sitemap
 
 Stable tag: 1.5.2  
 Requires at least: 5.9  
@@ -9,7 +9,7 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Tags: sitemap, xml, seo, performance, multisite  
 Contributors: metro, automattic, alleyinteractive, makermedia, 10up  
 
-High-performance XML sitemaps for large-scale WordPress sites. Built for speed, extensibility, and reliability. Metro Sitemap generates robust, scalable XML sitemaps for WordPress sites of any size. Designed for high-traffic and enterprise environments, it ensures your content is discoverable by search engines without slowing down your site.
+High-performance XML sitemaps for large-scale WordPress sites. Built for speed, extensibility, and reliability. MSM Sitemap generates robust, scalable XML sitemaps for WordPress sites of any size. Designed for high-traffic and enterprise environments, it ensures your content is discoverable by search engines without slowing down your site.
 
 ## At a Glance
 
@@ -25,21 +25,21 @@ High-performance XML sitemaps for large-scale WordPress sites. Built for speed, 
 
 1. Upload the plugin folder to `/wp-content/plugins/` or install via the WordPress admin.
 2. Activate the plugin through the 'Plugins' menu in WordPress.
-3. (Optional) Visit **Tools > Sitemap** in the admin for stats and manual actions.
+3. (Optional) Visit **Settings > Sitemap** in the admin for stats and manual actions.
 4. Sitemaps will be generated automatically in the background.
 
 ## Usage
 
 * Your sitemap index will be available at `/sitemap.xml` (e.g., `https://example.com/sitemap.xml`).
 * Sitemaps are generated in the background and updated as you publish new content.
-* The admin UI (Tools > Sitemap) provides stats and lets you manually trigger generation if needed.
+* The admin UI (Settings > Sitemap) provides stats and lets you manually trigger generation if needed.
 
 ### Automatic Updates
 
 By default, automatic sitemap updates are **disabled** to prevent resource issues on large sites. To enable automatic updates:
 
 **Via Admin UI:**
-1. Go to **Tools > Sitemap** in your WordPress admin
+1. Go to **Settings > Sitemap** in your WordPress admin
 2. In the "Cron Management" section, click "Enable Automatic Updates"
 3. Once enabled, you can use the "Generate" section to manually trigger sitemap generation
 
@@ -64,7 +64,7 @@ By default, only published posts are included. You can change this via a filter.
 
 Sitemaps are generated automatically, but you can:
 
-* Use the admin UI (**Tools > Sitemap**) to trigger a manual rebuild
+* Use the admin UI (**Settings > Sitemap**) to trigger a manual rebuild
 * Use WP-CLI commands (see below)
 
 ### Does it work on multisite?
@@ -85,7 +85,7 @@ Yes, this is filterable. See the [Developer Guide](./DEVELOPERS.md).
 
 ## WP-CLI Commands
 
-Metro Sitemap supports advanced management via WP-CLI. Here are the most common commands:
+MSM Sitemap supports advanced management via WP-CLI. Here are the most common commands:
 
 ### Core Commands
 
@@ -150,7 +150,7 @@ For the full list of commands, options, and legacy command mapping, see [DEVELOP
 
 ## Credits
 
-Metro Sitemap is a joint collaboration between Metro.co.uk, WordPress VIP, Alley Interactive, Maker Media, 10up, and others. Special thanks to all contributors.
+MSM Sitemap is a joint collaboration between Metro.co.uk, WordPress VIP, Alley Interactive, Maker Media, 10up, and others. Special thanks to all contributors.
 
 ## Changelog
 

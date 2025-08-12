@@ -1,4 +1,4 @@
-# Metro Sitemap – Developer & Contributor Documentation
+# MSM Sitemap – Developer & Contributor Documentation
 
 > **Note:** This document is for developers. For installation, usage, and FAQ, see [README.md](./README.md).
 
@@ -6,7 +6,7 @@
 
 ## Overview: Architecture & Storage
 
-Metro Sitemap is designed for performance and extensibility on large WordPress sites. Key architectural decisions:
+MSM Sitemap is designed for performance and extensibility on large WordPress sites. Key architectural decisions:
 
 * **Sitemap data is stored in a custom post type** (`msm_sitemap`), one post per date.
 * **Sitemap XML is generated and stored in post meta** for each date, so heavy sitemaps are served quickly and not built on every request.
@@ -15,7 +15,7 @@ Metro Sitemap is designed for performance and extensibility on large WordPress s
 
 ## Customizing via Hooks
 
-Metro Sitemap is highly extensible. Below are the main action and filter hooks you can use to customize its behavior, with business-case context and type-safe, documented code samples.
+MSM Sitemap is highly extensible. Below are the main action and filter hooks you can use to customize its behavior, with business-case context and type-safe, documented code samples.
 
 ### Add Custom Post Types to the Sitemap
 
@@ -311,7 +311,7 @@ function my_on_delete_sitemap_post( int $sitemap_id, string $year, string $month
 
 ## WP-CLI Command Reference
 
-Metro Sitemap provides a flexible WP-CLI interface for advanced management:
+MSM Sitemap provides a flexible WP-CLI interface for advanced management:
 
 ### Commands
 
@@ -458,15 +458,60 @@ Metro Sitemap provides a flexible WP-CLI interface for advanced management:
 
 - **stats**: Show sitemap statistics (total, most recent, etc).
   - `--format=<format>` – table, json, csv.
-  - **Example:**
+  - `--detailed` – Show comprehensive statistics including timeline, coverage, and storage info.
+  - `--section=<section>` – Show only a specific section: overview, timeline, url_counts, performance, coverage, storage.
+  - **Examples:**
     ```shell
-    # Show sitemap statistics in table format
+    # Show basic sitemap statistics in table format
     $ wp msm-sitemap stats --format=table
     +-------+--------------------------+---------------------+
     | total | most_recent              | created             |
     +-------+--------------------------+---------------------+
     | 235   | 2024-07-12 (ID 125)      | 2024-07-12 13:45:00 |
     +-------+--------------------------+---------------------+
+
+    # Show detailed statistics in JSON format
+    $ wp msm-sitemap stats --detailed --format=json
+    {
+      "overview": {
+        "total_sitemaps": 235,
+        "total_urls": 12345,
+        "most_recent": { ... },
+        "oldest": { ... },
+        "average_urls_per_sitemap": 52.5
+      },
+      "timeline": { ... },
+      "url_counts": { ... },
+      "performance": { ... },
+      "coverage": { ... },
+      "storage": { ... }
+    }
+
+    # Show only coverage statistics
+    $ wp msm-sitemap stats --section=coverage --format=json
+    {
+      "date_coverage": 85.2,
+      "total_days": 365,
+      "covered_days": 311,
+      "gaps": ["2024-02-15", "2024-03-01"],
+      "continuous_streaks": [ ... ]
+    }
+    ```
+
+- **recent-urls**: Show recent URL counts for the last N days.
+  - `--days=<days>` – Number of days to show (default: 7).
+  - `--format=<format>` – table, json, csv.
+  - **Example:**
+    ```shell
+    # Show URL counts for the last 14 days
+    $ wp msm-sitemap recent-urls --days=14 --format=table
+    +------------+-----------+
+    | date       | url_count |
+    +------------+-----------+
+    | 2024-07-01 | 45        |
+    | 2024-07-02 | 52        |
+    | ...        | ...       |
+    +------------+-----------+
     ```
 
 ### Cron Management Commands
@@ -576,7 +621,7 @@ add_filter( 'msm_sitemap_cron_enabled', '__return_false' );
 * **Custom Post Type:** Sitemaps are stored as `msm_sitemap` posts, one per date.
 * **Meta Storage:** The generated XML is stored in post meta (`msm_sitemap_xml`).
 * **Async Generation:** Uses WP-Cron or CLI to generate sitemaps in batches, avoiding timeouts.
-* **Admin UI:** Tools > Sitemap provides stats and manual actions for admins.
+* **Admin UI:** Settings > Sitemap provides stats and manual actions for admins.
 * **Multisite:** Each site has its own sitemaps; can be network-activated.
 
 ### Service Layer Architecture
@@ -584,6 +629,7 @@ add_filter( 'msm_sitemap_cron_enabled', '__return_false' );
 The plugin uses a **Service Layer pattern** for cron management and admin interface to ensure separation of concerns and maintainability:
 
 #### Cron Management
+
 * **`Cron_Service`** (`includes/CronService.php`): Single source of truth for all cron management logic
   - Handles enabling/disabling cron functionality
   - Manages WordPress cron events and options
@@ -592,6 +638,7 @@ The plugin uses a **Service Layer pattern** for cron management and admin interf
   - **Filter Support**: `msm_sitemap_cron_enabled` filter allows overriding cron status (useful for testing)
 
 #### Admin Interface
+
 * **`Admin\UI`** (`includes/Admin/UI.php`): Handles all admin page rendering
   - Manages admin page structure and sections
   - Provides user-friendly messages and status display
@@ -605,12 +652,14 @@ The plugin uses a **Service Layer pattern** for cron management and admin interf
   - Maintains clean separation between UI and business logic
 
 #### Sitemap Generation
-* **`MSM_Sitemap_Builder_Cron`** (`includes/msm-sitemap-builder-cron.php`): Handles sitemap generation
+
+* Legacy `MSM_Sitemap_Builder_Cron` was removed. Full generation is handled by `FullGenerationCronService`, incremental by `IncrementalGenerationCronService`.
   - Manages the actual sitemap generation process
   - Uses `Cron_Service` for cron status checks
   - Maintains backward compatibility with deprecated methods
 
 This architecture ensures:
+
 - **Single Responsibility**: Each class has a clear, focused purpose
 - **Testability**: Service logic can be tested independently using filters
 - **Maintainability**: Changes to cron logic only require updating the service

@@ -1,4 +1,4 @@
-# Changelog for Metro Sitemap
+# Changelog for MSM Sitemap
 
 All notable changes to this project will be documented in this file.
 
@@ -43,7 +43,7 @@ Requires:
 * Add `msm_pre_get_last_modified_posts` filter by @rbcorrales in <https://github.com/Automattic/msm-sitemap/pull/178>
 * Allow the post year range to be short-circuited and also cached by @srtfisher in <https://github.com/Automattic/msm-sitemap/pull/195>
 * feat: Add filters for sitemap index XML customization by @GaryJones in <https://github.com/Automattic/msm-sitemap/pull/197>
-* feat: Enhance WP-CLI commands for Metro Sitemap by @GaryJones in <https://github.com/Automattic/msm-sitemap/pull/202>
+* feat: Enhance WP-CLI commands for MSM Sitemap by @GaryJones in <https://github.com/Automattic/msm-sitemap/pull/202>
 
 ### Changed
 
