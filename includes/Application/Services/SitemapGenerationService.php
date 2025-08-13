@@ -164,11 +164,11 @@ class SitemapGenerationService {
 		}
 
 		// Expand date queries into actual dates
-		$dates_to_generate = $this->query_service->expand_date_queries( $date_queries );
+		$dates_to_generate = $this->query_service->expand_date_queries_with_posts( $date_queries );
 		
 		if ( empty( $dates_to_generate ) ) {
 			return SitemapOperationResult::failure(
-				__( 'No valid dates found in the provided queries.', 'msm-sitemap' ),
+				__( 'No dates with posts found in the provided queries.', 'msm-sitemap' ),
 				'no_valid_dates'
 			);
 		}

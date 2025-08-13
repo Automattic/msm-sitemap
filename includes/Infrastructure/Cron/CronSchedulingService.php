@@ -35,7 +35,9 @@ class CronSchedulingService {
 
 		// Schedule incremental updates if not already scheduled
 		if ( ! wp_next_scheduled( 'msm_cron_update_sitemap' ) ) {
-			$current_frequency = get_option( 'msm_sitemap_cron_frequency', '15min' );
+			$container         = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
+			$settings_service  = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
+			$current_frequency = $settings_service->get_setting( 'cron_frequency', '15min' );
 			$interval = self::map_frequency_to_interval( $current_frequency );
 			wp_schedule_event( time(), $interval, 'msm_cron_update_sitemap' );
 		}

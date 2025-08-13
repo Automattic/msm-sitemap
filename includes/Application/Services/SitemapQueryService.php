@@ -117,7 +117,11 @@ class SitemapQueryService {
 		
 		foreach ( $date_queries as $query ) {
 			if ( isset( $query['year'], $query['month'], $query['day'] ) ) {
-				$all_dates[] = sprintf( '%04d-%02d-%02d', $query['year'], $query['month'], $query['day'] );
+				// Validate the complete date before adding it
+				if ( checkdate( $query['month'], $query['day'], $query['year'] ) ) {
+					$all_dates[] = sprintf( '%04d-%02d-%02d', $query['year'], $query['month'], $query['day'] );
+				}
+				// Skip invalid dates silently
 			} elseif ( isset( $query['year'], $query['month'] ) ) {
 				$year = $query['year'];
 				$month = $query['month'];
@@ -148,6 +152,39 @@ class SitemapQueryService {
 		}
 		
 		return array_unique( $all_dates );
+	}
+
+	/**
+	 * Expand date queries into dates that have posts.
+	 *
+	 * @param array $date_queries Array of date queries.
+	 * @return array Array of dates that have posts.
+	 */
+	public function expand_date_queries_with_posts( array $date_queries ): array {
+		// First expand to all potential dates
+		$all_potential_dates = $this->expand_date_queries( $date_queries );
+		
+		if ( empty( $all_potential_dates ) ) {
+			return array();
+		}
+		
+		// Get all dates that actually have posts
+		global $wpdb;
+		$placeholders = implode( ',', array_fill( 0, count( $all_potential_dates ), '%s' ) );
+		$dates_with_posts = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT DISTINCT DATE(post_date) as post_date
+				FROM {$wpdb->posts}
+				WHERE post_type IN (%s, %s)
+				AND post_status = %s
+				AND DATE(post_date) IN ($placeholders)
+				ORDER BY post_date ASC",
+				array_merge( array( 'post', 'page', 'publish' ), $all_potential_dates )
+			)
+		);
+		
+		// Return only the dates that have posts and are in our query range
+		return array_intersect( $all_potential_dates, $dates_with_posts );
 	}
 
 	/**

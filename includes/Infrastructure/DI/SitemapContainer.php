@@ -195,6 +195,11 @@ class SitemapContainer {
 			return new \Automattic\MSM_Sitemap\Application\Services\SitemapGenerationService( $generator, $repository, $query_service );
 		} );
 
+		// Register settings service
+		$this->register( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class, function( $container ) {
+			return new \Automattic\MSM_Sitemap\Application\Services\SettingsService();
+		} );
+
 		// Register infrastructure services
 		$this->register( CLI_Command::class, function( $container ) {
 			$sitemap_service = $container->get( SitemapService::class );

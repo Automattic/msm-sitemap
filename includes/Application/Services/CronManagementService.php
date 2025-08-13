@@ -59,7 +59,9 @@ class CronManagementService {
 	 * @return string Current frequency setting
 	 */
 	public static function get_current_frequency(): string {
-		return get_option( 'msm_sitemap_cron_frequency', self::DEFAULT_FREQUENCY );
+		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
+		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
+		return $settings_service->get_setting( 'cron_frequency', self::DEFAULT_FREQUENCY );
 	}
 
 	/**
@@ -78,7 +80,9 @@ class CronManagementService {
 		}
 
 		// Update the frequency option
-		update_option( 'msm_sitemap_cron_frequency', $frequency );
+		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
+		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
+		$settings_service->update_setting( 'cron_frequency', $frequency );
 		
 		// Reschedule the cron job with the new frequency
 		$success = CronSchedulingService::reschedule_cron( $frequency );
