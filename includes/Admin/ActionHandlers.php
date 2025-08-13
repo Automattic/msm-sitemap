@@ -121,25 +121,27 @@ class Action_Handlers {
 	public static function handle_save_content_provider_settings() {
 		check_admin_referer( 'msm-sitemap-action' );
 		
-		// Save image provider settings
-		$images_enabled = isset( $_POST['images_provider_enabled'] ) ? '1' : '0';
-		update_option( 'msm_sitemap_images_provider_enabled', $images_enabled );
-		
-		// Save featured images setting - if not submitted, it's unchecked (false)
-		$include_featured_images = isset( $_POST['include_featured_images'] ) && $_POST['include_featured_images'] === '1' ? '1' : '0';
-		update_option( 'msm_sitemap_include_featured_images', $include_featured_images );
-		
-		// Save content images setting - if not submitted, it's unchecked (false)
-		$include_content_images = isset( $_POST['include_content_images'] ) && $_POST['include_content_images'] === '1' ? '1' : '0';
-		update_option( 'msm_sitemap_include_content_images', $include_content_images );
-		
-		// Save max images per sitemap
-		$max_images = isset( $_POST['max_images_per_sitemap'] ) ? intval( $_POST['max_images_per_sitemap'] ) : 1000;
-		$max_images = max( 1, min( 10000, $max_images ) ); // Clamp between 1 and 10000
-		update_option( 'msm_sitemap_max_images_per_sitemap', $max_images );
-		
-		Notifications::show_success(
-			__( 'Content provider settings saved successfully.', 'msm-sitemap' )
+		// Prepare settings from form data
+		$settings = array(
+			'include_images'  => isset( $_POST['images_provider_enabled'] ),
+			'featured_images' => isset( $_POST['include_featured_images'] ) && '1' === $_POST['include_featured_images'],
+			'content_images'  => isset( $_POST['include_content_images'] ) && '1' === $_POST['include_content_images'],
 		);
+		
+		// Handle max images per sitemap if provided
+		if ( isset( $_POST['max_images_per_sitemap'] ) ) {
+			$settings['max_images_per_sitemap'] = intval( $_POST['max_images_per_sitemap'] );
+		}
+		
+		// Use service to update settings
+		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
+		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
+		$result = $settings_service->update_settings( $settings );
+		
+		if ( $result['success'] ) {
+			Notifications::show_success( $result['message'] );
+		} else {
+			Notifications::show_error( $result['message'] );
+		}
 	}
 } 

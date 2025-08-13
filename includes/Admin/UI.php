@@ -617,7 +617,9 @@ class UI {
 		$cron_status    = CronSchedulingService::get_cron_status();
 		$cron_enabled   = $cron_status['enabled'];
 		$next_scheduled = $cron_status['next_scheduled'];
-		$current_frequency = get_option( 'msm_sitemap_cron_frequency', '15min' );
+		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
+		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
+		$current_frequency = $settings_service->get_setting( 'cron_frequency', '15min' );
 		
 		// Calculate relative time for next check
 		$next_check_relative = $next_scheduled ? human_time_diff( current_time( 'timestamp' ), $next_scheduled ) : '';
@@ -964,14 +966,17 @@ class UI {
 							<td>
 								<fieldset>
 									<label for="images_provider_enabled">
-										<?php 
-										$images_provider_option = get_option( 'msm_sitemap_images_provider_enabled', true );
-										?>
-										<input type="checkbox" 
-											   id="images_provider_enabled" 
-											   name="images_provider_enabled" 
-											   value="1" 
-											   <?php checked( (bool) $images_provider_option ); ?>>
+																			<?php 
+									$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
+									$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
+									$settings = $settings_service->get_image_settings();
+									$images_provider_option = $settings['include_images'];
+									?>
+									<input type="checkbox" 
+										   id="images_provider_enabled" 
+										   name="images_provider_enabled" 
+										   value="1" 
+										   <?php checked( '1' === $images_provider_option ); ?>>
 										<?php esc_html_e( 'Images in Sitemaps', 'msm-sitemap' ); ?>
 									</label>
 									<p class="description">
@@ -979,21 +984,20 @@ class UI {
 									</p>
 								</fieldset>
 
-								<div id="images_settings" style="margin-top: 15px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #0073aa; display: <?php echo get_option( 'msm_sitemap_images_provider_enabled', true ) ? 'block' : 'none'; ?>;">
+								<div id="images_settings" style="margin-top: 15px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #0073aa; display: <?php echo '1' === $images_provider_option ? 'block' : 'none'; ?>;">
 									<h4 style="margin: 0 0 10px 0;"><?php esc_html_e( 'Image Settings', 'msm-sitemap' ); ?></h4>
 									
 									<fieldset>
 										<legend class="screen-reader-text"><?php esc_html_e( 'Image types to include', 'msm-sitemap' ); ?></legend>
 										<label for="include_featured_images">
 											<?php 
-											$featured_images_option = get_option( 'msm_sitemap_include_featured_images', true );
-											$featured_images_bool = (bool) $featured_images_option;
+											$featured_images_option = $settings['featured_images'];
 											?>
 											<input type="checkbox" 
 												   id="include_featured_images" 
 												   name="include_featured_images" 
 												   value="1" 
-												   <?php echo $featured_images_bool ? 'checked="checked"' : ''; ?>>
+												   <?php checked( '1' === $featured_images_option ); ?>>
 											<?php esc_html_e( 'Include Featured Images', 'msm-sitemap' ); ?>
 										</label>
 										<p class="description">
@@ -1002,13 +1006,13 @@ class UI {
 										
 										<label for="include_content_images" style="margin-top: 15px; display: block;">
 											<?php 
-											$content_images_option = get_option( 'msm_sitemap_include_content_images', true );
+											$content_images_option = $settings['content_images'];
 											?>
 											<input type="checkbox" 
 												   id="include_content_images" 
 												   name="include_content_images" 
 												   value="1" 
-												   <?php checked( (bool) $content_images_option ); ?>>
+												   <?php checked( '1' === $content_images_option ); ?>>
 											<?php esc_html_e( 'Include Content Images', 'msm-sitemap' ); ?>
 										</label>
 										<p class="description">
@@ -1022,7 +1026,7 @@ class UI {
 											<input type="number" 
 												   id="max_images_per_sitemap" 
 												   name="max_images_per_sitemap" 
-												   value="<?php echo esc_attr( get_option( 'msm_sitemap_max_images_per_sitemap', 1000 ) ); ?>"
+												   value="<?php echo esc_attr( $settings['max_images_per_sitemap'] ); ?>"
 												   min="1" 
 												   max="10000" 
 												   step="1" 

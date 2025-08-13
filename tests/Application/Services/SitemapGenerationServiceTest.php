@@ -98,7 +98,7 @@ class SitemapGenerationServiceTest extends TestCase {
 	public function test_generate_for_date_queries_success(): void {
 		$generator = $this->createMock( SitemapGenerator::class );
 		$repository = $this->createMock( SitemapRepositoryInterface::class );
-		$query_service = new SitemapQueryService();
+		$query_service = $this->createMock( SitemapQueryService::class );
 
 		// Mock generator to return content
 		$content = $this->createMock( \Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapContent::class );
@@ -108,6 +108,9 @@ class SitemapGenerationServiceTest extends TestCase {
 		// Mock repository
 		$repository->method( 'find_by_date' )->willReturn( null );
 		$repository->method( 'save' )->willReturn( true );
+
+		// Mock query service to return dates
+		$query_service->method( 'expand_date_queries_with_posts' )->willReturn( array( '2024-01-01', '2024-01-02' ) );
 
 		$service = new SitemapGenerationService( $generator, $repository, $query_service );
 

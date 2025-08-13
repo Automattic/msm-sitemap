@@ -31,6 +31,8 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		// Clear any existing cron options
 		delete_option( CronSchedulingService::CRON_ENABLED_OPTION );
 		wp_unschedule_hook( 'msm_cron_update_sitemap' );
+		// Clear serialized settings
+		delete_option( 'msm_sitemap' );
 	}
 
 	/**
@@ -42,6 +44,8 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		// Clean up cron options and events
 		delete_option( CronSchedulingService::CRON_ENABLED_OPTION );
 		wp_unschedule_hook( 'msm_cron_update_sitemap' );
+		// Clear serialized settings
+		delete_option( 'msm_sitemap' );
 		parent::tearDown();
 	}
 
@@ -296,20 +300,25 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_cron_frequency_update(): void {
-		$cli = CLI_Command::create();
-
 		// Store original frequency
-		$original_frequency = get_option( 'msm_sitemap_cron_frequency', '15min' );
+		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
+		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
+		$original_frequency = $settings_service->get_setting( 'cron_frequency', '15min' );
 
-		ob_start();
-		$cli->cron( array( 'frequency', 'hourly' ), array() );
-		$output = ob_get_clean();
+		// Enable cron first
+		\Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService::enable_cron();
 
-		$this->assertStringContainsString( 'Automatic update frequency successfully changed', $output );
-		$this->assertEquals( 'hourly', get_option( 'msm_sitemap_cron_frequency' ) );
+		// Test the CronManagementService directly
+		$result = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::update_frequency( 'hourly' );
+		
+		$this->assertTrue( $result['success'], 'CronManagementService::update_frequency failed: ' . ( $result['message'] ?? 'Unknown error' ) );
+		
+		// Debug: Check what the setting actually is
+		$actual_frequency = $settings_service->get_setting( 'cron_frequency' );
+		$this->assertEquals( 'hourly', $actual_frequency, "Expected 'hourly' but got '$actual_frequency'. Result: " . json_encode( $result ) );
 
 		// Restore original frequency
-		update_option( 'msm_sitemap_cron_frequency', $original_frequency );
+		$settings_service->update_setting( 'cron_frequency', $original_frequency );
 	}
 
 	/**

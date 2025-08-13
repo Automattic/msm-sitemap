@@ -207,12 +207,10 @@ class ImageRepository {
 	 * @return bool True if images should be included, false otherwise.
 	 */
 	public function should_include_images(): bool {
-		$saved_enabled = get_option( 'msm_sitemap_images_provider_enabled' );
-		// If option doesn't exist, default to true
-		if ( false === $saved_enabled ) {
-			$saved_enabled = '1';
-		}
-		$filtered_enabled = apply_filters( 'msm_sitemap_images_provider_enabled', '1' === $saved_enabled );
+		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
+		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
+		$saved_enabled = $settings_service->get_setting( 'include_images', '1' );
+		$filtered_enabled = apply_filters( 'msm_sitemap_include_images', '1' === $saved_enabled );
 		return (bool) $filtered_enabled;
 	}
 
@@ -222,8 +220,9 @@ class ImageRepository {
 	 * @return int Maximum number of images.
 	 */
 	public function get_max_images_per_sitemap(): int {
-		$default_max  = 1000;
-		$saved_max    = get_option( 'msm_sitemap_max_images_per_sitemap', $default_max );
+		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
+		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
+		$saved_max = $settings_service->get_setting( 'max_images_per_sitemap', 1000 );
 		$filtered_max = apply_filters( 'msm_sitemap_max_images_per_sitemap', $saved_max );
 		return $filtered_max;
 	}
@@ -234,12 +233,10 @@ class ImageRepository {
 	 * @return bool True if featured images should be included, false otherwise.
 	 */
 	public function should_include_featured_images(): bool {
-		$saved_enabled = get_option( 'msm_sitemap_include_featured_images' );
-		// If option doesn't exist, default to true
-		if ( false === $saved_enabled ) {
-			$saved_enabled = '1';
-		}
-		$filtered_enabled = apply_filters( 'msm_sitemap_include_featured_images', '1' === $saved_enabled );
+		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
+		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
+		$saved_enabled = $settings_service->get_setting( 'featured_images', '1' );
+		$filtered_enabled = apply_filters( 'msm_sitemap_featured_images', '1' === $saved_enabled );
 		return (bool) $filtered_enabled;
 	}
 
@@ -249,12 +246,10 @@ class ImageRepository {
 	 * @return bool True if content images should be included, false otherwise.
 	 */
 	public function should_include_content_images(): bool {
-		$saved_enabled = get_option( 'msm_sitemap_include_content_images' );
-		// If option doesn't exist, default to true
-		if ( false === $saved_enabled ) {
-			$saved_enabled = '1';
-		}
-		$filtered_enabled = apply_filters( 'msm_sitemap_include_content_images', '1' === $saved_enabled );
+		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
+		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
+		$saved_enabled = $settings_service->get_setting( 'content_images', '1' );
+		$filtered_enabled = apply_filters( 'msm_sitemap_content_images', '1' === $saved_enabled );
 		return (bool) $filtered_enabled;
 	}
 

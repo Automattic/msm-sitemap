@@ -795,6 +795,263 @@ class CLI_Command extends WP_CLI_Command {
 		}
 	}
 
+	/**
+	 * Manage sitemap options.
+	 *
+	 * ## SUBCOMMANDS
+	 *
+	 * [<command>]
+	 * : Subcommand to run.
+	 * ---
+	 * default: list
+	 * options:
+	 *   - list
+	 *   - get
+	 *   - update
+	 *   - delete
+	 *   - reset
+	 * ---
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--format=<format>]
+	 * : Output format: table, json, csv, count, yaml. Default: table.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp msm-sitemap options
+	 *     wp msm-sitemap options list --format=json
+	 *     wp msm-sitemap options get include_images
+	 *     wp msm-sitemap options update featured_images 1
+	 *     wp msm-sitemap options update content_images false
+	 *     wp msm-sitemap options update max_images_per_sitemap 500
+	 *     wp msm-sitemap options reset
+	 *
+	 * @when before_wp_load
+	 */
+	public function options( $args, $assoc_args ) {
+		// If no command provided, default to list
+		if ( empty( $args ) ) {
+			$this->options_list( array(), $assoc_args );
+			return;
+		}
+		
+		$command = $args[0];
+		
+		switch ( $command ) {
+			case 'list':
+				$this->options_list( array(), $assoc_args );
+				break;
+			case 'get':
+				$this->options_get( $args, $assoc_args );
+				break;
+			case 'update':
+				$this->options_update( $args, $assoc_args );
+				break;
+			case 'delete':
+				$this->options_delete( $args, $assoc_args );
+				break;
+			case 'reset':
+				$this->options_reset( array(), $assoc_args );
+				break;
+			default:
+				WP_CLI::error( sprintf(
+					/* translators: %s: Unknown subcommand name */
+					__( 'Unknown subcommand: %s', 'msm-sitemap' ),
+					$command
+				) );
+		}
+	}
+
+	/**
+	 * List all sitemap options.
+	 *
+	 * @param array $args     Command arguments.
+	 * @param array $assoc_args Associated arguments.
+	 */
+	private function options_list( $args, $assoc_args ) {
+		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
+		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
+		$settings = $settings_service->get_all_settings();
+		$format = $assoc_args['format'] ?? 'table';
+		
+		if ( 'json' === $format ) {
+			WP_CLI::log( json_encode( $settings, JSON_PRETTY_PRINT ) );
+		} else {
+			$items = array();
+			foreach ( $settings as $key => $value ) {
+				$items[] = array(
+					'option' => $key,
+					'value'  => $value,
+				);
+			}
+			$fields = array( 'option', 'value' );
+			format_items( $format, $items, $fields );
+		}
+	}
+
+	/**
+	 * Get a specific option value.
+	 *
+	 * @param array $args     Command arguments.
+	 * @param array $assoc_args Associated arguments.
+	 */
+	private function options_get( $args, $assoc_args ) {
+		if ( empty( $args[1] ) ) {
+			WP_CLI::error( __( 'Please specify an option name.', 'msm-sitemap' ) );
+		}
+		
+		$option_name = $args[1];
+		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
+		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
+		$value = $settings_service->get_setting( $option_name );
+		
+		if ( null === $value ) {
+			WP_CLI::error( sprintf(
+				/* translators: %s: Option name */
+				__( 'Option %s not found.', 'msm-sitemap' ),
+				$option_name
+			) );
+		}
+		
+		WP_CLI::log( $value );
+	}
+
+	/**
+	 * Update an option value.
+	 *
+	 * @param array $args     Command arguments.
+	 * @param array $assoc_args Associated arguments.
+	 */
+	private function options_update( $args, $assoc_args ) {
+		if ( empty( $args[1] ) ) {
+			WP_CLI::error( __( 'Please specify an option name.', 'msm-sitemap' ) );
+		}
+		
+		if ( empty( $args[2] ) ) {
+			WP_CLI::error( __( 'Please specify an option value.', 'msm-sitemap' ) );
+		}
+		
+		$option_name = $args[1];
+		$option_value = $args[2];
+		
+		// Validate option name
+		$valid_options = array( 'include_images', 'featured_images', 'content_images', 'max_images_per_sitemap' );
+		
+		if ( ! in_array( $option_name, $valid_options, true ) ) {
+			WP_CLI::error( sprintf(
+				/* translators: %s: Option name */
+				__( 'Unknown option: %s. Valid options: %s', 'msm-sitemap' ),
+				$option_name,
+				implode( ', ', $valid_options )
+			) );
+		}
+		
+		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
+		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
+		$result = $settings_service->update_setting( $option_name, $this->parse_option_value( $option_value ) );
+		
+		if ( $result['success'] ) {
+			WP_CLI::success( sprintf(
+				/* translators: %s: Option name */
+				__( 'Updated %s option.', 'msm-sitemap' ),
+				$option_name
+			) );
+		} else {
+			WP_CLI::error( '❌ ' . $result['message'] );
+		}
+	}
+
+	/**
+	 * Delete an option.
+	 *
+	 * @param array $args     Command arguments.
+	 * @param array $assoc_args Associated arguments.
+	 */
+	private function options_delete( $args, $assoc_args ) {
+		if ( empty( $args[1] ) ) {
+			WP_CLI::error( __( 'Please specify an option name.', 'msm-sitemap' ) );
+		}
+		
+		$option_name = $args[1];
+		
+		// Validate option name
+		$valid_options = array( 'include_images', 'featured_images', 'content_images', 'max_images_per_sitemap' );
+		
+		if ( ! in_array( $option_name, $valid_options, true ) ) {
+			WP_CLI::error( sprintf(
+				/* translators: %s: Option name */
+				__( 'Unknown option: %s. Valid options: %s', 'msm-sitemap' ),
+				$option_name,
+				implode( ', ', $valid_options )
+			) );
+		}
+		
+		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
+		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
+		$result = $settings_service->delete_setting( $option_name );
+		
+		if ( $result['success'] ) {
+			WP_CLI::success( $result['message'] );
+		} else {
+			WP_CLI::error( $result['message'] );
+		}
+	}
+
+	/**
+	 * Reset all options to defaults.
+	 *
+	 * @param array $args     Command arguments.
+	 * @param array $assoc_args Associated arguments.
+	 */
+	private function options_reset( $args, $assoc_args ) {
+		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
+		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
+		$result = $settings_service->reset_to_defaults();
+		
+		if ( $result['success'] ) {
+			WP_CLI::success( '✅ ' . $result['message'] );
+		} else {
+			WP_CLI::error( '❌ ' . $result['message'] );
+		}
+	}
+
+	/**
+	 * Parse option value from string.
+	 *
+	 * @param mixed $value Value to parse.
+	 * @return mixed Parsed value.
+	 */
+	private function parse_option_value( $value ) {
+		// Handle boolean values
+		if ( in_array( $value, array( 'true', 'false', '1', '0', 'yes', 'no', 'on', 'off' ), true ) ) {
+			return $this->parse_boolean_value( $value );
+		}
+		
+		// Handle numeric values
+		if ( is_numeric( $value ) ) {
+			return (int) $value;
+		}
+		
+		// Return as string
+		return $value;
+	}
+
+	/**
+	 * Parse boolean value from string.
+	 *
+	 * @param mixed $value Value to parse.
+	 * @return bool Parsed boolean value.
+	 */
+	private function parse_boolean_value( $value ): bool {
+		if ( is_bool( $value ) ) {
+			return $value;
+		}
+		
+		$string_value = (string) $value;
+		return in_array( $string_value, array( '1', 'true', 'yes', 'on' ), true );
+	}
+
 	// Utility functions:
 
 	/**
