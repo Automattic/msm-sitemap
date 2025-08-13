@@ -72,6 +72,22 @@ class StylesheetManager {
 			$xsl_content
 		);
 
+		// Add image column to the table header
+		$xsl_content = str_replace(
+			'<th class="priority">' . esc_xml( __( 'Priority' ) ) . '</th>',
+			'<th class="priority">' . esc_xml( __( 'Priority' ) ) . '</th>
+									<th class="images">' . esc_xml( __( 'Images', 'msm-sitemap' ) ) . '</th>',
+			$xsl_content
+		);
+
+		// Add image count to the table rows
+		$xsl_content = str_replace(
+			'<td class="priority"><xsl:value-of select="sitemap:priority" /></td>',
+			'<td class="priority"><xsl:value-of select="sitemap:priority" /></td>
+								<td class="images"><xsl:value-of select="count(image:image)" /></td>',
+			$xsl_content
+		);
+
 		/**
 		 * Filters the content of the MSM sitemap stylesheet.
 		 *
