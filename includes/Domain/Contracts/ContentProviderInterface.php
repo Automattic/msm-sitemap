@@ -48,4 +48,12 @@ interface ContentProviderInterface {
 	 * @return string The description.
 	 */
 	public function get_description(): string;
+
+	/**
+	 * Enhance existing URL entries with additional data (optional).
+	 *
+	 * @param array<\Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry> $url_entries Array of URL entries to enhance.
+	 * @return array<\Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry> Array of enhanced URL entries.
+	 */
+	public function enhance_url_entries( array $url_entries ): array;
 }

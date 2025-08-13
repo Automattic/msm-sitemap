@@ -105,10 +105,12 @@ class Plugin {
 			$this->sitemap_content_types->register( new \Automattic\MSM_Sitemap\Infrastructure\Providers\PostContentProvider() );
 		}
 
+		// Register image content provider
+		if ( apply_filters( 'msm_sitemap_images_provider_enabled', true ) ) {
+			$this->sitemap_content_types->register( new \Automattic\MSM_Sitemap\Infrastructure\Providers\ImageContentProvider() );
+		}
+
 		// Future providers can be added here:
-		// if ( apply_filters( 'msm_sitemap_images_provider_enabled', true ) ) {
-		//     $this->sitemap_content_types->register( new \Automattic\MSM_Sitemap\Infrastructure\Providers\ImageContentProvider() );
-		// }
 		// if ( apply_filters( 'msm_sitemap_taxonomies_provider_enabled', true ) ) {
 		//     $this->sitemap_content_types->register( new \Automattic\MSM_Sitemap\Infrastructure\Providers\TaxonomyContentProvider() );
 		// }

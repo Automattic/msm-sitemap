@@ -66,7 +66,45 @@ class SitemapXmlFormatter {
 			$xml .= "\t\t<priority>" . esc_xml( $entry->priority() ) . "</priority>\n";
 		}
 
+		// Add images if present
+		if ( $entry->has_images() ) {
+			foreach ( $entry->images() as $image ) {
+				$xml .= $this->format_image_entry( $image );
+			}
+		}
+
 		$xml .= "\t</url>\n";
+
+		return $xml;
+	}
+
+	/**
+	 * Format a single image entry to XML.
+	 *
+	 * @param \Automattic\MSM_Sitemap\Domain\ValueObjects\ImageEntry $image The image entry to format.
+	 * @return string The XML representation of the image entry.
+	 */
+	private function format_image_entry( \Automattic\MSM_Sitemap\Domain\ValueObjects\ImageEntry $image ): string {
+		$xml = "\t\t<image:image>\n";
+		$xml .= "\t\t\t<image:loc>" . esc_xml( $image->loc() ) . "</image:loc>\n";
+
+		if ( $image->title() ) {
+			$xml .= "\t\t\t<image:title>" . esc_xml( $image->title() ) . "</image:title>\n";
+		}
+
+		if ( $image->caption() ) {
+			$xml .= "\t\t\t<image:caption>" . esc_xml( $image->caption() ) . "</image:caption>\n";
+		}
+
+		if ( $image->geo_location() ) {
+			$xml .= "\t\t\t<image:geo_location>" . esc_xml( $image->geo_location() ) . "</image:geo_location>\n";
+		}
+
+		if ( $image->license() ) {
+			$xml .= "\t\t\t<image:license>" . esc_xml( $image->license() ) . "</image:license>\n";
+		}
+
+		$xml .= "\t\t</image:image>\n";
 
 		return $xml;
 	}

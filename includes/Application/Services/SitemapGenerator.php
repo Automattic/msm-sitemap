@@ -43,17 +43,29 @@ class SitemapGenerator {
 	 * @param string $date MySQL DATETIME format (e.g., '2024-01-15 00:00:00').
 	 * @return SitemapContent Combined URL set from all registered content providers.
 	 */
-		public function generate_sitemap_for_date( string $date ): SitemapContent {
+	public function generate_sitemap_for_date( string $date ): SitemapContent {
 		$combined_entries = array();
 		$providers = $this->content_types->get_all();
+		$image_provider = null;
 
+		// First, collect all URL entries from non-image providers
 		foreach ( $providers as $provider ) {
+			if ( 'images' === $provider->get_content_type() ) {
+				$image_provider = $provider;
+				continue;
+			}
+
 			$provider_url_set = $provider->get_urls_for_date( $date );
 
 			// Merge the provider's URLs into the combined set
 			foreach ( $provider_url_set->get_entries() as $url_entry ) {
 				$combined_entries[] = $url_entry;
 			}
+		}
+
+		// Then, enhance URL entries with images if image provider exists
+		if ( $image_provider ) {
+			$combined_entries = $image_provider->enhance_url_entries( $combined_entries );
 		}
 
 		return new SitemapContent( $combined_entries );

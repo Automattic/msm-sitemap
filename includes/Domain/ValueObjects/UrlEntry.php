@@ -46,6 +46,13 @@ class UrlEntry {
 	private ?float $priority;
 
 	/**
+	 * Array of image entries associated with this URL (optional).
+	 *
+	 * @var array<ImageEntry>
+	 */
+	private array $images;
+
+	/**
 	 * Valid changefreq values according to sitemap protocol.
 	 *
 	 * @var array<string>
@@ -84,10 +91,11 @@ class UrlEntry {
 	/**
 	 * Constructor.
 	 *
-	 * @param string      $loc        The URL of the page (required).
-	 * @param string|null $lastmod    The date of last modification (optional).
-	 * @param string|null $changefreq How frequently the page changes (optional).
-	 * @param float|null  $priority   The priority of this URL (optional).
+	 * @param string                    $loc        The URL of the page (required).
+	 * @param string|null               $lastmod    The date of last modification (optional).
+	 * @param string|null               $changefreq How frequently the page changes (optional).
+	 * @param float|null                $priority   The priority of this URL (optional).
+	 * @param array<ImageEntry>|null    $images     Array of image entries (optional).
 	 *
 	 * @throws \InvalidArgumentException If any parameter is invalid.
 	 */
@@ -95,17 +103,20 @@ class UrlEntry {
 		string $loc,
 		?string $lastmod = null,
 		?string $changefreq = null,
-		?float $priority = null
+		?float $priority = null,
+		?array $images = null
 	) {
 		$this->validate_loc( $loc );
 		$this->validate_lastmod( $lastmod );
 		$this->validate_changefreq( $changefreq );
 		$this->validate_priority( $priority );
+		$this->validate_images( $images );
 
 		$this->loc        = $loc;
 		$this->lastmod    = $lastmod;
 		$this->changefreq = $changefreq;
 		$this->priority   = $priority;
+		$this->images     = $images ?? array();
 	}
 
 	/**
@@ -145,6 +156,33 @@ class UrlEntry {
 	}
 
 	/**
+	 * Get the images associated with this URL.
+	 *
+	 * @return array<ImageEntry> Array of image entries.
+	 */
+	public function images(): array {
+		return $this->images;
+	}
+
+	/**
+	 * Check if this URL has any images.
+	 *
+	 * @return bool True if has images, false otherwise.
+	 */
+	public function has_images(): bool {
+		return ! empty( $this->images );
+	}
+
+	/**
+	 * Get the number of images associated with this URL.
+	 *
+	 * @return int The number of images.
+	 */
+	public function image_count(): int {
+		return count( $this->images );
+	}
+
+	/**
 	 * Convert the URL entry to an array representation.
 	 *
 	 * @return array<string, mixed> Array representation of the URL entry.
@@ -164,6 +202,10 @@ class UrlEntry {
 
 		if ( null !== $this->priority ) {
 			$array['priority'] = $this->priority;
+		}
+
+		if ( ! empty( $this->images ) ) {
+			$array['images'] = array_map( fn( ImageEntry $image ) => $image->to_array(), $this->images );
 		}
 
 		return $array;
@@ -297,6 +339,24 @@ class UrlEntry {
 					self::MAX_PRIORITY
 				)
 			);
+		}
+	}
+
+	/**
+	 * Validate the images parameter.
+	 *
+	 * @param array<ImageEntry>|null $images The images array to validate.
+	 * @throws \InvalidArgumentException If the images array is invalid.
+	 */
+	private function validate_images( ?array $images ): void {
+		if ( null === $images ) {
+			return;
+		}
+
+		foreach ( $images as $image ) {
+			if ( ! $image instanceof ImageEntry ) {
+				throw new \InvalidArgumentException( 'All images must be ImageEntry objects.' );
+			}
 		}
 	}
 } 
