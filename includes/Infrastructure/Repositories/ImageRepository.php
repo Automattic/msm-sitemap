@@ -53,7 +53,14 @@ class ImageRepository {
 		
 		foreach ( $post_ids as $post_id ) {
 			$attachments = get_attached_media( 'image', $post_id );
+			$featured_image_id = get_post_thumbnail_id( $post_id );
+			
 			foreach ( $attachments as $attachment ) {
+				// Skip featured images - they should be handled separately
+				if ( $attachment->ID === $featured_image_id ) {
+					continue;
+				}
+				
 				$image_ids[] = $attachment->ID;
 				if ( count( $image_ids ) >= $limit ) {
 					break 2;
@@ -200,7 +207,13 @@ class ImageRepository {
 	 * @return bool True if images should be included, false otherwise.
 	 */
 	public function should_include_images(): bool {
-		return apply_filters( 'msm_sitemap_images_provider_enabled', true );
+		$saved_enabled = get_option( 'msm_sitemap_images_provider_enabled' );
+		// If option doesn't exist, default to true
+		if ( false === $saved_enabled ) {
+			$saved_enabled = '1';
+		}
+		$filtered_enabled = apply_filters( 'msm_sitemap_images_provider_enabled', '1' === $saved_enabled );
+		return (bool) $filtered_enabled;
 	}
 
 	/**
@@ -209,7 +222,40 @@ class ImageRepository {
 	 * @return int Maximum number of images.
 	 */
 	public function get_max_images_per_sitemap(): int {
-		return apply_filters( 'msm_sitemap_max_images_per_sitemap', 1000 );
+		$default_max  = 1000;
+		$saved_max    = get_option( 'msm_sitemap_max_images_per_sitemap', $default_max );
+		$filtered_max = apply_filters( 'msm_sitemap_max_images_per_sitemap', $saved_max );
+		return $filtered_max;
+	}
+
+	/**
+	 * Check if featured images should be included.
+	 *
+	 * @return bool True if featured images should be included, false otherwise.
+	 */
+	public function should_include_featured_images(): bool {
+		$saved_enabled = get_option( 'msm_sitemap_include_featured_images' );
+		// If option doesn't exist, default to true
+		if ( false === $saved_enabled ) {
+			$saved_enabled = '1';
+		}
+		$filtered_enabled = apply_filters( 'msm_sitemap_include_featured_images', '1' === $saved_enabled );
+		return (bool) $filtered_enabled;
+	}
+
+	/**
+	 * Check if content images should be included.
+	 *
+	 * @return bool True if content images should be included, false otherwise.
+	 */
+	public function should_include_content_images(): bool {
+		$saved_enabled = get_option( 'msm_sitemap_include_content_images' );
+		// If option doesn't exist, default to true
+		if ( false === $saved_enabled ) {
+			$saved_enabled = '1';
+		}
+		$filtered_enabled = apply_filters( 'msm_sitemap_include_content_images', '1' === $saved_enabled );
+		return (bool) $filtered_enabled;
 	}
 
 	/**
@@ -218,7 +264,16 @@ class ImageRepository {
 	 * @return array<string> Array of image types to include.
 	 */
 	public function get_included_image_types(): array {
-		$default_types = array( 'featured', 'content' );
-		return apply_filters( 'msm_sitemap_image_types', $default_types );
+		$types = array();
+		
+		if ( $this->should_include_featured_images() ) {
+			$types[] = 'featured';
+		}
+		
+		if ( $this->should_include_content_images() ) {
+			$types[] = 'content';
+		}
+		
+		return apply_filters( 'msm_sitemap_image_types', $types );
 	}
 }

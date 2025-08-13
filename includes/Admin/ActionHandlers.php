@@ -114,4 +114,32 @@ class Action_Handlers {
 			__( 'Sitemap data reset. All sitemap posts, metadata, and processing options have been cleared.', 'msm-sitemap' )
 		);
 	}
+
+	/**
+	 * Handle save content provider settings action
+	 */
+	public static function handle_save_content_provider_settings() {
+		check_admin_referer( 'msm-sitemap-action' );
+		
+		// Save image provider settings
+		$images_enabled = isset( $_POST['images_provider_enabled'] ) ? '1' : '0';
+		update_option( 'msm_sitemap_images_provider_enabled', $images_enabled );
+		
+		// Save featured images setting - if not submitted, it's unchecked (false)
+		$include_featured_images = isset( $_POST['include_featured_images'] ) && $_POST['include_featured_images'] === '1' ? '1' : '0';
+		update_option( 'msm_sitemap_include_featured_images', $include_featured_images );
+		
+		// Save content images setting - if not submitted, it's unchecked (false)
+		$include_content_images = isset( $_POST['include_content_images'] ) && $_POST['include_content_images'] === '1' ? '1' : '0';
+		update_option( 'msm_sitemap_include_content_images', $include_content_images );
+		
+		// Save max images per sitemap
+		$max_images = isset( $_POST['max_images_per_sitemap'] ) ? intval( $_POST['max_images_per_sitemap'] ) : 1000;
+		$max_images = max( 1, min( 10000, $max_images ) ); // Clamp between 1 and 10000
+		update_option( 'msm_sitemap_max_images_per_sitemap', $max_images );
+		
+		Notifications::show_success(
+			__( 'Content provider settings saved successfully.', 'msm-sitemap' )
+		);
+	}
 } 
