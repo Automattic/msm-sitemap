@@ -180,13 +180,12 @@ class ImageContentProvider implements ContentProviderInterface {
 	 */
 	private function get_image_metadata_for_posts( array $post_ids ): array {
 		$image_metadata = array();
-		$included_types = $this->image_repository->get_included_image_types();
 
 		foreach ( $post_ids as $post_id ) {
 			$post_images = array();
 
-			// Get featured images if included
-			if ( in_array( 'featured', $included_types, true ) ) {
+			// Get featured images if enabled
+			if ( $this->image_repository->should_include_featured_images() ) {
 				$featured_image_ids = $this->image_repository->get_featured_image_ids_for_posts( array( $post_id ) );
 				if ( ! empty( $featured_image_ids ) ) {
 					$featured_metadata = $this->image_repository->get_image_metadata( $featured_image_ids );
@@ -194,8 +193,8 @@ class ImageContentProvider implements ContentProviderInterface {
 				}
 			}
 
-			// Get content images if included
-			if ( in_array( 'content', $included_types, true ) ) {
+			// Get content images if enabled
+			if ( $this->image_repository->should_include_content_images() ) {
 				$content_image_ids = $this->image_repository->get_image_ids_for_posts( array( $post_id ) );
 				if ( ! empty( $content_image_ids ) ) {
 					$content_metadata = $this->image_repository->get_image_metadata( $content_image_ids );

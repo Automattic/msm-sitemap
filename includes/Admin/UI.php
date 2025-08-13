@@ -103,6 +103,7 @@ class UI {
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 
 			<?php self::render_cron_section(); ?>
+			<?php self::render_content_providers_section(); ?>
 			<?php self::render_generate_section(); ?>
 			<?php self::render_stats_section(); ?>
 			<?php self::render_dangerous_actions_section(); ?>
@@ -180,6 +181,9 @@ class UI {
 				break;
 			case 'Generate All Sitemaps (Force)':
 				Action_Handlers::handle_generate_full();
+				break;
+			case 'Save Content Provider Settings':
+				Action_Handlers::handle_save_content_provider_settings();
 				break;
 			case 'Stop adding missing sitemaps...':
 			case 'Stop full sitemaps generation...':
@@ -947,6 +951,170 @@ class UI {
 				}
 				</script>
 		</div>
+		<?php
+	}
+
+	/**
+	 * Render the content providers settings section
+	 */
+	private static function render_content_providers_section() {
+		?>
+		<div class="card">
+			<h2 class="title">
+				<span class="dashicons dashicons-admin-generic"></span>
+				<?php esc_html_e( 'Content Providers', 'msm-sitemap' ); ?>
+			</h2>
+			<p class="description">
+				<?php esc_html_e( 'Configure which content types to include in your sitemaps.', 'msm-sitemap' ); ?>
+			</p>
+
+			<form action="" method="post">
+				<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
+				<input type="hidden" name="test_form_submission" value="1">
+				
+				<table class="form-table" role="presentation">
+					<tbody>
+						<!-- Posts Provider -->
+						<tr>
+							<th scope="row">
+								<label for="posts_provider_enabled">
+									<?php esc_html_e( 'Posts', 'msm-sitemap' ); ?>
+								</label>
+							</th>
+							<td>
+								<fieldset>
+									<label for="posts_provider_enabled">
+										<input type="checkbox" 
+											   id="posts_provider_enabled" 
+											   name="posts_provider_enabled" 
+											   value="1" 
+											   <?php checked( apply_filters( 'msm_sitemap_posts_provider_enabled', true ) ); ?>
+											   disabled="disabled">
+										<?php esc_html_e( 'Include published posts in sitemaps', 'msm-sitemap' ); ?>
+									</label>
+									<p class="description">
+										<?php esc_html_e( 'Posts are the primary content type and cannot be disabled.', 'msm-sitemap' ); ?>
+									</p>
+								</fieldset>
+							</td>
+						</tr>
+
+						<!-- Images Provider -->
+						<tr>
+							<th scope="row">
+								<label for="images_provider_enabled">
+									<?php esc_html_e( 'Images', 'msm-sitemap' ); ?>
+								</label>
+							</th>
+							<td>
+								<fieldset>
+									<label for="images_provider_enabled">
+										<?php 
+										$images_provider_option = get_option( 'msm_sitemap_images_provider_enabled', true );
+										?>
+										<input type="checkbox" 
+											   id="images_provider_enabled" 
+											   name="images_provider_enabled" 
+											   value="1" 
+											   <?php checked( (bool) $images_provider_option ); ?>>
+										<?php esc_html_e( 'Images in Sitemaps', 'msm-sitemap' ); ?>
+									</label>
+									<p class="description">
+										<?php esc_html_e( 'Include images from your posts in sitemaps to help search engines discover and index your visual content.', 'msm-sitemap' ); ?>
+									</p>
+								</fieldset>
+
+								<div id="images_settings" style="margin-top: 15px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #0073aa; display: <?php echo get_option( 'msm_sitemap_images_provider_enabled', true ) ? 'block' : 'none'; ?>;">
+									<h4 style="margin: 0 0 10px 0;"><?php esc_html_e( 'Image Settings', 'msm-sitemap' ); ?></h4>
+									
+									<fieldset>
+										<legend class="screen-reader-text"><?php esc_html_e( 'Image types to include', 'msm-sitemap' ); ?></legend>
+										<label for="include_featured_images">
+											<?php 
+											$featured_images_option = get_option( 'msm_sitemap_include_featured_images', true );
+											$featured_images_bool = (bool) $featured_images_option;
+											?>
+											<input type="checkbox" 
+												   id="include_featured_images" 
+												   name="include_featured_images" 
+												   value="1" 
+												   <?php echo $featured_images_bool ? 'checked="checked"' : ''; ?>>
+											<?php esc_html_e( 'Include Featured Images', 'msm-sitemap' ); ?>
+										</label>
+										<p class="description">
+											<?php esc_html_e( 'Add featured images to post URLs in sitemaps.', 'msm-sitemap' ); ?>
+										</p>
+										
+										<label for="include_content_images" style="margin-top: 15px; display: block;">
+											<?php 
+											$content_images_option = get_option( 'msm_sitemap_include_content_images', true );
+											?>
+											<input type="checkbox" 
+												   id="include_content_images" 
+												   name="include_content_images" 
+												   value="1" 
+												   <?php checked( (bool) $content_images_option ); ?>>
+											<?php esc_html_e( 'Include Content Images', 'msm-sitemap' ); ?>
+										</label>
+										<p class="description">
+											<?php esc_html_e( 'Add images embedded in post content to sitemaps.', 'msm-sitemap' ); ?>
+										</p>
+									</fieldset>
+
+									<p>
+										<label for="max_images_per_sitemap">
+											<?php esc_html_e( 'Maximum images per sitemap:', 'msm-sitemap' ); ?>
+											<input type="number" 
+												   id="max_images_per_sitemap" 
+												   name="max_images_per_sitemap" 
+												   value="<?php echo esc_attr( get_option( 'msm_sitemap_max_images_per_sitemap', 1000 ) ); ?>"
+												   min="1" 
+												   max="10000" 
+												   step="1" 
+												   style="width: 100px;">
+										</label>
+									</p>
+								</div>
+							</td>
+						</tr>
+
+						<!-- Future Providers (Placeholder) -->
+						<tr>
+							<th scope="row">
+								<?php esc_html_e( 'Future Content Types', 'msm-sitemap' ); ?>
+							</th>
+							<td>
+								<p class="description">
+									<?php esc_html_e( 'Additional content types will be available in future updates:', 'msm-sitemap' ); ?>
+								</p>
+								<ul style="margin: 10px 0 0 20px; color: #666;">
+									<li><?php esc_html_e( 'Users (author pages)', 'msm-sitemap' ); ?></li>
+									<li><?php esc_html_e( 'Taxonomies (categories, tags)', 'msm-sitemap' ); ?></li>
+									<li><?php esc_html_e( 'Custom post types', 'msm-sitemap' ); ?></li>
+								</ul>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+
+				<p class="submit">
+					<input type="submit" name="action" class="button button-primary" value="<?php esc_attr_e( 'Save Content Provider Settings', 'msm-sitemap' ); ?>">
+				</p>
+			</form>
+		</div>
+
+		<script type="text/javascript">
+		document.addEventListener('DOMContentLoaded', function() {
+			const imagesCheckbox = document.getElementById('images_provider_enabled');
+			const imagesSettings = document.getElementById('images_settings');
+			
+			if (imagesCheckbox && imagesSettings) {
+				imagesCheckbox.addEventListener('change', function() {
+					imagesSettings.style.display = this.checked ? 'block' : 'none';
+				});
+			}
+		});
+		</script>
 		<?php
 	}
 
