@@ -63,7 +63,7 @@ class UI {
 			true
 		);
 
-		// Localize script for AJAX
+		// Localize script for AJAX and UI interactions
 		wp_localize_script(
 			'msm-sitemap-admin',
 			'msmSitemapAjax',
@@ -71,6 +71,11 @@ class UI {
 				'ajaxurl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( 'msm_sitemap_ajax_nonce' ),
 				'generateMissingText' => __( 'Generate Missing Sitemaps', 'msm-sitemap' ),
+				'confirmResetText' => __( 'Are you sure you want to reset all sitemap data? This action cannot be undone and will delete all sitemaps, metadata, and statistics.', 'msm-sitemap' ),
+				'showText' => __( 'Show', 'msm-sitemap' ),
+				'hideText' => __( 'Hide', 'msm-sitemap' ),
+				'showDetailedStatsText' => __( 'Show Detailed Statistics', 'msm-sitemap' ),
+				'hideDetailedStatsText' => __( 'Hide Detailed Statistics', 'msm-sitemap' ),
 			)
 		);
 	}
@@ -126,7 +131,7 @@ class UI {
 		check_ajax_referer( 'msm_sitemap_ajax_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( __( 'You do not have sufficient permissions to access this page.', 'msm-sitemap' ) );
+			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'msm-sitemap' ) );
 		}
 
 		$missing_data = \Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService::get_missing_sitemaps();
@@ -228,7 +233,7 @@ class UI {
 			<form method="get" style="display: inline;">
 				<input type="hidden" name="page" value="msm-sitemap">
 				<label for="stats-date-range"><?php esc_html_e( 'Date Range:', 'msm-sitemap' ); ?></label>
-				<select id="stats-date-range" name="date_range" onchange="toggleCustomDateRange(this.value)">
+				<select id="stats-date-range" name="date_range">
 					<option value="all" <?php selected( $_GET['date_range'] ?? 'all', 'all' ); ?>><?php esc_html_e( 'All Time', 'msm-sitemap' ); ?></option>
 					<option value="7" <?php selected( $_GET['date_range'] ?? 'all', '7' ); ?>><?php esc_html_e( 'Last 7 Days', 'msm-sitemap' ); ?></option>
 					<option value="30" <?php selected( $_GET['date_range'] ?? 'all', '30' ); ?>><?php esc_html_e( 'Last 30 Days', 'msm-sitemap' ); ?></option>
@@ -537,12 +542,12 @@ class UI {
 						<span class="insight-value"><?php echo esc_html( $coverage['coverage_quality'] ?? 0 ); ?>%</span>
 					</div>
 					<div class="insight-item stat-descriptor">
-		<?php
-		printf(
+						<?php
+						printf(
 							/* translators: %d is the number of posts per sitemap */
 							esc_html__( 'Percentage of site content included in sitemaps (limited to %d posts per sitemap)', 'msm-sitemap' ),
 							esc_html( $coverage['posts_per_sitemap_limit'] ?? 1000 )
-						); 
+						);
 						?>
 					</div>
 				</div>
@@ -828,7 +833,7 @@ class UI {
 		<div style="margin-top: 40px; border: 1px solid #dc3232; border-radius: 4px; padding: 15px; background-color: #fef7f7;">
 			<div style="display: flex; align-items: center; margin-bottom: 15px;">
 				<h2 style="margin: 0; color: #dc3232;"><?php esc_html_e( 'Danger Zone', 'msm-sitemap' ); ?></h2>
-				<button type="button" class="button button-secondary" onclick="toggleDangerZone()" style="font-size: 12px; margin-left: 10px;">
+				<button type="button" id="danger-zone-toggle" class="button button-secondary" style="font-size: 12px; margin-left: 10px;">
 					<span class="dashicons dashicons-arrow-down-alt2" id="danger-zone-icon" style="vertical-align: middle;"></span>
 					<span id="danger-zone-toggle-text" style="vertical-align: middle;"><?php esc_html_e( 'Show', 'msm-sitemap' ); ?></span>
 				</button>
@@ -889,7 +894,7 @@ class UI {
 						</p>
 						<input type="button" class="button button-link-delete button-disabled" value="<?php esc_attr_e( 'Reset Sitemap Data', 'msm-sitemap' ); ?>" disabled="disabled">
 					<?php else : ?>
-						<form action="<?php echo esc_url( menu_page_url( 'msm-sitemap', false ) ); ?>" method="post" onsubmit="return confirmReset();" style="margin-top: 10px;">
+						<form action="<?php echo esc_url( menu_page_url( 'msm-sitemap', false ) ); ?>" method="post" style="margin-top: 10px;">
 							<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
 							<input type="submit" name="action" class="button button-link-delete" value="<?php esc_attr_e( 'Reset Sitemap Data', 'msm-sitemap' ); ?>">
 						</form>
@@ -899,57 +904,7 @@ class UI {
 			
 
 				
-				<script type="text/javascript">
-				function confirmReset() {
-					return confirm('<?php echo esc_js( __( 'Are you sure you want to reset all sitemap data? This action cannot be undone and will delete all sitemaps, metadata, and statistics.', 'msm-sitemap' ) ); ?>');
-				}
-				
-				function toggleDetailedStats() {
-					const content = document.querySelector('.detailed-stats-content');
-					const button = document.querySelector('.detailed-stats-toggle');
-					const icon = button.querySelector('.dashicons');
-					const text = button.querySelector('span:not(.dashicons)');
-					
-					if (content.style.display === 'none') {
-						content.style.display = 'block';
-						icon.className = 'dashicons dashicons-arrow-up-alt2';
-						text.textContent = '<?php echo esc_js( __( 'Hide Detailed Statistics', 'msm-sitemap' ) ); ?>';
-					} else {
-						content.style.display = 'none';
-						icon.className = 'dashicons dashicons-arrow-down-alt2';
-						text.textContent = '<?php echo esc_js( __( 'Show Detailed Statistics', 'msm-sitemap' ) ); ?>';
-					}
-				}
-				
 
-				
-				function toggleCustomDateRange(value) {
-					var customRange = document.getElementById('custom-date-range');
-					if (value === 'custom') {
-						customRange.style.display = 'inline-block';
-					} else {
-						customRange.style.display = 'none';
-						// Auto-submit for non-custom ranges
-						document.querySelector('#stats-date-range').form.submit();
-					}
-				}
-				
-				function toggleDangerZone() {
-					const content = document.getElementById('danger-zone-content');
-					const icon = document.getElementById('danger-zone-icon');
-					const text = document.getElementById('danger-zone-toggle-text');
-					
-					if (content.style.display === 'none') {
-						content.style.display = 'grid';
-						icon.className = 'dashicons dashicons-arrow-up-alt2';
-						text.textContent = '<?php echo esc_js( __( 'Hide', 'msm-sitemap' ) ); ?>';
-					} else {
-						content.style.display = 'none';
-						icon.className = 'dashicons dashicons-arrow-down-alt2';
-						text.textContent = '<?php echo esc_js( __( 'Show', 'msm-sitemap' ) ); ?>';
-					}
-				}
-				</script>
 		</div>
 		<?php
 	}
@@ -1102,19 +1057,6 @@ class UI {
 				</p>
 			</form>
 		</div>
-
-		<script type="text/javascript">
-		document.addEventListener('DOMContentLoaded', function() {
-			const imagesCheckbox = document.getElementById('images_provider_enabled');
-			const imagesSettings = document.getElementById('images_settings');
-			
-			if (imagesCheckbox && imagesSettings) {
-				imagesCheckbox.addEventListener('change', function() {
-					imagesSettings.style.display = this.checked ? 'block' : 'none';
-				});
-			}
-		});
-		</script>
 		<?php
 	}
 

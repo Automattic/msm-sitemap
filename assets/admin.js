@@ -1,6 +1,6 @@
 /**
  * MSM Sitemap Admin JavaScript
- * Handles AJAX loading of missing sitemaps count
+ * Handles AJAX loading of missing sitemaps count and UI interactions
  */
 
 jQuery(document).ready(function($) {
@@ -61,6 +61,132 @@ jQuery(document).ready(function($) {
         });
     }
 
+    // Toggle detailed statistics section
+    function toggleDetailedStats() {
+        const content = document.querySelector('.detailed-stats-content');
+        const button = document.querySelector('.detailed-stats-toggle');
+        
+        if (!content || !button) {
+            return;
+        }
+        
+        const icon = button.querySelector('.dashicons');
+        const text = button.querySelector('span:not(.dashicons)');
+        
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            icon.className = 'dashicons dashicons-arrow-up-alt2';
+            text.textContent = msmSitemapAjax.hideDetailedStatsText || 'Hide Detailed Statistics';
+        } else {
+            content.style.display = 'none';
+            icon.className = 'dashicons dashicons-arrow-down-alt2';
+            text.textContent = msmSitemapAjax.showDetailedStatsText || 'Show Detailed Statistics';
+        }
+    }
+
+    // Toggle custom date range input fields
+    function toggleCustomDateRange(value) {
+        const customRange = document.getElementById('custom-date-range');
+        if (!customRange) {
+            return;
+        }
+        
+        if (value === 'custom') {
+            customRange.style.display = 'inline-block';
+        } else {
+            customRange.style.display = 'none';
+            // Auto-submit for non-custom ranges
+            const form = document.querySelector('#stats-date-range');
+            if (form && form.form) {
+                form.form.submit();
+            }
+        }
+    }
+
+    // Toggle danger zone section
+    function toggleDangerZone() {
+        const content = document.getElementById('danger-zone-content');
+        const icon = document.getElementById('danger-zone-icon');
+        const text = document.getElementById('danger-zone-toggle-text');
+        
+        if (!content || !icon || !text) {
+            return;
+        }
+        
+        if (content.style.display === 'none') {
+            content.style.display = 'grid';
+            icon.className = 'dashicons dashicons-arrow-up-alt2';
+            text.textContent = msmSitemapAjax.hideText || 'Hide';
+        } else {
+            content.style.display = 'none';
+            icon.className = 'dashicons dashicons-arrow-down-alt2';
+            text.textContent = msmSitemapAjax.showText || 'Show';
+        }
+    }
+
+    // Confirm reset action
+    function confirmReset() {
+        return confirm(msmSitemapAjax.confirmResetText || 'Are you sure you want to reset all sitemap data? This action cannot be undone and will delete all sitemaps, metadata, and statistics.');
+    }
+
+    // Toggle images settings visibility
+    function toggleImagesSettings() {
+        const imagesCheckbox = document.getElementById('images_provider_enabled');
+        const imagesSettings = document.getElementById('images_settings');
+        
+        if (!imagesCheckbox || !imagesSettings) {
+            return;
+        }
+        
+        imagesSettings.style.display = imagesCheckbox.checked ? 'block' : 'none';
+    }
+
+    // Initialize event listeners
+    function initializeEventListeners() {
+        // Stats date range change
+        const statsDateRange = document.getElementById('stats-date-range');
+        if (statsDateRange) {
+            statsDateRange.addEventListener('change', function() {
+                toggleCustomDateRange(this.value);
+            });
+        }
+
+        // Danger zone toggle
+        const dangerZoneToggle = document.getElementById('danger-zone-toggle');
+        if (dangerZoneToggle) {
+            dangerZoneToggle.addEventListener('click', toggleDangerZone);
+        }
+
+        // Reset form confirmation
+        const resetForm = document.querySelector('form[onsubmit="return confirmReset();"]');
+        if (resetForm) {
+            // Remove the inline onsubmit attribute
+            resetForm.removeAttribute('onsubmit');
+            resetForm.addEventListener('submit', function(e) {
+                if (!confirmReset()) {
+                    e.preventDefault();
+                }
+            });
+        }
+
+        // Images provider checkbox
+        const imagesCheckbox = document.getElementById('images_provider_enabled');
+        if (imagesCheckbox) {
+            imagesCheckbox.addEventListener('change', toggleImagesSettings);
+        }
+
+        // Detailed stats toggle (if exists)
+        const detailedStatsToggle = document.querySelector('button[onclick="toggleDetailedStats()"]');
+        if (detailedStatsToggle) {
+            // Remove the inline onclick attribute
+            detailedStatsToggle.removeAttribute('onclick');
+            detailedStatsToggle.addEventListener('click', toggleDetailedStats);
+        }
+    }
+
     // Load missing sitemaps count when page loads
     loadMissingSitemapsCount();
+
+    // Initialize event listeners when DOM is ready
+    initializeEventListeners();
 });
