@@ -10,12 +10,12 @@ declare( strict_types=1 );
 namespace Automattic\MSM_Sitemap\Infrastructure\Providers;
 
 use Automattic\MSM_Sitemap\Domain\Contracts\ContentProviderInterface;
+use Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\UrlSet;
 use Automattic\MSM_Sitemap\Infrastructure\Factories\ImageEntryFactory;
 use Automattic\MSM_Sitemap\Infrastructure\Factories\UrlEntryFactory;
 use Automattic\MSM_Sitemap\Infrastructure\Factories\UrlSetFactory;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\ImageRepository;
-use Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository;
 
 /**
  * Image Content Provider
@@ -40,28 +40,12 @@ class ImageContentProvider implements ContentProviderInterface {
 	private ImageRepository $image_repository;
 
 	/**
-	 * Post repository.
-	 *
-	 * @var PostRepository
-	 */
-	private PostRepository $post_repository;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param ImageRepository|null $image_repository Image repository.
-	 * @param PostRepository|null  $post_repository  Post repository.
+	 * @param ImageRepository $image_repository Image repository.
 	 */
-	public function __construct( ?ImageRepository $image_repository = null, ?PostRepository $post_repository = null ) {
-		if ( null === $image_repository ) {
-			$image_repository = new ImageRepository();
-		}
+	public function __construct( ImageRepository $image_repository ) {
 		$this->image_repository = $image_repository;
-		
-		if ( null === $post_repository ) {
-			$post_repository = new PostRepository();
-		}
-		$this->post_repository = $post_repository;
 	}
 
 	/**
@@ -79,8 +63,8 @@ class ImageContentProvider implements ContentProviderInterface {
 	/**
 	 * Enhance existing URL entries with images.
 	 *
-	 * @param array<\Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry> $url_entries Array of URL entries to enhance.
-	 * @return array<\Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry> Array of enhanced URL entries.
+	 * @param array<UrlEntry> $url_entries Array of URL entries to enhance.
+	 * @return array<UrlEntry> Array of enhanced URL entries.
 	 */
 	public function enhance_url_entries_with_images( array $url_entries ): array {
 		// Check if images should be included
@@ -106,7 +90,7 @@ class ImageContentProvider implements ContentProviderInterface {
 				$images = ImageEntryFactory::from_metadata( $image_metadata[ $post_id ] );
 				if ( ! empty( $images ) ) {
 					// Create new URL entry with images
-					$enhanced_entry = new \Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry(
+					$enhanced_entry     = new UrlEntry(
 						$url_entry->loc(),
 						$url_entry->lastmod(),
 						$url_entry->changefreq(),
@@ -189,7 +173,7 @@ class ImageContentProvider implements ContentProviderInterface {
 				$featured_image_ids = $this->image_repository->get_featured_image_ids_for_posts( array( $post_id ) );
 				if ( ! empty( $featured_image_ids ) ) {
 					$featured_metadata = $this->image_repository->get_image_metadata( $featured_image_ids );
-					$post_images = array_merge( $post_images, $featured_metadata );
+					$post_images       = array_merge( $post_images, $featured_metadata );
 				}
 			}
 
@@ -198,7 +182,7 @@ class ImageContentProvider implements ContentProviderInterface {
 				$content_image_ids = $this->image_repository->get_image_ids_for_posts( array( $post_id ) );
 				if ( ! empty( $content_image_ids ) ) {
 					$content_metadata = $this->image_repository->get_image_metadata( $content_image_ids );
-					$post_images = array_merge( $post_images, $content_metadata );
+					$post_images      = array_merge( $post_images, $content_metadata );
 				}
 			}
 
@@ -218,7 +202,7 @@ class ImageContentProvider implements ContentProviderInterface {
 	 *
 	 * @param array<int> $post_ids Array of post IDs.
 	 * @param array<int, array<int, array<string, mixed>>> $image_metadata Array of image metadata.
-	 * @return array<\Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry> Array of URL entries.
+	 * @return array<UrlEntry> Array of URL entries.
 	 */
 	private function create_url_entries_with_images( array $post_ids, array $image_metadata ): array {
 		$url_entries = array();
@@ -235,7 +219,7 @@ class ImageContentProvider implements ContentProviderInterface {
 				$images = ImageEntryFactory::from_metadata( $image_metadata[ $post_id ] );
 				if ( ! empty( $images ) ) {
 					// Create new URL entry with images
-					$url_entry = new \Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry(
+					$url_entry = new UrlEntry(
 						$url_entry->loc(),
 						$url_entry->lastmod(),
 						$url_entry->changefreq(),
@@ -281,8 +265,8 @@ class ImageContentProvider implements ContentProviderInterface {
 	/**
 	 * Enhance existing URL entries with additional data (optional).
 	 *
-	 * @param array<\Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry> $url_entries Array of URL entries to enhance.
-	 * @return array<\Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry> Array of enhanced URL entries.
+	 * @param array<UrlEntry> $url_entries Array of URL entries to enhance.
+	 * @return array<UrlEntry> Array of enhanced URL entries.
 	 */
 	public function enhance_url_entries( array $url_entries ): array {
 		return $this->enhance_url_entries_with_images( $url_entries );

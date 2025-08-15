@@ -24,7 +24,7 @@ class SitemapXmlFormatterWithImagesTest extends TestCase {
 	 */
 	public function test_format_includes_image_elements(): void {
 		$formatter = new SitemapXmlFormatter();
-		$content = new SitemapContent();
+		$content   = new SitemapContent();
 		
 		// Create an image entry
 		$image = new ImageEntry(
@@ -63,7 +63,7 @@ class SitemapXmlFormatterWithImagesTest extends TestCase {
 	 */
 	public function test_format_handles_urls_without_images(): void {
 		$formatter = new SitemapXmlFormatter();
-		$content = new SitemapContent();
+		$content   = new SitemapContent();
 		
 		// Create a URL entry without images
 		$entry = new UrlEntry(
@@ -92,7 +92,7 @@ class SitemapXmlFormatterWithImagesTest extends TestCase {
 	 */
 	public function test_format_handles_multiple_images_per_url(): void {
 		$formatter = new SitemapXmlFormatter();
-		$content = new SitemapContent();
+		$content   = new SitemapContent();
 		
 		// Create multiple image entries
 		$image1 = new ImageEntry( 'https://example.com/image1.jpg', 'First image' );
@@ -127,7 +127,7 @@ class SitemapXmlFormatterWithImagesTest extends TestCase {
 	 */
 	public function test_format_produces_valid_xml_structure_with_images(): void {
 		$formatter = new SitemapXmlFormatter();
-		$content = new SitemapContent();
+		$content   = new SitemapContent();
 		
 		// Create an image entry
 		$image = new ImageEntry( 'https://example.com/image.jpg', 'Test image' );

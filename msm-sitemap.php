@@ -29,8 +29,8 @@ MSM_Sitemap_Autoloader::register( __DIR__ );
 require __DIR__ . '/includes/Infrastructure/DI/container.php';
 
 // Initialize plugin
-$GLOBALS['msm_sitemap_plugin'] = new \Automattic\MSM_Sitemap\Plugin();
-add_action( 'after_setup_theme', array( $GLOBALS['msm_sitemap_plugin'], 'initialize' ) );
+$GLOBALS['msm_sitemap_plugin'] = new \Automattic\MSM_Sitemap\Plugin( __FILE__, '1.5.2' );
+add_action( 'after_setup_theme', array( $GLOBALS['msm_sitemap_plugin'], 'run' ) );
 
 /**
  * Get the plugin instance

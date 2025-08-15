@@ -39,7 +39,7 @@ final class SitemapStatsServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCa
 	 */
 	public function setUp(): void {
 		parent::setUp();
-		$this->repository = new SitemapPostRepository();
+		$this->repository    = new SitemapPostRepository();
 		$this->stats_service = new SitemapStatsService( $this->repository );
 	}
 
@@ -70,7 +70,7 @@ final class SitemapStatsServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCa
 	 */
 	public function test_comprehensive_stats_with_sitemaps(): void {
 		// Create test sitemaps
-		$dates = array( '2024-01-01', '2024-01-02', '2024-01-03' );
+		$dates    = array( '2024-01-01', '2024-01-02', '2024-01-03' );
 		$post_ids = array();
 
 		$total_urls = 0;
@@ -117,7 +117,7 @@ final class SitemapStatsServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCa
 	 */
 	public function test_recent_url_counts(): void {
 		// Create a sitemap for today
-		$today = date( 'Y-m-d' );
+		$today   = date( 'Y-m-d' );
 		$post_id = wp_insert_post(
 			array(
 				'post_type'   => 'msm_sitemap',
@@ -248,7 +248,7 @@ final class SitemapStatsServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCa
 	 */
 	public function test_storage_stats(): void {
 		// Create a sitemap with content
-		$date = '2024-01-01';
+		$date    = '2024-01-01';
 		$content = '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>http://example.com/</loc></url></urlset>';
 		
 		$post_id = wp_insert_post(

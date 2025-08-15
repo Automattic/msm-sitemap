@@ -8,9 +8,9 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests\Cli;
 
-use Automattic\MSM_Sitemap\Infrastructure\CLI\CLI_Command;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\CLICommand;
 require_once __DIR__ . '/../Includes/mock-wp-cli.php';
-require_once __DIR__ . '/../../includes/Infrastructure/CLI/CLI_Command.php';
+require_once __DIR__ . '/../../includes/Infrastructure/CLI/CLICommand.php';
 
 /**
  * Class RecountTest
@@ -63,7 +63,7 @@ final class RecountTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_recount_indexed_urls(): void {
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 		$this->expectOutputRegex( '/Total URLs found: [0-9]+/' );
 		$cli->recount( array(), array() );
 	}
@@ -74,7 +74,7 @@ final class RecountTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_recount_no_sitemaps(): void {
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 		wp_delete_post( $this->post_id, true );
 		$this->expectOutputRegex( '/Total URLs found: 0/' );
 		$cli->recount( array(), array() );
@@ -86,7 +86,7 @@ final class RecountTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_recount_multiple_sitemaps(): void {
-		$cli      = CLI_Command::create();
+		$cli      = CLICommand::create();
 		$date2    = '2024-07-11';
 		$post_id2 = wp_insert_post(
 			array(
@@ -110,7 +110,7 @@ final class RecountTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_recount_after_delete(): void {
-		$cli      = CLI_Command::create();
+		$cli      = CLICommand::create();
 		$date2    = '2024-07-11';
 		$post_id2 = wp_insert_post(
 			array(

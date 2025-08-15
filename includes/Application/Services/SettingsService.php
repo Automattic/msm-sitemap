@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap\Application\Services;
 
+use Automattic\MSM_Sitemap\Application\Services\CronManagementService;
+
 /**
  * Service for managing all sitemap settings with centralized business logic
  */
@@ -44,10 +46,10 @@ class SettingsService {
 	 * Get a specific setting value
 	 *
 	 * @param string $key Setting key.
-	 * @param mixed  $default Default value if setting doesn't exist.
+	 * @param mixed  $default_value Default value if setting doesn't exist.
 	 * @return mixed Setting value.
 	 */
-	public function get_setting( string $key, $default = null ) {
+	public function get_setting( string $key, $default_value = null ) {
 		$settings = get_option( 'msm_sitemap', array() );
 		
 		if ( isset( $settings[ $key ] ) ) {
@@ -55,12 +57,12 @@ class SettingsService {
 		}
 		
 		// If no default provided, try to get from default settings
-		if ( null === $default ) {
+		if ( null === $default_value ) {
 			$default_settings = $this->get_default_settings();
 			return $default_settings[ $key ] ?? null;
 		}
 		
-		return $default;
+		return $default_value;
 	}
 
 	/**
@@ -75,8 +77,8 @@ class SettingsService {
 		
 		if ( ! $validated_settings['valid'] ) {
 			return array(
-				'success' => false,
-				'message' => $validated_settings['message'],
+				'success'    => false,
+				'message'    => $validated_settings['message'],
 				'error_code' => 'validation_failed',
 			);
 		}
@@ -92,15 +94,15 @@ class SettingsService {
 
 		if ( ! $updated ) {
 			return array(
-				'success' => false,
-				'message' => __( 'Failed to save settings.', 'msm-sitemap' ),
+				'success'    => false,
+				'message'    => __( 'Failed to save settings.', 'msm-sitemap' ),
 				'error_code' => 'save_failed',
 			);
 		}
 
 		return array(
-			'success' => true,
-			'message' => __( 'Settings saved successfully.', 'msm-sitemap' ),
+			'success'  => true,
+			'message'  => __( 'Settings saved successfully.', 'msm-sitemap' ),
 			'settings' => $updated_settings,
 		);
 	}
@@ -127,8 +129,8 @@ class SettingsService {
 		
 		if ( ! isset( $current_settings[ $key ] ) ) {
 			return array(
-				'success' => false,
-				'message' => sprintf(
+				'success'    => false,
+				'message'    => sprintf(
 					/* translators: %s: Setting key */
 					__( 'Setting %s not found.', 'msm-sitemap' ),
 					$key
@@ -142,8 +144,8 @@ class SettingsService {
 		
 		if ( ! $updated ) {
 			return array(
-				'success' => false,
-				'message' => __( 'Failed to delete setting.', 'msm-sitemap' ),
+				'success'    => false,
+				'message'    => __( 'Failed to delete setting.', 'msm-sitemap' ),
 				'error_code' => 'delete_failed',
 			);
 		}
@@ -166,11 +168,11 @@ class SettingsService {
 	public function get_default_settings(): array {
 		return array(
 			// Image settings
-			'include_images' => '1',
-			'featured_images' => '1',
-			'content_images' => '1',
+			'include_images'         => '1',
+			'featured_images'        => '1',
+			'content_images'         => '1',
 			'max_images_per_sitemap' => self::DEFAULT_MAX_IMAGES_PER_SITEMAP,
-		    'cron_frequency' => \Automattic\MSM_Sitemap\Application\Services\CronManagementService::DEFAULT_FREQUENCY,
+			'cron_frequency'         => CronManagementService::DEFAULT_FREQUENCY,
 			
 			// Future settings can be added here:
 			// 'include_users' => '0',
@@ -186,19 +188,19 @@ class SettingsService {
 	 */
 	public function reset_to_defaults(): array {
 		$default_settings = $this->get_default_settings();
-		$updated = update_option( 'msm_sitemap', $default_settings );
+		$updated          = update_option( 'msm_sitemap', $default_settings );
 		
 		if ( ! $updated ) {
 			return array(
-				'success' => false,
-				'message' => __( 'Failed to reset settings.', 'msm-sitemap' ),
+				'success'    => false,
+				'message'    => __( 'Failed to reset settings.', 'msm-sitemap' ),
 				'error_code' => 'reset_failed',
 			);
 		}
 		
 		return array(
-			'success' => true,
-			'message' => __( 'Settings reset to defaults successfully.', 'msm-sitemap' ),
+			'success'  => true,
+			'message'  => __( 'Settings reset to defaults successfully.', 'msm-sitemap' ),
 			'settings' => $default_settings,
 		);
 	}
@@ -211,7 +213,7 @@ class SettingsService {
 	 */
 	private function validate_and_sanitize_settings( array $settings ): array {
 		$sanitized_settings = array();
-		$errors = array();
+		$errors             = array();
 
 		// Handle boolean settings
 		$boolean_settings = array( 'include_images', 'featured_images', 'content_images' );
@@ -241,9 +243,9 @@ class SettingsService {
 		if ( isset( $settings['cron_frequency'] ) ) {
 			$frequency = sanitize_text_field( $settings['cron_frequency'] );
 			
-			if ( ! \Automattic\MSM_Sitemap\Application\Services\CronManagementService::is_valid_frequency( $frequency ) ) {
-				$valid_frequencies = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::get_valid_frequencies();
-				$errors[] = sprintf(
+			if ( ! CronManagementService::is_valid_frequency( $frequency ) ) {
+				$valid_frequencies = CronManagementService::get_valid_frequencies();
+				$errors[]          = sprintf(
 					/* translators: %s: Comma-separated list of valid frequencies */
 					__( 'Invalid cron frequency. Valid frequencies are: %s.', 'msm-sitemap' ),
 					implode( ', ', $valid_frequencies )
@@ -256,13 +258,13 @@ class SettingsService {
 		// If there are validation errors, return them
 		if ( ! empty( $errors ) ) {
 			return array(
-				'valid' => false,
+				'valid'   => false,
 				'message' => implode( ' ', $errors ),
 			);
 		}
 
 		return array(
-			'valid' => true,
+			'valid'    => true,
 			'settings' => $sanitized_settings,
 		);
 	}
@@ -276,9 +278,9 @@ class SettingsService {
 		$all_settings = $this->get_all_settings();
 		
 		return array(
-			'include_images' => $all_settings['include_images'],
-			'featured_images' => $all_settings['featured_images'],
-			'content_images' => $all_settings['content_images'],
+			'include_images'         => $all_settings['include_images'],
+			'featured_images'        => $all_settings['featured_images'],
+			'content_images'         => $all_settings['content_images'],
 			'max_images_per_sitemap' => $all_settings['max_images_per_sitemap'],
 		);
 	}

@@ -8,9 +8,9 @@ declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap\Tests\Cli;
 
-use Automattic\MSM_Sitemap\Infrastructure\CLI\CLI_Command;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\CLICommand;
 require_once __DIR__ . '/../Includes/mock-wp-cli.php';
-require_once __DIR__ . '/../../includes/Infrastructure/CLI/CLI_Command.php';
+require_once __DIR__ . '/../../includes/Infrastructure/CLI/CLICommand.php';
 
 /**
  * Class ExportTest
@@ -91,7 +91,7 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_export_requires_output(): void {
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 		$this->expectException( \Exception::class );
 		$cli->export( array(), array() );
 	}
@@ -102,7 +102,7 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_export_creates_directory(): void {
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 		$this->expectOutputRegex( '/Exported [0-9]+ sitemap/' );
 		if ( is_dir( $this->export_dir ) ) {
 			array_map( 'unlink', glob( $this->export_dir . '/*' ) );
@@ -119,7 +119,7 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_export_file_written(): void {
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 		$this->expectOutputRegex( '/Exported [0-9]+ sitemap/' );
 		$cli->export( array(), array( 'output' => $this->export_dir ) );
 		$files = glob( $this->export_dir . '/*.xml' );
@@ -135,7 +135,7 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_export_pretty_print(): void {
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 		$this->expectOutputRegex( '/Exported [0-9]+ sitemap/' );
 		$cli->export(
 			array(),
@@ -159,7 +159,7 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_export_by_date(): void {
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 		$this->expectOutputRegex( '/Exported [0-9]+ sitemap/' );
 		$cli->export(
 			array(),
@@ -178,7 +178,7 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_export_all(): void {
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 		$this->expectOutputRegex( '/Exported [0-9]+ sitemap/' );
 		$cli->export(
 			array(),
@@ -197,7 +197,7 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_export_output_message(): void {
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 		$this->expectOutputRegex( '/Exported [0-9]+ sitemap.*' . preg_quote( $this->export_dir, '/' ) . '/s' );
 		$cli->export( array(), array( 'output' => $this->export_dir ) );
 	}

@@ -119,7 +119,7 @@ class SitemapGenerationTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		
 		// Should not create sitemap for future dates
 		list( $year, $month, $day ) = explode( '-', $future_date );
-		$sitemap_id = $this->get_sitemap_post_id( (int) $year, (int) $month, (int) $day );
+		$sitemap_id                 = $this->get_sitemap_post_id( (int) $year, (int) $month, (int) $day );
 		$this->assertFalse( $sitemap_id, 'Should not create sitemap for future dates' );
 	}
 
@@ -143,8 +143,8 @@ class SitemapGenerationTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * Test that generate_sitemap_for_date handles posts with very long titles and content.
 	 */
 	public function test_handles_posts_with_very_long_content(): void {
-		$date = '2018-01-07';
-		$long_title = str_repeat( 'A very long title that exceeds normal limits ', 50 );
+		$date         = '2018-01-07';
+		$long_title   = str_repeat( 'A very long title that exceeds normal limits ', 50 );
 		$long_content = str_repeat( 'A very long content that exceeds normal limits ', 1000 );
 		
 		$post_id = wp_insert_post(
@@ -169,7 +169,7 @@ class SitemapGenerationTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * Test that generate_sitemap_for_date handles posts with special characters in titles.
 	 */
 	public function test_handles_posts_with_special_characters(): void {
-		$date = '2018-01-08';
+		$date          = '2018-01-08';
 		$special_title = 'Post with special chars: & < > " \' éñç';
 		
 		$post_id = wp_insert_post(
@@ -286,7 +286,7 @@ class SitemapGenerationTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		
 		// Create the maximum number of posts allowed per sitemap page (500)
 		$test_posts = 500;
-		$post_ids = array();
+		$post_ids   = array();
 		for ( $i = 1; $i <= $test_posts; $i++ ) {
 			$post_ids[] = wp_insert_post(
 				array(

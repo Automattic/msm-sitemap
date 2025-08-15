@@ -9,6 +9,9 @@ namespace Automattic\MSM_Sitemap\Domain\Contracts;
 
 /**
  * Interface for sitemap repositories.
+ * 
+ * Note: This interface doesn't extend RepositoryInterface because it has
+ * domain-specific methods that don't follow the generic repository pattern.
  */
 interface SitemapRepositoryInterface {
 	/**

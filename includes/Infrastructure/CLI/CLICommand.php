@@ -9,30 +9,31 @@ declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap\Infrastructure\CLI;
 
+use Automattic\MSM_Sitemap\Application\Services\CronManagementService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapStatsService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapValidationService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapExportService;
-use Automattic\MSM_Sitemap\Application\Services\SitemapQueryService;
+use Automattic\MSM_Sitemap\Application\Services\SettingsService;
 use Automattic\MSM_Sitemap\Domain\Contracts\SitemapRepositoryInterface;
-use Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService;
 use WP_CLI;
 use WP_CLI_Command;
 use function WP_CLI\Utils\format_items;
+use function Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container;
 
 /**
- * Class CLI_Command
+ * Class CLICommand
  *
  * @package Automattic\MSM_Sitemap
  */
-class CLI_Command extends WP_CLI_Command {
+class CLICommand extends WP_CLI_Command {
 
 	/**
 	 * The sitemap service.
 	 *
 	 * @var SitemapService
 	 */
-	private SitemapService $service;
+	private SitemapService $sitemap_service;
 
 	/**
 	 * The stats service.
@@ -56,25 +57,45 @@ class CLI_Command extends WP_CLI_Command {
 	private SitemapExportService $export_service;
 
 	/**
+	 * The cron management service.
+	 *
+	 * @var CronManagementService
+	 */
+	private CronManagementService $cron_management;
+
+	/**
+	 * The settings service.
+	 *
+	 * @var SettingsService
+	 */
+	private SettingsService $settings_service;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SitemapService $service The sitemap service.
+	 * @param SitemapService $sitemap_service The sitemap service.
 	 * @param SitemapRepositoryInterface $repository The sitemap repository.
-	 * @param SitemapStatsService|null $stats_service The stats service (optional, will create if not provided).
-	 * @param SitemapValidationService|null $validation_service The validation service (optional, will create if not provided).
-	 * @param SitemapExportService|null $export_service The export service (optional, will create if not provided).
+	 * @param SitemapStatsService $stats_service The stats service.
+	 * @param SitemapValidationService $validation_service The validation service.
+	 * @param SitemapExportService $export_service The export service.
+	 * @param CronManagementService $cron_management The cron management service.
+	 * @param SettingsService $settings_service The settings service.
 	 */
 	public function __construct( 
-		SitemapService $service,
+		SitemapService $sitemap_service,
 		SitemapRepositoryInterface $repository,
-		?SitemapStatsService $stats_service = null,
-		?SitemapValidationService $validation_service = null,
-		?SitemapExportService $export_service = null
+		SitemapStatsService $stats_service,
+		SitemapValidationService $validation_service,
+		SitemapExportService $export_service,
+		CronManagementService $cron_management,
+		SettingsService $settings_service
 	) {
-		$this->service = $service;
-		$this->stats_service = $stats_service ?? new SitemapStatsService( $repository );
-		$this->validation_service = $validation_service ?? new SitemapValidationService( $repository );
-		$this->export_service = $export_service ?? new SitemapExportService( $repository, new SitemapQueryService() );
+		$this->sitemap_service    = $sitemap_service;
+		$this->stats_service      = $stats_service;
+		$this->validation_service = $validation_service;
+		$this->export_service     = $export_service;
+		$this->cron_management    = $cron_management;
+		$this->settings_service   = $settings_service;
 	}
 
 	/**
@@ -83,14 +104,16 @@ class CLI_Command extends WP_CLI_Command {
 	 * @return self
 	 */
 	public static function create(): self {
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
+		$container = msm_sitemap_container();
 		
 		return new self(
 			$container->get( SitemapService::class ),
 			$container->get( SitemapRepositoryInterface::class ),
 			$container->get( SitemapStatsService::class ),
 			$container->get( SitemapValidationService::class ),
-			$container->get( SitemapExportService::class )
+			$container->get( SitemapExportService::class ),
+			$container->get( CronManagementService::class ),
+			$container->get( SettingsService::class )
 		);
 	}
 
@@ -116,10 +139,10 @@ class CLI_Command extends WP_CLI_Command {
 	 * @subcommand generate
 	 */
 	public function generate( $args, $assoc_args ) {
-		$quiet           = ! empty( $assoc_args['quiet'] );
-		$force           = ! empty( $assoc_args['force'] );
-		$all             = ! empty( $assoc_args['all'] );
-		$date            = $assoc_args['date'] ?? null;
+		$quiet        = ! empty( $assoc_args['quiet'] );
+		$force        = ! empty( $assoc_args['force'] );
+		$all          = ! empty( $assoc_args['all'] );
+		$date         = $assoc_args['date'] ?? null;
 		$date_queries = $this->parse_date_query( $date, $all );
 
 		// For --all, we need to generate for all years with posts
@@ -134,7 +157,7 @@ class CLI_Command extends WP_CLI_Command {
 		}
 
 		// Generate for specific date queries
-		$result = $this->service->generate_for_date_queries( $date_queries, $force );
+		$result = $this->sitemap_service->generate_for_date_queries( $date_queries, $force );
 
 		if ( ! $quiet ) {
 			if ( $result->is_success() ) {
@@ -185,18 +208,18 @@ class CLI_Command extends WP_CLI_Command {
 			if ( ! $yes ) {
 				WP_CLI::confirm( 'Are you sure you want to delete ALL sitemaps?', $assoc_args );
 			}
-			$result = $this->service->delete_all();
+			$result = $this->sitemap_service->delete_all();
 		} elseif ( $date ) {
 			$date_queries = $this->parse_date_query( $date, false );
 			
 			// Count how many sitemaps would be deleted for confirmation
-			$to_delete_count = $this->service->count_deletable_sitemaps( $date_queries );
+			$to_delete_count = $this->sitemap_service->count_deletable_sitemaps( $date_queries );
 			
 			if ( $to_delete_count > 1 && ! $yes ) {
 				WP_CLI::confirm( sprintf( 'Are you sure you want to delete %d sitemaps for the specified date?', $to_delete_count ), $assoc_args );
 			}
 			
-			$result = $this->service->delete_for_date_queries( $date_queries );
+			$result = $this->sitemap_service->delete_for_date_queries( $date_queries );
 		}
 
 		if ( ! $quiet ) {
@@ -240,7 +263,7 @@ class CLI_Command extends WP_CLI_Command {
 		$date_queries = $this->parse_date_query( $date, $all );
 		
 		// Get sitemap data from service
-		$sitemap_data = $this->service->get_sitemap_list_data( $date_queries );
+		$sitemap_data = $this->sitemap_service->get_sitemap_list_data( $date_queries );
 		
 		if ( empty( $sitemap_data ) ) {
 			WP_CLI::log( __( 'No sitemaps found.', 'msm-sitemap' ) );
@@ -307,25 +330,25 @@ class CLI_Command extends WP_CLI_Command {
 			WP_CLI::error( __( 'No ID or date provided.', 'msm-sitemap' ) );
 		}
 		
-		$input = $args[0] ?? null;
+		$input  = $args[0] ?? null;
 		$format = $assoc_args['format'] ?? 'table';
 		
 		$items = array();
 		
 		if ( is_numeric( $input ) ) {
 			// Get by ID
-			$sitemap_data = $this->service->get_sitemap_by_id( (int) $input );
+			$sitemap_data = $this->sitemap_service->get_sitemap_by_id( (int) $input );
 			if ( ! $sitemap_data ) {
 				WP_CLI::error( __( 'Sitemap not found for that ID.', 'msm-sitemap' ) );
 			}
 			$items[] = $sitemap_data;
 		} else {
 			// Get by date
-			$sitemap_data = $this->service->get_sitemaps_by_date( $input );
+			$sitemap_data = $this->sitemap_service->get_sitemaps_by_date( $input );
 			if ( empty( $sitemap_data ) ) {
 				WP_CLI::error( __( 'No sitemaps found for that date.', 'msm-sitemap' ) );
 			}
-			if ( count( $sitemap_data ) > 1 && $format !== 'json' ) {
+			if ( count( $sitemap_data ) > 1 && 'json' !== $format ) {
 				WP_CLI::warning( __( 'Multiple sitemaps found for that date. Showing all.', 'msm-sitemap' ) );
 			}
 			$items = $sitemap_data;
@@ -381,13 +404,11 @@ class CLI_Command extends WP_CLI_Command {
 			foreach ( $result->get_validation_errors() as $error ) {
 				WP_CLI::warning( $error );
 			}
-		} else {
+		} elseif ( 'no_sitemaps_found' === $result->get_error_code() ) {
 			// For validation, treat "no sitemaps found" as a log message, not an error
-			if ( $result->get_error_code() === 'no_sitemaps_found' ) {
-				WP_CLI::log( $result->get_message() );
-			} else {
-				WP_CLI::error( $result->get_message() );
-			}
+			WP_CLI::log( $result->get_message() );
+		} else {
+			WP_CLI::error( $result->get_message() );
 		}
 	}
 
@@ -417,10 +438,10 @@ class CLI_Command extends WP_CLI_Command {
 			WP_CLI::error( __( 'You must specify an output directory with --output. Example: --output=/path/to/dir', 'msm-sitemap' ) );
 		}
 		
-		$output = $assoc_args['output'];
-		$all = ! empty( $assoc_args['all'] );
-		$date = $assoc_args['date'] ?? null;
-		$pretty = ! empty( $assoc_args['pretty'] );
+		$output       = $assoc_args['output'];
+		$all          = ! empty( $assoc_args['all'] );
+		$date         = $assoc_args['date'] ?? null;
+		$pretty       = ! empty( $assoc_args['pretty'] );
 		$date_queries = $this->parse_date_query( $date, $all );
 		
 		// Export sitemaps using export service directly
@@ -472,7 +493,7 @@ class CLI_Command extends WP_CLI_Command {
 		$full_recount = ! empty( $assoc_args['full'] );
 		
 		// Recount URLs using service
-		$result = $this->service->recount_urls( $full_recount );
+		$result = $this->sitemap_service->recount_urls( $full_recount );
 		
 		if ( $result->is_success() ) {
 			WP_CLI::log( $result->get_message() );
@@ -508,8 +529,8 @@ class CLI_Command extends WP_CLI_Command {
 	 */
 	public function stats( $args, $assoc_args ) {
 		$detailed = ! empty( $assoc_args['detailed'] );
-		$section = $assoc_args['section'] ?? null;
-		$format = $assoc_args['format'] ?? 'table';
+		$section  = $assoc_args['section'] ?? null;
+		$format   = $assoc_args['format'] ?? 'table';
 
 		if ( $detailed || $section ) {
 			// Use comprehensive stats service
@@ -517,37 +538,39 @@ class CLI_Command extends WP_CLI_Command {
 			
 			if ( $section ) {
 				if ( ! isset( $stats[ $section ] ) ) {
-					WP_CLI::error( sprintf(
+					WP_CLI::error(
+						sprintf(
 						/* translators: 1: Unknown section name, 2: Comma-separated list of available sections */
-						__( 'Unknown section: %1$s. Available sections: %2$s', 'msm-sitemap' ),
-						$section,
-						implode( ', ', array_keys( $stats ) )
-					) );
+							__( 'Unknown section: %1$s. Available sections: %2$s', 'msm-sitemap' ),
+							$section,
+							implode( ', ', array_keys( $stats ) )
+						) 
+					);
 				}
 				$stats = $stats[ $section ];
 			}
 			
 			// For detailed output, use JSON format for better readability
-			if ( $detailed && $format === 'table' ) {
+			if ( $detailed && 'table' === $format ) {
 				$format = 'json';
 			}
 			
-			if ( $format === 'json' ) {
+			if ( 'json' === $format ) {
 				WP_CLI::log( json_encode( $stats, JSON_PRETTY_PRINT ) );
 			} else {
 				// For table format, show overview by default
 				$overview_stats = $stats['overview'] ?? $stats;
-				$items = array( $overview_stats );
-				$fields = array_keys( $overview_stats );
+				$items          = array( $overview_stats );
+				$fields         = array_keys( $overview_stats );
 				format_items( $format, $items, $fields );
 			}
 		} else {
 			// Use basic stats from stats service for backward compatibility
 			$comprehensive_stats = $this->stats_service->get_comprehensive_stats();
-			$stats = array(
-				'total' => $comprehensive_stats['overview']['total_sitemaps'],
+			$stats               = array(
+				'total'       => $comprehensive_stats['overview']['total_sitemaps'],
 				'most_recent' => $comprehensive_stats['overview']['most_recent']['date'] ? $comprehensive_stats['overview']['most_recent']['date'] . ' (ID ' . $comprehensive_stats['overview']['most_recent']['id'] . ')' : '',
-				'created' => $comprehensive_stats['overview']['most_recent']['created'],
+				'created'     => $comprehensive_stats['overview']['most_recent']['created'],
 			);
 			
 			$fields = array( 'total', 'most_recent', 'created' );
@@ -574,7 +597,7 @@ class CLI_Command extends WP_CLI_Command {
 	 * @subcommand recent-urls
 	 */
 	public function recent_urls( $args, $assoc_args ) {
-		$days = (int) ( $assoc_args['days'] ?? 7 );
+		$days   = (int) ( $assoc_args['days'] ?? 7 );
 		$format = $assoc_args['format'] ?? 'table';
 
 		$url_counts = $this->stats_service->get_recent_url_counts( $days );
@@ -588,7 +611,7 @@ class CLI_Command extends WP_CLI_Command {
 		$items = array();
 		foreach ( $url_counts as $date => $count ) {
 			$items[] = array(
-				'date' => $date,
+				'date'      => $date,
 				'url_count' => $count,
 			);
 		}
@@ -659,11 +682,13 @@ class CLI_Command extends WP_CLI_Command {
 				$this->cron_frequency( $args, $assoc_args );
 				break;
 			default:
-				WP_CLI::error( sprintf(
+				WP_CLI::error(
+					sprintf(
 					/* translators: %s: Unknown subcommand name */
-					__( 'Unknown subcommand: %s', 'msm-sitemap' ),
-					$command
-				) );
+						__( 'Unknown subcommand: %s', 'msm-sitemap' ),
+						$command
+					) 
+				);
 		}
 	}
 
@@ -671,16 +696,14 @@ class CLI_Command extends WP_CLI_Command {
 	 * Enable the sitemap cron functionality.
 	 */
 	private function cron_enable( $args, $assoc_args ) {
-		$result = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::enable_cron();
+		$result = $this->cron_management->enable_cron();
 		
 		if ( $result['success'] ) {
 			WP_CLI::success( '✅ ' . $result['message'] );
-		} else {
-			if ( isset( $result['error_code'] ) && 'blog_not_public' === $result['error_code'] ) {
+		} elseif ( isset( $result['error_code'] ) && 'blog_not_public' === $result['error_code'] ) {
 				WP_CLI::error( '❌ ' . $result['message'] );
-			} else {
-				WP_CLI::warning( '⚠️ ' . $result['message'] );
-			}
+		} else {
+			WP_CLI::warning( '⚠️ ' . $result['message'] );
 		}
 	}
 
@@ -688,7 +711,7 @@ class CLI_Command extends WP_CLI_Command {
 	 * Disable the sitemap cron functionality.
 	 */
 	private function cron_disable( $args, $assoc_args ) {
-		$result = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::disable_cron();
+		$result = $this->cron_management->disable_cron();
 		
 		if ( $result['success'] ) {
 			WP_CLI::success( '✅ ' . $result['message'] );
@@ -709,7 +732,7 @@ class CLI_Command extends WP_CLI_Command {
 	 * Show the current status of the sitemap cron functionality.
 	 */
 	private function cron_status( $args, $assoc_args ) {
-		$status = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::get_cron_status();
+		$status = $this->cron_management->get_cron_status();
 		
 		$format = $assoc_args['format'] ?? 'table';
 		$fields = array( 'enabled', 'next_scheduled', 'blog_public', 'generating', 'halted', 'current_frequency' );
@@ -731,7 +754,7 @@ class CLI_Command extends WP_CLI_Command {
 	 * Reset the sitemap cron to a clean state (for testing).
 	 */
 	private function cron_reset( $args, $assoc_args ) {
-		$result = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::reset_cron();
+		$result = $this->cron_management->reset_cron();
 		
 		if ( $result['success'] ) {
 			WP_CLI::success( '✅ ' . $result['message'] );
@@ -770,14 +793,16 @@ class CLI_Command extends WP_CLI_Command {
 	private function cron_frequency( $args, $assoc_args ) {
 		// If no frequency provided, show current frequency
 		if ( empty( $args ) ) {
-			$current_frequency = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::get_current_frequency();
-			$valid_frequencies = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::get_valid_frequencies();
+			$current_frequency = $this->cron_management->get_current_frequency();
+			$valid_frequencies = $this->cron_management->get_valid_frequencies();
 			
-			WP_CLI::log( sprintf(
+			WP_CLI::log(
+				sprintf(
 				/* translators: %s: Current frequency */
-				__( 'Current cron frequency: %s', 'msm-sitemap' ),
-				$current_frequency
-			) );
+					__( 'Current cron frequency: %s', 'msm-sitemap' ),
+					$current_frequency
+				) 
+			);
 			WP_CLI::log( __( 'Valid frequencies:', 'msm-sitemap' ) );
 			foreach ( $valid_frequencies as $frequency ) {
 				WP_CLI::log( sprintf( '  - %s', $frequency ) );
@@ -786,7 +811,7 @@ class CLI_Command extends WP_CLI_Command {
 		}
 		
 		$frequency = $args[0];
-		$result = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::update_frequency( $frequency );
+		$result    = $this->cron_management->update_frequency( $frequency );
 		
 		if ( $result['success'] ) {
 			WP_CLI::success( '✅ ' . $result['message'] );
@@ -855,11 +880,13 @@ class CLI_Command extends WP_CLI_Command {
 				$this->options_reset( array(), $assoc_args );
 				break;
 			default:
-				WP_CLI::error( sprintf(
+				WP_CLI::error(
+					sprintf(
 					/* translators: %s: Unknown subcommand name */
-					__( 'Unknown subcommand: %s', 'msm-sitemap' ),
-					$command
-				) );
+						__( 'Unknown subcommand: %s', 'msm-sitemap' ),
+						$command
+					) 
+				);
 		}
 	}
 
@@ -870,10 +897,8 @@ class CLI_Command extends WP_CLI_Command {
 	 * @param array $assoc_args Associated arguments.
 	 */
 	private function options_list( $args, $assoc_args ) {
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
-		$settings = $settings_service->get_all_settings();
-		$format = $assoc_args['format'] ?? 'table';
+		$settings = $this->settings_service->get_all_settings();
+		$format   = $assoc_args['format'] ?? 'table';
 		
 		if ( 'json' === $format ) {
 			WP_CLI::log( json_encode( $settings, JSON_PRETTY_PRINT ) );
@@ -902,16 +927,16 @@ class CLI_Command extends WP_CLI_Command {
 		}
 		
 		$option_name = $args[1];
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
-		$value = $settings_service->get_setting( $option_name );
+		$value       = $this->settings_service->get_setting( $option_name );
 		
 		if ( null === $value ) {
-			WP_CLI::error( sprintf(
+			WP_CLI::error(
+				sprintf(
 				/* translators: %s: Option name */
-				__( 'Option %s not found.', 'msm-sitemap' ),
-				$option_name
-			) );
+					__( 'Option %s not found.', 'msm-sitemap' ),
+					$option_name
+				) 
+			);
 		}
 		
 		WP_CLI::log( $value );
@@ -932,31 +957,33 @@ class CLI_Command extends WP_CLI_Command {
 			WP_CLI::error( __( 'Please specify an option value.', 'msm-sitemap' ) );
 		}
 		
-		$option_name = $args[1];
+		$option_name  = $args[1];
 		$option_value = $args[2];
 		
 		// Validate option name
 		$valid_options = array( 'include_images', 'featured_images', 'content_images', 'max_images_per_sitemap' );
 		
 		if ( ! in_array( $option_name, $valid_options, true ) ) {
-			WP_CLI::error( sprintf(
+			WP_CLI::error(
+				sprintf(
 				/* translators: %s: Option name */
-				__( 'Unknown option: %s. Valid options: %s', 'msm-sitemap' ),
-				$option_name,
-				implode( ', ', $valid_options )
-			) );
+					__( 'Unknown option: %1$s. Valid options: %2$s', 'msm-sitemap' ),
+					$option_name,
+					implode( ', ', $valid_options )
+				) 
+			);
 		}
 		
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
-		$result = $settings_service->update_setting( $option_name, $this->parse_option_value( $option_value ) );
+		$result = $this->settings_service->update_setting( $option_name, $this->parse_option_value( $option_value ) );
 		
 		if ( $result['success'] ) {
-			WP_CLI::success( sprintf(
+			WP_CLI::success(
+				sprintf(
 				/* translators: %s: Option name */
-				__( 'Updated %s option.', 'msm-sitemap' ),
-				$option_name
-			) );
+					__( 'Updated %s option.', 'msm-sitemap' ),
+					$option_name
+				) 
+			);
 		} else {
 			WP_CLI::error( '❌ ' . $result['message'] );
 		}
@@ -979,17 +1006,17 @@ class CLI_Command extends WP_CLI_Command {
 		$valid_options = array( 'include_images', 'featured_images', 'content_images', 'max_images_per_sitemap' );
 		
 		if ( ! in_array( $option_name, $valid_options, true ) ) {
-			WP_CLI::error( sprintf(
+			WP_CLI::error(
+				sprintf(
 				/* translators: %s: Option name */
-				__( 'Unknown option: %s. Valid options: %s', 'msm-sitemap' ),
-				$option_name,
-				implode( ', ', $valid_options )
-			) );
+					__( 'Unknown option: %1$s. Valid options: %2$s', 'msm-sitemap' ),
+					$option_name,
+					implode( ', ', $valid_options )
+				) 
+			);
 		}
 		
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
-		$result = $settings_service->delete_setting( $option_name );
+		$result = $this->settings_service->delete_setting( $option_name );
 		
 		if ( $result['success'] ) {
 			WP_CLI::success( $result['message'] );
@@ -1005,9 +1032,7 @@ class CLI_Command extends WP_CLI_Command {
 	 * @param array $assoc_args Associated arguments.
 	 */
 	private function options_reset( $args, $assoc_args ) {
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
-		$result = $settings_service->reset_to_defaults();
+		$result = $this->settings_service->reset_to_defaults();
 		
 		if ( $result['success'] ) {
 			WP_CLI::success( '✅ ' . $result['message'] );

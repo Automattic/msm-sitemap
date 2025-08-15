@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap\Infrastructure\WordPress;
 
+use Automattic\MSM_Sitemap\Domain\Contracts\WordPressIntegrationInterface;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
 
 /**
@@ -17,12 +18,12 @@ use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
  * Ensures that get_permalink() and related tooling return the correct public-facing URL for each sitemap.
  * Handles both daily and year-based index URLs.
  */
-class Permalinks {
+class Permalinks implements WordPressIntegrationInterface {
 	/**
-	 * Register the permalink filter.
+	 * Register WordPress hooks and filters for permalink handling.
 	 */
-	public static function setup(): void {
-		add_filter( 'post_type_link', array( __CLASS__, 'filter_post_type_link' ), 10, 2 );
+	public function register_hooks(): void {
+		add_filter( 'post_type_link', array( $this, 'filter_post_type_link' ), 10, 2 );
 	}
 
 	/**

@@ -7,18 +7,20 @@
 
 namespace Automattic\MSM_Sitemap\Infrastructure\WordPress;
 
+use Automattic\MSM_Sitemap\Domain\Contracts\WordPressIntegrationInterface;
+
 /**
  * Handles plugin action links in the WordPress admin
  */
-class PluginLinks {
+class PluginLinks implements WordPressIntegrationInterface {
 
 	/**
-	 * Initialize plugin links functionality
+	 * Register WordPress hooks and filters for plugin links.
 	 */
-	public static function setup(): void {
+	public function register_hooks(): void {
 		// Add Settings link to plugins page
-		add_filter( 'plugin_action_links_msm-sitemap/msm-sitemap.php', array( __CLASS__, 'add_plugin_action_links' ) );
-		add_filter( 'network_admin_plugin_action_links_msm-sitemap/msm-sitemap.php', array( __CLASS__, 'add_plugin_action_links' ) );
+		add_filter( 'plugin_action_links_msm-sitemap/msm-sitemap.php', array( $this, 'add_plugin_action_links' ) );
+		add_filter( 'network_admin_plugin_action_links_msm-sitemap/msm-sitemap.php', array( $this, 'add_plugin_action_links' ) );
 	}
 
 	/**
@@ -27,7 +29,7 @@ class PluginLinks {
 	 * @param array $actions Plugin action links.
 	 * @return array Modified plugin action links.
 	 */
-	public static function add_plugin_action_links( array $actions ): array {
+	public function add_plugin_action_links( array $actions ): array {
 		$settings_link = sprintf(
 			'<a href="%s">%s</a>',
 			esc_url( admin_url( 'options-general.php?page=msm-sitemap' ) ),

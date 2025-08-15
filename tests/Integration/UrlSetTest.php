@@ -24,7 +24,7 @@ class UrlSetTest extends TestCase {
 	 */
 	public function test_create_valid_url_set(): void {
 		$url_entry = new UrlEntry( 'https://example.com/my-post/' );
-		$url_set = new UrlSet( array( $url_entry ) );
+		$url_set   = new UrlSet( array( $url_entry ) );
 
 		$this->assertEquals( 1, $url_set->count() );
 		$this->assertFalse( $url_set->is_empty() );
@@ -47,7 +47,7 @@ class UrlSetTest extends TestCase {
 	 * Test adding a URL entry to the set.
 	 */
 	public function test_add_url_entry(): void {
-		$url_set = new UrlSet();
+		$url_set   = new UrlSet();
 		$url_entry = new UrlEntry( 'https://example.com/my-post/' );
 
 		$url_set->add( $url_entry );
@@ -61,7 +61,7 @@ class UrlSetTest extends TestCase {
 	 */
 	public function test_remove_url_entry(): void {
 		$url_entry = new UrlEntry( 'https://example.com/my-post/' );
-		$url_set = new UrlSet( array( $url_entry ) );
+		$url_set   = new UrlSet( array( $url_entry ) );
 
 		$result = $url_set->remove( $url_entry );
 
@@ -74,7 +74,7 @@ class UrlSetTest extends TestCase {
 	 * Test removing a URL entry that doesn't exist.
 	 */
 	public function test_remove_nonexistent_url_entry(): void {
-		$url_set = new UrlSet();
+		$url_set   = new UrlSet();
 		$url_entry = new UrlEntry( 'https://example.com/my-post/' );
 
 		$result = $url_set->remove( $url_entry );
@@ -89,7 +89,7 @@ class UrlSetTest extends TestCase {
 	public function test_get_entries(): void {
 		$url_entry1 = new UrlEntry( 'https://example.com/post-1/' );
 		$url_entry2 = new UrlEntry( 'https://example.com/post-2/' );
-		$url_set = new UrlSet( array( $url_entry1, $url_entry2 ) );
+		$url_set    = new UrlSet( array( $url_entry1, $url_entry2 ) );
 
 		$entries = $url_set->get_entries();
 
@@ -108,7 +108,7 @@ class UrlSetTest extends TestCase {
 			'weekly',
 			0.8
 		);
-		$url_set = new UrlSet( array( $url_entry ) );
+		$url_set   = new UrlSet( array( $url_entry ) );
 
 		$array = $url_set->to_array();
 

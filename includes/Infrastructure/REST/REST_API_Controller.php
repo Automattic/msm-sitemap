@@ -2,18 +2,24 @@
 /**
  * REST API Controller for MSM Sitemap
  *
- * @package Automattic\MSM_Sitemap\Infrastructure\WordPress
+ * @package Automattic\MSM_Sitemap\Infrastructure\REST
  */
 
 declare(strict_types=1);
 
-namespace Automattic\MSM_Sitemap\Infrastructure\WordPress;
+namespace Automattic\MSM_Sitemap\Infrastructure\REST;
 
 use Automattic\MSM_Sitemap\Application\Services\SitemapService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapStatsService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapValidationService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapExportService;
-use Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService;
+use Automattic\MSM_Sitemap\Application\Services\CronManagementService;
+use Automattic\MSM_Sitemap\Application\Services\MissingSitemapGenerationService;
+use Automattic\MSM_Sitemap\Application\Services\FullSitemapGenerationService;
+use Automattic\MSM_Sitemap\Application\Services\SitemapGenerator;
+use Automattic\MSM_Sitemap\Application\DTOs\SitemapOperationResult;
+use Automattic\MSM_Sitemap\Domain\Contracts\WordPressIntegrationInterface;
+use Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
@@ -21,7 +27,7 @@ use WP_Error;
 /**
  * REST API Controller for MSM Sitemap endpoints.
  */
-class REST_API_Controller {
+class REST_API_Controller implements WordPressIntegrationInterface {
 
 	/**
 	 * The sitemap service.
@@ -52,23 +58,70 @@ class REST_API_Controller {
 	private SitemapExportService $export_service;
 
 	/**
+	 * The missing sitemap generation service.
+	 *
+	 * @var MissingSitemapGenerationService
+	 */
+	private MissingSitemapGenerationService $missing_sitemap_generation_service;
+
+	/**
+	 * The full sitemap generation service.
+	 *
+	 * @var FullSitemapGenerationService
+	 */
+	private FullSitemapGenerationService $full_sitemap_generation_service;
+
+	/**
+	 * The cron management service.
+	 *
+	 * @var CronManagementService
+	 */
+	private CronManagementService $cron_management_service;
+
+	/**
+	 * The sitemap generator.
+	 *
+	 * @var SitemapGenerator
+	 */
+	private SitemapGenerator $sitemap_generator;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SitemapService $sitemap_service The sitemap service.
 	 * @param SitemapStatsService $stats_service The stats service.
 	 * @param SitemapValidationService $validation_service The validation service.
 	 * @param SitemapExportService $export_service The export service.
+	 * @param MissingSitemapGenerationService $missing_sitemap_generation_service The missing sitemap generation service.
+	 * @param FullSitemapGenerationService $full_sitemap_generation_service The full sitemap generation service.
+	 * @param CronManagementService $cron_management_service The cron management service.
+	 * @param SitemapGenerator $sitemap_generator The sitemap generator.
 	 */
 	public function __construct(
 		SitemapService $sitemap_service,
 		SitemapStatsService $stats_service,
 		SitemapValidationService $validation_service,
-		SitemapExportService $export_service
+		SitemapExportService $export_service,
+		MissingSitemapGenerationService $missing_sitemap_generation_service,
+		FullSitemapGenerationService $full_sitemap_generation_service,
+		CronManagementService $cron_management_service,
+		SitemapGenerator $sitemap_generator
 	) {
-		$this->sitemap_service = $sitemap_service;
-		$this->stats_service = $stats_service;
-		$this->validation_service = $validation_service;
-		$this->export_service = $export_service;
+		$this->sitemap_service                    = $sitemap_service;
+		$this->stats_service                      = $stats_service;
+		$this->validation_service                 = $validation_service;
+		$this->export_service                     = $export_service;
+		$this->missing_sitemap_generation_service = $missing_sitemap_generation_service;
+		$this->full_sitemap_generation_service    = $full_sitemap_generation_service;
+		$this->cron_management_service            = $cron_management_service;
+		$this->sitemap_generator                  = $sitemap_generator;
+	}
+
+	/**
+	 * Register WordPress hooks and filters for REST API functionality.
+	 */
+	public function register_hooks(): void {
+		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 	}
 
 	/**
@@ -498,17 +551,17 @@ class REST_API_Controller {
 	 */
 	protected function get_export_params(): array {
 		return array(
-			'format'     => array(
+			'format'    => array(
 				'default'           => 'json',
 				'sanitize_callback' => 'sanitize_text_field',
 				'enum'              => array( 'json', 'csv', 'xml' ),
 			),
-			'date_from'  => array(
+			'date_from' => array(
 				'required'          => false,
 				'sanitize_callback' => 'sanitize_text_field',
 				'validate_callback' => array( $this, 'validate_date_format' ),
 			),
-			'date_to'    => array(
+			'date_to'   => array(
 				'required'          => false,
 				'sanitize_callback' => 'sanitize_text_field',
 				'validate_callback' => array( $this, 'validate_date_format' ),
@@ -529,8 +582,8 @@ class REST_API_Controller {
 				'description' => 'Date in YYYY-MM-DD format',
 			),
 			'date_queries' => array(
-				'type'        => 'array',
-				'items'       => array(
+				'type'  => 'array',
+				'items' => array(
 					'type'       => 'object',
 					'properties' => array(
 						'year'  => array( 'type' => 'integer' ),
@@ -573,7 +626,7 @@ class REST_API_Controller {
 		return array(
 			'frequency' => array(
 				'type'        => 'string',
-				'enum'        => \Automattic\MSM_Sitemap\Application\Services\CronManagementService::get_valid_frequencies(),
+				'enum'        => CronManagementService::get_valid_frequencies(),
 				'required'    => true,
 				'description' => 'Cron frequency',
 			),
@@ -629,7 +682,7 @@ class REST_API_Controller {
 	public function get_sitemaps( WP_REST_Request $request ) {
 		// Check cache first
 		$cache_key = 'msm_sitemap_rest_sitemaps_' . md5( serialize( $request->get_params() ) );
-		$cached = get_transient( $cache_key );
+		$cached    = get_transient( $cache_key );
 		
 		if ( false !== $cached ) {
 			return rest_ensure_response( $cached );
@@ -650,18 +703,18 @@ class REST_API_Controller {
 		$sitemap_data = $this->sitemap_service->get_sitemap_list_data( $date_queries );
 		
 		// Apply pagination
-		$page = $request->get_param( 'page' );
+		$page     = $request->get_param( 'page' );
 		$per_page = $request->get_param( 'per_page' );
-		$offset = ( $page - 1 ) * $per_page;
+		$offset   = ( $page - 1 ) * $per_page;
 		
 		$total_sitemaps = count( $sitemap_data );
-		$sitemaps = array_slice( $sitemap_data, $offset, $per_page );
+		$sitemaps       = array_slice( $sitemap_data, $offset, $per_page );
 
 		$response_data = array(
-			'sitemaps' => $sitemaps,
-			'total'    => $total_sitemaps,
-			'page'     => $page,
-			'per_page' => $per_page,
+			'sitemaps'    => $sitemaps,
+			'total'       => $total_sitemaps,
+			'page'        => $page,
+			'per_page'    => $per_page,
 			'total_pages' => ceil( $total_sitemaps / $per_page ),
 		);
 
@@ -678,9 +731,9 @@ class REST_API_Controller {
 	 * @return WP_REST_Response|WP_Error The response object.
 	 */
 	public function create_sitemap( WP_REST_Request $request ) {
-		$date = $request->get_param( 'date' );
+		$date         = $request->get_param( 'date' );
 		$date_queries = $request->get_param( 'date_queries' );
-		$force = $request->get_param( 'force' );
+		$force        = $request->get_param( 'force' );
 
 		if ( $date ) {
 			$result = $this->sitemap_service->create_for_date( $date, $force );
@@ -697,7 +750,7 @@ class REST_API_Controller {
 		// Convert SitemapOperationResult to array for JSON serialization
 		$response_data = array(
 			'success' => $result->is_success(),
-			'count' => $result->get_count(),
+			'count'   => $result->get_count(),
 			'message' => $result->get_message(),
 		);
 
@@ -738,24 +791,24 @@ class REST_API_Controller {
 	 * @return WP_REST_Response|WP_Error The response object.
 	 */
 	public function delete_sitemaps( WP_REST_Request $request ) {
-		$date = $request->get_param( 'date' );
+		$date         = $request->get_param( 'date' );
 		$date_queries = $request->get_param( 'date_queries' );
 
 		if ( $date ) {
 			$success = $this->sitemap_service->delete_for_date( $date );
-			$result = array(
-				'success' => $success,
+			$result  = array(
+				'success'       => $success,
 				'deleted_count' => $success ? 1 : 0,
 			);
 		} elseif ( $date_queries ) {
 			$operation_result = $this->sitemap_service->delete_for_date_queries( $date_queries );
 			
 			// Convert SitemapOperationResult to array for JSON serialization
-			if ( $operation_result instanceof \Automattic\MSM_Sitemap\Application\DTOs\SitemapOperationResult ) {
+			if ( $operation_result instanceof SitemapOperationResult ) {
 				$result = array(
-					'success' => $operation_result->is_success(),
+					'success'       => $operation_result->is_success(),
 					'deleted_count' => $operation_result->get_count(),
-					'message' => $operation_result->get_message(),
+					'message'       => $operation_result->get_message(),
 				);
 
 				if ( ! $result['success'] ) {
@@ -805,7 +858,7 @@ class REST_API_Controller {
 		
 		// Check cache first
 		$cache_key = 'msm_sitemap_rest_sitemap_' . $date;
-		$cached = get_transient( $cache_key );
+		$cached    = get_transient( $cache_key );
 		
 		if ( false !== $cached ) {
 			return rest_ensure_response( $cached );
@@ -836,7 +889,7 @@ class REST_API_Controller {
 	public function get_stats( WP_REST_Request $request ) {
 		// Check cache first
 		$cache_key = 'msm_sitemap_rest_stats_' . md5( serialize( $request->get_params() ) );
-		$cached = get_transient( $cache_key );
+		$cached    = get_transient( $cache_key );
 		
 		if ( false !== $cached ) {
 			return rest_ensure_response( $cached );
@@ -844,7 +897,7 @@ class REST_API_Controller {
 
 		$date_range = $request->get_param( 'date_range' );
 		$start_date = $request->get_param( 'start_date' );
-		$end_date = $request->get_param( 'end_date' );
+		$end_date   = $request->get_param( 'end_date' );
 
 		$stats = $this->stats_service->get_comprehensive_stats( $date_range, $start_date, $end_date );
 
@@ -883,12 +936,15 @@ class REST_API_Controller {
 	private function clear_sitemap_caches(): void {
 		// Clear sitemap list caches
 		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_msm_sitemap_rest_sitemaps_%'" );
 		
 		// Clear individual sitemap caches
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_msm_sitemap_rest_sitemap_%'" );
 		
 		// Clear stats caches
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_msm_sitemap_rest_stats_%'" );
 	}
 
@@ -899,7 +955,7 @@ class REST_API_Controller {
 	 * @return WP_REST_Response|WP_Error The response object.
 	 */
 	public function validate_sitemaps( WP_REST_Request $request ) {
-		$date = $request->get_param( 'date' );
+		$date         = $request->get_param( 'date' );
 		$date_queries = $request->get_param( 'date_queries' );
 
 		// Build date queries if specific date provided
@@ -967,9 +1023,9 @@ class REST_API_Controller {
 	 * @return WP_REST_Response|WP_Error The response object.
 	 */
 	public function export_sitemaps( WP_REST_Request $request ) {
-		$format = $request->get_param( 'format' );
+		$format    = $request->get_param( 'format' );
 		$date_from = $request->get_param( 'date_from' );
-		$date_to = $request->get_param( 'date_to' );
+		$date_to   = $request->get_param( 'date_to' );
 
 		// Build date queries if date range provided
 		$date_queries = null;
@@ -1003,11 +1059,11 @@ class REST_API_Controller {
 		switch ( $format ) {
 			case 'json':
 				$response_data = $sitemaps;
-				$content_type = 'application/json';
+				$content_type  = 'application/json';
 				break;
 			case 'xml':
 				// Combine all sitemaps into a single XML response
-				$combined_xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+				$combined_xml  = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 				$combined_xml .= '<sitemaps>' . "\n";
 				foreach ( $sitemaps as $sitemap ) {
 					$combined_xml .= '<sitemap>' . "\n";
@@ -1018,11 +1074,11 @@ class REST_API_Controller {
 				}
 				$combined_xml .= '</sitemaps>';
 				$response_data = $combined_xml;
-				$content_type = 'application/xml';
+				$content_type  = 'application/xml';
 				break;
 			case 'csv':
 				// Convert to CSV format
-				$csv_data = array();
+				$csv_data   = array();
 				$csv_data[] = array( 'Date', 'Filename', 'URL Count' );
 				foreach ( $sitemaps as $sitemap ) {
 					// Count URLs in XML content
@@ -1030,13 +1086,13 @@ class REST_API_Controller {
 					if ( ! empty( $sitemap['xml_content'] ) ) {
 						$dom = new \DOMDocument();
 						@$dom->loadXML( $sitemap['xml_content'] );
-						$urls = $dom->getElementsByTagName( 'url' );
+						$urls      = $dom->getElementsByTagName( 'url' );
 						$url_count = $urls->length;
 					}
 					$csv_data[] = array( $sitemap['date'], $sitemap['filename'], $url_count );
 				}
 				$response_data = $this->array_to_csv( $csv_data );
-				$content_type = 'text/csv';
+				$content_type  = 'text/csv';
 				break;
 			default:
 				return new WP_Error(
@@ -1061,7 +1117,7 @@ class REST_API_Controller {
 	private function array_to_csv( array $data ): string {
 		$output = fopen( 'php://temp', 'r+' );
 		foreach ( $data as $row ) {
-			fputcsv( $output, $row );
+			fputcsv( $output, $row, ',', '"', '\\' );
 		}
 		rewind( $output );
 		$csv = stream_get_contents( $output );
@@ -1076,7 +1132,7 @@ class REST_API_Controller {
 	 * @return WP_REST_Response The response object.
 	 */
 	public function get_cron_status( WP_REST_Request $request ) {
-		$status_data = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::get_cron_status();
+		$status_data = $this->cron_management_service->get_cron_status();
 		return rest_ensure_response( $status_data );
 	}
 
@@ -1087,7 +1143,7 @@ class REST_API_Controller {
 	 * @return WP_REST_Response The response object.
 	 */
 	public function enable_cron( WP_REST_Request $request ) {
-		$result = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::enable_cron();
+		$result = $this->cron_management_service->enable_cron();
 		
 		$status_code = $result['success'] ? 200 : 409;
 		if ( isset( $result['error_code'] ) && 'blog_not_public' === $result['error_code'] ) {
@@ -1106,7 +1162,7 @@ class REST_API_Controller {
 	 * @return WP_REST_Response The response object.
 	 */
 	public function disable_cron( WP_REST_Request $request ) {
-		$result = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::disable_cron();
+		$result = $this->cron_management_service->disable_cron();
 		
 		$status_code = $result['success'] ? 200 : 409;
 
@@ -1122,7 +1178,7 @@ class REST_API_Controller {
 	 * @return WP_REST_Response The response object.
 	 */
 	public function reset_cron( WP_REST_Request $request ) {
-		$result = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::reset_cron();
+		$result = $this->cron_management_service->reset_cron();
 		
 		$status_code = $result['success'] ? 200 : 400;
 
@@ -1138,7 +1194,7 @@ class REST_API_Controller {
 	 * @return WP_REST_Response The response object.
 	 */
 	public function generate_missing_sitemaps( WP_REST_Request $request ) {
-		$result = \Automattic\MSM_Sitemap\Application\Services\MissingSitemapGenerationService::generate_missing_sitemaps();
+		$result = $this->missing_sitemap_generation_service->generate_missing_sitemaps();
 		return rest_ensure_response( $result );
 	}
 
@@ -1156,12 +1212,12 @@ class REST_API_Controller {
 		// Convert SitemapRecountResult to array for JSON serialization
 		$response_data = array(
 			'success' => $result->is_success(),
-			'count' => $result->get_count(),
+			'count'   => $result->get_count(),
 			'message' => $result->get_message(),
 		);
 
 		if ( ! $result->is_success() ) {
-			$response_data['error_code'] = $result->get_error_code();
+			$response_data['error_code']     = $result->get_error_code();
 			$response_data['recount_errors'] = $result->get_recount_errors();
 		}
 
@@ -1195,7 +1251,7 @@ class REST_API_Controller {
 	 * @return WP_REST_Response|WP_Error The response object.
 	 */
 	public function generate_full_sitemaps( WP_REST_Request $request ) {
-		$result = \Automattic\MSM_Sitemap\Application\Services\FullSitemapGenerationService::start_full_generation();
+		$result = $this->full_sitemap_generation_service->start_full_generation();
 		
 		$status_code = $result['success'] ? 200 : 403;
 
@@ -1211,7 +1267,7 @@ class REST_API_Controller {
 	 * @return WP_REST_Response The response object.
 	 */
 	public function halt_generation( WP_REST_Request $request ) {
-		$result = \Automattic\MSM_Sitemap\Application\Services\FullSitemapGenerationService::halt_generation();
+		$result = $this->full_sitemap_generation_service->halt_generation();
 		
 		$status_code = $result['success'] ? 200 : 400;
 
@@ -1228,7 +1284,7 @@ class REST_API_Controller {
 	 */
 	public function update_cron_frequency( WP_REST_Request $request ) {
 		$frequency = $request->get_param( 'frequency' );
-		$result = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::update_frequency( $frequency );
+		$result    = $this->cron_management_service->update_frequency( $frequency );
 		
 		$status_code = $result['success'] ? 200 : 400;
 
@@ -1245,9 +1301,8 @@ class REST_API_Controller {
 	 */
 	public function reset_all_data( WP_REST_Request $request ) {
 		// Create service to handle the reset
-		$generator = msm_sitemap_plugin()->get_sitemap_generator();
-		$repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
-		$service = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
+		$repository = new SitemapPostRepository();
+		$service    = new SitemapService( $this->sitemap_generator, $repository );
 		
 		$service->reset_all_data();
 

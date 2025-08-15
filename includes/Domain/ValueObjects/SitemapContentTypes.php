@@ -157,7 +157,7 @@ final class SitemapContentTypes implements \Countable {
 	 */
 	private function providers_equal( ContentProviderInterface $provider1, ContentProviderInterface $provider2 ): bool {
 		return $provider1->get_content_type() === $provider2->get_content_type() &&
-			   $provider1->get_display_name() === $provider2->get_display_name() &&
-			   $provider1->get_description() === $provider2->get_description();
+				$provider1->get_display_name() === $provider2->get_display_name() &&
+				$provider1->get_description() === $provider2->get_description();
 	}
 }

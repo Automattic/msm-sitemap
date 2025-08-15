@@ -1,0 +1,81 @@
+<?php
+/**
+ * WordPressIntegrationInterfaceTest.php
+ *
+ * @package Automattic\MSM_Sitemap\Tests
+ */
+
+declare(strict_types=1);
+
+namespace Automattic\MSM_Sitemap\Tests;
+
+use Automattic\MSM_Sitemap\Domain\Contracts\WordPressIntegrationInterface;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\StylesheetManager;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\Permalinks;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\PluginLinks;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\CLISetup;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\CoreIntegration;
+use Automattic\MSM_Sitemap\Infrastructure\REST\REST_API_Controller;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\PostTypeRegistration;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\UI;
+use Automattic\MSM_Sitemap\Infrastructure\Cron\MissingSitemapGenerationHandler;
+use Automattic\MSM_Sitemap\Infrastructure\Cron\FullGenerationHandler;
+use Automattic\MSM_Sitemap\Tests\TestCase;
+
+/**
+ * Test WordPressIntegrationInterface implementation.
+ */
+class WordPressIntegrationInterfaceTest extends TestCase {
+
+	/**
+	 * Test that classes implementing WordPressIntegrationInterface have setup method.
+	 */
+	public function test_classes_implement_interface(): void {
+		$classes = array(
+			StylesheetManager::class,
+			Permalinks::class,
+			PluginLinks::class,
+			CLISetup::class,
+			CoreIntegration::class,
+			REST_API_Controller::class,
+			PostTypeRegistration::class,
+			UI::class,
+			MissingSitemapGenerationHandler::class,
+			FullGenerationHandler::class,
+		);
+
+		foreach ( $classes as $class ) {
+			$this->assertTrue(
+				is_subclass_of( $class, WordPressIntegrationInterface::class ),
+				sprintf( 'Class %s should implement WordPressIntegrationInterface', $class )
+			);
+		}
+	}
+
+	/**
+	 * Test that setup method can be called on interface implementations.
+	 */
+	public function test_setup_method_can_be_called(): void {
+		$container = $this->container;
+		
+		$integrations = array(
+			$container->get( StylesheetManager::class ),
+			$container->get( Permalinks::class ),
+			$container->get( PluginLinks::class ),
+			$container->get( CLISetup::class ),
+			$container->get( CoreIntegration::class ),
+			$container->get( REST_API_Controller::class ),
+			$container->get( PostTypeRegistration::class ),
+			$container->get( UI::class ),
+			$container->get( MissingSitemapGenerationHandler::class ),
+			$container->get( FullGenerationHandler::class ),
+		);
+
+		foreach ( $integrations as $integration ) {
+			$this->assertInstanceOf( WordPressIntegrationInterface::class, $integration );
+			
+			// Should not throw an exception
+			$integration->register_hooks();
+		}
+	}
+}

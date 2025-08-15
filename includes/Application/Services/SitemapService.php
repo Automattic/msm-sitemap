@@ -10,11 +10,11 @@ declare( strict_types=1 );
 namespace Automattic\MSM_Sitemap\Application\Services;
 
 use Automattic\MSM_Sitemap\Application\DTOs\SitemapOperationResult;
-use Automattic\MSM_Sitemap\Application\DTOs\SitemapValidationResult;
 use Automattic\MSM_Sitemap\Application\DTOs\SitemapRecountResult;
-use Automattic\MSM_Sitemap\Infrastructure\Formatters\SitemapXmlFormatter;
 use Automattic\MSM_Sitemap\Domain\Contracts\SitemapRepositoryInterface;
-use Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository;
+use Automattic\MSM_Sitemap\Infrastructure\Formatters\SitemapXmlFormatter;
+use Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapIndexEntryFactory;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\PostTypeRegistration;
 
 // Additional services for dependency injection
 // Note: These will be added when updating the constructor
@@ -60,28 +60,40 @@ class SitemapService {
 	private SitemapGenerationService $generation_service;
 
 	/**
+	 * The post type registration service.
+	 *
+	 * @var PostTypeRegistration
+	 */
+	private PostTypeRegistration $post_type_registration;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SitemapGenerator $generator The sitemap generator.
 	 * @param SitemapRepositoryInterface $repository The sitemap repository.
 	 * @param SitemapQueryService|null $query_service The query service (optional, will create if not provided).
 	 * @param SitemapGenerationService|null $generation_service The generation service (optional, will create if not provided).
+	 * @param PostTypeRegistration|null $post_type_registration The post type registration service (optional, will create if not provided).
 	 */
 	public function __construct( 
 		SitemapGenerator $generator, 
 		SitemapRepositoryInterface $repository,
 		?SitemapQueryService $query_service = null,
-		?SitemapGenerationService $generation_service = null
+		?SitemapGenerationService $generation_service = null,
+		?PostTypeRegistration $post_type_registration = null
 	) {
-		$this->generator = $generator;
-		$this->formatter = new SitemapXmlFormatter();
+		$this->generator  = $generator;
+		$this->formatter  = new SitemapXmlFormatter();
 		$this->repository = $repository;
 		
 		// Create query service if not provided
-		$this->query_service = $query_service ?: new SitemapQueryService();
+		$this->query_service = $query_service ?? new SitemapQueryService();
 		
 		// Create generation service if not provided
-		$this->generation_service = $generation_service ?: new SitemapGenerationService( $generator, $repository, $this->query_service );
+		$this->generation_service = $generation_service ?? new SitemapGenerationService( $generator, $repository, $this->query_service );
+		
+		// Create post type registration service if not provided
+		$this->post_type_registration = $post_type_registration ?? new PostTypeRegistration();
 	}
 
 	/**
@@ -189,10 +201,13 @@ class SitemapService {
 	public function get_all_sitemap_dates(): array {
 		global $wpdb;
 		
-		$dates = $wpdb->get_col( $wpdb->prepare( 
-			"SELECT post_name FROM $wpdb->posts WHERE post_type = %s ORDER BY post_name", 
-			\Automattic\MSM_Sitemap\Plugin::SITEMAP_CPT 
-		) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$dates = $wpdb->get_col(
+			$wpdb->prepare( 
+				"SELECT post_name FROM $wpdb->posts WHERE post_type = %s ORDER BY post_name", 
+				$this->post_type_registration->get_post_type() 
+			)
+		);
 		
 		return $dates;
 	}
@@ -216,18 +231,14 @@ class SitemapService {
 		}
 		
 		return array(
-			'id' => $post_id,
-			'date' => $date,
-			'url_count' => get_post_meta( $post_id, 'msm_indexed_url_count', true ) ?: 0,
+			'id'          => $post_id,
+			'date'        => $date,
+			'url_count'   => (int) ( get_post_meta( $post_id, 'msm_indexed_url_count', true ) ?? 0 ),
 			'xml_content' => get_post_meta( $post_id, 'msm_sitemap_xml', true ),
-			'created' => $post->post_date,
-			'modified' => $post->post_modified,
+			'created'     => $post->post_date,
+			'modified'    => $post->post_modified,
 		);
 	}
-
-
-
-
 
 	/**
 	 * Recount URLs in sitemaps with different modes for performance vs accuracy.
@@ -251,24 +262,30 @@ class SitemapService {
 	private function recount_urls_fast(): SitemapRecountResult {
 		global $wpdb;
 
-		$total_count = $wpdb->get_var( $wpdb->prepare(
-			"SELECT SUM(meta_value) FROM $wpdb->postmeta pm
-			JOIN $wpdb->posts p ON pm.post_id = p.ID
-			WHERE p.post_type = %s AND p.post_status = 'publish' AND pm.meta_key = %s",
-			\Automattic\MSM_Sitemap\Plugin::SITEMAP_CPT,
-			'msm_indexed_url_count'
-		) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$total_count = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT SUM(meta_value) FROM $wpdb->postmeta pm
+				JOIN $wpdb->posts p ON pm.post_id = p.ID
+				WHERE p.post_type = %s AND p.post_status = 'publish' AND pm.meta_key = %s",
+				$this->post_type_registration->get_post_type(),
+				'msm_indexed_url_count'
+			)
+		);
 
-		$total_count = (int) ( $total_count ?: 0 );
+		$total_count = (int) ( $total_count ?? 0 );
 		update_option( 'msm_sitemap_indexed_url_count', $total_count );
 
 		// Get sitemap count for reporting
-		$sitemap_count = $wpdb->get_var( $wpdb->prepare(
-			"SELECT COUNT(*) FROM $wpdb->posts
-			WHERE post_type = %s AND post_status = 'publish'",
-			\Automattic\MSM_Sitemap\Plugin::SITEMAP_CPT
-		) );
-		$sitemap_count = (int) ( $sitemap_count ?: 0 );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$sitemap_count = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM $wpdb->posts
+				WHERE post_type = %s AND post_status = 'publish'",
+				$this->post_type_registration->get_post_type()
+			)
+		);
+		$sitemap_count = (int) ( $sitemap_count ?? 0 );
 
 		$message = sprintf(
 			/* translators: %s is the total number of URLs found. */
@@ -297,9 +314,9 @@ class SitemapService {
 	private function recount_urls_full(): SitemapRecountResult {
 		$sitemap_dates = $this->repository->get_all_sitemap_dates();
 
-		$total_count = 0;
+		$total_count   = 0;
 		$sitemap_count = 0;
-		$errors = array();
+		$errors        = array();
 
 		foreach ( $sitemap_dates as $date ) {
 			// Check for halt signal
@@ -316,7 +333,7 @@ class SitemapService {
 			}
 
 			$post = get_post( $post_id );
-			if ( ! $post || $post->post_status !== 'publish' ) {
+			if ( ! $post || 'publish' !== $post->post_status ) {
 				continue;
 			}
 
@@ -341,7 +358,7 @@ class SitemapService {
 
 			update_post_meta( $post_id, 'msm_indexed_url_count', $count );
 			$total_count += $count;
-			$sitemap_count++;
+			++$sitemap_count;
 		}
 
 		update_option( 'msm_sitemap_indexed_url_count', $total_count, false );
@@ -397,7 +414,7 @@ class SitemapService {
 	 */
 	public function get_sitemap_by_id( int $sitemap_id ): ?array {
 		$post = get_post( $sitemap_id );
-		if ( ! $post || $post->post_type !== \Automattic\MSM_Sitemap\Plugin::SITEMAP_CPT ) {
+		if ( ! $post || $this->post_type_registration->get_post_type() !== $post->post_type ) {
 			return null;
 		}
 		
@@ -416,11 +433,11 @@ class SitemapService {
 			return array();
 		}
 		
-		$sitemap_dates = $this->repository->get_all_sitemap_dates();
+		$sitemap_dates  = $this->repository->get_all_sitemap_dates();
 		$matching_dates = array();
 		
 		foreach ( $date_queries as $query ) {
-			$dates = $this->query_service->get_matching_dates_for_query( $query, $sitemap_dates );
+			$dates          = $this->query_service->get_matching_dates_for_query( $query, $sitemap_dates );
 			$matching_dates = array_merge( $matching_dates, $dates );
 		}
 		
@@ -447,9 +464,12 @@ class SitemapService {
 		}
 		
 		// Sort by date in descending order (newest first)
-		usort( $sitemap_data, function( $a, $b ) {
-			return strcmp( $b['date'], $a['date'] );
-		} );
+		usort(
+			$sitemap_data,
+			function ( $a, $b ) {
+				return strcmp( $b['date'], $a['date'] );
+			}
+		);
 		
 		return $sitemap_data;
 	}
@@ -482,7 +502,7 @@ class SitemapService {
 		$sitemap_date = $post_name . ' 00:00:00';
 		
 		// Use our factory to create a single entry and extract the URL
-		$entries = \Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapIndexEntryFactory::from_sitemap_dates( array( $sitemap_date ) );
+		$entries = SitemapIndexEntryFactory::from_sitemap_dates( array( $sitemap_date ) );
 		
 		if ( empty( $entries ) ) {
 			return '';
@@ -490,12 +510,6 @@ class SitemapService {
 		
 		return $entries[0]->loc();
 	}
-
-
-
-
-
-
 
 	/**
 	 * Check if sitemap generation has been stopped by user request.
@@ -536,4 +550,3 @@ class SitemapService {
 		return true;
 	}
 }
-

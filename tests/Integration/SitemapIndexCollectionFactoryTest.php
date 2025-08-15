@@ -113,7 +113,7 @@ class SitemapIndexCollectionFactoryTest extends TestCase {
 	 * Test merging with invalid collection type.
 	 */
 	public function test_merge_with_invalid_collection_type() {
-		$entry1 = SitemapIndexEntryFactory::from_data( 'https://example.com/sitemap1.xml' );
+		$entry1      = SitemapIndexEntryFactory::from_data( 'https://example.com/sitemap1.xml' );
 		$collection1 = SitemapIndexCollectionFactory::from_entries( array( $entry1 ) );
 
 		$this->expectException( InvalidArgumentException::class );
@@ -140,7 +140,7 @@ class SitemapIndexCollectionFactoryTest extends TestCase {
 	 * Test merging single collection.
 	 */
 	public function test_merge_single_collection() {
-		$entry1 = SitemapIndexEntryFactory::from_data( 'https://example.com/sitemap1.xml' );
+		$entry1      = SitemapIndexEntryFactory::from_data( 'https://example.com/sitemap1.xml' );
 		$collection1 = SitemapIndexCollectionFactory::from_entries( array( $entry1 ) );
 
 		$merged_collection = SitemapIndexCollectionFactory::merge( array( $collection1 ) );

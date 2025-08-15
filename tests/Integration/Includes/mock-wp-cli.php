@@ -8,6 +8,10 @@
 declare( strict_types=1 );
 
 namespace WP_CLI {
+	// Define WP_CLI constant for testing
+	if ( ! defined( 'WP_CLI' ) ) {
+		define( 'WP_CLI', true );
+	}
 	// Define WP_CLI\ExitException if not already defined
 	if ( ! class_exists( 'WP_CLI\ExitException' ) ) {
 		eval( 'namespace WP_CLI; class ExitException extends \Exception {}' );

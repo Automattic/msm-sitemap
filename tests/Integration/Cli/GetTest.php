@@ -8,11 +8,11 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests\Cli;
 
-use Automattic\MSM_Sitemap\Infrastructure\CLI\CLI_Command;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\CLICommand;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
 
 require_once __DIR__ . '/../Includes/mock-wp-cli.php';
-require_once __DIR__ . '/../../includes/Infrastructure/CLI/CLI_Command.php';
+require_once __DIR__ . '/../../includes/Infrastructure/CLI/CLICommand.php';
 
 /**
  * Class GetTest
@@ -65,7 +65,7 @@ final class GetTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_get_by_id(): void {
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 		$this->expectOutputRegex( '/"id".*' . $this->post_id . '/s' );
 		$cli->get( array( (string) $this->post_id ), array( 'format' => 'json' ) );
 	}
@@ -76,7 +76,7 @@ final class GetTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_get_invalid_id(): void {
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 		$this->expectException( \Exception::class );
 		$cli->get( array( '999999' ), array( 'format' => 'json' ) );
 	}
@@ -87,7 +87,7 @@ final class GetTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_get_by_date_day(): void {
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 		$this->expectOutputRegex( '/"date".*2024-07-10/s' );
 		$cli->get( array( '2024-07-10' ), array( 'format' => 'json' ) );
 	}
@@ -98,7 +98,7 @@ final class GetTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_get_by_date_month(): void {
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 		$this->expectOutputRegex( '/"date".*2024-07-10/s' );
 		$cli->get( array( '2024-07' ), array( 'format' => 'json' ) );
 	}
@@ -109,7 +109,7 @@ final class GetTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_get_by_date_year(): void {
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 		// Delete the only sitemap so none exist for the year
 		wp_delete_post( $this->post_id, true );
 		$this->expectException( \WP_CLI\ExitException::class );
@@ -122,7 +122,7 @@ final class GetTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_get_multiple_results(): void {
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 		// Add another sitemap for the same year
 		$date2    = '2024-07-11';
 		$post_id2 = wp_insert_post(
@@ -155,7 +155,7 @@ final class GetTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_get_invalid_date_format(): void {
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 		$this->expectException( \Exception::class );
 		$cli->get( array( '2024-99-99' ), array( 'format' => 'json' ) );
 	}
@@ -166,7 +166,7 @@ final class GetTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_get_no_argument(): void {
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 		$this->expectException( \WP_CLI\ExitException::class );
 		$cli->get( array(), array( 'format' => 'json' ) );
 	}

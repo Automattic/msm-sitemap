@@ -9,6 +9,10 @@ declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap\Infrastructure\Cron;
 
+use Automattic\MSM_Sitemap\Application\Services\SettingsService;
+use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
+use Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository;
+
 /**
  * Service class for managing global cron functionality.
  * 
@@ -24,21 +28,44 @@ class CronSchedulingService {
 	const CRON_ENABLED_OPTION = 'msm_sitemap_cron_enabled';
 
 	/**
+	 * The settings service.
+	 *
+	 * @var SettingsService
+	 */
+	private SettingsService $settings;
+
+	/**
+	 * The post repository.
+	 *
+	 * @var PostRepository
+	 */
+	private PostRepository $post_repository;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param SettingsService $settings The settings service.
+	 * @param PostRepository $post_repository The post repository.
+	 */
+	public function __construct( SettingsService $settings, PostRepository $post_repository ) {
+		$this->settings        = $settings;
+		$this->post_repository = $post_repository;
+	}
+
+	/**
 	 * Enable the sitemap cron functionality
 	 * 
 	 * This schedules the recurring incremental update cron job
 	 * and marks cron as enabled in the database.
 	 */
-	public static function enable(): void {
+	public function enable(): void {
 		// Set cron as enabled
 		update_option( self::CRON_ENABLED_OPTION, 1 );
 
 		// Schedule incremental updates if not already scheduled
 		if ( ! wp_next_scheduled( 'msm_cron_update_sitemap' ) ) {
-			$container         = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-			$settings_service  = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
-			$current_frequency = $settings_service->get_setting( 'cron_frequency', '15min' );
-			$interval = self::map_frequency_to_interval( $current_frequency );
+			$current_frequency = $this->settings->get_setting( 'cron_frequency', '15min' );
+			$interval          = $this->map_frequency_to_interval( $current_frequency );
 			wp_schedule_event( time(), $interval, 'msm_cron_update_sitemap' );
 		}
 	}
@@ -48,7 +75,7 @@ class CronSchedulingService {
 	 * 
 	 * This clears all scheduled cron events and marks cron as disabled.
 	 */
-	public static function disable(): void {
+	public function disable(): void {
 		// Set cron as disabled
 		update_option( self::CRON_ENABLED_OPTION, 0 );
 
@@ -72,7 +99,7 @@ class CronSchedulingService {
 	 * 
 	 * @return bool True if cron is enabled, false otherwise.
 	 */
-	public static function is_enabled(): bool {
+	public function is_enabled(): bool {
 		// Allow override via filter (useful for testing)
 		$filter_override = apply_filters( 'msm_sitemap_cron_enabled', null );
 		if ( null !== $filter_override ) {
@@ -87,8 +114,8 @@ class CronSchedulingService {
 	 * 
 	 * @return bool True if cron is enabled, false otherwise.
 	 */
-	public static function is_cron_enabled(): bool {
-		$is_enabled = self::is_enabled();
+	public function is_cron_enabled(): bool {
+		$is_enabled     = $this->is_enabled();
 		$next_scheduled = wp_next_scheduled( 'msm_cron_update_sitemap' );
 
 		// Ensure consistency - if enabled is false but there's a scheduled event, clear it
@@ -104,12 +131,12 @@ class CronSchedulingService {
 	 * 
 	 * @return bool True if enabled successfully, false if already enabled.
 	 */
-	public static function enable_cron(): bool {
-		if ( self::is_enabled() ) {
+	public function enable_cron(): bool {
+		if ( $this->is_enabled() ) {
 			return false; // Already enabled
 		}
 
-		self::enable();
+		$this->enable();
 		return true;
 	}
 
@@ -118,12 +145,12 @@ class CronSchedulingService {
 	 * 
 	 * @return bool True if disabled successfully, false if already disabled.
 	 */
-	public static function disable_cron(): bool {
-		if ( ! self::is_enabled() ) {
+	public function disable_cron(): bool {
+		if ( ! $this->is_enabled() ) {
 			return false; // Already disabled
 		}
 
-		self::disable();
+		$this->disable();
 		return true;
 	}
 
@@ -133,8 +160,8 @@ class CronSchedulingService {
 	 * @param string $frequency The new frequency (e.g., '5min', '10min', '15min', '30min', 'hourly', 'twicedaily', 'thricehourly').
 	 * @return bool True if rescheduled successfully, false otherwise.
 	 */
-	public static function reschedule_cron( string $frequency ): bool {
-		if ( ! self::is_enabled() ) {
+	public function reschedule_cron( string $frequency ): bool {
+		if ( ! $this->is_enabled() ) {
 			return false; // Cron must be enabled to reschedule
 		}
 
@@ -142,7 +169,7 @@ class CronSchedulingService {
 		wp_clear_scheduled_hook( 'msm_cron_update_sitemap' );
 
 		// Map frequency to WordPress cron interval
-		$interval = self::map_frequency_to_interval( $frequency );
+		$interval = $this->map_frequency_to_interval( $frequency );
 		if ( empty( $interval ) ) {
 			return false; // Invalid frequency
 		}
@@ -159,15 +186,15 @@ class CronSchedulingService {
 	 * @param string $frequency The frequency string.
 	 * @return string The WordPress cron interval or empty string if invalid.
 	 */
-	private static function map_frequency_to_interval( string $frequency ): string {
+	private function map_frequency_to_interval( string $frequency ): string {
 		$interval_map = array(
-			'5min'        => 'ms-sitemap-5-min-cron-interval',
-			'10min'       => 'ms-sitemap-10-min-cron-interval',
-			'15min'       => 'ms-sitemap-15-min-cron-interval',
-			'30min'       => 'ms-sitemap-30-min-cron-interval',
-			'hourly'      => 'hourly',
-			'2hourly'     => 'ms-sitemap-2-hour-cron-interval',
-			'3hourly'     => 'ms-sitemap-3-hour-cron-interval',
+			'5min'    => 'ms-sitemap-5-min-cron-interval',
+			'10min'   => 'ms-sitemap-10-min-cron-interval',
+			'15min'   => 'ms-sitemap-15-min-cron-interval',
+			'30min'   => 'ms-sitemap-30-min-cron-interval',
+			'hourly'  => 'hourly',
+			'2hourly' => 'ms-sitemap-2-hour-cron-interval',
+			'3hourly' => 'ms-sitemap-3-hour-cron-interval',
 		);
 
 		return isset( $interval_map[ $frequency ] ) ? $interval_map[ $frequency ] : '';
@@ -179,7 +206,7 @@ class CronSchedulingService {
 	 * @param string $interval The WordPress cron interval.
 	 * @return int The number of seconds.
 	 */
-	private static function get_interval_seconds( string $interval ): int {
+	private function get_interval_seconds( string $interval ): int {
 		$interval_map = array(
 			'ms-sitemap-5-min-cron-interval'  => 300,   // 5 minutes
 			'ms-sitemap-10-min-cron-interval' => 600,   // 10 minutes
@@ -198,8 +225,8 @@ class CronSchedulingService {
 	 * 
 	 * @return bool True on success.
 	 */
-	public static function reset_cron(): bool {
-		self::disable();
+	public function reset_cron(): bool {
+		$this->disable();
 		
 		// Clear additional legacy options used by tests
 		delete_option( 'msm_generation_in_progress' );
@@ -213,7 +240,7 @@ class CronSchedulingService {
 	 * 
 	 * Bypasses can_execute() checks for direct calls (tests, etc.)
 	 */
-	public static function handle_full_generation(): void {
+	public function handle_full_generation(): void {
 		// Set the generation in progress flag
 		update_option( 'msm_generation_in_progress', true );
 
@@ -222,7 +249,7 @@ class CronSchedulingService {
 		delete_option( 'msm_months_to_process' );
 		delete_option( 'msm_days_to_process' );
 
-				$all_years_with_posts = msm_sitemap_plugin()->get_years_with_posts();
+				$all_years_with_posts = $this->post_repository->get_years_with_posts();
 		update_option( 'msm_years_to_process', $all_years_with_posts );
 
 		if ( ! empty( $all_years_with_posts ) ) {
@@ -242,10 +269,10 @@ class CronSchedulingService {
 	 * 
 	 * @return array Status information about the cron
 	 */
-	public static function get_cron_status(): array {
-		$is_enabled     = self::is_cron_enabled();
+	public function get_cron_status(): array {
+		$is_enabled     = $this->is_cron_enabled();
 		$next_scheduled = wp_next_scheduled( 'msm_cron_update_sitemap' );
-		$is_blog_public = \Automattic\MSM_Sitemap\Domain\ValueObjects\Site::is_public();
+		$is_blog_public = Site::is_public();
 		$is_generating  = (bool) get_option( 'msm_generation_in_progress' );
 		$is_halted      = (bool) get_option( 'msm_stop_processing' );
 
@@ -269,16 +296,16 @@ class CronSchedulingService {
 	 * 
 	 * @return array Status information including enabled state and scheduled events.
 	 */
-	public static function get_status(): array {
-		$enabled = self::is_enabled();
-		$next_incremental = wp_next_scheduled( 'msm_cron_update_sitemap' );
+	public function get_status(): array {
+		$enabled                = $this->is_enabled();
+		$next_incremental       = wp_next_scheduled( 'msm_cron_update_sitemap' );
 		$generation_in_progress = get_option( 'msm_generation_in_progress', false );
 
 		return array(
-			'enabled' => $enabled,
+			'enabled'                 => $enabled,
 			'next_incremental_update' => $next_incremental ? $next_incremental : false,
-			'generation_in_progress' => $generation_in_progress,
-			'last_run' => get_option( 'msm_sitemap_update_last_run', false ),
+			'generation_in_progress'  => $generation_in_progress,
+			'last_run'                => get_option( 'msm_sitemap_update_last_run', false ),
 		);
 	}
 
@@ -287,7 +314,7 @@ class CronSchedulingService {
 	 * 
 	 * This stops any ongoing full generation and clears all scheduled events.
 	 */
-	public static function halt_execution(): void {
+	public function halt_execution(): void {
 		// Clear all scheduled events
 		wp_clear_scheduled_hook( 'msm_cron_generate_sitemap_for_year' );
 		wp_clear_scheduled_hook( 'msm_cron_generate_sitemap_for_year_month' );
@@ -307,7 +334,7 @@ class CronSchedulingService {
 	 * 
 	 * @return bool True if generation is in progress, false otherwise.
 	 */
-	public static function is_generation_in_progress(): bool {
+	public function is_generation_in_progress(): bool {
 		return (bool) get_option( 'msm_generation_in_progress', false );
 	}
 
@@ -316,13 +343,13 @@ class CronSchedulingService {
 	 * 
 	 * This initiates the cascading full sitemap generation process.
 	 */
-	public static function schedule_full_generation(): void {
-		if ( ! self::is_enabled() ) {
+	public function schedule_full_generation(): void {
+		if ( ! $this->is_enabled() ) {
 			return;
 		}
 
 		// Check if generation is already in progress
-		if ( self::is_generation_in_progress() ) {
+		if ( $this->is_generation_in_progress() ) {
 			return;
 		}
 
@@ -338,7 +365,7 @@ class CronSchedulingService {
 		$is_partial_or_running = get_option( 'msm_generation_in_progress', false );
 
 		if ( empty( $is_partial_or_running ) ) {
-			$all_years_with_posts = msm_sitemap_plugin()->get_years_with_posts();
+			$all_years_with_posts = $this->post_repository->get_years_with_posts();
 			update_option( 'msm_years_to_process', $all_years_with_posts );
 		} else {
 			// Continue with existing year list if generation was in progress
@@ -363,7 +390,7 @@ class CronSchedulingService {
 	 * 
 	 * @return bool True if cron appears to be working, false otherwise.
 	 */
-	public static function is_wp_cron_working(): bool {
+	public function is_wp_cron_working(): bool {
 		// Simple check - if we have scheduled events, WP-Cron is likely working
 		$scheduled_events = _get_cron_array();
 		return ! empty( $scheduled_events );
@@ -374,15 +401,15 @@ class CronSchedulingService {
 	 * 
 	 * @return array Information about scheduled events.
 	 */
-	public static function get_scheduled_events(): array {
+	public function get_scheduled_events(): array {
 		$events = array();
 
 		// Check for incremental updates
 		$next_incremental = wp_next_scheduled( 'msm_cron_update_sitemap' );
 		if ( $next_incremental ) {
 			$events['incremental_update'] = array(
-				'hook' => 'msm_cron_update_sitemap',
-				'next_run' => $next_incremental,
+				'hook'       => 'msm_cron_update_sitemap',
+				'next_run'   => $next_incremental,
 				'recurrence' => 'ms-sitemap-15-min-cron-interval',
 			);
 		}
@@ -398,8 +425,8 @@ class CronSchedulingService {
 			$next_run = wp_next_scheduled( $hook );
 			if ( $next_run ) {
 				$events[ $hook ] = array(
-					'hook' => $hook,
-					'next_run' => $next_run,
+					'hook'       => $hook,
+					'next_run'   => $next_run,
 					'recurrence' => false, // These are single events
 				);
 			}

@@ -17,6 +17,119 @@ use Automattic\MSM_Sitemap\Domain\Contracts\PostRepositoryInterface;
 class PostRepository implements PostRepositoryInterface {
 
 	/**
+	 * Find a post by its ID.
+	 *
+	 * @param int|string $id The post ID.
+	 * @return object|null The post object if found, null otherwise.
+	 */
+	public function find( $id ): ?object {
+		$post = get_post( (int) $id );
+		if ( ! $post || ! in_array( $post->post_type, $this->get_supported_post_types(), true ) ) {
+			return null;
+		}
+		return $post;
+	}
+
+	/**
+	 * Find posts by criteria.
+	 *
+	 * @param array $criteria Search criteria.
+	 * @param int $limit Maximum number of results to return.
+	 * @param int $offset Number of results to skip.
+	 * @return array Array of post objects.
+	 */
+	public function find_by( array $criteria, int $limit = 100, int $offset = 0 ): array {
+		$args = array(
+			'post_type'      => $this->get_supported_post_types(),
+			'post_status'    => $this->get_post_status(),
+			'posts_per_page' => $limit,
+			'offset'         => $offset,
+		);
+
+		// Add criteria filters
+		if ( isset( $criteria['date'] ) ) {
+			$args['date_query'] = array(
+				array(
+					'year'  => gmdate( 'Y', strtotime( $criteria['date'] ) ),
+					'month' => gmdate( 'm', strtotime( $criteria['date'] ) ),
+					'day'   => gmdate( 'd', strtotime( $criteria['date'] ) ),
+				),
+			);
+		}
+
+		if ( isset( $criteria['post_type'] ) ) {
+			$args['post_type'] = $criteria['post_type'];
+		}
+
+		return get_posts( $args );
+	}
+
+	/**
+	 * Save a post.
+	 *
+	 * @param mixed $entity The post data or object.
+	 * @return bool True on success, false on failure.
+	 */
+	public function save( $entity ): bool {
+		if ( is_array( $entity ) ) {
+			$post_id = wp_insert_post( $entity );
+			return 0 < $post_id;
+		}
+		return false;
+	}
+
+	/**
+	 * Delete a post by its ID.
+	 *
+	 * @param int|string $id The post ID.
+	 * @return bool True on success, false on failure.
+	 */
+	public function delete( $id ): bool {
+		$result = wp_delete_post( (int) $id, true );
+		return false !== $result;
+	}
+
+	/**
+	 * Count posts matching criteria.
+	 *
+	 * @param array $criteria Search criteria.
+	 * @return int Number of matching posts.
+	 */
+	public function count( array $criteria = array() ): int {
+		$args = array(
+			'post_type'      => $this->get_supported_post_types(),
+			'post_status'    => $this->get_post_status(),
+			'posts_per_page' => -1,
+			'fields'         => 'ids',
+		);
+
+		// Add criteria filters
+		if ( isset( $criteria['date'] ) ) {
+			$args['date_query'] = array(
+				array(
+					'year'  => gmdate( 'Y', strtotime( $criteria['date'] ) ),
+					'month' => gmdate( 'm', strtotime( $criteria['date'] ) ),
+					'day'   => gmdate( 'd', strtotime( $criteria['date'] ) ),
+				),
+			);
+		}
+
+		$posts = get_posts( $args );
+		return count( $posts );
+	}
+
+	/**
+	 * Check if a post exists.
+	 *
+	 * @param int|string $id The post ID.
+	 * @return bool True if post exists, false otherwise.
+	 */
+	public function exists( $id ): bool {
+		$post = get_post( (int) $id );
+		return $post && in_array( $post->post_type, $this->get_supported_post_types(), true );
+	}
+
+	/**
 	 * Get posts that have been modified since the given timestamp.
 	 *
 	 * @param int|string|false $since_timestamp Timestamp to check since, or false for last hour.
@@ -31,7 +144,7 @@ class PostRepository implements PostRepositoryInterface {
 			$date = date( 'Y-m-d H:i:s', (int) $since_timestamp );
 		}
 
-		$post_types = $this->get_supported_post_types();
+		$post_types    = $this->get_supported_post_types();
 		$post_types_in = "'" . implode( "','", $post_types ) . "'";
 
 		$query = $wpdb->prepare( 
@@ -130,13 +243,15 @@ class PostRepository implements PostRepositoryInterface {
 		$end_date      = $sitemap_date . ' 23:59:59';
 		$post_types_in = $this->get_supported_post_types_in();
 
-		$posts = $wpdb->get_results( $wpdb->prepare( 
-			"SELECT ID, post_date FROM $wpdb->posts WHERE post_status = %s AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT %d", 
-			$post_status, 
-			$start_date, 
-			$end_date, 
-			$limit 
-		) );
+		$posts = $wpdb->get_results(
+			$wpdb->prepare( 
+				"SELECT ID, post_date FROM $wpdb->posts WHERE post_status = %s AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT %d", 
+				$post_status, 
+				$start_date, 
+				$end_date, 
+				$limit 
+			) 
+		);
 
 		usort( $posts, array( $this, 'order_by_post_date' ) );
 
@@ -176,12 +291,14 @@ class PostRepository implements PostRepositoryInterface {
 		$post_status = $this->get_post_status();
 
 		$post_types_in = $this->get_supported_post_types_in();
-		$result = $wpdb->get_var( $wpdb->prepare( 
-			"SELECT ID FROM $wpdb->posts WHERE post_status = %s AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT 1", 
-			$post_status, 
-			$start_date, 
-			$end_date 
-		) );
+		$result        = $wpdb->get_var(
+			$wpdb->prepare( 
+				"SELECT ID FROM $wpdb->posts WHERE post_status = %s AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT 1", 
+				$post_status, 
+				$start_date, 
+				$end_date 
+			) 
+		);
 
 		return $result ? (int) $result : null;
 	}
@@ -211,10 +328,12 @@ class PostRepository implements PostRepositoryInterface {
 
 			$post_types_in = $this->get_supported_post_types_in();
 
-			$oldest_post_date_year = $wpdb->get_var( $wpdb->prepare( 
-				"SELECT DISTINCT YEAR(post_date) as year FROM $wpdb->posts WHERE post_status = %s AND post_type IN ( {$post_types_in} ) AND post_date > 0 ORDER BY year ASC LIMIT 1", 
-				$this->get_post_status() 
-			) );
+			$oldest_post_date_year = $wpdb->get_var(
+				$wpdb->prepare( 
+					"SELECT DISTINCT YEAR(post_date) as year FROM $wpdb->posts WHERE post_status = %s AND post_type IN ( {$post_types_in} ) AND post_date > 0 ORDER BY year ASC LIMIT 1", 
+					$this->get_post_status() 
+				) 
+			);
 
 			wp_cache_set( 'oldest_post_date_year', $oldest_post_date_year, 'msm_sitemap', WEEK_IN_SECONDS );
 		}
@@ -238,7 +357,7 @@ class PostRepository implements PostRepositoryInterface {
 		$years_with_posts = array();
 		foreach ( $all_years as $year ) {
 			$start_date = sprintf( '%04d-01-01', $year );
-			$end_date = sprintf( '%04d-12-31', $year );
+			$end_date   = sprintf( '%04d-12-31', $year );
 			if ( $this->date_range_has_posts( $start_date, $end_date ) ) {
 				$years_with_posts[] = $year;
 			}
@@ -254,7 +373,7 @@ class PostRepository implements PostRepositoryInterface {
 	public function get_all_post_publication_dates(): array {
 		global $wpdb;
 		
-		$post_types = $this->get_supported_post_types();
+		$post_types     = $this->get_supported_post_types();
 		$post_types_sql = "'" . implode( "','", array_map( 'esc_sql', $post_types ) ) . "'";
 		
 		$sql = $wpdb->prepare(
@@ -288,6 +407,4 @@ class PostRepository implements PostRepositoryInterface {
 		
 		return ( $a_date < $b_date ) ? -1 : 1;
 	}
-
-
 }

@@ -10,7 +10,9 @@ declare( strict_types=1 );
 namespace Automattic\MSM_Sitemap\Infrastructure\Formatters;
 
 use Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapContent;
-use Automattic\MSM_Sitemap\StylesheetManager;
+use Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry;
+use Automattic\MSM_Sitemap\Domain\ValueObjects\ImageEntry;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\StylesheetManager;
 
 /**
  * Formats SitemapContent to XML.
@@ -27,7 +29,7 @@ class SitemapXmlFormatter {
 		$xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 		
 		// Add XSL stylesheet reference
-		$xml .= \Automattic\MSM_Sitemap\Infrastructure\WordPress\StylesheetManager::get_sitemap_stylesheet_reference();
+		$xml .= StylesheetManager::get_sitemap_stylesheet_reference();
 		
 		// Add urlset with all required namespaces
 		$xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"';
@@ -47,11 +49,11 @@ class SitemapXmlFormatter {
 	/**
 	 * Format a single URL entry to XML.
 	 *
-	 * @param \Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry $entry The URL entry to format.
+	 * @param UrlEntry $entry The URL entry to format.
 	 * @return string The XML representation of the URL entry.
 	 */
-	private function format_url_entry( \Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry $entry ): string {
-		$xml = "\t<url>\n";
+	private function format_url_entry( UrlEntry $entry ): string {
+		$xml  = "\t<url>\n";
 		$xml .= "\t\t<loc>" . esc_xml( $entry->loc() ) . "</loc>\n";
 
 		if ( $entry->lastmod() ) {
@@ -81,11 +83,11 @@ class SitemapXmlFormatter {
 	/**
 	 * Format a single image entry to XML.
 	 *
-	 * @param \Automattic\MSM_Sitemap\Domain\ValueObjects\ImageEntry $image The image entry to format.
+	 * @param ImageEntry $image The image entry to format.
 	 * @return string The XML representation of the image entry.
 	 */
-	private function format_image_entry( \Automattic\MSM_Sitemap\Domain\ValueObjects\ImageEntry $image ): string {
-		$xml = "\t\t<image:image>\n";
+	private function format_image_entry( ImageEntry $image ): string {
+		$xml  = "\t\t<image:image>\n";
 		$xml .= "\t\t\t<image:loc>" . esc_xml( $image->loc() ) . "</image:loc>\n";
 
 		if ( $image->title() ) {

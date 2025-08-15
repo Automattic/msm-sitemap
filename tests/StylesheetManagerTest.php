@@ -35,7 +35,8 @@ class StylesheetManagerTest extends TestCase {
 		remove_filter( 'wp_sitemaps_stylesheet_index_content', array( StylesheetManager::class, 'modify_core_index_stylesheet' ) );
 
 		// Call setup
-		StylesheetManager::setup();
+		$stylesheet_manager = new StylesheetManager();
+		$stylesheet_manager->register_hooks();
 
 		// Verify filters are registered (has_filter returns priority, not boolean)
 		$priority1 = has_filter( 'wp_sitemaps_stylesheet_content', array( StylesheetManager::class, 'modify_core_stylesheet' ) );

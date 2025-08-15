@@ -34,30 +34,30 @@ class PostRepositoryTest extends TestCase {
 		$this->repository = new PostRepository();
 	}
 
-    /**
-     * Tear down test state.
-     */
-    public function tearDown(): void {
-        // Ensure any custom status filter is removed between tests
-        if ( method_exists( $this, 'custom_post_status_tear_down' ) ) {
-            $this->custom_post_status_tear_down();
-        }
-        parent::tearDown();
-    }
+	/**
+	 * Tear down test state.
+	 */
+	public function tearDown(): void {
+		// Ensure any custom status filter is removed between tests
+		if ( method_exists( $this, 'custom_post_status_tear_down' ) ) {
+			$this->custom_post_status_tear_down();
+		}
+		parent::tearDown();
+	}
 
 	/**
 	 * Test get_post_status returns default status.
 	 */
 	public function test_get_post_status_default(): void {
-        $this->assertEquals( 'publish', $this->repository->get_post_status() );
+		$this->assertEquals( 'publish', $this->repository->get_post_status() );
 	}
 
 	/**
 	 * Test get_post_status with custom status filter.
 	 */
 	public function test_get_post_status_with_custom_filter(): void {
-        $this->custom_post_status_set_up();
-        $this->assertEquals( 'live', $this->repository->get_post_status() );
+		$this->custom_post_status_set_up();
+		$this->assertEquals( 'live', $this->repository->get_post_status() );
 	}
 
 	/**
@@ -70,14 +70,14 @@ class PostRepositoryTest extends TestCase {
 				return 'invalid_status';
 			}
 		);
-        $this->assertEquals( 'publish', $this->repository->get_post_status() );
+		$this->assertEquals( 'publish', $this->repository->get_post_status() );
 	}
 
 	/**
 	 * Test get_supported_post_types returns default types.
 	 */
 	public function test_get_supported_post_types_default(): void {
-        $this->assertEquals( array( 'post' ), $this->repository->get_supported_post_types() );
+		$this->assertEquals( array( 'post' ), $this->repository->get_supported_post_types() );
 	}
 
 	/**
@@ -90,16 +90,16 @@ class PostRepositoryTest extends TestCase {
 				return array( 'post', 'page', 'custom' );
 			}
 		);
-        $this->assertEquals( array( 'post', 'page', 'custom' ), $this->repository->get_supported_post_types() );
+		$this->assertEquals( array( 'post', 'page', 'custom' ), $this->repository->get_supported_post_types() );
 	}
 
 	/**
 	 * Test get_supported_post_types_in returns properly formatted SQL.
 	 */
-    public function test_get_supported_post_types_in(): void {
-        $result = $this->repository->get_supported_post_types_in();
-        $this->assertStringContainsString( "'post'", $result );
-    }
+	public function test_get_supported_post_types_in(): void {
+		$result = $this->repository->get_supported_post_types_in();
+		$this->assertStringContainsString( "'post'", $result );
+	}
 
 	/**
 	 * Data provider for post year ranges.
@@ -142,7 +142,7 @@ class PostRepositoryTest extends TestCase {
 		}
 
 		$year_range = $this->repository->get_post_year_range();
-        $this->assertCount( $expected_number_of_years_in_range, $year_range );
+		$this->assertCount( $expected_number_of_years_in_range, $year_range );
 	}
 
 	/**
@@ -161,7 +161,7 @@ class PostRepositoryTest extends TestCase {
 		}
 
 		$year_range = $this->repository->get_post_year_range();
-        $this->assertCount( $expected_number_of_years_in_range, $year_range );
+		$this->assertCount( $expected_number_of_years_in_range, $year_range );
 	}
 
 	/**
@@ -176,13 +176,13 @@ class PostRepositoryTest extends TestCase {
 
 		// Prime the cache by calling get_post_year_range.
 		$years = $this->repository->get_post_year_range();
-        $this->assertContains( 2010, $years );
-        $this->assertContains( 2015, $years );
+		$this->assertContains( 2010, $years );
+		$this->assertContains( 2015, $years );
 
 		// Now, delete all posts and check that the cached value is still used.
 		\_delete_all_posts();
-        $cached_years = $this->repository->get_post_year_range();
-        $this->assertEquals( $years, $cached_years );
+		$cached_years = $this->repository->get_post_year_range();
+		$this->assertEquals( $years, $cached_years );
 	}
 
 	/**
@@ -197,9 +197,9 @@ class PostRepositoryTest extends TestCase {
 
 		// Verify only years for posts are returned.
 		$range_with_posts = $this->repository->get_years_with_posts();
-        $this->assertContains( $prev_year, $range_with_posts );
-        $this->assertContains( $prev5_year, $range_with_posts );
-        $this->assertCount( 2, $range_with_posts );
+		$this->assertContains( $prev_year, $range_with_posts );
+		$this->assertContains( $prev5_year, $range_with_posts );
+		$this->assertCount( 2, $range_with_posts );
 	}
 
 	/**
@@ -266,9 +266,9 @@ class PostRepositoryTest extends TestCase {
 
 		// Validate range result.
 		if ( $has_post ) {
-            $this->assertNotNull( $this->repository->date_range_has_posts( $start_date, $end_date ) );
+			$this->assertNotNull( $this->repository->date_range_has_posts( $start_date, $end_date ) );
 		} else {
-            $this->assertNull( $this->repository->date_range_has_posts( $start_date, $end_date ) );
+			$this->assertNull( $this->repository->date_range_has_posts( $start_date, $end_date ) );
 		}
 	}
 
@@ -285,14 +285,14 @@ class PostRepositoryTest extends TestCase {
 		// Set msm_sitemap_post_status filter to custom_status.
 		$this->custom_post_status_set_up();
 
-        // 1 post for 2015-10-12 in "live" status.
-        $this->create_dummy_post( '2015-10-12 00:00:00', 'live' );
+		// 1 post for 2015-10-12 in "live" status.
+		$this->create_dummy_post( '2015-10-12 00:00:00', 'live' );
 
-        // 1 post for 2016-01-01 in "live" status (to match custom status filter).
-        $this->create_dummy_post( '2016-01-01 00:00:00', 'live' );
+		// 1 post for 2016-01-01 in "live" status (to match custom status filter).
+		$this->create_dummy_post( '2016-01-01 00:00:00', 'live' );
 
-        // 1 post for 2015-06-02 in "live" status.
-        $this->create_dummy_post( '2015-06-02 00:00:00', 'live' );
+		// 1 post for 2015-06-02 in "live" status.
+		$this->create_dummy_post( '2015-06-02 00:00:00', 'live' );
 
 		// Validate range result.
 		if ( $has_post ) {
@@ -310,7 +310,7 @@ class PostRepositoryTest extends TestCase {
 		$this->create_dummy_post( '2017-01-01 00:00:00', 'publish', 'not_included' );
 		$this->create_dummy_post( '2017-01-01 00:00:00', 'publish', 'post' );
 		// Only the 'post' type should be counted.
-        $this->assertNotNull( $this->repository->date_range_has_posts( '2017-01-01', '2017-01-01' ) );
+		$this->assertNotNull( $this->repository->date_range_has_posts( '2017-01-01', '2017-01-01' ) );
 	}
 
 	/**
@@ -322,22 +322,22 @@ class PostRepositoryTest extends TestCase {
 		}
 		// Only 'publish' should be counted.
 		$this->create_dummy_post( '2017-02-01 00:00:00', 'publish' );
-        $this->assertNotNull( $this->repository->date_range_has_posts( '2017-02-01', '2017-02-01' ) );
+		$this->assertNotNull( $this->repository->date_range_has_posts( '2017-02-01', '2017-02-01' ) );
 	}
 
 	/**
 	 * Test date_range_has_posts with invalid dates returns null.
 	 */
 	public function test_date_range_has_posts_with_invalid_dates(): void {
-        $this->assertNull( $this->repository->date_range_has_posts( 'not-a-date', '2017-01-01' ) );
-        $this->assertNull( $this->repository->date_range_has_posts( '2017-01-01', 'not-a-date' ) );
+		$this->assertNull( $this->repository->date_range_has_posts( 'not-a-date', '2017-01-01' ) );
+		$this->assertNull( $this->repository->date_range_has_posts( '2017-01-01', 'not-a-date' ) );
 	}
 
 	/**
 	 * Test date_range_has_posts with non-existent date returns null.
 	 */
 	public function test_date_range_has_posts_with_nonexistent_date(): void {
-        $this->assertNull( $this->repository->date_range_has_posts( '2017-02-30', '2017-02-30' ) );
+		$this->assertNull( $this->repository->date_range_has_posts( '2017-02-30', '2017-02-30' ) );
 	}
 
 	/**
@@ -389,24 +389,24 @@ class PostRepositoryTest extends TestCase {
 		$this->create_dummy_post( '2016-01-02 22:00:00', 'draft' ); // Should be excluded.
 
 		$post_ids = $this->repository->get_post_ids_for_date( $sitemap_date, $limit );
-        $this->assertCount( $expected_count, $post_ids );
+		$this->assertCount( $expected_count, $post_ids );
 	}
 
 	/**
 	 * Test get_post_ids_for_date with custom post status.
 	 */
-    public function test_get_post_ids_for_date_with_custom_status(): void {
-        $this->custom_post_status_set_up();
+	public function test_get_post_ids_for_date_with_custom_status(): void {
+		$this->custom_post_status_set_up();
 
-        $this->create_dummy_post( '2016-10-04 00:00:00', 'live' );
-        $this->create_dummy_post( '2016-10-05 00:00:00', 'live' );
+		$this->create_dummy_post( '2016-10-04 00:00:00', 'live' );
+		$this->create_dummy_post( '2016-10-05 00:00:00', 'live' );
 
-        $post_ids = $this->repository->get_post_ids_for_date( '2016-10-04', 10 );
-        $this->assertCount( 1, $post_ids );
+		$post_ids = $this->repository->get_post_ids_for_date( '2016-10-04', 10 );
+		$this->assertCount( 1, $post_ids );
 
-        $post_ids = $this->repository->get_post_ids_for_date( '2016-10-05', 10 );
-        $this->assertCount( 1, $post_ids );
-    }
+		$post_ids = $this->repository->get_post_ids_for_date( '2016-10-05', 10 );
+		$this->assertCount( 1, $post_ids );
+	}
 
 	/**
 	 * Test get_post_ids_for_date with zero or negative limit.
@@ -414,10 +414,10 @@ class PostRepositoryTest extends TestCase {
 	public function test_get_post_ids_for_date_with_invalid_limit(): void {
 		$this->create_dummy_post( '2016-10-06 00:00:00' );
 
-        $post_ids_zero     = $this->repository->get_post_ids_for_date( '2016-10-06', 0 );
-        $post_ids_negative = $this->repository->get_post_ids_for_date( '2016-10-06', -5 );
-        $this->assertCount( 0, $post_ids_zero );
-        $this->assertCount( 0, $post_ids_negative );
+		$post_ids_zero     = $this->repository->get_post_ids_for_date( '2016-10-06', 0 );
+		$post_ids_negative = $this->repository->get_post_ids_for_date( '2016-10-06', -5 );
+		$this->assertCount( 0, $post_ids_zero );
+		$this->assertCount( 0, $post_ids_negative );
 	}
 
 	/**
@@ -425,8 +425,8 @@ class PostRepositoryTest extends TestCase {
 	 */
 	public function test_get_post_ids_for_date_with_invalid_date(): void {
 		$post_ids = $this->repository->get_post_ids_for_date( '2016-02-30', 10 );
-        $this->assertIsArray( $post_ids );
-        $this->assertCount( 0, $post_ids );
+		$this->assertIsArray( $post_ids );
+		$this->assertCount( 0, $post_ids );
 	}
 
 	/**
@@ -438,13 +438,13 @@ class PostRepositoryTest extends TestCase {
 		$post_c = (object) array( 'post_date' => '2020-01-01 00:00:00' );
 
 		// Post A is earlier than Post B.
-        $this->assertEquals( -1, $this->repository->order_by_post_date( $post_a, $post_b ) );
+		$this->assertEquals( -1, $this->repository->order_by_post_date( $post_a, $post_b ) );
 		
 		// Post B is later than Post A.
-        $this->assertEquals( 1, $this->repository->order_by_post_date( $post_b, $post_a ) );
+		$this->assertEquals( 1, $this->repository->order_by_post_date( $post_b, $post_a ) );
 		
 		// Post A and Post C are the same.
-        $this->assertEquals( 0, $this->repository->order_by_post_date( $post_a, $post_c ) );
+		$this->assertEquals( 0, $this->repository->order_by_post_date( $post_a, $post_c ) );
 	}
 
 	/**
@@ -455,61 +455,65 @@ class PostRepositoryTest extends TestCase {
 		$post_id = $this->create_dummy_post( '2020-01-01 00:00:00' );
 		
 		// Update the post to change its modified time.
-		wp_update_post( array(
-			'ID'         => $post_id,
-			'post_title' => 'Updated Title',
-		) );
-        // Ensure modified_gmt is definitely within range for deterministic test
-        global $wpdb;
-        $wpdb->update(
-            $wpdb->posts,
-            array(
-                'post_modified_gmt' => gmdate( 'Y-m-d H:i:s' ),
-                'post_modified'     => date( 'Y-m-d H:i:s' ),
-            ),
-            array( 'ID' => $post_id )
-        );
-        clean_post_cache( $post_id );
+		wp_update_post(
+			array(
+				'ID'         => $post_id,
+				'post_title' => 'Updated Title',
+			) 
+		);
+		// Ensure modified_gmt is definitely within range for deterministic test
+		global $wpdb;
+		$wpdb->update(
+			$wpdb->posts,
+			array(
+				'post_modified_gmt' => gmdate( 'Y-m-d H:i:s' ),
+				'post_modified'     => date( 'Y-m-d H:i:s' ),
+			),
+			array( 'ID' => $post_id )
+		);
+		clean_post_cache( $post_id );
 		
-        // Get posts modified in the last hour
-        $modified_posts = $this->repository->get_modified_posts_since( time() - 3600 );
+		// Get posts modified in the last hour
+		$modified_posts = $this->repository->get_modified_posts_since( time() - 3600 );
 		
-        // Should include our updated post.
-        $modified_post_ids = array_map( 'intval', wp_list_pluck( $modified_posts, 'ID' ) );
-        $this->assertContains( (int) $post_id, $modified_post_ids );
+		// Should include our updated post.
+		$modified_post_ids = array_map( 'intval', wp_list_pluck( $modified_posts, 'ID' ) );
+		$this->assertContains( (int) $post_id, $modified_post_ids );
 	}
 
 	/**
 	 * Test get_modified_posts_since with specific timestamp.
 	 */
 	public function test_get_modified_posts_since_with_timestamp(): void {
-        $timestamp = time() - 3600; // last hour
+		$timestamp = time() - 3600; // last hour
 		
 		// Create a post.
 		$post_id = $this->create_dummy_post( '2020-01-01 00:00:00' );
 		
 		// Update the post to change its modified time.
-		wp_update_post( array(
-			'ID'         => $post_id,
-			'post_title' => 'Updated Title',
-		) );
-        // Ensure modified_gmt is definitely within range for deterministic test
-        global $wpdb;
-        $wpdb->update(
-            $wpdb->posts,
-            array(
-                'post_modified_gmt' => gmdate( 'Y-m-d H:i:s' ),
-                'post_modified'     => date( 'Y-m-d H:i:s' ),
-            ),
-            array( 'ID' => $post_id )
-        );
-        clean_post_cache( $post_id );
+		wp_update_post(
+			array(
+				'ID'         => $post_id,
+				'post_title' => 'Updated Title',
+			) 
+		);
+		// Ensure modified_gmt is definitely within range for deterministic test
+		global $wpdb;
+		$wpdb->update(
+			$wpdb->posts,
+			array(
+				'post_modified_gmt' => gmdate( 'Y-m-d H:i:s' ),
+				'post_modified'     => date( 'Y-m-d H:i:s' ),
+			),
+			array( 'ID' => $post_id )
+		);
+		clean_post_cache( $post_id );
 		
-        // Get posts modified since timestamp.
-        $modified_posts = $this->repository->get_modified_posts_since( $timestamp );
+		// Get posts modified since timestamp.
+		$modified_posts = $this->repository->get_modified_posts_since( $timestamp );
 		
-        // Should include our updated post.
-        $modified_post_ids = array_map( 'intval', wp_list_pluck( $modified_posts, 'ID' ) );
-        $this->assertContains( (int) $post_id, $modified_post_ids );
+		// Should include our updated post.
+		$modified_post_ids = array_map( 'intval', wp_list_pluck( $modified_posts, 'ID' ) );
+		$this->assertContains( (int) $post_id, $modified_post_ids );
 	}
 }

@@ -21,11 +21,13 @@ class IntegrationTest extends TestCase {
 		parent::setUp();
 		
 		// Clean up any existing sitemap posts
-		$existing_sitemaps = get_posts( array(
-			'post_type' => 'msm_sitemap',
-			'post_status' => 'any',
-			'posts_per_page' => -1,
-		) );
+		$existing_sitemaps = get_posts(
+			array(
+				'post_type'      => 'msm_sitemap',
+				'post_status'    => 'any',
+				'posts_per_page' => -1,
+			) 
+		);
 		
 		// Debug: log what we found
 		if ( ! empty( $existing_sitemaps ) ) {
@@ -57,7 +59,7 @@ class IntegrationTest extends TestCase {
 	 * Test that the new method returns false when no posts exist.
 	 */
 	public function test_generate_sitemap_for_date_returns_false_when_no_posts(): void {
-		$date = '1971-01-15';
+		$date   = '1971-01-15';
 		$result = $this->generate_sitemap_for_date( $date );
 		$this->assertFalse( $result );
 		$sitemap_id = $this->get_sitemap_post_id( 1971, 1, 15 );

@@ -20,8 +20,9 @@ class PostDeletionTest extends TestCase {
 	 * Test that handle_post_deletion is called when a post is deleted.
 	 */
 	public function test_handle_post_deletion_hook_registered(): void {
-		$this->assertGreaterThan( 0, has_action( 'deleted_post', array( 'Automattic\MSM_Sitemap\Infrastructure\WordPress\CoreIntegration', 'handle_post_deletion' ) ) );
-		$this->assertGreaterThan( 0, has_action( 'trashed_post', array( 'Automattic\MSM_Sitemap\Infrastructure\WordPress\CoreIntegration', 'handle_post_deletion' ) ) );
+		$core_integration = $this->get_service( CoreIntegration::class );
+		$this->assertGreaterThan( 0, has_action( 'deleted_post', array( $core_integration, 'handle_post_deletion' ) ) );
+		$this->assertGreaterThan( 0, has_action( 'trashed_post', array( $core_integration, 'handle_post_deletion' ) ) );
 	}
 
 	/**
@@ -74,7 +75,8 @@ class PostDeletionTest extends TestCase {
 		$this->generate_sitemap_for_date( $date );
 		
 		// Call handle_post_deletion with null post object
-		CoreIntegration::handle_post_deletion( $post_id, null );
+		$core_integration = $this->get_service( CoreIntegration::class );
+		$core_integration->handle_post_deletion( $post_id, null );
 		
 		// Method should not throw an error
 		$this->assertTrue( true );
@@ -85,7 +87,8 @@ class PostDeletionTest extends TestCase {
 	 */
 	public function test_handle_post_deletion_handles_invalid_post_id(): void {
 		// Call handle_post_deletion with invalid post ID
-		CoreIntegration::handle_post_deletion( 99999, null );
+		$core_integration = $this->get_service( CoreIntegration::class );
+		$core_integration->handle_post_deletion( 99999, null );
 		
 		// Method should not throw an error
 		$this->assertTrue( true );
@@ -108,7 +111,8 @@ class PostDeletionTest extends TestCase {
 		$post_id = wp_insert_post( $post_data );
 
 		// Call handle_post_deletion
-		CoreIntegration::handle_post_deletion( $post_id, null );
+		$core_integration = $this->get_service( CoreIntegration::class );
+		$core_integration->handle_post_deletion( $post_id, null );
 
 		// Method should not throw an error
 		$this->assertTrue( true );
@@ -141,7 +145,8 @@ class PostDeletionTest extends TestCase {
 		);
 		
 		// Call handle_post_deletion
-		CoreIntegration::handle_post_deletion( $post_id, null );
+		$core_integration = $this->get_service( CoreIntegration::class );
+		$core_integration->handle_post_deletion( $post_id, null );
 		
 		// Verify the action was called
 		$this->assertTrue( $action_called );
@@ -244,7 +249,8 @@ class PostDeletionTest extends TestCase {
 		$post_id     = $this->create_dummy_post( $future_date . ' 00:00:00', 'publish' );
 		
 		// Call handle_post_deletion
-		CoreIntegration::handle_post_deletion( $post_id, null );
+		$core_integration = $this->get_service( CoreIntegration::class );
+		$core_integration->handle_post_deletion( $post_id, null );
 		
 		// Method should not throw an error
 		$this->assertTrue( true );

@@ -50,7 +50,7 @@ class SitemapContentTest extends TestCase {
 	 */
 	public function test_add_url_entry(): void {
 		$sitemap_content = new SitemapContent();
-		$entry = new UrlEntry( 'https://example.com/1' );
+		$entry           = new UrlEntry( 'https://example.com/1' );
 
 		$new_sitemap_content = $sitemap_content->add( $entry );
 
@@ -63,8 +63,8 @@ class SitemapContentTest extends TestCase {
 	 * Test removing a URL entry.
 	 */
 	public function test_remove_url_entry(): void {
-		$entry1 = new UrlEntry( 'https://example.com/1' );
-		$entry2 = new UrlEntry( 'https://example.com/2' );
+		$entry1          = new UrlEntry( 'https://example.com/1' );
+		$entry2          = new UrlEntry( 'https://example.com/2' );
 		$sitemap_content = new SitemapContent( array( $entry1, $entry2 ) );
 
 		$new_sitemap_content = $sitemap_content->remove( $entry1 );
@@ -79,8 +79,8 @@ class SitemapContentTest extends TestCase {
 	 * Test removing a non-existent URL entry.
 	 */
 	public function test_remove_nonexistent_url_entry(): void {
-		$entry1 = new UrlEntry( 'https://example.com/1' );
-		$entry2 = new UrlEntry( 'https://example.com/2' );
+		$entry1          = new UrlEntry( 'https://example.com/1' );
+		$entry2          = new UrlEntry( 'https://example.com/2' );
 		$sitemap_content = new SitemapContent( array( $entry1 ) );
 
 		$new_sitemap_content = $sitemap_content->remove( $entry2 );
@@ -94,7 +94,7 @@ class SitemapContentTest extends TestCase {
 	 * Test getting entries.
 	 */
 	public function test_get_entries(): void {
-		$entries = array(
+		$entries         = array(
 			new UrlEntry( 'https://example.com/1' ),
 			new UrlEntry( 'https://example.com/2' ),
 		);
@@ -110,7 +110,7 @@ class SitemapContentTest extends TestCase {
 	 * Test converting to array.
 	 */
 	public function test_to_array(): void {
-		$entries = array(
+		$entries         = array(
 			new UrlEntry( 'https://example.com/1' ),
 			new UrlEntry( 'https://example.com/2' ),
 		);
@@ -128,7 +128,7 @@ class SitemapContentTest extends TestCase {
 	 * Test equality comparison.
 	 */
 	public function test_equals_with_identical_sets(): void {
-		$entries = array(
+		$entries          = array(
 			new UrlEntry( 'https://example.com/1' ),
 			new UrlEntry( 'https://example.com/2' ),
 		);
@@ -142,8 +142,8 @@ class SitemapContentTest extends TestCase {
 	 * Test equality comparison with different sets.
 	 */
 	public function test_equals_with_different_sets(): void {
-		$entries1 = array( new UrlEntry( 'https://example.com/1' ) );
-		$entries2 = array( new UrlEntry( 'https://example.com/2' ) );
+		$entries1         = array( new UrlEntry( 'https://example.com/1' ) );
+		$entries2         = array( new UrlEntry( 'https://example.com/2' ) );
 		$sitemap_content1 = new SitemapContent( $entries1 );
 		$sitemap_content2 = new SitemapContent( $entries2 );
 
@@ -154,8 +154,8 @@ class SitemapContentTest extends TestCase {
 	 * Test equality comparison with different sizes.
 	 */
 	public function test_equals_with_different_sizes(): void {
-		$entries1 = array( new UrlEntry( 'https://example.com/1' ) );
-		$entries2 = array(
+		$entries1         = array( new UrlEntry( 'https://example.com/1' ) );
+		$entries2         = array(
 			new UrlEntry( 'https://example.com/1' ),
 			new UrlEntry( 'https://example.com/2' ),
 		);
@@ -169,11 +169,11 @@ class SitemapContentTest extends TestCase {
 	 * Test equality comparison with different order.
 	 */
 	public function test_equals_with_different_order(): void {
-		$entries1 = array(
+		$entries1         = array(
 			new UrlEntry( 'https://example.com/1' ),
 			new UrlEntry( 'https://example.com/2' ),
 		);
-		$entries2 = array(
+		$entries2         = array(
 			new UrlEntry( 'https://example.com/2' ),
 			new UrlEntry( 'https://example.com/1' ),
 		);
@@ -212,7 +212,7 @@ class SitemapContentTest extends TestCase {
 	 * Test validation with custom max entries.
 	 */
 	public function test_validation_with_custom_max_entries(): void {
-		$entries = array(
+		$entries         = array(
 			new UrlEntry( 'https://example.com/1' ),
 			new UrlEntry( 'https://example.com/2' ),
 		);
@@ -240,7 +240,7 @@ class SitemapContentTest extends TestCase {
 		}
 		$sitemap_content = new SitemapContent( $entries );
 
-		$new_entry = new UrlEntry( 'https://example.com/overflow' );
+		$new_entry           = new UrlEntry( 'https://example.com/overflow' );
 		$new_sitemap_content = $sitemap_content->add( $new_entry );
 
 		$this->assertSame( $sitemap_content, $new_sitemap_content ); // No change
@@ -251,13 +251,13 @@ class SitemapContentTest extends TestCase {
 	 * Test adding entry when full with custom limit.
 	 */
 	public function test_add_entry_when_full_with_custom_limit(): void {
-		$entries = array(
+		$entries         = array(
 			new UrlEntry( 'https://example.com/1' ),
 			new UrlEntry( 'https://example.com/2' ),
 		);
 		$sitemap_content = new SitemapContent( $entries, 2 );
 
-		$new_entry = new UrlEntry( 'https://example.com/3' );
+		$new_entry           = new UrlEntry( 'https://example.com/3' );
 		$new_sitemap_content = $sitemap_content->add( $new_entry );
 
 		$this->assertSame( $sitemap_content, $new_sitemap_content ); // No change
@@ -268,7 +268,7 @@ class SitemapContentTest extends TestCase {
 	 * Test count method.
 	 */
 	public function test_count(): void {
-		$entries = array(
+		$entries         = array(
 			new UrlEntry( 'https://example.com/1' ),
 			new UrlEntry( 'https://example.com/2' ),
 		);

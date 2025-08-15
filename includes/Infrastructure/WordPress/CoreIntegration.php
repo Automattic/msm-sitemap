@@ -9,7 +9,9 @@ declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap\Infrastructure\WordPress;
 
+use Automattic\MSM_Sitemap\Domain\Contracts\WordPressIntegrationInterface;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
+use Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository;
 
 /**
  * Handles WordPress core sitemap system integration.
@@ -17,32 +19,48 @@ use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
  * This class manages the integration with WordPress core sitemaps,
  * primarily for stylesheet support while preventing interference with MSM functionality.
  */
-class CoreIntegration {
+class CoreIntegration implements WordPressIntegrationInterface {
 
 	/**
-	 * Initialize core sitemap integration.
+	 * The post repository.
+	 *
+	 * @var PostRepository
 	 */
-	public static function setup(): void {
+	private PostRepository $post_repository;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param PostRepository $post_repository The post repository.
+	 */
+	public function __construct( PostRepository $post_repository ) {
+		$this->post_repository = $post_repository;
+	}
+
+	/**
+	 * Register WordPress hooks and filters for core sitemap integration.
+	 */
+	public function register_hooks(): void {
 		// Enable WordPress core sitemaps for stylesheet support, but prevent them from interfering with MSM
-		add_action( 'wp_sitemaps_init', array( __CLASS__, 'disable_core_providers' ), 999 );
-		add_action( 'wp_sitemaps_init', array( __CLASS__, 'remove_core_robots_hook' ), 1000 );
+		add_action( 'wp_sitemaps_init', array( $this, 'disable_core_providers' ), 999 );
+		add_action( 'wp_sitemaps_init', array( $this, 'remove_core_robots_hook' ), 1000 );
 		add_filter( 'wp_sitemaps_robots', '__return_empty_string' ); // Prevent core sitemaps from being added to robots.txt
 		
 		// Disable main query for sitemap rendering to improve performance
-		add_filter( 'posts_pre_query', array( __CLASS__, 'disable_main_query_for_sitemap_xml' ), 10, 2 );
+		add_filter( 'posts_pre_query', array( $this, 'disable_main_query_for_sitemap_xml' ), 10, 2 );
 		
 		// Disable canonical redirects for sitemap files to prevent interference
-		add_filter( 'redirect_canonical', array( __CLASS__, 'disable_canonical_redirects_for_sitemap_xml' ), 10, 2 );
+		add_filter( 'redirect_canonical', array( $this, 'disable_canonical_redirects_for_sitemap_xml' ), 10, 2 );
 
 		// Add entries to the bottom of robots.txt
-		add_filter( 'robots_txt', array( __CLASS__, 'robots_txt' ), 10, 2 );
+		add_filter( 'robots_txt', array( $this, 'robots_txt' ), 10, 2 );
 
 		// Hook into post deletion/trashing to trigger sitemap updates
-		add_action( 'deleted_post', array( __CLASS__, 'handle_post_deletion' ), 10, 2 );
-		add_action( 'trashed_post', array( __CLASS__, 'handle_post_deletion' ), 10, 1 );
+		add_action( 'deleted_post', array( $this, 'handle_post_deletion' ), 10, 2 );
+		add_action( 'trashed_post', array( $this, 'handle_post_deletion' ), 10, 1 );
 
 		// Register custom cron schedule for sitemap updates
-		add_filter( 'cron_schedules', array( __CLASS__, 'sitemap_cron_intervals' ) );
+		add_filter( 'cron_schedules', array( $this, 'sitemap_cron_intervals' ) );
 	}
 
 	/**
@@ -50,7 +68,7 @@ class CoreIntegration {
 	 *
 	 * @param \WP_Sitemaps $wp_sitemaps WordPress core sitemaps instance.
 	 */
-	public static function remove_core_robots_hook( \WP_Sitemaps $wp_sitemaps ): void {
+	public function remove_core_robots_hook( \WP_Sitemaps $wp_sitemaps ): void {
 		// Remove the core sitemaps' robots.txt hook to prevent them from adding entries
 		remove_filter( 'robots_txt', array( $wp_sitemaps, 'add_robots' ), 0 );
 	}
@@ -63,7 +81,7 @@ class CoreIntegration {
 	 *
 	 * @param \WP_Sitemaps $wp_sitemaps WordPress core sitemaps instance.
 	 */
-	public static function disable_core_providers( \WP_Sitemaps $wp_sitemaps ): void {
+	public function disable_core_providers( \WP_Sitemaps $wp_sitemaps ): void {
 		// Remove all core providers to prevent them from interfering with MSM
 		$core_providers = array( 'posts', 'taxonomies', 'users' );
 		
@@ -99,40 +117,27 @@ class CoreIntegration {
 	/**
 	 * Disable Main Query when rendering sitemaps.
 	 *
-	 * This improves performance by preventing WordPress from running
-	 * unnecessary database queries when serving sitemap XML responses.
-	 *
-	 * @param array|null $posts Array of post data or null.
+	 * @param array|null $posts Array of posts or null.
 	 * @param \WP_Query  $query The WP_Query instance.
 	 * @return array|null Modified posts array or null.
 	 */
-	public static function disable_main_query_for_sitemap_xml( $posts, $query ) {
-		if ( $query->is_main_query() && isset( $query->query_vars['sitemap'] ) && 'true' === $query->query_vars['sitemap'] ) {
-			$posts = array();
+	public function disable_main_query_for_sitemap_xml( $posts, $query ) {
+		if ( $query->is_main_query() && $query->get( 'sitemap' ) ) {
+			return array(); // Return empty array to prevent main query from running
 		}
 		return $posts;
 	}
 
 	/**
-	 * Disable canonical redirects for the sitemap files.
+	 * Disable canonical redirects for sitemap XML requests.
 	 *
-	 * Prevents WordPress from redirecting sitemap URLs, which could interfere
-	 * with proper sitemap delivery.
-	 *
-	 * @see http://codex.wordpress.org/Function_Reference/redirect_canonical
 	 * @param string $redirect_url The redirect URL.
 	 * @param string $requested_url The requested URL.
-	 * @return string URL to redirect (or original requested URL to disable redirect).
+	 * @return string|false The redirect URL or false to prevent redirect.
 	 */
-	public static function disable_canonical_redirects_for_sitemap_xml( $redirect_url, $requested_url ) {
-		if ( \Automattic\MSM_Sitemap\Domain\ValueObjects\Site::is_indexed_by_year() ) {
-			$pattern = '|sitemap-([0-9]{4})\.xml|';
-		} else {
-			$pattern = '|sitemap\.xml|';
-		}
-
-		if ( preg_match( $pattern, $requested_url ) ) {
-			return $requested_url;
+	public function disable_canonical_redirects_for_sitemap_xml( $redirect_url, $requested_url ) {
+		if ( strpos( $requested_url, 'sitemap' ) !== false ) {
+			return false; // Prevent canonical redirects for sitemap URLs
 		}
 		return $redirect_url;
 	}
@@ -143,13 +148,12 @@ class CoreIntegration {
 	 * @param int      $post_id
 	 * @param \WP_Post $post
 	 */
-	public static function handle_post_deletion( $post_id, $post = null ) {
+	public function handle_post_deletion( $post_id, $post = null ) {
 		if ( ! $post ) {
 			$post = get_post( $post_id );
 		}
 
-		$post_repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository();
-		if ( ! $post || ! in_array( $post->post_type, $post_repository->get_supported_post_types() ) ) {
+		if ( ! $post || ! in_array( $post->post_type, $this->post_repository->get_supported_post_types() ) ) {
 			return;
 		}
 
@@ -166,8 +170,8 @@ class CoreIntegration {
 	 * @param array[] $schedules WordPress cron schedules array.
 	 * @return array[] Modified schedules with custom intervals added.
 	 */
-	public static function sitemap_cron_intervals( $schedules ) {
-		$schedules['ms-sitemap-5-min-cron-interval'] = array(
+	public function sitemap_cron_intervals( $schedules ) {
+		$schedules['ms-sitemap-5-min-cron-interval']  = array(
 			'interval' => 300,
 			'display'  => __( 'Every 5 minutes', 'msm-sitemap' ),
 		);
@@ -197,7 +201,7 @@ class CoreIntegration {
 	/**
 	 * Setup rewrite rules for the sitemap
 	 */
-	public static function sitemap_rewrite_init() {
+	public function sitemap_rewrite_init() {
 		// Allow 'sitemap=true' parameter
 		add_rewrite_tag( '%sitemap%', 'true' );
 
@@ -217,14 +221,14 @@ class CoreIntegration {
 	 * @param string $public Whether the site is public.
 	 * @return string The output of the robots.txt file.
 	 */
-	public static function robots_txt( $output, $public ) {
+	public function robots_txt( $output, $public ) {
 
 		// Make sure the site isn't private
 		if ( '1' == $public ) {
 			$output .= '# Sitemap archive' . PHP_EOL;
 
 			if ( Site::is_indexed_by_year() ) {
-				$years = msm_sitemap_plugin()->get_years_with_posts();
+				$years = $this->post_repository->get_years_with_posts();
 				foreach ( $years as $year ) {
 					$output .= 'Sitemap: ' . Site::get_sitemap_index_url( (int) $year ) . PHP_EOL;
 				}
@@ -236,5 +240,4 @@ class CoreIntegration {
 		}
 		return $output;
 	}
-
 }

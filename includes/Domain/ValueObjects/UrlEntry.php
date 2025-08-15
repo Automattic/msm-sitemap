@@ -280,8 +280,8 @@ class UrlEntry {
 		}
 
 		// Validate that it's a real date.
-		$date_parts = explode( 'T', $lastmod );
-		$date_only  = $date_parts[0];
+		$date_parts                 = explode( 'T', $lastmod );
+		$date_only                  = $date_parts[0];
 		list( $year, $month, $day ) = explode( '-', $date_only );
 
 		if ( ! checkdate( (int) $month, (int) $day, (int) $year ) ) {

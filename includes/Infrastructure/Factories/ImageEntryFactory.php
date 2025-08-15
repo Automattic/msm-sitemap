@@ -10,6 +10,7 @@ declare( strict_types=1 );
 namespace Automattic\MSM_Sitemap\Infrastructure\Factories;
 
 use Automattic\MSM_Sitemap\Domain\ValueObjects\ImageEntry;
+use InvalidArgumentException;
 
 /**
  * Factory for creating ImageEntry objects from WordPress data.
@@ -23,7 +24,7 @@ class ImageEntryFactory {
 	 * Create an ImageEntry from a WordPress attachment ID.
 	 *
 	 * @param int $attachment_id The attachment ID.
-	 * @return \Automattic\MSM_Sitemap\Domain\ValueObjects\ImageEntry|null The image entry or null if attachment should be skipped.
+	 * @return ImageEntry|null The image entry or null if attachment should be skipped.
 	 */
 	public static function from_attachment_id( int $attachment_id ): ?ImageEntry {
 		$attachment = get_post( $attachment_id );
@@ -81,7 +82,7 @@ class ImageEntryFactory {
 				$title,
 				$license
 			);
-		} catch ( \InvalidArgumentException $e ) {
+		} catch ( InvalidArgumentException $e ) {
 			// Log the error but don't break sitemap generation
 			error_log( 'MSM Sitemap: Invalid image entry for attachment ' . $attachment_id . ': ' . $e->getMessage() );
 			return null;
@@ -92,7 +93,7 @@ class ImageEntryFactory {
 	 * Create ImageEntry objects from an array of attachment IDs.
 	 *
 	 * @param array<int> $attachment_ids Array of attachment IDs.
-	 * @return array<\Automattic\MSM_Sitemap\Domain\ValueObjects\ImageEntry> Array of image entries.
+	 * @return array<ImageEntry> Array of image entries.
 	 */
 	public static function from_attachment_ids( array $attachment_ids ): array {
 		$image_entries = array();
@@ -109,7 +110,7 @@ class ImageEntryFactory {
 	 * Create ImageEntry objects from image metadata array.
 	 *
 	 * @param array<int, array<string, mixed>> $image_metadata Array of image metadata.
-	 * @return array<\Automattic\MSM_Sitemap\Domain\ValueObjects\ImageEntry> Array of image entries.
+	 * @return array<ImageEntry> Array of image entries.
 	 */
 	public static function from_metadata( array $image_metadata ): array {
 		$image_entries = array();
@@ -125,9 +126,9 @@ class ImageEntryFactory {
 	/**
 	 * Create an ImageEntry from metadata item.
 	 *
-	 * @param int                           $attachment_id The attachment ID.
-	 * @param array<string, mixed>          $metadata      The image metadata.
-	 * @return \Automattic\MSM_Sitemap\Domain\ValueObjects\ImageEntry|null The image entry or null if invalid.
+	 * @param int $attachment_id The attachment ID.
+	 * @param array<string, mixed> $metadata The image metadata.
+	 * @return ImageEntry|null The image entry or null if invalid.
 	 */
 	private static function from_metadata_item( int $attachment_id, array $metadata ): ?ImageEntry {
 		if ( empty( $metadata['url'] ) ) {
@@ -169,7 +170,7 @@ class ImageEntryFactory {
 				$title,
 				$license
 			);
-		} catch ( \InvalidArgumentException $e ) {
+		} catch ( InvalidArgumentException $e ) {
 			// Log the error but don't break sitemap generation
 			error_log( 'MSM Sitemap: Invalid image entry for attachment ' . $attachment_id . ': ' . $e->getMessage() );
 			return null;
@@ -217,13 +218,13 @@ class ImageEntryFactory {
 	/**
 	 * Create an ImageEntry from raw data (for testing or non-WordPress contexts).
 	 *
-	 * @param string      $loc          The URL of the image.
-	 * @param string|null $caption      The caption of the image.
+	 * @param string $loc The URL of the image.
+	 * @param string|null $caption The caption of the image.
 	 * @param string|null $geo_location The geographic location of the image.
-	 * @param string|null $title        The title of the image.
-	 * @param string|null $license      The license URL of the image.
-	 * @return \Automattic\MSM_Sitemap\Domain\ValueObjects\ImageEntry The image entry.
-	 * @throws \InvalidArgumentException If any parameter is invalid.
+	 * @param string|null $title The title of the image.
+	 * @param string|null $license The license URL of the image.
+	 * @return ImageEntry The image entry.
+	 * @throws InvalidArgumentException If any parameter is invalid.
 	 */
 	public static function from_data(
 		string $loc,

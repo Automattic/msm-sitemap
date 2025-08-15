@@ -37,7 +37,7 @@ class SitemapExportService {
 	 * @param SitemapQueryService $query_service The query service.
 	 */
 	public function __construct( SitemapRepositoryInterface $repository, SitemapQueryService $query_service ) {
-		$this->repository = $repository;
+		$this->repository    = $repository;
 		$this->query_service = $query_service;
 	}
 
@@ -54,9 +54,9 @@ class SitemapExportService {
 		if ( $this->is_stopped() ) {
 			return array(
 				'success' => false,
-				'count' => 0,
+				'count'   => 0,
 				'message' => __( 'Sitemap export was stopped by user request.', 'msm-sitemap' ),
-				'errors' => array(),
+				'errors'  => array(),
 			);
 		}
 
@@ -74,9 +74,9 @@ class SitemapExportService {
 		if ( empty( $sitemaps ) ) {
 			return array(
 				'success' => true,
-				'count' => 0,
+				'count'   => 0,
 				'message' => __( 'No sitemaps found to export.', 'msm-sitemap' ),
-				'errors' => array(),
+				'errors'  => array(),
 			);
 		}
 
@@ -119,9 +119,9 @@ class SitemapExportService {
 			return $xml_content;
 		}
 
-		$dom = new \DOMDocument( '1.0', 'UTF-8' );
+		$dom                     = new \DOMDocument( '1.0', 'UTF-8' );
 		$dom->preserveWhiteSpace = false;
-		$dom->formatOutput = true;
+		$dom->formatOutput       = true;
 		
 		if ( @$dom->loadXML( $xml_content ) ) {
 			return $dom->saveXML();
@@ -155,13 +155,13 @@ class SitemapExportService {
 			if ( ! mkdir( $abs_output, 0777, true ) ) {
 				return array(
 					'success' => false,
-					'count' => 0,
+					'count'   => 0,
 					'message' => sprintf(
 						/* translators: %s is the path to the export directory. */
 						__( 'Failed to create export directory: %s', 'msm-sitemap' ),
 						$abs_output
 					),
-					'errors' => array(),
+					'errors'  => array(),
 				);
 			}
 		}
@@ -178,7 +178,7 @@ class SitemapExportService {
 	 * @return array Export result with count and errors.
 	 */
 	private function write_sitemap_files( array $sitemaps, string $abs_output, bool $pretty ): array {
-		$count = 0;
+		$count  = 0;
 		$errors = array();
 
 		foreach ( $sitemaps as $sitemap ) {
@@ -186,9 +186,9 @@ class SitemapExportService {
 			if ( $this->is_stopped() ) {
 				return array(
 					'success' => false,
-					'count' => $count,
+					'count'   => $count,
 					'message' => __( 'Export was stopped by user request.', 'msm-sitemap' ),
-					'errors' => $errors,
+					'errors'  => $errors,
 				);
 			}
 
@@ -227,10 +227,10 @@ class SitemapExportService {
 		);
 
 		return array(
-			'success' => true,
-			'count' => $count,
-			'message' => $message,
-			'errors' => $errors,
+			'success'    => true,
+			'count'      => $count,
+			'message'    => $message,
+			'errors'     => $errors,
 			'output_dir' => $dir,
 		);
 	}
@@ -261,10 +261,10 @@ class SitemapExportService {
 			}
 
 			$export_data[] = array(
-				'post_id' => $post_id,
-				'filename' => $post->post_name,
+				'post_id'     => $post_id,
+				'filename'    => $post->post_name,
 				'xml_content' => $xml_content,
-				'date' => $date,
+				'date'        => $date,
 			);
 		}
 

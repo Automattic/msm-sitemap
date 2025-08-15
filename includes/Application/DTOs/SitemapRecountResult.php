@@ -71,11 +71,11 @@ final class SitemapRecountResult implements SitemapOperationResultInterface {
 		int $total_urls = 0,
 		array $recount_errors = array()
 	) {
-		$this->success = $success;
-		$this->count = $count;
-		$this->message = $message;
-		$this->error_code = $error_code;
-		$this->total_urls = $total_urls;
+		$this->success        = $success;
+		$this->count          = $count;
+		$this->message        = $message;
+		$this->error_code     = $error_code;
+		$this->total_urls     = $total_urls;
 		$this->recount_errors = $recount_errors;
 	}
 
@@ -167,5 +167,4 @@ final class SitemapRecountResult implements SitemapOperationResultInterface {
 	 *
 	 * @return array
 	 */
-
 }

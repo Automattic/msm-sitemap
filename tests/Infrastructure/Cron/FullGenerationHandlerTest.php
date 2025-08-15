@@ -29,7 +29,8 @@ class FullGenerationHandlerTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function setUp(): void {
 		parent::setUp();
-		FullGenerationHandler::setup();
+		$handler = $this->get_service( FullGenerationHandler::class );
+		$handler->register_hooks();
 
 		$this->add_a_post_for_each_of_the_last_x_years( $this->num_years_data );
 		
@@ -44,12 +45,16 @@ class FullGenerationHandlerTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function test_schedules_years_for_processing_when_full_generation_triggered(): void {
 		// Reset sitemap data via service.
-		$generator = msm_sitemap_plugin()->get_sitemap_generator();
+		$content_types_service = $this->get_service( \Automattic\MSM_Sitemap\Application\Services\ContentTypesService::class );
+		$generator  = \Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
 		$repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
-		$service = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
+		$service    = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
 		$service->reset_all_data();
 		delete_option( 'msm_stop_processing' );
-		CronSchedulingService::handle_full_generation();
+		
+		// Get cron scheduler from container and call handle_full_generation
+		$cron_scheduler = $this->get_service( CronSchedulingService::class );
+		$cron_scheduler->handle_full_generation();
 
 		$years_being_processed = (array) get_option( 'msm_years_to_process', array() );
 
@@ -75,7 +80,8 @@ class FullGenerationHandlerTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		delete_option( 'msm_generation_in_progress' );
 		
 		// Call year processing directly instead of waiting for cron
-		FullGenerationHandler::generate_sitemap_for_year( 2024 );
+		$full_generation_handler = $this->get_service( \Automattic\MSM_Sitemap\Infrastructure\Cron\FullGenerationHandler::class );
+		$full_generation_handler->generate_sitemap_for_year( 2024 );
 
 		$months_being_processed = (array) get_option( 'msm_months_to_process', array() );
 
@@ -104,7 +110,8 @@ class FullGenerationHandlerTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		}
 
 		// Call month processing directly for the current year and month
-		FullGenerationHandler::generate_sitemap_for_year_month( $current_year, $current_month );
+		$full_generation_handler = $this->get_service( \Automattic\MSM_Sitemap\Infrastructure\Cron\FullGenerationHandler::class );
+		$full_generation_handler->generate_sitemap_for_year_month( $current_year, $current_month );
 
 		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
 		$expected_days        = range( 1, $current_day );

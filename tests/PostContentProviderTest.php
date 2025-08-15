@@ -98,9 +98,12 @@ class PostContentProviderTest extends TestCase {
 		$post_id = $this->create_dummy_post( '2024-01-15' );
 
 		// Add filter to change post status
-		add_filter( 'msm_sitemap_post_status', function() {
-			return 'draft';
-		} );
+		add_filter(
+			'msm_sitemap_post_status',
+			function () {
+				return 'draft';
+			} 
+		);
 
 		$url_set = $this->provider->get_urls_for_date( '2024-01-15 00:00:00' );
 		$this->assertTrue( $url_set->is_empty() );
@@ -118,9 +121,12 @@ class PostContentProviderTest extends TestCase {
 		$post_id = $this->create_dummy_post( '2024-01-15' );
 
 		// Add filter to change post types
-		add_filter( 'msm_sitemap_entry_post_type', function() {
-			return array( 'page' );
-		} );
+		add_filter(
+			'msm_sitemap_entry_post_type',
+			function () {
+				return array( 'page' );
+			} 
+		);
 
 		$url_set = $this->provider->get_urls_for_date( '2024-01-15 00:00:00' );
 		$this->assertTrue( $url_set->is_empty() );

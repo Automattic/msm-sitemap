@@ -45,8 +45,8 @@ class SitemapGenerator {
 	 */
 	public function generate_sitemap_for_date( string $date ): SitemapContent {
 		$combined_entries = array();
-		$providers = $this->content_types->get_all();
-		$image_provider = null;
+		$providers        = $this->content_types->get_all();
+		$image_provider   = null;
 
 		// First, collect all URL entries from non-image providers
 		foreach ( $providers as $provider ) {

@@ -7,7 +7,7 @@
  * @package MSM_Sitemap
  */
 
-namespace Automattic\MSM_Sitemap\Admin;
+namespace Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin;
 
 /**
  * Handles contextual help tabs for the admin page.
