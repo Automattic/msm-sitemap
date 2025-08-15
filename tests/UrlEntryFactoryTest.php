@@ -97,13 +97,23 @@ class UrlEntryFactoryTest extends TestCase {
 		$post_id = $this->create_dummy_post( '2024-01-15 10:30:00', 'publish' );
 
 		// Add custom filters
-		add_filter( 'msm_sitemap_changefreq', function( $changefreq, $post ) {
-			return 'daily';
-		}, 10, 2 );
+		add_filter(
+			'msm_sitemap_changefreq',
+			function ( $changefreq, $post ) {
+				return 'daily';
+			},
+			10,
+			2 
+		);
 
-		add_filter( 'msm_sitemap_priority', function( $priority, $post ) {
-			return 0.9;
-		}, 10, 2 );
+		add_filter(
+			'msm_sitemap_priority',
+			function ( $priority, $post ) {
+				return 0.9;
+			},
+			10,
+			2 
+		);
 
 		$url_entries = UrlEntryFactory::from_posts( array( $post_id ) );
 
@@ -148,9 +158,14 @@ class UrlEntryFactoryTest extends TestCase {
 		$post_id = $this->create_dummy_post( '2024-01-15 10:30:00', 'publish' );
 
 		// Add filter to skip this specific post
-		add_filter( 'msm_sitemap_skip_post', function( $skip, $post_id_to_check ) use ( $post_id ) {
-			return $post_id_to_check === $post_id;
-		}, 10, 2 );
+		add_filter(
+			'msm_sitemap_skip_post',
+			function ( $skip, $post_id_to_check ) use ( $post_id ) {
+				return $post_id_to_check === $post_id;
+			},
+			10,
+			2 
+		);
 
 		$url_entry = UrlEntryFactory::from_post( $post_id );
 

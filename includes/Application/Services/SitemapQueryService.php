@@ -70,7 +70,7 @@ class SitemapQueryService {
 				$matching_dates[] = $date_str;
 			}
 		} elseif ( isset( $query['year'], $query['month'] ) ) {
-			$year = $query['year'];
+			$year  = $query['year'];
 			$month = $query['month'];
 			
 			// Validate month to avoid ValueError in PHP 8.0+
@@ -88,7 +88,7 @@ class SitemapQueryService {
 				}
 			}
 		} elseif ( isset( $query['year'] ) ) {
-			$year = $query['year'];
+			$year      = $query['year'];
 			$max_month = ( $year == date( 'Y' ) ) ? (int) date( 'n' ) : 12;
 
 			for ( $month = 1; $month <= $max_month; $month++ ) {
@@ -123,7 +123,7 @@ class SitemapQueryService {
 				}
 				// Skip invalid dates silently
 			} elseif ( isset( $query['year'], $query['month'] ) ) {
-				$year = $query['year'];
+				$year  = $query['year'];
 				$month = $query['month'];
 
 				// Validate month to avoid ValueError in PHP 8.0+
@@ -138,7 +138,7 @@ class SitemapQueryService {
 					$all_dates[] = sprintf( '%04d-%02d-%02d', $year, $month, $day );
 				}
 			} elseif ( isset( $query['year'] ) ) {
-				$year = $query['year'];
+				$year      = $query['year'];
 				$max_month = ( $year == date( 'Y' ) ) ? (int) date( 'n' ) : 12;
 
 				for ( $month = 1; $month <= $max_month; $month++ ) {
@@ -170,7 +170,7 @@ class SitemapQueryService {
 		
 		// Get all dates that actually have posts
 		global $wpdb;
-		$placeholders = implode( ',', array_fill( 0, count( $all_potential_dates ), '%s' ) );
+		$placeholders     = implode( ',', array_fill( 0, count( $all_potential_dates ), '%s' ) );
 		$dates_with_posts = $wpdb->get_col(
 			$wpdb->prepare(
 				"SELECT DISTINCT DATE(post_date) as post_date
@@ -198,7 +198,7 @@ class SitemapQueryService {
 		$matching_dates = array();
 		
 		foreach ( $date_queries as $query ) {
-			$query_matches = $this->get_matching_dates_for_query( $query, $available_dates );
+			$query_matches  = $this->get_matching_dates_for_query( $query, $available_dates );
 			$matching_dates = array_merge( $matching_dates, $query_matches );
 		}
 		
@@ -214,7 +214,7 @@ class SitemapQueryService {
 	 */
 	public function get_date_analysis( array $date_queries, array $available_dates ): array {
 		$potential_dates = $this->expand_date_queries( $date_queries );
-		$matched_dates = array();
+		$matched_dates   = array();
 		
 		foreach ( $date_queries as $query ) {
 			$query_matches = $this->get_matching_dates_for_query( $query, $available_dates );
@@ -222,7 +222,7 @@ class SitemapQueryService {
 		}
 		
 		return array(
-			'matched' => array_unique( $matched_dates ),
+			'matched'   => array_unique( $matched_dates ),
 			'potential' => $potential_dates,
 		);
 	}

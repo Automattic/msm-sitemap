@@ -9,7 +9,7 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests;
 
-use Automattic\MSM_Sitemap\Infrastructure\WordPress\SitemapEndpointHandler;
+use Automattic\MSM_Sitemap\Infrastructure\REST\SitemapEndpointHandler;
 
 /**
  * Tests for sitemap index XML generation using the new DDD services.
@@ -24,7 +24,8 @@ class SitemapIndexXmlTest extends TestCase {
 		$this->create_dummy_post( $date . ' 00:00:00', 'publish' );
 		$this->generate_sitemap_for_date( $date );
 		
-		$xml = SitemapEndpointHandler::get_sitemap_index_xml();
+		$sitemap_endpoint_handler = $this->get_service( SitemapEndpointHandler::class );
+		$xml                      = $sitemap_endpoint_handler->get_sitemap_index_xml();
 		
 		$this->assertIsString( $xml );
 		$this->assertStringContainsString( '<sitemapindex', $xml );
@@ -43,8 +44,9 @@ class SitemapIndexXmlTest extends TestCase {
 		$this->generate_sitemap_for_date( $date1 );
 		$this->generate_sitemap_for_date( $date2 );
 		
-		$xml_2020 = SitemapEndpointHandler::get_sitemap_index_xml( 2020 );
-		$xml_2021 = SitemapEndpointHandler::get_sitemap_index_xml( 2021 );
+		$sitemap_endpoint_handler = $this->get_service( SitemapEndpointHandler::class );
+		$xml_2020                 = $sitemap_endpoint_handler->get_sitemap_index_xml( 2020 );
+		$xml_2021                 = $sitemap_endpoint_handler->get_sitemap_index_xml( 2021 );
 		
 		$this->assertStringContainsString( '2020', $xml_2020 );
 		$this->assertStringContainsString( '2021', $xml_2021 );
@@ -85,7 +87,8 @@ class SitemapIndexXmlTest extends TestCase {
 			3 
 		);
 		
-		$xml = SitemapEndpointHandler::get_sitemap_index_xml();
+		$sitemap_endpoint_handler = $this->get_service( SitemapEndpointHandler::class );
+		$xml                      = $sitemap_endpoint_handler->get_sitemap_index_xml();
 		
 		$this->assertStringContainsString( '<sitemapindex test="1"', $xml );
 		$this->assertStringContainsString( '<!-- appended -->', $xml );

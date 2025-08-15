@@ -48,9 +48,9 @@ final class SitemapOperationResult implements SitemapOperationResultInterface {
 	 * @param string|null $error_code The error code if the operation failed.
 	 */
 	private function __construct( bool $success, int $count, string $message, ?string $error_code = null ) {
-		$this->success = $success;
-		$this->count = $count;
-		$this->message = $message;
+		$this->success    = $success;
+		$this->count      = $count;
+		$this->message    = $message;
 		$this->error_code = $error_code;
 	}
 

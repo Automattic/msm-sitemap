@@ -55,6 +55,10 @@ require_once $_tests_dir . '/includes/functions.php';
  * Manually load the plugin being tested.
  */
 function _manually_load_plugin(): void {
+	// Load mock WP-CLI classes before the plugin to ensure they're available
+	// when the autoloader tries to load CLI classes
+	require_once __DIR__ . '/Includes/mock-wp-cli.php';
+
 	require dirname( __DIR__ ) . '/msm-sitemap.php';
 }
 

@@ -9,13 +9,31 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests\Admin;
 
-use Automattic\MSM_Sitemap\Admin\Action_Handlers;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\ActionHandlers;
 use Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService;
 
 /**
  * Unit Tests for Admin\Action_Handlers class
  */
 class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
+
+	/**
+	 * Get a CronSchedulingService instance for testing.
+	 *
+	 * @return \Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService
+	 */
+	private function get_cron_scheduler(): \Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService {
+		return $this->get_service( \Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService::class );
+	}
+
+	/**
+	 * Get an Action_Handlers instance for testing.
+	 *
+	 * @return \Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\ActionHandlers
+	 */
+	private function get_action_handlers(): \Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\ActionHandlers {
+		return $this->get_service( \Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\ActionHandlers::class );
+	}
 
 	/**
 	 * Set up the test environment.
@@ -50,7 +68,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
 		ob_start();
-		Action_Handlers::handle_enable_cron();
+		$this->get_action_handlers()->handle_enable_cron();
 		$output = ob_get_clean();
 
 		$this->assertTrue( (bool) get_option( CronSchedulingService::CRON_ENABLED_OPTION ) );
@@ -69,10 +87,10 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
 		// Enable cron first
-		CronSchedulingService::enable_cron();
+		$this->get_cron_scheduler()->enable_cron();
 
 		ob_start();
-		Action_Handlers::handle_enable_cron();
+		$this->get_action_handlers()->handle_enable_cron();
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'Automatic updates are already enabled', $output );
@@ -89,10 +107,10 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
 		// Enable cron first
-		CronSchedulingService::enable_cron();
+		$this->get_cron_scheduler()->enable_cron();
 
 		ob_start();
-		Action_Handlers::handle_disable_cron();
+		$this->get_action_handlers()->handle_disable_cron();
 		$output = ob_get_clean();
 
 		$this->assertFalse( (bool) get_option( CronSchedulingService::CRON_ENABLED_OPTION ) );
@@ -111,7 +129,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
 		ob_start();
-		Action_Handlers::handle_disable_cron();
+		$this->get_action_handlers()->handle_disable_cron();
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'Automatic updates are already disabled', $output );
@@ -125,7 +143,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function test_handle_generate_full(): void {
 		// Enable cron first
-		CronSchedulingService::enable_cron();
+		$this->get_cron_scheduler()->enable_cron();
 
 		// Create a post to ensure there are years with posts
 		$post_id = wp_insert_post(
@@ -138,7 +156,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		);
 
 		ob_start();
-		Action_Handlers::handle_generate_full();
+		$this->get_action_handlers()->handle_generate_full();
 		$output = ob_get_clean();
 
 		$this->assertTrue( (bool) get_option( 'msm_generation_in_progress' ) );
@@ -153,7 +171,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
 		ob_start();
-		Action_Handlers::handle_generate_full();
+		$this->get_action_handlers()->handle_generate_full();
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'Cannot generate sitemap: automatic updates must be enabled', $output );
@@ -168,7 +186,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function test_handle_generate_from_latest(): void {
 		// Enable cron first
-		CronSchedulingService::enable_cron();
+		$this->get_cron_scheduler()->enable_cron();
 
 		// Create a recent post to ensure there are latest posts
 		$post_id = wp_insert_post(
@@ -181,7 +199,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		);
 
 		ob_start();
-		Action_Handlers::handle_generate_missing_sitemaps();
+		$this->get_action_handlers()->handle_generate_missing_sitemaps();
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'Scheduled generation', $output );
@@ -205,7 +223,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		);
 
 		ob_start();
-		Action_Handlers::handle_generate_missing_sitemaps();
+		$this->get_action_handlers()->handle_generate_missing_sitemaps();
 		$output = ob_get_clean();
 
 		// Should work directly when cron is disabled
@@ -223,7 +241,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		update_option( 'msm_generation_in_progress', true );
 
 		ob_start();
-		Action_Handlers::handle_halt_generation();
+		$this->get_action_handlers()->handle_halt_generation();
 		$output = ob_get_clean();
 
 		$this->assertTrue( (bool) get_option( 'msm_sitemap_stop_generation' ) );
@@ -235,7 +253,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function test_handle_halt_generation_when_not_in_progress(): void {
 		ob_start();
-		Action_Handlers::handle_halt_generation();
+		$this->get_action_handlers()->handle_halt_generation();
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'Cannot stop sitemap generation: sitemap generation not in progress', $output );
@@ -253,7 +271,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		update_option( 'msm_sitemap_stop_generation', true );
 
 		ob_start();
-		Action_Handlers::handle_reset_data();
+		$this->get_action_handlers()->handle_reset_data();
 		$output = ob_get_clean();
 
 		$this->assertEmpty( get_option( 'msm_years_to_process' ) );

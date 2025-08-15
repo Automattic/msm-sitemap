@@ -11,6 +11,7 @@ namespace Automattic\MSM_Sitemap\Infrastructure\Providers;
 
 use Automattic\MSM_Sitemap\Domain\Contracts\ContentProviderInterface;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\UrlSet;
+use Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry;
 use Automattic\MSM_Sitemap\Infrastructure\Factories\UrlEntryFactory;
 use Automattic\MSM_Sitemap\Infrastructure\Factories\UrlSetFactory;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository;
@@ -24,15 +25,11 @@ class PostContentProvider implements ContentProviderInterface {
 
 	/**
 	 * Default posts per sitemap page.
-	 *
-	 * @var int
 	 */
 	private const DEFAULT_POSTS_PER_SITEMAP_PAGE = 500;
 
 	/**
 	 * Post repository.
-	 *
-	 * @var PostRepository
 	 */
 	private PostRepository $post_repository;
 
@@ -82,8 +79,6 @@ class PostContentProvider implements ContentProviderInterface {
 		return 'posts';
 	}
 
-
-
 	/**
 	 * Get the display name for this content provider.
 	 *
@@ -105,13 +100,11 @@ class PostContentProvider implements ContentProviderInterface {
 	/**
 	 * Enhance existing URL entries with additional data (optional).
 	 *
-	 * @param array<\Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry> $url_entries Array of URL entries to enhance.
-	 * @return array<\Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry> Array of enhanced URL entries.
+	 * @param array<UrlEntry> $url_entries Array of URL entries to enhance.
+	 * @return array<UrlEntry> Array of enhanced URL entries.
 	 */
 	public function enhance_url_entries( array $url_entries ): array {
 		// Posts provider doesn't enhance other entries
 		return $url_entries;
 	}
-
-
 }

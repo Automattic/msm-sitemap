@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap\Infrastructure\WordPress;
 
+use Automattic\MSM_Sitemap\Domain\Contracts\WordPressIntegrationInterface;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
 
 /**
@@ -17,12 +18,12 @@ use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
  * This class handles the integration with WordPress core stylesheets,
  * providing MSM-specific branding and namespace support.
  */
-class StylesheetManager {
+class StylesheetManager implements WordPressIntegrationInterface {
 
 	/**
-	 * Initialize stylesheet management.
+	 * Register WordPress hooks and filters for stylesheet management.
 	 */
-	public static function setup(): void {
+	public function register_hooks(): void {
 		// Filter core stylesheet to support MSM namespaces
 		add_filter( 'wp_sitemaps_stylesheet_content', array( __CLASS__, 'modify_core_stylesheet' ) );
 		add_filter( 'wp_sitemaps_stylesheet_index_content', array( __CLASS__, 'modify_core_index_stylesheet' ) );

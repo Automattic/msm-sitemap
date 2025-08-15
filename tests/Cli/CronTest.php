@@ -8,11 +8,11 @@ declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap\Tests\Cli;
 
-use Automattic\MSM_Sitemap\Infrastructure\CLI\CLI_Command;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\CLICommand;
 use Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService;
 
 require_once __DIR__ . '/../Includes/mock-wp-cli.php';
-require_once __DIR__ . '/../../includes/Infrastructure/CLI/CLI_Command.php';
+require_once __DIR__ . '/../../includes/Infrastructure/CLI/CLICommand.php';
 
 /**
  * Class CronTest
@@ -58,7 +58,7 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		// Remove the filter that forces cron enabled in tests
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 
 		ob_start();
 		$cli->cron( array( 'enable' ), array() );
@@ -73,6 +73,15 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	}
 
 	/**
+	 * Get a CronSchedulingService instance for testing.
+	 *
+	 * @return \Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService
+	 */
+	private function get_cron_scheduler(): \Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService {
+		return $this->get_service( \Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService::class );
+	}
+
+	/**
 	 * Test that cron enable command shows warning when already enabled.
 	 *
 	 * @return void
@@ -82,9 +91,9 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
 		// Enable cron first
-		CronSchedulingService::enable_cron();
+		$this->get_cron_scheduler()->enable_cron();
 
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 
 		ob_start();
 		$cli->cron( array( 'enable' ), array() );
@@ -106,9 +115,9 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
 		// Enable cron first
-		CronSchedulingService::enable_cron();
+		$this->get_cron_scheduler()->enable_cron();
 
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 
 		ob_start();
 		$cli->cron( array( 'disable' ), array() );
@@ -131,7 +140,7 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		// Remove the filter that forces cron enabled in tests
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 
 		ob_start();
 		$cli->cron( array( 'disable' ), array() );
@@ -150,9 +159,9 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function test_cron_status_when_enabled(): void {
 		// Enable cron first
-		CronSchedulingService::enable_cron();
+		$this->get_cron_scheduler()->enable_cron();
 
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 
 		ob_start();
 		$cli->cron( array( 'status' ), array() );
@@ -171,7 +180,7 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		// Remove the filter that forces cron enabled in tests
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 
 		ob_start();
 		$cli->cron( array( 'status' ), array() );
@@ -191,14 +200,14 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function test_cron_status_json_format(): void {
 		// Enable cron first
-		CronSchedulingService::enable_cron();
+		$this->get_cron_scheduler()->enable_cron();
 
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 
 		ob_start();
 		$cli->cron( array( 'status' ), array( 'format' => 'json' ) );
 		$output = ob_get_clean();
-		$data = json_decode( $output, true );
+		$data   = json_decode( $output, true );
 
 		$this->assertIsArray( $data );
 		$this->assertCount( 1, $data );
@@ -220,14 +229,14 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
 		// Enable cron and add some processing options
-		CronSchedulingService::enable_cron();
+		$this->get_cron_scheduler()->enable_cron();
 		update_option( 'msm_years_to_process', array( '2024' ) );
 		update_option( 'msm_months_to_process', array( 1 ) );
 		update_option( 'msm_days_to_process', array( 1 ) );
 		update_option( 'msm_generation_in_progress', true );
 		update_option( 'msm_stop_processing', true );
 
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 
 		ob_start();
 		$cli->cron( array( 'reset' ), array() );
@@ -252,7 +261,7 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_cron_without_subcommand(): void {
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 
 		ob_start();
 		$cli->cron( array(), array() );
@@ -268,7 +277,7 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_cron_with_invalid_subcommand(): void {
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 
 		// This test expects an exception to be thrown
 		$this->expectException( 'WP_CLI\ExitException' );
@@ -282,7 +291,7 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_cron_frequency_show_current(): void {
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 
 		ob_start();
 		$cli->cron( array( 'frequency' ), array() );
@@ -301,15 +310,15 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function test_cron_frequency_update(): void {
 		// Store original frequency
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
+		$settings_service   = $this->get_service( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
 		$original_frequency = $settings_service->get_setting( 'cron_frequency', '15min' );
 
 		// Enable cron first
-		\Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService::enable_cron();
+		$this->get_cron_scheduler()->enable_cron();
 
 		// Test the CronManagementService directly
-		$result = \Automattic\MSM_Sitemap\Application\Services\CronManagementService::update_frequency( 'hourly' );
+		$cron_management_service = $this->get_service( \Automattic\MSM_Sitemap\Application\Services\CronManagementService::class );
+		$result                  = $cron_management_service->update_frequency( 'hourly' );
 		
 		$this->assertTrue( $result['success'], 'CronManagementService::update_frequency failed: ' . ( $result['message'] ?? 'Unknown error' ) );
 		
@@ -327,7 +336,7 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_cron_frequency_invalid(): void {
-		$cli = CLI_Command::create();
+		$cli = CLICommand::create();
 
 		// This test expects an exception to be thrown
 		$this->expectException( 'WP_CLI\ExitException' );

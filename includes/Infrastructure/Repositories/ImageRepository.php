@@ -9,19 +9,149 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Infrastructure\Repositories;
 
+use Automattic\MSM_Sitemap\Application\Services\SettingsService;
+use Automattic\MSM_Sitemap\Domain\Contracts\ImageRepositoryInterface;
+
 /**
  * Image Repository
  *
  * Handles fetching image attachments from WordPress posts for sitemap generation.
  * Provides methods to retrieve images associated with posts for specific dates.
  */
-class ImageRepository {
+class ImageRepository implements ImageRepositoryInterface {
+
+	/**
+	 * The settings service.
+	 *
+	 * @var SettingsService
+	 */
+	private SettingsService $settings;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param SettingsService $settings The settings service.
+	 */
+	public function __construct( SettingsService $settings ) {
+		$this->settings = $settings;
+	}
+
+	/**
+	 * Find an image attachment by its ID.
+	 *
+	 * @param int|string $id The attachment ID.
+	 * @return object|null The attachment object if found, null otherwise.
+	 */
+	public function find( $id ): ?object {
+		$attachment = get_post( (int) $id );
+		if ( ! $attachment || 'attachment' !== $attachment->post_type ) {
+			return null;
+		}
+		return $attachment;
+	}
+
+	/**
+	 * Find image attachments by criteria.
+	 *
+	 * @param array $criteria Search criteria.
+	 * @param int $limit Maximum number of results to return.
+	 * @param int $offset Number of results to skip.
+	 * @return array Array of attachment objects.
+	 */
+	public function find_by( array $criteria, int $limit = 100, int $offset = 0 ): array {
+		$args = array(
+			'post_type'      => 'attachment',
+			'post_mime_type' => 'image',
+			'posts_per_page' => $limit,
+			'offset'         => $offset,
+			'post_status'    => 'inherit',
+		);
+
+		// Add criteria filters
+		if ( isset( $criteria['parent'] ) ) {
+			$args['post_parent'] = $criteria['parent'];
+		}
+
+		if ( isset( $criteria['date'] ) ) {
+			$args['date_query'] = array(
+				array(
+					'year'  => gmdate( 'Y', strtotime( $criteria['date'] ) ),
+					'month' => gmdate( 'm', strtotime( $criteria['date'] ) ),
+					'day'   => gmdate( 'd', strtotime( $criteria['date'] ) ),
+				),
+			);
+		}
+
+		return get_posts( $args );
+	}
+
+	/**
+	 * Save an image attachment.
+	 *
+	 * @param mixed $entity The attachment data or object.
+	 * @return bool True on success, false on failure.
+	 */
+	public function save( $entity ): bool {
+		// This is a simplified implementation - in practice, image attachments
+		// are typically created through WordPress media upload
+		if ( is_array( $entity ) ) {
+			$attachment_id = wp_insert_post( $entity );
+			return 0 < $attachment_id;
+		}
+		return false;
+	}
+
+	/**
+	 * Delete an image attachment by its ID.
+	 *
+	 * @param int|string $id The attachment ID.
+	 * @return bool True on success, false on failure.
+	 */
+	public function delete( $id ): bool {
+		$result = wp_delete_post( (int) $id, true );
+		return $result !== false;
+	}
+
+	/**
+	 * Count image attachments matching criteria.
+	 *
+	 * @param array $criteria Search criteria.
+	 * @return int Number of matching attachments.
+	 */
+	public function count( array $criteria = array() ): int {
+		$args = array(
+			'post_type'      => 'attachment',
+			'post_mime_type' => 'image',
+			'posts_per_page' => -1,
+			'post_status'    => 'inherit',
+			'fields'         => 'ids',
+		);
+
+		// Add criteria filters
+		if ( isset( $criteria['parent'] ) ) {
+			$args['post_parent'] = $criteria['parent'];
+		}
+
+		$attachments = get_posts( $args );
+		return count( $attachments );
+	}
+
+	/**
+	 * Check if an image attachment exists.
+	 *
+	 * @param int|string $id The attachment ID.
+	 * @return bool True if attachment exists, false otherwise.
+	 */
+	public function exists( $id ): bool {
+		$attachment = get_post( (int) $id );
+		return $attachment && 'attachment' === $attachment->post_type;
+	}
 
 	/**
 	 * Get image attachment IDs for posts published on a specific date.
 	 *
 	 * @param string $date MySQL DATE format (e.g., '2024-01-15').
-	 * @param int    $limit Maximum number of images to return.
+	 * @param int $limit Maximum number of images to return.
 	 * @return array<int> Array of image attachment IDs.
 	 */
 	public function get_image_ids_for_date( string $date, int $limit = 1000 ): array {
@@ -40,7 +170,7 @@ class ImageRepository {
 	 * Get image attachment IDs for specific post IDs.
 	 *
 	 * @param array<int> $post_ids Array of post IDs.
-	 * @param int        $limit    Maximum number of images to return.
+	 * @param int $limit Maximum number of images to return.
 	 * @return array<int> Array of image attachment IDs.
 	 */
 	public function get_image_ids_for_posts( array $post_ids, int $limit = 1000 ): array {
@@ -52,7 +182,7 @@ class ImageRepository {
 		$image_ids = array();
 		
 		foreach ( $post_ids as $post_id ) {
-			$attachments = get_attached_media( 'image', $post_id );
+			$attachments       = get_attached_media( 'image', $post_id );
 			$featured_image_id = get_post_thumbnail_id( $post_id );
 			
 			foreach ( $attachments as $attachment ) {
@@ -175,6 +305,7 @@ class ImageRepository {
 	private function get_post_ids_for_date( string $date ): array {
 		global $wpdb;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$results = $wpdb->get_col(
 			$wpdb->prepare(
 				"SELECT ID 
@@ -207,9 +338,7 @@ class ImageRepository {
 	 * @return bool True if images should be included, false otherwise.
 	 */
 	public function should_include_images(): bool {
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
-		$saved_enabled = $settings_service->get_setting( 'include_images', '1' );
+		$saved_enabled    = $this->settings->get_setting( 'include_images', '1' );
 		$filtered_enabled = apply_filters( 'msm_sitemap_include_images', '1' === $saved_enabled );
 		return (bool) $filtered_enabled;
 	}
@@ -220,9 +349,7 @@ class ImageRepository {
 	 * @return int Maximum number of images.
 	 */
 	public function get_max_images_per_sitemap(): int {
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
-		$saved_max = $settings_service->get_setting( 'max_images_per_sitemap', 1000 );
+		$saved_max    = $this->settings->get_setting( 'max_images_per_sitemap', 1000 );
 		$filtered_max = apply_filters( 'msm_sitemap_max_images_per_sitemap', $saved_max );
 		return $filtered_max;
 	}
@@ -233,9 +360,7 @@ class ImageRepository {
 	 * @return bool True if featured images should be included, false otherwise.
 	 */
 	public function should_include_featured_images(): bool {
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
-		$saved_enabled = $settings_service->get_setting( 'featured_images', '1' );
+		$saved_enabled    = $this->settings->get_setting( 'featured_images', '1' );
 		$filtered_enabled = apply_filters( 'msm_sitemap_featured_images', '1' === $saved_enabled );
 		return (bool) $filtered_enabled;
 	}
@@ -246,9 +371,7 @@ class ImageRepository {
 	 * @return bool True if content images should be included, false otherwise.
 	 */
 	public function should_include_content_images(): bool {
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
-		$saved_enabled = $settings_service->get_setting( 'content_images', '1' );
+		$saved_enabled    = $this->settings->get_setting( 'content_images', '1' );
 		$filtered_enabled = apply_filters( 'msm_sitemap_content_images', '1' === $saved_enabled );
 		return (bool) $filtered_enabled;
 	}

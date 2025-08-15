@@ -2,12 +2,12 @@
 /**
  * Admin Notifications Handler
  *
- * @package Automattic\MSM_Sitemap\Admin
+ * @package Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin
  */
 
 declare( strict_types=1 );
 
-namespace Automattic\MSM_Sitemap\Admin;
+namespace Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin;
 
 /**
  * Handles admin notifications for the MSM Sitemap plugin.

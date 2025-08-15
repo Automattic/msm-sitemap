@@ -40,7 +40,7 @@ class SitemapValidationService {
 	 * @return array Validation results with 'valid' boolean and 'errors' array.
 	 */
 	public function validate_sitemap_xml( string $xml_content ): array {
-		$errors = array();
+		$errors   = array();
 		$warnings = array();
 
 		// Enable internal error handling
@@ -87,7 +87,7 @@ class SitemapValidationService {
 		// Validate individual URLs
 		foreach ( $urls as $url ) {
 			$url_errors = $this->validate_url_element( $url );
-			$errors = array_merge( $errors, $url_errors );
+			$errors     = array_merge( $errors, $url_errors );
 		}
 
 		return array(
@@ -112,10 +112,10 @@ class SitemapValidationService {
 			);
 		}
 
-		$total_sitemaps = 0;
-		$valid_sitemaps = 0;
-		$invalid_sitemaps = 0;
-		$total_errors = 0;
+		$total_sitemaps    = 0;
+		$valid_sitemaps    = 0;
+		$invalid_sitemaps  = 0;
+		$total_errors      = 0;
 		$validation_errors = array();
 
 		// Get sitemap dates to validate
@@ -126,21 +126,21 @@ class SitemapValidationService {
 		}
 
 		foreach ( $sitemap_dates as $date ) {
-			$total_sitemaps++;
+			++$total_sitemaps;
 			
 			// Get sitemap post
 			$sitemap_post_id = $this->repository->find_by_date( $date );
 			if ( ! $sitemap_post_id ) {
-				$invalid_sitemaps++;
-				$total_errors++;
+				++$invalid_sitemaps;
+				++$total_errors;
 				$validation_errors[] = sprintf( 'Sitemap for date %s not found.', $date );
 				continue;
 			}
 
 			$sitemap_post = get_post( $sitemap_post_id );
 			if ( ! $sitemap_post ) {
-				$invalid_sitemaps++;
-				$total_errors++;
+				++$invalid_sitemaps;
+				++$total_errors;
 				$validation_errors[] = sprintf( 'Sitemap for date %s could not be retrieved.', $date );
 				continue;
 			}
@@ -148,8 +148,8 @@ class SitemapValidationService {
 			// Get sitemap content
 			$sitemap_content = get_post_meta( $sitemap_post_id, 'msm_sitemap_xml', true );
 			if ( empty( $sitemap_content ) ) {
-				$invalid_sitemaps++;
-				$total_errors++;
+				++$invalid_sitemaps;
+				++$total_errors;
 				$validation_errors[] = sprintf( 'Sitemap for date %s has no XML data.', $date );
 				continue;
 			}
@@ -158,10 +158,10 @@ class SitemapValidationService {
 			$validation_result = $this->validate_sitemap_xml( $sitemap_content );
 			
 			if ( $validation_result['valid'] ) {
-				$valid_sitemaps++;
+				++$valid_sitemaps;
 			} else {
-				$invalid_sitemaps++;
-				$total_errors += count( $validation_result['errors'] );
+				++$invalid_sitemaps;
+				$total_errors     += count( $validation_result['errors'] );
 				$validation_errors = array_merge( $validation_errors, $validation_result['errors'] );
 			}
 		}

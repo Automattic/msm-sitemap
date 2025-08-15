@@ -28,7 +28,7 @@ class SitemapBulkTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 
 		$sitemaps = get_posts(
 			array(
-				'post_type'      => \Automattic\MSM_Sitemap\Plugin::SITEMAP_CPT,
+				'post_type'      => 'msm_sitemap',
 				'fields'         => 'ids',
 				'posts_per_page' => -1,
 			)

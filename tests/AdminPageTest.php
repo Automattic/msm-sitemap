@@ -9,7 +9,7 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests;
 
-use Automattic\MSM_Sitemap\Admin\UI;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\UI;
 /**
  * Admin page UI and permissions tests for MSM Sitemap
  */
@@ -46,7 +46,8 @@ class AdminPageTest extends TestCase {
 		wp_set_current_user( $this->admin_id );
 		$plugin_page = 'msm-sitemap';
 		ob_start();
-		UI::render_options_page();
+		$ui = $this->get_service( UI::class );
+		$ui->render_options_page();
 		$output = ob_get_clean();
 		$this->assertStringContainsString( 'Sitemap', $output );
 		$this->assertStringContainsString( 'Indexed URLs', $output );
@@ -63,7 +64,8 @@ class AdminPageTest extends TestCase {
 			$this->markTestSkipped( 'WPDieException not available in this environment.' );
 		}
 		$this->expectException( 'WPDieException' );
-		UI::render_options_page();
+		$ui = $this->get_service( UI::class );
+		$ui->render_options_page();
 	}
 
 	/**
@@ -75,7 +77,8 @@ class AdminPageTest extends TestCase {
 		wp_set_current_user( $this->admin_id );
 		$plugin_page = 'msm-sitemap';
 		ob_start();
-		UI::render_options_page();
+		$ui = $this->get_service( UI::class );
+		$ui->render_options_page();
 		$output = ob_get_clean();
 		$this->assertStringContainsString( 'Sitemaps are not supported on private sites', $output );
 		// Reset for other tests
@@ -90,7 +93,8 @@ class AdminPageTest extends TestCase {
 		wp_set_current_user( $this->admin_id );
 		$plugin_page = 'msm-sitemap';
 		ob_start();
-		UI::render_options_page();
+		$ui = $this->get_service( UI::class );
+		$ui->render_options_page();
 		$output = ob_get_clean();
 		$this->assertStringContainsString( 'Automatic Sitemap Updates', $output );
 		$this->assertStringContainsString( 'Disable', $output );
@@ -104,7 +108,8 @@ class AdminPageTest extends TestCase {
 		wp_set_current_user( $this->admin_id );
 		$plugin_page = 'msm-sitemap';
 		ob_start();
-		UI::render_options_page();
+		$ui = $this->get_service( UI::class );
+		$ui->render_options_page();
 		$output = ob_get_clean();
 		$this->assertStringContainsString( 'Generate', $output );
 		$this->assertStringContainsString( 'Generate All Sitemaps (Force)', $output );
@@ -128,7 +133,8 @@ class AdminPageTest extends TestCase {
 		wp_unschedule_hook( 'msm_cron_update_sitemap' );
 		
 		ob_start();
-		UI::render_options_page();
+		$ui = $this->get_service( UI::class );
+		$ui->render_options_page();
 		$output = ob_get_clean();
 		
 		// The UI doesn't show the disabled message in the rendered output

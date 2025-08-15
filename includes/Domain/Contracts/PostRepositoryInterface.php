@@ -12,7 +12,7 @@ namespace Automattic\MSM_Sitemap\Domain\Contracts;
 /**
  * Interface for post repository operations.
  */
-interface PostRepositoryInterface {
+interface PostRepositoryInterface extends RepositoryInterface {
 
 	/**
 	 * Get posts that have been modified since the given timestamp.
@@ -28,5 +28,4 @@ interface PostRepositoryInterface {
 	 * @return array<string> Array of unique publication dates.
 	 */
 	public function get_all_post_publication_dates(): array;
-
 }

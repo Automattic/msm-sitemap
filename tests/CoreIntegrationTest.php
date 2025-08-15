@@ -24,14 +24,15 @@ class CoreIntegrationTest extends TestCase {
 	 */
 	public function test_setup_registers_hooks(): void {
 		// Remove any existing hooks to start fresh
-		remove_action( 'wp_sitemaps_init', array( CoreIntegration::class, 'disable_core_providers' ), 999 );
+		$core_integration = $this->get_service( CoreIntegration::class );
+		remove_action( 'wp_sitemaps_init', array( $core_integration, 'disable_core_providers' ), 999 );
 		remove_filter( 'wp_sitemaps_robots', '__return_empty_string' );
 
-		// Call setup
-		CoreIntegration::setup();
+		// Call register_hooks
+		$core_integration->register_hooks();
 
 		// Verify hooks are registered (has_action/has_filter return priority, not boolean)
-		$action_priority = has_action( 'wp_sitemaps_init', array( CoreIntegration::class, 'disable_core_providers' ) );
+		$action_priority = has_action( 'wp_sitemaps_init', array( $core_integration, 'disable_core_providers' ) );
 		$filter_priority = has_filter( 'wp_sitemaps_robots', '__return_empty_string' );
 		$this->assertIsInt( $action_priority );
 		$this->assertIsInt( $filter_priority );
@@ -39,7 +40,7 @@ class CoreIntegrationTest extends TestCase {
 		$this->assertGreaterThan( 0, $filter_priority );
 
 		// Verify priority is correct (has_action returns priority, not boolean)
-		$priority = has_action( 'wp_sitemaps_init', array( CoreIntegration::class, 'disable_core_providers' ) );
+		$priority = has_action( 'wp_sitemaps_init', array( $core_integration, 'disable_core_providers' ) );
 		$this->assertIsInt( $priority );
 		$this->assertGreaterThan( 0, $priority );
 	}
@@ -62,8 +63,9 @@ class CoreIntegrationTest extends TestCase {
 				array( 'users', $this->isInstanceOf( WP_Sitemaps_Provider::class ) )
 			);
 
-		// Call the method
-		CoreIntegration::disable_core_providers( $wp_sitemaps );
+		// Get an instance and call the method
+		$core_integration = $this->get_service( CoreIntegration::class );
+		$core_integration->disable_core_providers( $wp_sitemaps );
 	}
 
 	/**
@@ -86,8 +88,9 @@ class CoreIntegrationTest extends TestCase {
 
 		$wp_sitemaps->registry = $registry;
 
-		// Call the method
-		CoreIntegration::disable_core_providers( $wp_sitemaps );
+		// Get an instance and call the method
+		$core_integration = $this->get_service( CoreIntegration::class );
+		$core_integration->disable_core_providers( $wp_sitemaps );
 
 		// Test each provider returns empty results
 		foreach ( $captured_providers as $name => $provider ) {

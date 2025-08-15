@@ -10,6 +10,7 @@ declare( strict_types=1 );
 namespace Automattic\MSM_Sitemap\Infrastructure\Factories;
 
 use Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry;
+use InvalidArgumentException;
 
 /**
  * Factory for creating UrlEntry objects from WordPress data.
@@ -23,7 +24,7 @@ class UrlEntryFactory {
 	 * Create a UrlEntry from a WordPress post ID.
 	 *
 	 * @param int $post_id The post ID.
-	 * @return \Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry|null The URL entry or null if post should be skipped.
+	 * @return UrlEntry|null The URL entry or null if post should be skipped.
 	 */
 	public static function from_post( int $post_id ): ?UrlEntry {
 		$post = get_post( $post_id );
@@ -41,9 +42,9 @@ class UrlEntryFactory {
 			return null;
 		}
 
-		$lastmod = get_post_modified_time( 'c', true, $post );
+		$lastmod    = get_post_modified_time( 'c', true, $post );
 		$changefreq = apply_filters( 'msm_sitemap_changefreq', 'monthly', $post );
-		$priority = apply_filters( 'msm_sitemap_priority', 0.7, $post );
+		$priority   = apply_filters( 'msm_sitemap_priority', 0.7, $post );
 
 		try {
 			return new UrlEntry(
@@ -52,7 +53,7 @@ class UrlEntryFactory {
 				$changefreq,
 				$priority
 			);
-		} catch ( \InvalidArgumentException $e ) {
+		} catch ( InvalidArgumentException $e ) {
 			// Log the error but don't break sitemap generation
 			error_log( 'MSM Sitemap: Invalid URL entry for post ' . $post_id . ': ' . $e->getMessage() );
 			return null;
@@ -63,7 +64,7 @@ class UrlEntryFactory {
 	 * Create UrlEntry objects from an array of post IDs.
 	 *
 	 * @param array<int> $post_ids Array of post IDs.
-	 * @return array<\Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry> Array of URL entries.
+	 * @return array<UrlEntry> Array of URL entries.
 	 */
 	public static function from_posts( array $post_ids ): array {
 		$url_entries = array();
@@ -79,12 +80,12 @@ class UrlEntryFactory {
 	/**
 	 * Create a UrlEntry from raw data (for testing or non-WordPress contexts).
 	 *
-	 * @param string      $loc        The URL of the page.
-	 * @param string|null $lastmod    The date of last modification.
+	 * @param string $loc The URL of the page.
+	 * @param string|null $lastmod The date of last modification.
 	 * @param string|null $changefreq How frequently the page changes.
-	 * @param float|null  $priority   The priority of this URL.
-	 * @return \Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry The URL entry.
-	 * @throws \InvalidArgumentException If any parameter is invalid.
+	 * @param float|null $priority The priority of this URL.
+	 * @return UrlEntry The URL entry.
+	 * @throws InvalidArgumentException If any parameter is invalid.
 	 */
 	public static function from_data(
 		string $loc,

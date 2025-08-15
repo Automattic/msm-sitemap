@@ -208,6 +208,4 @@ class UrlSet implements Countable {
 			);
 		}
 	}
-
-
 }

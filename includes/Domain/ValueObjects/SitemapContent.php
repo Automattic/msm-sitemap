@@ -71,7 +71,7 @@ class SitemapContent implements \Countable {
 		// Limit entries to max_entries
 		$entries = array_slice( $entries, 0, $max_entries );
 
-		$this->entries    = $entries;
+		$this->entries     = $entries;
 		$this->max_entries = $max_entries;
 	}
 
@@ -86,7 +86,7 @@ class SitemapContent implements \Countable {
 			return $this; // Cannot add more entries
 		}
 
-		$new_entries = $this->entries;
+		$new_entries   = $this->entries;
 		$new_entries[] = $entry;
 
 		return new self( $new_entries, $this->max_entries );
@@ -101,7 +101,7 @@ class SitemapContent implements \Countable {
 	public function remove( UrlEntry $entry ): SitemapContent {
 		$new_entries = array_filter(
 			$this->entries,
-			function( UrlEntry $existing_entry ) use ( $entry ) {
+			function ( UrlEntry $existing_entry ) use ( $entry ) {
 				return ! $existing_entry->equals( $entry );
 			}
 		);
@@ -173,7 +173,7 @@ class SitemapContent implements \Countable {
 	 */
 	public function to_array(): array {
 		return array_map(
-			function( UrlEntry $entry ) {
+			function ( UrlEntry $entry ) {
 				return $entry->to_array();
 			},
 			$this->entries

@@ -35,6 +35,31 @@ class CronManagementService {
 	const DEFAULT_FREQUENCY = '15min';
 
 	/**
+	 * The settings service.
+	 *
+	 * @var SettingsService
+	 */
+	private SettingsService $settings;
+
+	/**
+	 * The cron scheduling service.
+	 *
+	 * @var CronSchedulingService
+	 */
+	private CronSchedulingService $cron_scheduler;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param SettingsService $settings The settings service.
+	 * @param CronSchedulingService $cron_scheduler The cron scheduling service.
+	 */
+	public function __construct( SettingsService $settings, CronSchedulingService $cron_scheduler ) {
+		$this->settings       = $settings;
+		$this->cron_scheduler = $cron_scheduler;
+	}
+
+	/**
 	 * Get all valid cron frequencies
 	 *
 	 * @return array Array of valid frequency strings
@@ -58,10 +83,8 @@ class CronManagementService {
 	 *
 	 * @return string Current frequency setting
 	 */
-	public static function get_current_frequency(): string {
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
-		return $settings_service->get_setting( 'cron_frequency', self::DEFAULT_FREQUENCY );
+	public function get_current_frequency(): string {
+		return $this->settings->get_setting( 'cron_frequency', self::DEFAULT_FREQUENCY );
 	}
 
 	/**
@@ -70,34 +93,32 @@ class CronManagementService {
 	 * @param string $frequency New frequency to set.
 	 * @return array Result with success status and message.
 	 */
-	public static function update_frequency( string $frequency ): array {
-		if ( ! self::is_valid_frequency( $frequency ) ) {
+	public function update_frequency( string $frequency ): array {
+		if ( ! $this->is_valid_frequency( $frequency ) ) {
 			return array(
-				'success' => false,
-				'message' => __( 'Invalid frequency specified.', 'msm-sitemap' ),
+				'success'    => false,
+				'message'    => __( 'Invalid frequency specified.', 'msm-sitemap' ),
 				'error_code' => 'invalid_frequency',
 			);
 		}
 
 		// Update the frequency option
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
-		$settings_service->update_setting( 'cron_frequency', $frequency );
+		$this->settings->update_setting( 'cron_frequency', $frequency );
 		
 		// Reschedule the cron job with the new frequency
-		$success = CronSchedulingService::reschedule_cron( $frequency );
+		$success = $this->cron_scheduler->reschedule_cron( $frequency );
 		
 		if ( ! $success ) {
 			return array(
-				'success' => false,
-				'message' => __( 'Failed to reschedule cron job. Please try again.', 'msm-sitemap' ),
+				'success'    => false,
+				'message'    => __( 'Failed to reschedule cron job. Please try again.', 'msm-sitemap' ),
 				'error_code' => 'reschedule_failed',
 			);
 		}
 
 		return array(
-			'success' => true,
-			'message' => __( 'Automatic update frequency successfully changed.', 'msm-sitemap' ),
+			'success'   => true,
+			'message'   => __( 'Automatic update frequency successfully changed.', 'msm-sitemap' ),
 			'frequency' => $frequency,
 		);
 	}
@@ -107,14 +128,14 @@ class CronManagementService {
 	 *
 	 * @return array Cron status information
 	 */
-	public static function get_cron_status(): array {
-		$status = CronSchedulingService::get_cron_status();
+	public function get_cron_status(): array {
+		$status = $this->cron_scheduler->get_cron_status();
 		
 		return array_merge(
 			$status,
 			array(
-				'current_frequency' => self::get_current_frequency(),
-				'valid_frequencies' => self::get_valid_frequencies(),
+				'current_frequency' => $this->get_current_frequency(),
+				'valid_frequencies' => $this->get_valid_frequencies(),
 			)
 		);
 	}
@@ -124,18 +145,18 @@ class CronManagementService {
 	 *
 	 * @return array Result with success status and message.
 	 */
-	public static function enable_cron(): array {
-		$status = CronSchedulingService::get_cron_status();
+	public function enable_cron(): array {
+		$status = $this->cron_scheduler->get_cron_status();
 		
 		if ( ! $status['blog_public'] ) {
 			return array(
-				'success' => false,
-				'message' => __( 'Cannot enable cron: blog is not public.', 'msm-sitemap' ),
+				'success'    => false,
+				'message'    => __( 'Cannot enable cron: blog is not public.', 'msm-sitemap' ),
 				'error_code' => 'blog_not_public',
 			);
 		}
 		
-		$result = CronSchedulingService::enable_cron();
+		$result = $this->cron_scheduler->enable_cron();
 		if ( $result ) {
 			return array(
 				'success' => true,
@@ -143,8 +164,8 @@ class CronManagementService {
 			);
 		} else {
 			return array(
-				'success' => false,
-				'message' => __( 'Automatic updates are already enabled.', 'msm-sitemap' ),
+				'success'    => false,
+				'message'    => __( 'Automatic updates are already enabled.', 'msm-sitemap' ),
 				'error_code' => 'already_enabled',
 			);
 		}
@@ -155,8 +176,8 @@ class CronManagementService {
 	 *
 	 * @return array Result with success status and message.
 	 */
-	public static function disable_cron(): array {
-		$result = CronSchedulingService::disable_cron();
+	public function disable_cron(): array {
+		$result = $this->cron_scheduler->disable_cron();
 		if ( $result ) {
 			return array(
 				'success' => true,
@@ -164,8 +185,8 @@ class CronManagementService {
 			);
 		} else {
 			return array(
-				'success' => false,
-				'message' => __( 'Automatic updates are already disabled.', 'msm-sitemap' ),
+				'success'    => false,
+				'message'    => __( 'Automatic updates are already disabled.', 'msm-sitemap' ),
 				'error_code' => 'already_disabled',
 			);
 		}
@@ -176,8 +197,8 @@ class CronManagementService {
 	 *
 	 * @return array Result with success status and message.
 	 */
-	public static function reset_cron(): array {
-		$result = CronSchedulingService::reset_cron();
+	public function reset_cron(): array {
+		$result = $this->cron_scheduler->reset_cron();
 		
 		if ( $result ) {
 			return array(
@@ -186,8 +207,8 @@ class CronManagementService {
 			);
 		} else {
 			return array(
-				'success' => false,
-				'message' => __( 'Failed to reset sitemap cron.', 'msm-sitemap' ),
+				'success'    => false,
+				'message'    => __( 'Failed to reset sitemap cron.', 'msm-sitemap' ),
 				'error_code' => 'reset_failed',
 			);
 		}

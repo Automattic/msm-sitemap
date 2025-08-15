@@ -9,6 +9,7 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Domain\Contracts;
 
+use Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\UrlSet;
 
 /**
@@ -52,8 +53,8 @@ interface ContentProviderInterface {
 	/**
 	 * Enhance existing URL entries with additional data (optional).
 	 *
-	 * @param array<\Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry> $url_entries Array of URL entries to enhance.
-	 * @return array<\Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry> Array of enhanced URL entries.
+	 * @param array<UrlEntry> $url_entries Array of URL entries to enhance.
+	 * @return array<UrlEntry> Array of enhanced URL entries.
 	 */
 	public function enhance_url_entries( array $url_entries ): array;
 }

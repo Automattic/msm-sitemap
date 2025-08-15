@@ -11,6 +11,7 @@ namespace Automattic\MSM_Sitemap\Infrastructure\Formatters;
 
 use Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapIndexCollection;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapIndexEntry;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\StylesheetManager;
 
 /**
  * Formatter for converting SitemapIndexCollection objects to XML.
@@ -22,14 +23,14 @@ class SitemapIndexXmlFormatter {
 	/**
 	 * Convert a sitemap index collection to XML representation.
 	 *
-	 * @param \Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapIndexCollection $collection The sitemap index collection to format.
+	 * @param SitemapIndexCollection $collection The sitemap index collection to format.
 	 * @return string XML representation of the sitemap index.
 	 */
 	public function format( SitemapIndexCollection $collection ): string {
 		$xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 		
 		// Add XSL stylesheet reference for sitemap index
-		$xml .= \Automattic\MSM_Sitemap\Infrastructure\WordPress\StylesheetManager::get_index_stylesheet_reference();
+		$xml .= StylesheetManager::get_index_stylesheet_reference();
 		
 		$xml .= '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
 
@@ -45,11 +46,11 @@ class SitemapIndexXmlFormatter {
 	/**
 	 * Format a sitemap index entry as XML.
 	 *
-	 * @param \Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapIndexEntry $entry The sitemap index entry to format.
+	 * @param SitemapIndexEntry $entry The sitemap index entry to format.
 	 * @return string XML representation of the sitemap index entry.
 	 */
 	private function format_sitemap_entry( SitemapIndexEntry $entry ): string {
-		$xml = '    <sitemap>' . "\n";
+		$xml  = '    <sitemap>' . "\n";
 		$xml .= '        <loc>' . esc_xml( $entry->loc() ) . '</loc>' . "\n";
 
 		if ( $entry->lastmod() ) {

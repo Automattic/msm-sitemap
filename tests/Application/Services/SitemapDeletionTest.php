@@ -9,6 +9,8 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests\Application\Services;
 
+use Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapGeneratorFactory;
+
 /**
  * Tests for sitemap deletion functionality
  */
@@ -24,7 +26,8 @@ class SitemapDeletionTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$sitemap_id = $this->get_sitemap_post_id( 2018, 1, 4 );
 		$this->assertNotFalse( $sitemap_id );
 
-		$generator  = msm_sitemap_plugin()->get_sitemap_generator();
+		$content_types_service = $this->get_service( \Automattic\MSM_Sitemap\Application\Services\ContentTypesService::class );
+		$generator  = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
 		$repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
 		$service    = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
 		$service->delete_for_date( $date );
@@ -50,7 +53,7 @@ class SitemapDeletionTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 
 		list( $sitemap ) = get_posts(
 			array(
-				'post_type'      => \Automattic\MSM_Sitemap\Plugin::SITEMAP_CPT,
+				'post_type'      => 'msm_sitemap',
 				'posts_per_page' => 1,
 			)
 		);
@@ -112,7 +115,8 @@ class SitemapDeletionTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @dataProvider invalid_date_formats_data_provider
 	 */
 	public function test_handles_invalid_date_format_gracefully( ?string $invalid_date ): void {
-		$generator  = msm_sitemap_plugin()->get_sitemap_generator();
+		$content_types_service = $this->get_service( \Automattic\MSM_Sitemap\Application\Services\ContentTypesService::class );
+		$generator  = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
 		$repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
 		$service    = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
 
@@ -150,7 +154,8 @@ class SitemapDeletionTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$sitemap_id = $this->get_sitemap_post_id( 2018, 1, 20 );
 		$this->assertFalse( $sitemap_id, 'No sitemap should exist for this date' );
 
-		$generator  = msm_sitemap_plugin()->get_sitemap_generator();
+		$content_types_service = $this->get_service( \Automattic\MSM_Sitemap\Application\Services\ContentTypesService::class );
+		$generator  = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
 		$repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
 		$service    = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
 
@@ -165,7 +170,8 @@ class SitemapDeletionTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function test_handles_future_dates_correctly(): void {
 		$future_date = gmdate( 'Y-m-d', strtotime( '+1 year' ) );
 		
-		$generator  = msm_sitemap_plugin()->get_sitemap_generator();
+		$content_types_service = $this->get_service( \Automattic\MSM_Sitemap\Application\Services\ContentTypesService::class );
+		$generator  = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
 		$repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
 		$service    = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
 
@@ -181,7 +187,8 @@ class SitemapDeletionTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function test_handles_very_old_dates_correctly(): void {
 		$old_date = '1900-01-01';
 		
-		$generator  = msm_sitemap_plugin()->get_sitemap_generator();
+		$content_types_service = $this->get_service( \Automattic\MSM_Sitemap\Application\Services\ContentTypesService::class );
+		$generator  = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
 		$repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
 		$service    = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
 
@@ -200,7 +207,7 @@ class SitemapDeletionTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		
 		// Create the maximum number of posts allowed per sitemap page (500)
 		$test_posts = 500;
-		$post_ids = array();
+		$post_ids   = array();
 		for ( $i = 1; $i <= $test_posts; $i++ ) {
 			$post_ids[] = wp_insert_post(
 				array(
@@ -293,7 +300,7 @@ class SitemapDeletionTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function test_handles_posts_moved_to_different_dates(): void {
 		$original_date = '2018-01-24';
-		$new_date = '2018-01-25';
+		$new_date      = '2018-01-25';
 		
 		// Create a post
 		$post_id = wp_insert_post(

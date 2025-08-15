@@ -20,9 +20,8 @@ class SettingsServiceTest extends TestCase {
 	 * Test that default settings are returned correctly.
 	 */
 	public function test_get_default_settings(): void {
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( SettingsService::class );
-		$defaults = $settings_service->get_default_settings();
+		$settings_service = $this->get_service( SettingsService::class );
+		$defaults         = $settings_service->get_default_settings();
 		
 		$this->assertEquals( '1', $defaults['include_images'] );
 		$this->assertEquals( '1', $defaults['featured_images'] );
@@ -37,8 +36,7 @@ class SettingsServiceTest extends TestCase {
 		// Clean up any existing options first
 		delete_option( 'msm_sitemap' );
 
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( SettingsService::class );
+		$settings_service = $this->get_service( SettingsService::class );
 
 		// Test default values
 		$settings = $settings_service->get_all_settings();
@@ -50,9 +48,9 @@ class SettingsServiceTest extends TestCase {
 
 		// Test with custom values
 		$custom_settings = array(
-			'include_images' => '0',
-			'featured_images' => '0',
-			'content_images' => '1',
+			'include_images'         => '0',
+			'featured_images'        => '0',
+			'content_images'         => '1',
 			'max_images_per_sitemap' => 500,
 		);
 		update_option( 'msm_sitemap', $custom_settings );
@@ -75,13 +73,12 @@ class SettingsServiceTest extends TestCase {
 		// Clean up any existing options first
 		delete_option( 'msm_sitemap' );
 
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( SettingsService::class );
+		$settings_service = $this->get_service( SettingsService::class );
 
 		$settings = array(
-			'include_images' => false,
-			'featured_images' => true,
-			'content_images' => false,
+			'include_images'         => false,
+			'featured_images'        => true,
+			'content_images'         => false,
 			'max_images_per_sitemap' => 500,
 		);
 
@@ -112,14 +109,13 @@ class SettingsServiceTest extends TestCase {
 		// Clean up any existing options first
 		delete_option( 'msm_sitemap' );
 
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( SettingsService::class );
+		$settings_service = $this->get_service( SettingsService::class );
 
 		// Set initial settings
 		$initial_settings = array(
-			'include_images' => true,
-			'featured_images' => true,
-			'content_images' => true,
+			'include_images'         => true,
+			'featured_images'        => true,
+			'content_images'         => true,
 			'max_images_per_sitemap' => 1000,
 		);
 		$settings_service->update_settings( $initial_settings );
@@ -148,8 +144,7 @@ class SettingsServiceTest extends TestCase {
 	 * Test that settings validation works correctly.
 	 */
 	public function test_update_settings_validation_failure(): void {
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( SettingsService::class );
+		$settings_service = $this->get_service( SettingsService::class );
 
 		$invalid_settings = array(
 			'max_images_per_sitemap' => 15000, // Exceeds maximum
@@ -169,8 +164,7 @@ class SettingsServiceTest extends TestCase {
 		// Clean up any existing options first
 		delete_option( 'msm_sitemap' );
 
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( SettingsService::class );
+		$settings_service = $this->get_service( SettingsService::class );
 
 		$result = $settings_service->update_setting( 'include_images', false );
 
@@ -191,14 +185,13 @@ class SettingsServiceTest extends TestCase {
 		// Clean up any existing options first
 		delete_option( 'msm_sitemap' );
 
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( SettingsService::class );
+		$settings_service = $this->get_service( SettingsService::class );
 
 		// Set some custom settings first
 		$custom_settings = array(
-			'include_images' => '0',
-			'featured_images' => '0',
-			'content_images' => '0',
+			'include_images'         => '0',
+			'featured_images'        => '0',
+			'content_images'         => '0',
 			'max_images_per_sitemap' => 500,
 		);
 		update_option( 'msm_sitemap', $custom_settings );
@@ -227,8 +220,7 @@ class SettingsServiceTest extends TestCase {
 		// Clean up any existing options first
 		delete_option( 'msm_sitemap' );
 
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( SettingsService::class );
+		$settings_service = $this->get_service( SettingsService::class );
 
 		// Test default value
 		$value = $settings_service->get_setting( 'include_images' );
@@ -254,8 +246,7 @@ class SettingsServiceTest extends TestCase {
 		// Clean up any existing options first
 		delete_option( 'msm_sitemap' );
 
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( SettingsService::class );
+		$settings_service = $this->get_service( SettingsService::class );
 
 		// Set a custom setting
 		$settings_service->update_setting( 'include_images', false );
@@ -286,8 +277,7 @@ class SettingsServiceTest extends TestCase {
 		// Clean up any existing options first
 		delete_option( 'msm_sitemap' );
 
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( SettingsService::class );
+		$settings_service = $this->get_service( SettingsService::class );
 
 		$image_settings = $settings_service->get_image_settings();
 

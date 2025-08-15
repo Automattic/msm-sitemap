@@ -59,10 +59,10 @@ class SitemapGenerationService {
 		SitemapRepositoryInterface $repository,
 		?SitemapQueryService $query_service = null
 	) {
-		$this->generator = $generator;
-		$this->repository = $repository;
+		$this->generator     = $generator;
+		$this->repository    = $repository;
 		$this->query_service = $query_service ?: new SitemapQueryService();
-		$this->formatter = new SitemapXmlFormatter();
+		$this->formatter     = new SitemapXmlFormatter();
 	}
 
 	/**
@@ -88,7 +88,7 @@ class SitemapGenerationService {
 		
 		// Convert YYYY-MM-DD date to MySQL DATETIME format for the generator
 		$datetime = $date . ' 00:00:00';
-		$content = $this->generator->generate_sitemap_for_date( $datetime );
+		$content  = $this->generator->generate_sitemap_for_date( $datetime );
 		
 		if ( $content->count() === 0 ) {
 			// No content to generate, delete existing sitemap if it exists
@@ -112,7 +112,7 @@ class SitemapGenerationService {
 		
 		// Create the sitemap
 		$xml_content = $this->formatter->format( $content );
-		$saved = $this->repository->save( $date, $xml_content, $content->count() );
+		$saved       = $this->repository->save( $date, $xml_content, $content->count() );
 		
 		if ( ! $saved ) {
 			return SitemapOperationResult::failure(
@@ -135,7 +135,7 @@ class SitemapGenerationService {
 			),
 			array(
 				'url_count' => $content->count(),
-				'date' => $date,
+				'date'      => $date,
 			)
 		);
 	}
@@ -173,7 +173,7 @@ class SitemapGenerationService {
 			);
 		}
 
-		$results = array();
+		$results       = array();
 		$success_count = 0;
 		$failure_count = 0;
 		$skipped_count = 0;
@@ -184,15 +184,15 @@ class SitemapGenerationService {
 				break;
 			}
 
-			$result = $this->create_for_date( $date, $force );
+			$result           = $this->create_for_date( $date, $force );
 			$results[ $date ] = $result;
 
 			if ( $result->is_success() ) {
-				$success_count++;
+				++$success_count;
 			} elseif ( $result->get_error_code() === 'sitemap_exists' ) {
-				$skipped_count++;
+				++$skipped_count;
 			} else {
-				$failure_count++;
+				++$failure_count;
 			}
 		}
 
@@ -224,16 +224,20 @@ class SitemapGenerationService {
 
 		if ( $failure_count === 0 && $success_count > 0 ) {
 			return SitemapOperationResult::success(
-                $success_count,
-                $message
-            );
+				$success_count,
+				$message
+			);
 		} else {
-			return SitemapOperationResult::failure( $message, 'partial_failure', array(
-				'success_count' => $success_count,
-				'skipped_count' => $skipped_count,
-				'failure_count' => $failure_count,
-				'results' => $results,
-			) );
+			return SitemapOperationResult::failure(
+				$message,
+				'partial_failure',
+				array(
+					'success_count' => $success_count,
+					'skipped_count' => $skipped_count,
+					'failure_count' => $failure_count,
+					'results'       => $results,
+				) 
+			);
 		}
 	}
 

@@ -5,38 +5,134 @@
  * @package MSM_Sitemap
  */
 
-namespace Automattic\MSM_Sitemap\Admin;
+namespace Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin;
 
-use Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService;
+use Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService;
+use Automattic\MSM_Sitemap\Application\Services\SitemapStatsService;
+use Automattic\MSM_Sitemap\Application\Services\SettingsService;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
+use Automattic\MSM_Sitemap\Domain\Contracts\SitemapRepositoryInterface;
+use Automattic\MSM_Sitemap\Domain\Contracts\WordPressIntegrationInterface;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\ActionHandlers;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\HelpTabs;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\Notifications;
+use Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService;
 
 
 /**
  * Handles all admin page UI rendering
  */
-class UI {
+class UI implements WordPressIntegrationInterface {
 
 	/**
-	 * Setup admin menu and hooks for the sitemap admin interface
+	 * The cron scheduling service.
+	 *
+	 * @var CronSchedulingService
 	 */
-	public static function setup_admin() {
-		add_action( 'admin_menu', array( __CLASS__, 'register_admin_menu' ) );
-		add_action( 'wp_ajax_msm-sitemap-get-sitemap-counts', array( __CLASS__, 'ajax_get_sitemap_counts' ) );
-		self::init_ajax_handlers();
+	private CronSchedulingService $cron_scheduler;
+
+	/**
+	 * The plugin file path.
+	 *
+	 * @var string
+	 */
+	private string $plugin_file_path;
+
+	/**
+	 * The plugin version.
+	 *
+	 * @var string
+	 */
+	private string $plugin_version;
+
+	/**
+	 * The missing sitemap detection service.
+	 *
+	 * @var MissingSitemapDetectionService
+	 */
+	private MissingSitemapDetectionService $missing_detection_service;
+
+	/**
+	 * The sitemap stats service.
+	 *
+	 * @var SitemapStatsService
+	 */
+	private SitemapStatsService $stats_service;
+
+	/**
+	 * The settings service.
+	 *
+	 * @var SettingsService
+	 */
+	private SettingsService $settings_service;
+
+	/**
+	 * The sitemap repository.
+	 *
+	 * @var SitemapRepositoryInterface
+	 */
+	private SitemapRepositoryInterface $sitemap_repository;
+
+	/**
+	 * The action handlers.
+	 *
+	 * @var ActionHandlers
+	 */
+	private ActionHandlers $action_handlers;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param CronSchedulingService $cron_scheduler The cron scheduling service.
+	 * @param string $plugin_file_path The path to the main plugin file.
+	 * @param string $plugin_version The plugin version.
+	 * @param MissingSitemapDetectionService $missing_detection_service The missing sitemap detection service.
+	 * @param SitemapStatsService $stats_service The sitemap stats service.
+	 * @param SettingsService $settings_service The settings service.
+	 * @param SitemapRepositoryInterface $sitemap_repository The sitemap repository.
+	 * @param ActionHandlers $action_handlers The action handlers.
+	 */
+	public function __construct( 
+		CronSchedulingService $cron_scheduler, 
+		string $plugin_file_path, 
+		string $plugin_version,
+		MissingSitemapDetectionService $missing_detection_service,
+		SitemapStatsService $stats_service,
+		SettingsService $settings_service,
+		SitemapRepositoryInterface $sitemap_repository,
+		ActionHandlers $action_handlers
+	) {
+		$this->cron_scheduler            = $cron_scheduler;
+		$this->plugin_file_path          = $plugin_file_path;
+		$this->plugin_version            = $plugin_version;
+		$this->missing_detection_service = $missing_detection_service;
+		$this->stats_service             = $stats_service;
+		$this->settings_service          = $settings_service;
+		$this->sitemap_repository        = $sitemap_repository;
+		$this->action_handlers           = $action_handlers;
+	}
+
+	/**
+	 * Register WordPress hooks and filters for admin interface.
+	 */
+	public function register_hooks(): void {
+		add_action( 'admin_menu', array( $this, 'register_admin_menu' ) );
+		add_action( 'wp_ajax_msm-sitemap-get-sitemap-counts', array( $this, 'ajax_get_sitemap_counts' ) );
+		$this->init_ajax_handlers();
 	}
 
 	/**
 	 * Register admin menu for sitemap
 	 */
-	public static function register_admin_menu() {
+	public function register_admin_menu() {
 		$page_hook = add_options_page(
 			__( 'MSM Sitemap', 'msm-sitemap' ),
 			__( 'Sitemap', 'msm-sitemap' ),
 			'manage_options',
 			'msm-sitemap',
-			array( __CLASS__, 'render_options_page' )
+			array( $this, 'render_options_page' )
 		);
-		add_action( 'admin_print_scripts-' . $page_hook, array( __CLASS__, 'enqueue_admin_assets' ) );
+		add_action( 'admin_print_scripts-' . $page_hook, array( $this, 'enqueue_admin_assets' ) );
 
 		// Add contextual help tabs.
 		HelpTabs::setup( $page_hook );
@@ -45,21 +141,21 @@ class UI {
 	/**
 	 * Enqueue admin scripts and styles
 	 */
-	public static function enqueue_admin_assets(): void {
-		$plugin_url = plugin_dir_url( dirname( dirname( __DIR__ ) ) . '/msm-sitemap.php' );
+	public function enqueue_admin_assets(): void {
+		$plugin_url = plugin_dir_url( $this->plugin_file_path );
 		
 		wp_enqueue_style(
 			'msm-sitemap-admin',
 			$plugin_url . 'assets/admin.css',
 			array(),
-			'1.0.1'
+			$this->plugin_version
 		);
 
 		wp_enqueue_script(
 			'msm-sitemap-admin',
 			$plugin_url . 'assets/admin.js',
 			array( 'jquery' ),
-			'1.0.1',
+			$this->plugin_version,
 			true
 		);
 
@@ -68,12 +164,12 @@ class UI {
 			'msm-sitemap-admin',
 			'msmSitemapAjax',
 			array(
-				'ajaxurl' => admin_url( 'admin-ajax.php' ),
-				'nonce'   => wp_create_nonce( 'msm_sitemap_ajax_nonce' ),
-				'generateMissingText' => __( 'Generate Missing Sitemaps', 'msm-sitemap' ),
-				'confirmResetText' => __( 'Are you sure you want to reset all sitemap data? This action cannot be undone and will delete all sitemaps, metadata, and statistics.', 'msm-sitemap' ),
-				'showText' => __( 'Show', 'msm-sitemap' ),
-				'hideText' => __( 'Hide', 'msm-sitemap' ),
+				'ajaxurl'               => admin_url( 'admin-ajax.php' ),
+				'nonce'                 => wp_create_nonce( 'msm_sitemap_ajax_nonce' ),
+				'generateMissingText'   => __( 'Generate Missing Sitemaps', 'msm-sitemap' ),
+				'confirmResetText'      => __( 'Are you sure you want to reset all sitemap data? This action cannot be undone and will delete all sitemaps, metadata, and statistics.', 'msm-sitemap' ),
+				'showText'              => __( 'Show', 'msm-sitemap' ),
+				'hideText'              => __( 'Hide', 'msm-sitemap' ),
 				'showDetailedStatsText' => __( 'Show Detailed Statistics', 'msm-sitemap' ),
 				'hideDetailedStatsText' => __( 'Hide Detailed Statistics', 'msm-sitemap' ),
 			)
@@ -88,30 +184,30 @@ class UI {
 	/**
 	 * Render the complete admin options page
 	 */
-	public static function render_options_page() {
+	public function render_options_page() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'msm-sitemap' ) );
 		}
 
 		// Check if blog is public
 		if ( ! Site::is_public() ) {
-			self::render_private_site_message();
+			$this->render_private_site_message();
 			return;
 		}
 
 		// Handle form submissions
-		self::handle_form_submissions();
+		$this->handle_form_submissions();
 
 		// Render the page content
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 
-			<?php self::render_cron_section(); ?>
-			<?php self::render_content_providers_section(); ?>
-			<?php self::render_generate_section(); ?>
-			<?php self::render_stats_section(); ?>
-			<?php self::render_dangerous_actions_section(); ?>
+			<?php $this->render_cron_section(); ?>
+			<?php $this->render_content_providers_section(); ?>
+			<?php $this->render_generate_section(); ?>
+			<?php $this->render_stats_section(); ?>
+			<?php $this->render_dangerous_actions_section(); ?>
 			
 		</div>
 		<?php
@@ -120,35 +216,35 @@ class UI {
 	/**
 	 * Initialize AJAX handlers
 	 */
-	public static function init_ajax_handlers(): void {
-		add_action( 'wp_ajax_msm_get_missing_sitemaps', array( __CLASS__, 'ajax_get_missing_sitemaps' ) );
+	private function init_ajax_handlers(): void {
+		add_action( 'wp_ajax_msm_get_missing_sitemaps', array( $this, 'ajax_get_missing_sitemaps' ) );
 	}
 
 	/**
 	 * AJAX handler for getting missing sitemaps count
 	 */
-	public static function ajax_get_missing_sitemaps(): void {
+	public function ajax_get_missing_sitemaps(): void {
 		check_ajax_referer( 'msm_sitemap_ajax_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'msm-sitemap' ) );
 		}
 
-		$missing_data = \Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService::get_missing_sitemaps();
-		$summary = \Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService::get_missing_content_summary();
+		$missing_data = $this->missing_detection_service->get_missing_sitemaps();
+		$summary      = $this->missing_detection_service->get_missing_content_summary();
 
 		// Determine button text based on cron status
-		$cron_status = \Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService::get_cron_status();
+		$cron_status = $this->cron_scheduler->get_cron_status();
 		$button_text = $cron_status['enabled'] 
 			? __( 'Generate Missing Sitemaps', 'msm-sitemap' )
 			: __( 'Generate Missing Sitemaps (Direct)', 'msm-sitemap' );
 
 		wp_send_json_success(
 			array(
-				'missing_dates_count' => $missing_data['missing_dates_count'],
+				'missing_dates_count'     => $missing_data['missing_dates_count'],
 				'recently_modified_count' => $missing_data['recently_modified_count'],
-				'summary' => $summary,
-				'button_text' => $button_text,
+				'summary'                 => $summary,
+				'button_text'             => $button_text,
 			)
 		);
 	}
@@ -156,7 +252,7 @@ class UI {
 	/**
 	 * Handle form submissions and action processing
 	 */
-	private static function handle_form_submissions() {
+	private function handle_form_submissions() {
 		if ( ! isset( $_POST['action'] ) ) {
 			return;
 		}
@@ -168,35 +264,35 @@ class UI {
 		// Route to appropriate action handler
 		switch ( $action ) {
 			case 'Enable':
-				Action_Handlers::handle_enable_cron();
+				$this->action_handlers->handle_enable_cron();
 				break;
 			case 'Disable':
-				Action_Handlers::handle_disable_cron();
+				$this->action_handlers->handle_disable_cron();
 				break;
 			case 'Update Frequency':
-				Action_Handlers::handle_update_frequency();
+				$this->action_handlers->handle_update_frequency();
 				break;
 
 			case 'Generate Full Sitemap (All Content)':
-				Action_Handlers::handle_generate_full();
+				$this->action_handlers->handle_generate_full();
 				break;
 			case 'Generate Missing Sitemaps':
 			case 'Generate Missing Sitemaps (Direct)':
-				Action_Handlers::handle_generate_missing_sitemaps();
+				$this->action_handlers->handle_generate_missing_sitemaps();
 				break;
 			case 'Generate All Sitemaps (Force)':
-				Action_Handlers::handle_generate_full();
+				$this->action_handlers->handle_generate_full();
 				break;
 			case 'Save Content Provider Settings':
-				Action_Handlers::handle_save_content_provider_settings();
+				$this->action_handlers->handle_save_content_provider_settings();
 				break;
 			case 'Stop adding missing sitemaps...':
 			case 'Stop full sitemaps generation...':
-				Action_Handlers::handle_halt_generation();
+				$this->action_handlers->handle_halt_generation();
 				break;
 			// Content validation removed for now
 			case 'Reset Sitemap Data':
-				Action_Handlers::handle_reset_data();
+				$this->action_handlers->handle_reset_data();
 				break;
 		}
 	}
@@ -204,7 +300,7 @@ class UI {
 	/**
 	 * Render private site message
 	 */
-	private static function render_private_site_message() {
+	private function render_private_site_message() {
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
@@ -216,15 +312,13 @@ class UI {
 	/**
 	 * Render the stats section
 	 */
-	private static function render_stats_section() {
+	private function render_stats_section() {
 		$sitemap_update_last_run = get_option( 'msm_sitemap_update_last_run' );
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$stats_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SitemapStatsService::class );
-		$date_range = $_GET['date_range'] ?? 'all';
-		$start_date = $_GET['start_date'] ?? '';
-		$end_date = $_GET['end_date'] ?? '';
-		$comprehensive_stats = $stats_service->get_comprehensive_stats( $date_range, $start_date, $end_date );
-		$sitemap_count = $comprehensive_stats['overview']['total_sitemaps'];
+		$date_range              = $_GET['date_range'] ?? 'all';
+		$start_date              = $_GET['start_date'] ?? '';
+		$end_date                = $_GET['end_date'] ?? '';
+		$comprehensive_stats     = $this->stats_service->get_comprehensive_stats( $date_range, $start_date, $end_date );
+		$sitemap_count           = $comprehensive_stats['overview']['total_sitemaps'];
 		?>
 		<h2><?php esc_html_e( 'Sitemap Statistics', 'msm-sitemap' ); ?></h2>
 		
@@ -242,10 +336,8 @@ class UI {
 					<option value="365" <?php selected( $_GET['date_range'] ?? 'all', '365' ); ?>><?php esc_html_e( 'Last 12 Months', 'msm-sitemap' ); ?></option>
 					<?php
 					// Get available years from sitemap data
-					$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-					$repository = $container->get( \Automattic\MSM_Sitemap\Domain\Contracts\SitemapRepositoryInterface::class );
-					$all_sitemap_dates = $repository->get_all_sitemap_dates();
-					$years = array();
+					$all_sitemap_dates = $this->sitemap_repository->get_all_sitemap_dates();
+					$years             = array();
 					foreach ( $all_sitemap_dates as $date ) {
 						$year = substr( $date, 0, 4 );
 						if ( ! in_array( $year, $years, true ) ) {
@@ -277,7 +369,7 @@ class UI {
 		
 		<!-- Detailed Stats Section - Always Visible -->
 		<div class="detailed-stats-section">
-			<?php self::render_detailed_stats( $comprehensive_stats ); ?>
+			<?php $this->render_detailed_stats( $comprehensive_stats ); ?>
 		</div>
 		<?php
 	}
@@ -287,14 +379,14 @@ class UI {
 	 *
 	 * @param array $comprehensive_stats The comprehensive statistics data.
 	 */
-	private static function render_detailed_stats( array $comprehensive_stats ) {
+	private function render_detailed_stats( array $comprehensive_stats ) {
 		// Extract key stats for easy access
-		$overview = $comprehensive_stats['overview'];
-		$performance = $comprehensive_stats['performance'];
-		$coverage = $comprehensive_stats['coverage'];
-		$storage = $comprehensive_stats['storage'];
-		$url_counts = $comprehensive_stats['url_counts'];
-		$health = $comprehensive_stats['health'];
+		$overview         = $comprehensive_stats['overview'];
+		$performance      = $comprehensive_stats['performance'];
+		$coverage         = $comprehensive_stats['coverage'];
+		$storage          = $comprehensive_stats['storage'];
+		$url_counts       = $comprehensive_stats['url_counts'];
+		$health           = $comprehensive_stats['health'];
 		$content_analysis = $comprehensive_stats['content_analysis'];
 		?>
 		
@@ -363,7 +455,7 @@ class UI {
 							$trend_icons = array(
 								'increasing' => '↗️',
 								'decreasing' => '↘️', 
-								'stable' => '→',
+								'stable'     => '→',
 							);
 							echo esc_html( $trend_icons[ $performance['recent_trend'] ] ?? '→' );
 							echo ' ' . esc_html( ucfirst( $performance['recent_trend'] ) );
@@ -427,11 +519,11 @@ class UI {
 						<span class="insight-value">
 							<?php 
 							$post_type_counts = array();
-							$count = 0;
+							$count            = 0;
 							foreach ( $content_analysis['post_type_counts'] as $post_type => $post_count ) {
 								if ( $count++ < 3 ) { // Show top 3
-									$post_type_obj = get_post_type_object( $post_type );
-									$post_type_name = $post_type_obj ? $post_type_obj->labels->singular_name : $post_type;
+									$post_type_obj      = get_post_type_object( $post_type );
+									$post_type_name     = $post_type_obj ? $post_type_obj->labels->singular_name : $post_type;
 									$post_type_counts[] = $post_type_name . ': ' . number_format( $post_count );
 								}
 							}
@@ -558,10 +650,8 @@ class UI {
 				<h3><?php esc_html_e( 'Latest Sitemaps', 'msm-sitemap' ); ?></h3>
 				<div class="insight-content">
 					<?php
-					$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-					$repository = $container->get( \Automattic\MSM_Sitemap\Domain\Contracts\SitemapRepositoryInterface::class );
-					$sitemap_dates = $repository->get_all_sitemap_dates();
-					$recent_dates = array_slice( $sitemap_dates, -5, null, true );
+					$sitemap_dates = $this->sitemap_repository->get_all_sitemap_dates();
+					$recent_dates  = array_slice( $sitemap_dates, -5, null, true );
 					?>
 					
 					<!-- Sitemap Index Link -->
@@ -582,7 +672,7 @@ class UI {
 								<?php 
 								$sitemap_links = array();
 								foreach ( array_reverse( $recent_dates ) as $date ) {
-									$post_id = $repository->find_by_date( $date );
+									$post_id   = $this->sitemap_repository->find_by_date( $date );
 									$url_count = 0;
 									if ( $post_id ) {
 										$url_count = get_post_meta( $post_id, 'msm_indexed_url_count', true );
@@ -613,13 +703,11 @@ class UI {
 	/**
 	 * Render the automatic sitemap updates section
 	 */
-	private static function render_cron_section() {
-		$cron_status    = CronSchedulingService::get_cron_status();
-		$cron_enabled   = $cron_status['enabled'];
-		$next_scheduled = $cron_status['next_scheduled'];
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
-		$current_frequency = $settings_service->get_setting( 'cron_frequency', '15min' );
+	private function render_cron_section() {
+		$cron_status       = $this->cron_scheduler->get_cron_status();
+		$cron_enabled      = $cron_status['enabled'];
+		$next_scheduled    = $cron_status['next_scheduled'];
+		$current_frequency = $this->settings_service->get_setting( 'cron_frequency', '15min' );
 		
 		// Calculate relative time for next check
 		$next_check_relative = $next_scheduled ? human_time_diff( current_time( 'timestamp' ), $next_scheduled ) : '';
@@ -635,16 +723,16 @@ class UI {
 			}
 		}
 		$last_check_timestamp = is_numeric( $last_check ) ? (int) $last_check : strtotime( $last_check );
-		$last_check_text = $last_check ? gmdate( 'Y-m-d H:i:s T', $last_check_timestamp ) : __( 'Never', 'msm-sitemap' );
-		$last_check_relative = $last_check ? human_time_diff( $last_check_timestamp, current_time( 'timestamp' ) ) : '';
+		$last_check_text      = $last_check ? gmdate( 'Y-m-d H:i:s T', $last_check_timestamp ) : __( 'Never', 'msm-sitemap' );
+		$last_check_relative  = $last_check ? human_time_diff( $last_check_timestamp, current_time( 'timestamp' ) ) : '';
 		
 		// Get last update time (when sitemaps were actually generated)
 		$last_update = get_option( 'msm_sitemap_last_update' );
 		// For existing installations, we don't have historical data about when sitemaps were actually generated
 		// So we'll show "Never" for now, and it will be populated on the next cron run that generates sitemaps
 		$last_update_timestamp = is_numeric( $last_update ) ? (int) $last_update : strtotime( $last_update );
-		$last_update_text = $last_update ? gmdate( 'Y-m-d H:i:s T', $last_update_timestamp ) : __( 'Never', 'msm-sitemap' );
-		$last_update_relative = $last_update ? human_time_diff( $last_update_timestamp, current_time( 'timestamp' ) ) : '';
+		$last_update_text      = $last_update ? gmdate( 'Y-m-d H:i:s T', $last_update_timestamp ) : __( 'Never', 'msm-sitemap' );
+		$last_update_relative  = $last_update ? human_time_diff( $last_update_timestamp, current_time( 'timestamp' ) ) : '';
 		?>
 		<h2><?php esc_html_e( 'Automatic Sitemap Updates', 'msm-sitemap' ); ?></h2>
 		
@@ -753,8 +841,8 @@ class UI {
 	/**
 	 * Render the manual generation section
 	 */
-	private static function render_generate_section() {
-		$cron_status                = CronSchedulingService::get_cron_status();
+	private function render_generate_section() {
+		$cron_status                = $this->cron_scheduler->get_cron_status();
 		$sitemap_create_in_progress = (bool) get_option( 'msm_generation_in_progress' );
 		$sitemap_halt_in_progress   = (bool) get_option( 'msm_sitemap_stop_generation' );
 		
@@ -768,10 +856,8 @@ class UI {
 		$buttons_enabled = ! $sitemap_create_in_progress && ! $sitemap_halt_in_progress;
 		
 		// Get missing content summary
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$missing_service = new \Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService();
-		$missing_data = $missing_service::get_missing_sitemaps();
-		$missing_summary = $missing_service::get_missing_content_summary();
+		$missing_data    = $this->missing_detection_service->get_missing_sitemaps();
+		$missing_summary = $this->missing_detection_service->get_missing_content_summary();
 		
 		// Determine button text based on cron status
 		$button_text = $cron_status['enabled'] 
@@ -802,7 +888,7 @@ class UI {
 			
 
 			
-			<?php self::render_generate_note(); ?>
+			<?php $this->render_generate_note(); ?>
 		</form>
 		<?php
 	}
@@ -810,8 +896,8 @@ class UI {
 	/**
 	 * Render a note about enabling automatic updates when generate buttons are disabled
 	 */
-	private static function render_generate_note() {
-		$cron_status = CronSchedulingService::get_cron_status();
+	private function render_generate_note() {
+		$cron_status = $this->cron_scheduler->get_cron_status();
 		
 		if ( ! $cron_status['enabled'] ) {
 			echo '<p style="margin-top: 10px; color: #666; font-style: italic;">';
@@ -823,14 +909,14 @@ class UI {
 	/**
 	 * Render the dangerous actions section
 	 */
-	private static function render_dangerous_actions_section() {
-		$cron_status                = CronSchedulingService::get_cron_status();
+	private function render_dangerous_actions_section() {
+		$cron_status                = $this->cron_scheduler->get_cron_status();
 		$sitemap_create_in_progress = (bool) get_option( 'msm_generation_in_progress' );
 		$sitemap_halt_in_progress   = (bool) get_option( 'msm_sitemap_stop_generation' );
 		
 		// Determine if buttons should be disabled
 		$buttons_enabled = $cron_status['enabled'] && ! $sitemap_create_in_progress && ! $sitemap_halt_in_progress;
-		$reset_disabled = $sitemap_create_in_progress || $sitemap_halt_in_progress;
+		$reset_disabled  = $sitemap_create_in_progress || $sitemap_halt_in_progress;
 		?>
 		<div style="margin-top: 40px; border: 1px solid #dc3232; border-radius: 4px; padding: 15px; background-color: #fef7f7;">
 			<div style="display: flex; align-items: center; margin-bottom: 15px;">
@@ -914,7 +1000,7 @@ class UI {
 	/**
 	 * Render the content providers settings section
 	 */
-	private static function render_content_providers_section() {
+	private function render_content_providers_section() {
 		?>
 		<div class="card">
 			<h2 class="title">
@@ -942,11 +1028,11 @@ class UI {
 								<fieldset>
 									<label for="posts_provider_enabled">
 										<input type="checkbox" 
-											   id="posts_provider_enabled" 
-											   name="posts_provider_enabled" 
-											   value="1" 
-											   <?php checked( apply_filters( 'msm_sitemap_posts_provider_enabled', true ) ); ?>
-											   disabled="disabled">
+												id="posts_provider_enabled" 
+												name="posts_provider_enabled" 
+												value="1" 
+												<?php checked( apply_filters( 'msm_sitemap_posts_provider_enabled', true ) ); ?>
+												disabled="disabled">
 										<?php esc_html_e( 'Include published posts in sitemaps', 'msm-sitemap' ); ?>
 									</label>
 									<p class="description">
@@ -966,17 +1052,15 @@ class UI {
 							<td>
 								<fieldset>
 									<label for="images_provider_enabled">
-																			<?php 
-									$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-									$settings_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SettingsService::class );
-									$settings = $settings_service->get_image_settings();
+									<?php 
+									$settings               = $this->settings_service->get_image_settings();
 									$images_provider_option = $settings['include_images'];
 									?>
 									<input type="checkbox" 
-										   id="images_provider_enabled" 
-										   name="images_provider_enabled" 
-										   value="1" 
-										   <?php checked( '1' === $images_provider_option ); ?>>
+											id="images_provider_enabled" 
+											name="images_provider_enabled" 
+											value="1" 
+											<?php checked( '1' === $images_provider_option ); ?>>
 										<?php esc_html_e( 'Images in Sitemaps', 'msm-sitemap' ); ?>
 									</label>
 									<p class="description">
@@ -994,10 +1078,10 @@ class UI {
 											$featured_images_option = $settings['featured_images'];
 											?>
 											<input type="checkbox" 
-												   id="include_featured_images" 
-												   name="include_featured_images" 
-												   value="1" 
-												   <?php checked( '1' === $featured_images_option ); ?>>
+													id="include_featured_images" 
+													name="include_featured_images" 
+													value="1" 
+													<?php checked( '1' === $featured_images_option ); ?>>
 											<?php esc_html_e( 'Include Featured Images', 'msm-sitemap' ); ?>
 										</label>
 										<p class="description">
@@ -1009,10 +1093,10 @@ class UI {
 											$content_images_option = $settings['content_images'];
 											?>
 											<input type="checkbox" 
-												   id="include_content_images" 
-												   name="include_content_images" 
-												   value="1" 
-												   <?php checked( '1' === $content_images_option ); ?>>
+													id="include_content_images" 
+													name="include_content_images" 
+													value="1" 
+													<?php checked( '1' === $content_images_option ); ?>>
 											<?php esc_html_e( 'Include Content Images', 'msm-sitemap' ); ?>
 										</label>
 										<p class="description">
@@ -1024,13 +1108,13 @@ class UI {
 										<label for="max_images_per_sitemap">
 											<?php esc_html_e( 'Maximum images per sitemap:', 'msm-sitemap' ); ?>
 											<input type="number" 
-												   id="max_images_per_sitemap" 
-												   name="max_images_per_sitemap" 
-												   value="<?php echo esc_attr( $settings['max_images_per_sitemap'] ); ?>"
-												   min="1" 
-												   max="10000" 
-												   step="1" 
-												   style="width: 100px;">
+													id="max_images_per_sitemap" 
+													name="max_images_per_sitemap" 
+													value="<?php echo esc_attr( $settings['max_images_per_sitemap'] ); ?>"
+													min="1" 
+													max="10000" 
+													step="1" 
+													style="width: 100px;">
 										</label>
 									</p>
 								</div>

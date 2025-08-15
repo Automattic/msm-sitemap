@@ -80,13 +80,13 @@ final class SitemapValidationResult implements SitemapOperationResultInterface {
 		int $valid_count = 0,
 		int $invalid_count = 0
 	) {
-		$this->success = $success;
-		$this->count = $count;
-		$this->message = $message;
-		$this->error_code = $error_code;
+		$this->success           = $success;
+		$this->count             = $count;
+		$this->message           = $message;
+		$this->error_code        = $error_code;
 		$this->validation_errors = $validation_errors;
-		$this->valid_count = $valid_count;
-		$this->invalid_count = $invalid_count;
+		$this->valid_count       = $valid_count;
+		$this->invalid_count     = $invalid_count;
 	}
 
 	/**
@@ -188,5 +188,4 @@ final class SitemapValidationResult implements SitemapOperationResultInterface {
 	 *
 	 * @return array
 	 */
-
 }

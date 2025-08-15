@@ -10,6 +10,7 @@ declare( strict_types=1 );
 namespace Automattic\MSM_Sitemap\Infrastructure\Repositories;
 
 use Automattic\MSM_Sitemap\Domain\Contracts\SitemapRepositoryInterface;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\PostTypeRegistration;
 
 /**
  * Repository for managing sitemap posts in the WordPress database.
@@ -17,11 +18,27 @@ use Automattic\MSM_Sitemap\Domain\Contracts\SitemapRepositoryInterface;
 class SitemapPostRepository implements SitemapRepositoryInterface {
 
 	/**
+	 * The post type registration service.
+	 *
+	 * @var PostTypeRegistration
+	 */
+	private PostTypeRegistration $post_type_registration;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param PostTypeRegistration|null $post_type_registration The post type registration service (optional, will create if not provided).
+	 */
+	public function __construct( ?PostTypeRegistration $post_type_registration = null ) {
+		$this->post_type_registration = $post_type_registration ?? new PostTypeRegistration();
+	}
+
+	/**
 	 * Save a sitemap to the WordPress database.
 	 *
 	 * @param string $date The sitemap date (YYYY-MM-DD format).
 	 * @param string $xml_content The XML content to save.
-	 * @param int    $url_count The number of URLs in the sitemap.
+	 * @param int $url_count The number of URLs in the sitemap.
 	 * @return bool True on success, false on failure.
 	 */
 	public function save( string $date, string $xml_content, int $url_count ): bool {
@@ -30,22 +47,24 @@ class SitemapPostRepository implements SitemapRepositoryInterface {
 		$sitemap_data = array(
 			'post_name'   => $date,
 			'post_title'  => $date,
-			'post_type'   => \Automattic\MSM_Sitemap\Plugin::SITEMAP_CPT,
+			'post_type'   => $this->post_type_registration->get_post_type(),
 			'post_status' => 'publish',
 			'post_date'   => $date,
 		);
 
 		// Check if sitemap already exists
-		$existing_id = $wpdb->get_var( $wpdb->prepare( 
-			"SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", 
-			\Automattic\MSM_Sitemap\Plugin::SITEMAP_CPT, 
-			$date 
-		) );
+		$existing_id = $wpdb->get_var(
+			$wpdb->prepare( 
+				"SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", 
+				$this->post_type_registration->get_post_type(), 
+				$date 
+			) 
+		);
 
 		if ( $existing_id ) {
 			// Update existing sitemap
 			$sitemap_data['ID'] = $existing_id;
-			$post_id = wp_update_post( $sitemap_data );
+			$post_id            = wp_update_post( $sitemap_data );
 		} else {
 			// Create new sitemap
 			$post_id = wp_insert_post( $sitemap_data );
@@ -58,7 +77,10 @@ class SitemapPostRepository implements SitemapRepositoryInterface {
 		// Get the old count BEFORE updating post meta
 		$old_count = 0;
 		if ( $existing_id ) {
-			$old_count = get_post_meta( $existing_id, 'msm_indexed_url_count', true ) ?: 0;
+			$old_count = get_post_meta( $existing_id, 'msm_indexed_url_count', true );
+			if ( empty( $old_count ) ) {
+				$old_count = 0;
+			}
 		}
 
 		// Save XML content and URL count as post meta
@@ -67,7 +89,7 @@ class SitemapPostRepository implements SitemapRepositoryInterface {
 
 		// Update total indexed URL count
 		$total_count = get_option( 'msm_sitemap_indexed_url_count', 0 );
-		$new_total = $total_count - $old_count + $url_count;
+		$new_total   = $total_count - $old_count + $url_count;
 		update_option( 'msm_sitemap_indexed_url_count', $new_total );
 
 		return true;
@@ -82,11 +104,13 @@ class SitemapPostRepository implements SitemapRepositoryInterface {
 	public function find_by_date( string $date ): ?int {
 		global $wpdb;
 
-		$post_id = $wpdb->get_var( $wpdb->prepare( 
-			"SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", 
-			'msm_sitemap', 
-			$date 
-		) );
+		$post_id = $wpdb->get_var(
+			$wpdb->prepare( 
+				"SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", 
+				'msm_sitemap', 
+				$date 
+			) 
+		);
 
 		return $post_id ? (int) $post_id : null;
 	}
@@ -105,7 +129,10 @@ class SitemapPostRepository implements SitemapRepositoryInterface {
 		}
 
 		// Get the URL count before deletion
-		$url_count = get_post_meta( $post_id, 'msm_indexed_url_count', true ) ?: 0;
+		$url_count = get_post_meta( $post_id, 'msm_indexed_url_count', true );
+		if ( empty( $url_count ) ) {
+			$url_count = 0;
+		}
 
 		// Delete the post
 		$result = wp_delete_post( $post_id, true );
@@ -113,7 +140,7 @@ class SitemapPostRepository implements SitemapRepositoryInterface {
 		if ( $result ) {
 			// Update total indexed URL count
 			$total_count = get_option( 'msm_sitemap_indexed_url_count', 0 );
-			$new_total = $total_count - $url_count;
+			$new_total   = $total_count - $url_count;
 			update_option( 'msm_sitemap_indexed_url_count', $new_total );
 		}
 
@@ -134,7 +161,7 @@ class SitemapPostRepository implements SitemapRepositoryInterface {
 		foreach ( $date_queries as $query ) {
 			$sitemap_query = new \WP_Query(
 				array(
-					'post_type'      => \Automattic\MSM_Sitemap\Plugin::SITEMAP_CPT,
+					'post_type'      => $this->post_type_registration->get_post_type(),
 					'post_status'    => 'any',
 					'fields'         => 'ids',
 					'posts_per_page' => -1,
@@ -160,10 +187,12 @@ class SitemapPostRepository implements SitemapRepositoryInterface {
 	public function delete_all(): int {
 		global $wpdb;
 		
-		$sitemap_ids = $wpdb->get_col( $wpdb->prepare( 
-			"SELECT ID FROM $wpdb->posts WHERE post_type = %s", 
-			\Automattic\MSM_Sitemap\Plugin::SITEMAP_CPT 
-		) );
+		$sitemap_ids = $wpdb->get_col(
+			$wpdb->prepare( 
+				"SELECT ID FROM $wpdb->posts WHERE post_type = %s", 
+				$this->post_type_registration->get_post_type() 
+			) 
+		);
 		
 		$deleted_count = 0;
 		foreach ( $sitemap_ids as $post_id ) {
@@ -183,13 +212,18 @@ class SitemapPostRepository implements SitemapRepositoryInterface {
 	public function get_all_sitemap_dates(): array {
 		global $wpdb;
 		
-		$dates = $wpdb->get_col( $wpdb->prepare(
-			"SELECT post_name FROM $wpdb->posts WHERE post_type = %s AND post_status = 'publish'",
-			\Automattic\MSM_Sitemap\Plugin::SITEMAP_CPT
-		) );
+		$dates = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT post_name FROM $wpdb->posts WHERE post_type = %s AND post_status = 'publish'",
+				$this->post_type_registration->get_post_type()
+			) 
+		);
 		
-		return array_filter( $dates, function( $date ) {
-			return preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date );
-		} );
+		return array_filter(
+			$dates,
+			function ( $date ) {
+				return preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date );
+			} 
+		);
 	}
 }

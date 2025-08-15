@@ -9,7 +9,7 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests\Admin;
 
-use Automattic\MSM_Sitemap\Admin\Notifications;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\Notifications;
 
 /**
  * Unit Tests for Admin\Notifications class

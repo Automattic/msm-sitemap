@@ -9,6 +9,8 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests;
 
+use Automattic\MSM_Sitemap\Infrastructure\REST\SitemapEndpointHandler;
+use Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository;
 use WP_Query;
 
 /**
@@ -54,14 +56,15 @@ class FiltersTest extends TestCase {
 		$ran = false;
 
 		add_filter(
-			'msm_sitemap_index',
+			'msm_sitemap_index_sitemaps',
 			function () use ( &$ran ) {
 				$ran = true;
 				return array();
 			} 
 		);
 		
-		\Automattic\MSM_Sitemap\Infrastructure\WordPress\SitemapEndpointHandler::get_sitemap_index_xml();
+		$sitemap_endpoint_handler = $this->get_service( SitemapEndpointHandler::class );
+		$sitemap_endpoint_handler->get_sitemap_index_xml();
 
 		$this->assertTrue( $ran );
 	}
@@ -77,8 +80,8 @@ class FiltersTest extends TestCase {
 			} 
 		);
 
-		$post_repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository();
-		$years = $post_repository->get_post_year_range();
+		$post_repository = new PostRepository();
+		$years           = $post_repository->get_post_year_range();
 
 		$this->assertEquals( array( 2000, 2001, 2002 ), $years );
 
@@ -106,7 +109,8 @@ class FiltersTest extends TestCase {
 			3
 		);
 
-		$xml = \Automattic\MSM_Sitemap\Infrastructure\WordPress\SitemapEndpointHandler::get_sitemap_index_xml();
+		$sitemap_endpoint_handler = $this->get_service( SitemapEndpointHandler::class );
+		$xml                      = $sitemap_endpoint_handler->get_sitemap_index_xml();
 		
 		$this->assertStringContainsString( $append_xml, $xml );
 		$this->assertIsArray( $called_args );
@@ -139,7 +143,8 @@ class FiltersTest extends TestCase {
 			3
 		);
 
-		$xml = \Automattic\MSM_Sitemap\Infrastructure\WordPress\SitemapEndpointHandler::get_sitemap_index_xml();
+		$sitemap_endpoint_handler = $this->get_service( SitemapEndpointHandler::class );
+		$xml                      = $sitemap_endpoint_handler->get_sitemap_index_xml();
 		
 		$this->assertEquals( $replacement_xml, $xml );
 		$this->assertIsArray( $called_args );

@@ -56,7 +56,7 @@ class UrlSetFactoryTest extends TestCase {
 	public function test_from_entries(): void {
 		$url_entry1 = new UrlEntry( 'https://example.com/post-1/' );
 		$url_entry2 = new UrlEntry( 'https://example.com/post-2/' );
-		$entries = array( $url_entry1, $url_entry2 );
+		$entries    = array( $url_entry1, $url_entry2 );
 
 		$url_set = UrlSetFactory::from_entries( $entries );
 
@@ -72,7 +72,7 @@ class UrlSetFactoryTest extends TestCase {
 	public function test_from_entries_with_custom_limit(): void {
 		$url_entry1 = new UrlEntry( 'https://example.com/post-1/' );
 		$url_entry2 = new UrlEntry( 'https://example.com/post-2/' );
-		$entries = array( $url_entry1, $url_entry2 );
+		$entries    = array( $url_entry1, $url_entry2 );
 
 		$url_set = UrlSetFactory::from_entries( $entries, 5 );
 
@@ -179,13 +179,23 @@ class UrlSetFactoryTest extends TestCase {
 		$post_id = $this->create_dummy_post( '2024-01-15 10:30:00', 'publish' );
 
 		// Add custom filters
-		add_filter( 'msm_sitemap_changefreq', function( $changefreq, $post ) {
-			return 'daily';
-		}, 10, 2 );
+		add_filter(
+			'msm_sitemap_changefreq',
+			function ( $changefreq, $post ) {
+				return 'daily';
+			},
+			10,
+			2 
+		);
 
-		add_filter( 'msm_sitemap_priority', function( $priority, $post ) {
-			return 0.9;
-		}, 10, 2 );
+		add_filter(
+			'msm_sitemap_priority',
+			function ( $priority, $post ) {
+				return 0.9;
+			},
+			10,
+			2 
+		);
 
 		$url_set = UrlSetFactory::from_posts( array( $post_id ) );
 

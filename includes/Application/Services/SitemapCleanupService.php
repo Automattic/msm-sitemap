@@ -42,7 +42,7 @@ class SitemapCleanupService {
 		SitemapRepositoryInterface $repository,
 		?PostRepository $post_repository = null
 	) {
-		$this->repository = $repository;
+		$this->repository      = $repository;
 		$this->post_repository = $post_repository ?? new PostRepository();
 	}
 
@@ -53,7 +53,7 @@ class SitemapCleanupService {
 	 * @return int Number of orphaned sitemaps deleted.
 	 */
 	public function cleanup_orphaned_sitemaps( array $date_queries ): int {
-		$deleted_count = 0;
+		$deleted_count     = 0;
 		$all_sitemap_dates = $this->repository->get_all_sitemap_dates();
 		
 		// Get all dates that should be checked based on queries
@@ -128,7 +128,7 @@ class SitemapCleanupService {
 			if ( isset( $query['year'], $query['month'], $query['day'] ) ) {
 				$dates[] = sprintf( '%04d-%02d-%02d', $query['year'], $query['month'], $query['day'] );
 			} elseif ( isset( $query['year'], $query['month'] ) ) {
-				$year = $query['year'];
+				$year  = $query['year'];
 				$month = $query['month'];
 
 				// Validate month to avoid ValueError in PHP 8.0+
@@ -143,7 +143,7 @@ class SitemapCleanupService {
 					$dates[] = sprintf( '%04d-%02d-%02d', $year, $month, $day );
 				}
 			} elseif ( isset( $query['year'] ) ) {
-				$year = $query['year'];
+				$year      = $query['year'];
 				$max_month = ( (int) gmdate( 'Y' ) === $year ) ? (int) gmdate( 'n' ) : 12;
 
 				for ( $month = 1; $month <= $max_month; $month++ ) {

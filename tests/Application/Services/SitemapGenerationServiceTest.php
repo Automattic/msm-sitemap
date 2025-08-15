@@ -26,8 +26,8 @@ class SitemapGenerationServiceTest extends TestCase {
 	 * Test creating a sitemap for a specific date.
 	 */
 	public function test_create_for_date_success(): void {
-		$generator = $this->createMock( SitemapGenerator::class );
-		$repository = $this->createMock( SitemapRepositoryInterface::class );
+		$generator     = $this->createMock( SitemapGenerator::class );
+		$repository    = $this->createMock( SitemapRepositoryInterface::class );
 		$query_service = new SitemapQueryService();
 
 		// Mock generator to return content
@@ -52,8 +52,8 @@ class SitemapGenerationServiceTest extends TestCase {
 	 * Test creating a sitemap when one already exists.
 	 */
 	public function test_create_for_date_already_exists(): void {
-		$generator = $this->createMock( SitemapGenerator::class );
-		$repository = $this->createMock( SitemapRepositoryInterface::class );
+		$generator     = $this->createMock( SitemapGenerator::class );
+		$repository    = $this->createMock( SitemapRepositoryInterface::class );
 		$query_service = new SitemapQueryService();
 
 		// Mock repository to return existing sitemap
@@ -71,8 +71,8 @@ class SitemapGenerationServiceTest extends TestCase {
 	 * Test creating a sitemap when no content is found.
 	 */
 	public function test_create_for_date_no_content(): void {
-		$generator = $this->createMock( SitemapGenerator::class );
-		$repository = $this->createMock( SitemapRepositoryInterface::class );
+		$generator     = $this->createMock( SitemapGenerator::class );
+		$repository    = $this->createMock( SitemapRepositoryInterface::class );
 		$query_service = new SitemapQueryService();
 
 		// Mock generator to return empty content
@@ -96,8 +96,8 @@ class SitemapGenerationServiceTest extends TestCase {
 	 * Test generating sitemaps for date queries.
 	 */
 	public function test_generate_for_date_queries_success(): void {
-		$generator = $this->createMock( SitemapGenerator::class );
-		$repository = $this->createMock( SitemapRepositoryInterface::class );
+		$generator     = $this->createMock( SitemapGenerator::class );
+		$repository    = $this->createMock( SitemapRepositoryInterface::class );
 		$query_service = $this->createMock( SitemapQueryService::class );
 
 		// Mock generator to return content
@@ -115,8 +115,16 @@ class SitemapGenerationServiceTest extends TestCase {
 		$service = new SitemapGenerationService( $generator, $repository, $query_service );
 
 		$date_queries = array(
-			array( 'year' => 2024, 'month' => 1, 'day' => 1 ),
-			array( 'year' => 2024, 'month' => 1, 'day' => 2 ),
+			array(
+				'year'  => 2024,
+				'month' => 1,
+				'day'   => 1,
+			),
+			array(
+				'year'  => 2024,
+				'month' => 1,
+				'day'   => 2,
+			),
 		);
 
 		$result = $service->generate_for_date_queries( $date_queries );
@@ -129,8 +137,8 @@ class SitemapGenerationServiceTest extends TestCase {
 	 * Test generating sitemaps with empty queries.
 	 */
 	public function test_generate_for_date_queries_empty(): void {
-		$generator = $this->createMock( SitemapGenerator::class );
-		$repository = $this->createMock( SitemapRepositoryInterface::class );
+		$generator     = $this->createMock( SitemapGenerator::class );
+		$repository    = $this->createMock( SitemapRepositoryInterface::class );
 		$query_service = new SitemapQueryService();
 
 		$service = new SitemapGenerationService( $generator, $repository, $query_service );

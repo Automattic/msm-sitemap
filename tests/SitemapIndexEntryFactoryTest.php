@@ -46,7 +46,7 @@ class SitemapIndexEntryFactoryTest extends TestCase {
 	 */
 	public function test_from_post(): void {
 		$sitemap_post_id = $this->create_dummy_post( '2024-01-15 10:30:00', 'publish', 'msm_sitemap' );
-		$sitemap_post = get_post( $sitemap_post_id );
+		$sitemap_post    = get_post( $sitemap_post_id );
 
 		$entry = SitemapIndexEntryFactory::from_post( $sitemap_post );
 
@@ -61,8 +61,8 @@ class SitemapIndexEntryFactoryTest extends TestCase {
 	public function test_from_posts(): void {
 		$sitemap_post1_id = $this->create_dummy_post( '2024-01-15 10:30:00', 'publish', 'msm_sitemap' );
 		$sitemap_post2_id = $this->create_dummy_post( '2024-01-16 10:30:00', 'publish', 'msm_sitemap' );
-		$sitemap_post1 = get_post( $sitemap_post1_id );
-		$sitemap_post2 = get_post( $sitemap_post2_id );
+		$sitemap_post1    = get_post( $sitemap_post1_id );
+		$sitemap_post2    = get_post( $sitemap_post2_id );
 
 		$entries = SitemapIndexEntryFactory::from_posts( array( $sitemap_post1, $sitemap_post2 ) );
 

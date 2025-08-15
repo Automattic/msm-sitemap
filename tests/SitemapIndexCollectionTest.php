@@ -52,8 +52,8 @@ class SitemapIndexCollectionTest extends TestCase {
 	 */
 	public function test_add_entries() {
 		$collection = new SitemapIndexCollection();
-		$entry1 = SitemapIndexEntryFactory::from_data( 'https://example.com/sitemap1.xml' );
-		$entry2 = SitemapIndexEntryFactory::from_data( 'https://example.com/sitemap2.xml' );
+		$entry1     = SitemapIndexEntryFactory::from_data( 'https://example.com/sitemap1.xml' );
+		$entry2     = SitemapIndexEntryFactory::from_data( 'https://example.com/sitemap2.xml' );
 
 		$collection->add( $entry1 );
 		$this->assertCount( 1, $collection );
@@ -68,8 +68,8 @@ class SitemapIndexCollectionTest extends TestCase {
 	 * Test removing entries from collection.
 	 */
 	public function test_remove_entries() {
-		$entry1 = SitemapIndexEntryFactory::from_data( 'https://example.com/sitemap1.xml' );
-		$entry2 = SitemapIndexEntryFactory::from_data( 'https://example.com/sitemap2.xml' );
+		$entry1     = SitemapIndexEntryFactory::from_data( 'https://example.com/sitemap1.xml' );
+		$entry2     = SitemapIndexEntryFactory::from_data( 'https://example.com/sitemap2.xml' );
 		$collection = new SitemapIndexCollection( array( $entry1, $entry2 ) );
 
 		$collection->remove( $entry1 );
@@ -174,8 +174,8 @@ class SitemapIndexCollectionTest extends TestCase {
 	 * Test collection to array conversion.
 	 */
 	public function test_to_array() {
-		$entry1 = SitemapIndexEntryFactory::from_data( 'https://example.com/sitemap1.xml' );
-		$entry2 = SitemapIndexEntryFactory::from_data( 'https://example.com/sitemap2.xml' );
+		$entry1     = SitemapIndexEntryFactory::from_data( 'https://example.com/sitemap1.xml' );
+		$entry2     = SitemapIndexEntryFactory::from_data( 'https://example.com/sitemap2.xml' );
 		$collection = new SitemapIndexCollection( array( $entry1, $entry2 ) );
 
 		$array = $collection->to_array();
@@ -205,8 +205,8 @@ class SitemapIndexCollectionTest extends TestCase {
 	 * Test countable interface.
 	 */
 	public function test_countable_interface() {
-		$entry1 = SitemapIndexEntryFactory::from_data( 'https://example.com/sitemap1.xml' );
-		$entry2 = SitemapIndexEntryFactory::from_data( 'https://example.com/sitemap2.xml' );
+		$entry1     = SitemapIndexEntryFactory::from_data( 'https://example.com/sitemap1.xml' );
+		$entry2     = SitemapIndexEntryFactory::from_data( 'https://example.com/sitemap2.xml' );
 		$collection = new SitemapIndexCollection( array( $entry1, $entry2 ) );
 
 		$this->assertEquals( 2, count( $collection ) );

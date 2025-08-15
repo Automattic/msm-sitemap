@@ -51,7 +51,7 @@ class SitemapIndexEntry {
 		$this->validate_loc( $loc );
 		$this->validate_lastmod( $lastmod );
 
-		$this->loc = $loc;
+		$this->loc     = $loc;
 		$this->lastmod = $lastmod;
 	}
 

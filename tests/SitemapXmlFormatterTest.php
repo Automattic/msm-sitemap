@@ -23,9 +23,9 @@ class SitemapXmlFormatterTest extends TestCase {
 	 */
 	public function test_format_includes_xsl_stylesheet(): void {
 		$formatter = new SitemapXmlFormatter();
-		$content = new SitemapContent();
-		$entry = new UrlEntry( 'https://example.com/test' );
-		$content = $content->add( $entry );
+		$content   = new SitemapContent();
+		$entry     = new UrlEntry( 'https://example.com/test' );
+		$content   = $content->add( $entry );
 
 		$xml = $formatter->format( $content );
 
@@ -38,9 +38,9 @@ class SitemapXmlFormatterTest extends TestCase {
 	 */
 	public function test_format_includes_namespaces(): void {
 		$formatter = new SitemapXmlFormatter();
-		$content = new SitemapContent();
-		$entry = new UrlEntry( 'https://example.com/test' );
-		$content = $content->add( $entry );
+		$content   = new SitemapContent();
+		$entry     = new UrlEntry( 'https://example.com/test' );
+		$content   = $content->add( $entry );
 
 		$xml = $formatter->format( $content );
 
@@ -55,9 +55,9 @@ class SitemapXmlFormatterTest extends TestCase {
 	 */
 	public function test_format_produces_valid_xml_structure(): void {
 		$formatter = new SitemapXmlFormatter();
-		$content = new SitemapContent();
-		$entry = new UrlEntry( 'https://example.com/test', '2024-01-15T00:00:00+00:00', 'daily', 0.8 );
-		$content = $content->add( $entry );
+		$content   = new SitemapContent();
+		$entry     = new UrlEntry( 'https://example.com/test', '2024-01-15T00:00:00+00:00', 'daily', 0.8 );
+		$content   = $content->add( $entry );
 
 		$xml = $formatter->format( $content );
 
@@ -77,7 +77,7 @@ class SitemapXmlFormatterTest extends TestCase {
 	 */
 	public function test_format_handles_empty_content(): void {
 		$formatter = new SitemapXmlFormatter();
-		$content = new SitemapContent();
+		$content   = new SitemapContent();
 
 		$xml = $formatter->format( $content );
 

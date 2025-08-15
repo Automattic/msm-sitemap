@@ -76,10 +76,9 @@ class FunctionsTest extends TestCase {
 		$this->assertPostCount( 12 );
 		$this->build_sitemaps();
 
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$stats_service = $container->get( \Automattic\MSM_Sitemap\Application\Services\SitemapStatsService::class );
-		$stats      = $stats_service->get_recent_url_counts( $days );
-		$tot_count  = array_sum( $stats );
+		$stats_service = $this->get_service( \Automattic\MSM_Sitemap\Application\Services\SitemapStatsService::class );
+		$stats         = $stats_service->get_recent_url_counts( $days );
+		$tot_count     = array_sum( $stats );
 
 		// Verify Stat returned for each day in $days.
 		$this->assertCount( $days, $stats );
@@ -163,6 +162,6 @@ class FunctionsTest extends TestCase {
 		$this->assertEquals( $expected_string, \Automattic\MSM_Sitemap\Domain\Utilities\DateUtility::format_date_stamp( $year, $month, $day ) );
 	}
 
-    // Removed tests for get_post_year_range, check_year_has_posts, and get_post_status.
-    // These are now covered by PostRepositoryTest.
+	// Removed tests for get_post_year_range, check_year_has_posts, and get_post_status.
+	// These are now covered by PostRepositoryTest.
 }

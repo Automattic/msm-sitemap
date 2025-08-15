@@ -10,11 +10,12 @@ declare(strict_types=1);
 namespace Automattic\MSM_Sitemap\Infrastructure\Cron;
 
 use Automattic\MSM_Sitemap\Application\Services\SitemapService;
+use Automattic\MSM_Sitemap\Application\Services\SitemapGenerator;
 use Automattic\MSM_Sitemap\Domain\Contracts\CronHandlerInterface;
 use Automattic\MSM_Sitemap\Domain\Utilities\DateUtility;
-use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
 use Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository;
+use Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository;
 
 /**
  * Handler class for managing full sitemap generation via cascading cron jobs.
@@ -26,12 +27,57 @@ use Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository;
 class FullGenerationHandler implements CronHandlerInterface {
 
 	/**
-	 * Setup the cron functionality for full generation
+	 * How far apart should full cron generation events be spaced (in seconds).
+	 *
+	 * @var int
 	 */
-	public static function setup(): void {
-		add_action( 'msm_cron_generate_sitemap_for_year', array( __CLASS__, 'generate_sitemap_for_year' ) );
-		add_action( 'msm_cron_generate_sitemap_for_year_month', array( __CLASS__, 'generate_sitemap_for_year_month' ) );
-		add_action( 'msm_cron_generate_sitemap_for_year_month_day', array( __CLASS__, 'generate_sitemap_for_year_month_day' ) );
+	private const INTERVAL_PER_GENERATION_EVENT = 60;
+
+	/**
+	 * The cron scheduling service.
+	 *
+	 * @var CronSchedulingService
+	 */
+	private CronSchedulingService $cron_scheduler;
+
+	/**
+	 * The post repository.
+	 *
+	 * @var PostRepository
+	 */
+	private PostRepository $post_repository;
+
+	/**
+	 * The sitemap generator.
+	 *
+	 * @var SitemapGenerator
+	 */
+	private SitemapGenerator $sitemap_generator;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param CronSchedulingService $cron_scheduler The cron scheduling service.
+	 * @param PostRepository $post_repository The post repository.
+	 * @param SitemapGenerator $sitemap_generator The sitemap generator.
+	 */
+	public function __construct( 
+		CronSchedulingService $cron_scheduler,
+		PostRepository $post_repository,
+		SitemapGenerator $sitemap_generator
+	) {
+		$this->cron_scheduler    = $cron_scheduler;
+		$this->post_repository   = $post_repository;
+		$this->sitemap_generator = $sitemap_generator;
+	}
+
+	/**
+	 * Register WordPress hooks and filters for full generation cron.
+	 */
+	public function register_hooks(): void {
+		add_action( 'msm_cron_generate_sitemap_for_year', array( $this, 'generate_sitemap_for_year' ) );
+		add_action( 'msm_cron_generate_sitemap_for_year_month', array( $this, 'generate_sitemap_for_year_month' ) );
+		add_action( 'msm_cron_generate_sitemap_for_year_month_day', array( $this, 'generate_sitemap_for_year_month_day' ) );
 	}
 
 	/**
@@ -40,15 +86,15 @@ class FullGenerationHandler implements CronHandlerInterface {
 	 * This initiates the cascading full sitemap generation by directly
 	 * starting the year-by-year process.
 	 */
-	public static function execute(): void {
-		if ( ! self::can_execute() ) {
+	public function execute(): void {
+		if ( ! $this->can_execute() ) {
 			return;
 		}
 
 		// Set the generation in progress flag
 		update_option( 'msm_generation_in_progress', true );
 
-		self::start_generation();
+		$this->start_generation();
 	}
 
 	/**
@@ -56,9 +102,9 @@ class FullGenerationHandler implements CronHandlerInterface {
 	 * 
 	 * @return bool True if the handler can run, false otherwise.
 	 */
-	public static function can_execute(): bool {
+	public function can_execute(): bool {
 		// Check if cron is enabled
-		if ( ! CronSchedulingService::is_enabled() ) {
+		if ( ! $this->cron_scheduler->is_enabled() ) {
 			return false;
 		}
 
@@ -76,7 +122,7 @@ class FullGenerationHandler implements CronHandlerInterface {
 	 * This method kicks off the full generation by determining the appropriate
 	 * years to process and scheduling the first year generation event.
 	 */
-	private static function start_generation(): void {
+	private function start_generation(): void {
 		// Clear any existing generation state to start fresh
 		delete_option( 'msm_years_to_process' );
 		delete_option( 'msm_months_to_process' );
@@ -86,7 +132,7 @@ class FullGenerationHandler implements CronHandlerInterface {
 		$is_partial_or_running = get_option( 'msm_generation_in_progress', false );
 
 		if ( empty( $is_partial_or_running ) ) {
-			$all_years_with_posts = msm_sitemap_plugin()->get_years_with_posts();
+			$all_years_with_posts = $this->post_repository->get_years_with_posts();
 			update_option( 'msm_years_to_process', $all_years_with_posts );
 		} else {
 			// Continue with existing year list if generation was in progress
@@ -111,10 +157,9 @@ class FullGenerationHandler implements CronHandlerInterface {
 	 *
 	 * @return SitemapService Configured sitemap service.
 	 */
-	private static function get_sitemap_service() {
-		$generator = msm_sitemap_plugin()->get_sitemap_generator();
+	private function get_sitemap_service() {
 		$repository = new SitemapPostRepository();
-		return new SitemapService( $generator, $repository );
+		return new SitemapService( $this->sitemap_generator, $repository );
 	}
 
 	/**
@@ -125,8 +170,8 @@ class FullGenerationHandler implements CronHandlerInterface {
 	 *
 	 * @param int $year Year to generate sitemaps for.
 	 */
-	public static function generate_sitemap_for_year( $year ) {
-		if ( ! self::can_execute() ) {
+	public function generate_sitemap_for_year( $year ) {
+		if ( ! $this->can_execute() ) {
 			return;
 		}
 
@@ -140,12 +185,11 @@ class FullGenerationHandler implements CronHandlerInterface {
 		// Get all months for this year that have posts
 		$months_with_posts = array();
 		for ( $month = 1; $month <= 12; $month++ ) {
-			$start_date = sprintf( '%04d-%02d-01', $year, $month );
+			$start_date    = sprintf( '%04d-%02d-01', $year, $month );
 			$days_in_month = DateUtility::get_days_in_month( $year, $month );
-			$end_date = sprintf( '%04d-%02d-%02d', $year, $month, $days_in_month );
+			$end_date      = sprintf( '%04d-%02d-%02d', $year, $month, $days_in_month );
 			
-			$post_repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository();
-			if ( $post_repository->date_range_has_posts( $start_date, $end_date ) ) {
+			if ( $this->post_repository->date_range_has_posts( $start_date, $end_date ) ) {
 				$months_with_posts[] = $month;
 			}
 		}
@@ -157,10 +201,10 @@ class FullGenerationHandler implements CronHandlerInterface {
 
 			// Prefer the current month when processing the current year
 			$current_month = (int) gmdate( 'n' );
-			$month = in_array( $current_month, $months_with_posts, true ) ? $current_month : $months_with_posts[0];
+			$month         = in_array( $current_month, $months_with_posts, true ) ? $current_month : $months_with_posts[0];
 
 			// Schedule month generation without removing it from the stored list
-			wp_schedule_single_event( time() + MSM_INTERVAL_PER_GENERATION_EVENT, 'msm_cron_generate_sitemap_for_year_month', array( $year, $month ) );
+			wp_schedule_single_event( time() + self::INTERVAL_PER_GENERATION_EVENT, 'msm_cron_generate_sitemap_for_year_month', array( $year, $month ) );
 		} else {
 			// No months with posts, continue to next year
 			self::continue_to_next_year();
@@ -176,8 +220,8 @@ class FullGenerationHandler implements CronHandlerInterface {
 	 * @param int $year Year of the month to process.
 	 * @param int $month Month to generate sitemaps for.
 	 */
-	public static function generate_sitemap_for_year_month( $year, $month ) {
-		if ( ! self::can_execute() ) {
+	public function generate_sitemap_for_year_month( $year, $month ) {
+		if ( ! $this->can_execute() ) {
 			return;
 		}
 
@@ -190,12 +234,12 @@ class FullGenerationHandler implements CronHandlerInterface {
 
 		// Get all days for this month that have posts
 		$days_with_posts = array();
-		$days_in_month = DateUtility::get_days_in_month( $year, $month );
+		$days_in_month   = DateUtility::get_days_in_month( $year, $month );
 		
 		for ( $day = 1; $day <= $days_in_month; $day++ ) {
 			$date = sprintf( '%04d-%02d-%02d', $year, $month, $day );
 			
-			$post_repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository();
+			$post_repository = new PostRepository();
 			if ( $post_repository->get_post_ids_for_date( $date ) ) {
 				$days_with_posts[] = $day;
 			}
@@ -207,7 +251,7 @@ class FullGenerationHandler implements CronHandlerInterface {
 			update_option( 'msm_current_month', $month );
 
 			// Prefer current day (or latest past day) when processing current month
-			$today = (int) gmdate( 'j' );
+			$today     = (int) gmdate( 'j' );
 			$preferred = $today;
 			// If today is not in the list (e.g., no posts today), choose the first available day
 			if ( ! in_array( $preferred, $days_with_posts, true ) ) {
@@ -215,7 +259,7 @@ class FullGenerationHandler implements CronHandlerInterface {
 			}
 
 			// Schedule day generation without removing it from the stored list
-			wp_schedule_single_event( time() + MSM_INTERVAL_PER_GENERATION_EVENT, 'msm_cron_generate_sitemap_for_year_month_day', array( $year, $month, $preferred ) );
+			wp_schedule_single_event( time() + self::INTERVAL_PER_GENERATION_EVENT, 'msm_cron_generate_sitemap_for_year_month_day', array( $year, $month, $preferred ) );
 		} else {
 			// No days with posts, continue to next month
 			self::continue_to_next_month();
@@ -245,7 +289,7 @@ class FullGenerationHandler implements CronHandlerInterface {
 		}
 
 		$service = self::get_sitemap_service();
-		$date = sprintf( '%04d-%02d-%02d', $year, $month, $day );
+		$date    = sprintf( '%04d-%02d-%02d', $year, $month, $day );
 		
 		// Generate the sitemap for this specific date
 		$result = $service->create_for_date( $date, true ); // Force generation
@@ -266,8 +310,8 @@ class FullGenerationHandler implements CronHandlerInterface {
 	 */
 	private static function continue_to_next_day(): void {
 		$days_to_process = get_option( 'msm_days_to_process', array() );
-		$current_year = get_option( 'msm_current_year' );
-		$current_month = get_option( 'msm_current_month' );
+		$current_year    = get_option( 'msm_current_year' );
+		$current_month   = get_option( 'msm_current_month' );
 
 		if ( ! empty( $days_to_process ) && $current_year && $current_month ) {
 			// Process next day
@@ -275,7 +319,7 @@ class FullGenerationHandler implements CronHandlerInterface {
 			update_option( 'msm_days_to_process', $days_to_process );
 
 			// Schedule next day generation
-			wp_schedule_single_event( time() + MSM_INTERVAL_PER_GENERATION_EVENT, 'msm_cron_generate_sitemap_for_year_month_day', array( $current_year, $current_month, $day ) );
+			wp_schedule_single_event( time() + self::INTERVAL_PER_GENERATION_EVENT, 'msm_cron_generate_sitemap_for_year_month_day', array( $current_year, $current_month, $day ) );
 		} else {
 			// No more days, continue to next month
 			delete_option( 'msm_days_to_process' );
@@ -291,7 +335,7 @@ class FullGenerationHandler implements CronHandlerInterface {
 	 */
 	private static function continue_to_next_month(): void {
 		$months_to_process = get_option( 'msm_months_to_process', array() );
-		$current_year = get_option( 'msm_current_year' );
+		$current_year      = get_option( 'msm_current_year' );
 
 		if ( ! empty( $months_to_process ) && $current_year ) {
 			// Process next month
@@ -299,7 +343,7 @@ class FullGenerationHandler implements CronHandlerInterface {
 			update_option( 'msm_months_to_process', $months_to_process );
 
 			// Schedule next month generation
-			wp_schedule_single_event( time() + MSM_INTERVAL_PER_GENERATION_EVENT, 'msm_cron_generate_sitemap_for_year_month', array( $current_year, $month ) );
+			wp_schedule_single_event( time() + self::INTERVAL_PER_GENERATION_EVENT, 'msm_cron_generate_sitemap_for_year_month', array( $current_year, $month ) );
 		} else {
 			// No more months, continue to next year
 			delete_option( 'msm_months_to_process' );
@@ -322,7 +366,7 @@ class FullGenerationHandler implements CronHandlerInterface {
 			update_option( 'msm_years_to_process', $years_to_process );
 
 			// Schedule next year generation
-			wp_schedule_single_event( time() + MSM_INTERVAL_PER_GENERATION_EVENT, 'msm_cron_generate_sitemap_for_year', array( $year ) );
+			wp_schedule_single_event( time() + self::INTERVAL_PER_GENERATION_EVENT, 'msm_cron_generate_sitemap_for_year', array( $year ) );
 		} else {
 			// No more years, generation is complete
 			delete_option( 'msm_years_to_process' );

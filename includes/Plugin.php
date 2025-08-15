@@ -7,193 +7,110 @@
 
 namespace Automattic\MSM_Sitemap;
 
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\CoreIntegration;
+
+
+use Automattic\MSM_Sitemap\Infrastructure\REST\SitemapEndpointHandler;
+use Automattic\MSM_Sitemap\Infrastructure\Cron\FullGenerationHandler;
+use Automattic\MSM_Sitemap\Domain\Contracts\WordPressIntegrationInterface;
+use function Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container;
+
 /**
  * Plugin bootstrap class responsible for initializing the entire plugin
  */
 class Plugin {
 
-	const SITEMAP_CPT = 'msm_sitemap';
+	/**
+	 * The plugin file path.
+	 *
+	 * @var string
+	 */
+	private string $plugin_file_path;
 
 	/**
-	 * Whether sitemaps should be indexed by year
+	 * The plugin version.
 	 *
-	 * @var bool
+	 * @var string
 	 */
-	private bool $index_by_year = false;
+	private string $plugin_version;
 
 	/**
-	 * Sitemap content types collection.
+	 * Constructor.
 	 *
-	 * @var \Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapContentTypes|null
+	 * @param string $plugin_file_path The path to the main plugin file.
+	 * @param string $plugin_version The plugin version.
 	 */
-	private ?\Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapContentTypes $sitemap_content_types = null;
+	public function __construct( string $plugin_file_path, string $plugin_version ) {
+		$this->plugin_file_path = $plugin_file_path;
+		$this->plugin_version   = $plugin_version;
+	}
 
 	/**
 	 * Initialize and setup the plugin
 	 */
-	public function initialize(): void {
-		// Define constants
-		define( 'MSM_INTERVAL_PER_GENERATION_EVENT', 60 ); // how far apart should full cron generation events be spaced
-
-		// Initialize sitemap content types
-		$this->initialize_sitemap_content_types();
-
-		// Filter to allow the sitemap to be indexed by year
-		$this->index_by_year = apply_filters( 'msm_sitemap_index_by_year', false );
-
-		// Register WordPress hooks
-		$this->register_wordpress_hooks();
-
-		// Setup DDD layer integrations
-		$this->setup_integrations();
+	public function run(): void {
+		add_action( 'init', array( $this, 'setup_components' ) );
+		add_filter( 'template_include', array( SitemapEndpointHandler::class, 'handle_template_include' ) );
 	}
 
 	/**
-	 * Register all WordPress hooks and actions
+	 * Setup all plugin components with proper dependency injection
 	 */
-	private function register_wordpress_hooks(): void {
-		// Core initialization
-		add_action( 'init', array( $this, 'register_sitemap_hooks' ) );
-		add_action( 'init', array( $this, 'register_post_type' ) );
-
-		// Template handling
-		add_filter( 'template_include', array( '\Automattic\MSM_Sitemap\Infrastructure\WordPress\SitemapEndpointHandler', 'handle_template_include' ) );
-	}
-
-	/**
-	 * Setup DDD layer integrations
-	 */
-	private function setup_integrations(): void {
-		// By default, we use wp-cron to help generate the full sitemap.
-		// However, this will let us override it, if necessary, like on WP.com
-		if ( true === apply_filters( 'msm_sitemap_use_cron_builder', true ) ) {
-			\Automattic\MSM_Sitemap\Infrastructure\Cron\FullGenerationHandler::setup();
-		}
-
-		\Automattic\MSM_Sitemap\Infrastructure\WordPress\Permalinks::setup();
-		\Automattic\MSM_Sitemap\Infrastructure\WordPress\CoreIntegration::setup();
-		\Automattic\MSM_Sitemap\Infrastructure\WordPress\StylesheetManager::setup();
-		\Automattic\MSM_Sitemap\Infrastructure\WordPress\PluginLinks::setup();
-		\Automattic\MSM_Sitemap\Infrastructure\CLI\CLISetup::init();
-	}
-
-	/**
-	 * Register sitemap-specific hooks and endpoints
-	 */
-	public function register_sitemap_hooks(): void {
+	public function setup_components(): void {
 		if ( ! defined( 'WPCOM_SKIP_DEFAULT_SITEMAP' ) ) {
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound
 			define( 'WPCOM_SKIP_DEFAULT_SITEMAP', true );
 		}
 
-		\Automattic\MSM_Sitemap\Infrastructure\WordPress\CoreIntegration::sitemap_rewrite_init();
-		\Automattic\MSM_Sitemap\Admin\UI::setup_admin();
-
-		\Automattic\MSM_Sitemap\Infrastructure\Cron\MissingSitemapGenerationHandler::setup();
-
-		// Register REST API routes
-		add_action( 'rest_api_init', array( $this, 'register_rest_api_routes' ) );
-	}
-
-	/**
-	 * Initialize sitemap content types collection.
-	 */
-	private function initialize_sitemap_content_types(): void {
-		$this->sitemap_content_types = new \Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapContentTypes();
-
-		// Register content providers based on WordPress filters
-		if ( apply_filters( 'msm_sitemap_posts_provider_enabled', true ) ) {
-			$this->sitemap_content_types->register( new \Automattic\MSM_Sitemap\Infrastructure\Providers\PostContentProvider() );
-		}
-
-		// Register image content provider
-		if ( apply_filters( 'msm_sitemap_images_provider_enabled', true ) ) {
-			$this->sitemap_content_types->register( new \Automattic\MSM_Sitemap\Infrastructure\Providers\ImageContentProvider() );
-		}
-
-		// Future providers can be added here:
-		// if ( apply_filters( 'msm_sitemap_taxonomies_provider_enabled', true ) ) {
-		//     $this->sitemap_content_types->register( new \Automattic\MSM_Sitemap\Infrastructure\Providers\TaxonomyContentProvider() );
-		// }
-		// if ( apply_filters( 'msm_sitemap_users_provider_enabled', true ) ) {
-		//     $this->sitemap_content_types->register( new \Automattic\MSM_Sitemap\Infrastructure\Providers\UserContentProvider() );
-		// }
-	}
-
-	/**
-	 * Register the sitemap custom post type
-	 */
-	public function register_post_type(): void {
-		register_post_type(
-			self::SITEMAP_CPT,
-			array(
-				'labels'       => array(
-					'name'          => __( 'Sitemaps', 'msm-sitemap' ),
-					'singular_name' => __( 'Sitemap', 'msm-sitemap' ),
-				),
-				'public'       => false,
-				'has_archive'  => false,
-				'rewrite'      => false,
-				'show_ui'      => true,  // TODO: should probably have some sort of custom UI
-				'show_in_menu' => false, // Since we're manually adding a Sitemaps menu, no need to auto-add one through the CPT.
-				'supports'     => array(
-					'title',
-				),
-			)
-		);
-	}
-
-	/**
-	 * Get the sitemap content types collection
-	 *
-	 * @return \Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapContentTypes
-	 */
-	public function get_sitemap_content_types(): \Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapContentTypes {
-		if ( null === $this->sitemap_content_types ) {
-			$this->initialize_sitemap_content_types();
-		}
+		$container = msm_sitemap_container();
 		
-		return $this->sitemap_content_types;
-	}
+		// Get all services that implement WordPressIntegrationInterface
+		$wordpress_integrations = $container->get_services_by_interface( WordPressIntegrationInterface::class );
 
-	/**
-	 * Check if sitemaps should be indexed by year
-	 *
-	 * @return bool
-	 */
-	public function is_indexed_by_year(): bool {
-		return $this->index_by_year;
-	}
-
-	/**
-	 * Get a SitemapGenerator instance via factory
-	 *
-	 * @return \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator
-	 */
-	public function get_sitemap_generator(): \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator {
-		return \Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapGeneratorFactory::create(
-			$this->get_sitemap_content_types()
-		);
-	}
-
-	/**
-	 * Get years that have posts (delegates to PostRepository)
-	 *
-	 * @return array<int> Years with posts
-	 */
-	public function get_years_with_posts(): array {
-		static $post_repository = null;
-		if ( null === $post_repository ) {
-			$post_repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository();
+		// By default, we use wp-cron to help generate the full sitemap.
+		// However, this will let us override it, if necessary, like on WP.com
+		if ( false === apply_filters( 'msm_sitemap_use_cron_builder', true ) ) {
+			// Remove FullGenerationHandler from the integrations if cron builder is disabled
+			unset( $wordpress_integrations[ FullGenerationHandler::class ] );
 		}
-		return $post_repository->get_years_with_posts();
+
+		// Setup all WordPress integration classes
+		$this->setup_wordpress_integrations( $container, $wordpress_integrations );
 	}
 
 	/**
-	 * Register REST API routes.
+	 * Setup WordPress integration classes.
+	 *
+	 * @param \Automattic\MSM_Sitemap\Infrastructure\DI\SitemapContainer $container The dependency injection container.
+	 * @param array<string, object> $integration_instances Array of service ID => instance pairs implementing WordPressIntegrationInterface.
 	 */
-	public function register_rest_api_routes(): void {
-		$container = \Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container();
-		$rest_controller = $container->get( \Automattic\MSM_Sitemap\Infrastructure\WordPress\REST_API_Controller::class );
-		$rest_controller->register_routes();
+	private function setup_wordpress_integrations( $container, array $integration_instances ): void {
+		foreach ( $integration_instances as $service_id => $integration ) {
+			// Ensure the class implements the interface
+			if ( ! $integration instanceof \Automattic\MSM_Sitemap\Domain\Contracts\WordPressIntegrationInterface ) {
+				// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception message not output to browser
+				throw new \InvalidArgumentException( "Service {$service_id} must implement WordPressIntegrationInterface" );
+			}
+
+			$integration->register_hooks();
+		}
+	}
+
+	/**
+	 * Get the plugin file path.
+	 *
+	 * @return string
+	 */
+	public function get_plugin_file_path(): string {
+		return $this->plugin_file_path;
+	}
+
+	/**
+	 * Get the plugin version.
+	 *
+	 * @return string
+	 */
+	public function get_plugin_version(): string {
+		return $this->plugin_version;
 	}
 }

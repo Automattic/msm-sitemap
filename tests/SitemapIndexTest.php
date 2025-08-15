@@ -7,7 +7,7 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests;
 
-use Automattic\MSM_Sitemap\Infrastructure\WordPress\SitemapEndpointHandler;
+use Automattic\MSM_Sitemap\Infrastructure\REST\SitemapEndpointHandler;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository;
 
 /**
@@ -31,16 +31,12 @@ class SitemapIndexTest extends TestCase {
 
 		// Get repository to verify sitemap exists
 		$repository = new SitemapPostRepository();
-		$dates = $repository->get_all_sitemap_dates();
+		$dates      = $repository->get_all_sitemap_dates();
 		
 		$this->assertNotEmpty( $dates, 'Should have at least one sitemap date after build_sitemaps()' );
 
-		// Test sitemap index generation via reflection
-		$reflection = new \ReflectionClass( SitemapEndpointHandler::class );
-		$method = $reflection->getMethod( 'get_sitemap_index_xml' );
-		$method->setAccessible( true );
-
-		$index_xml = $method->invoke( null, false );
+		$sitemap_endpoint_handler = $this->get_service( SitemapEndpointHandler::class );
+		$index_xml                = $sitemap_endpoint_handler->get_sitemap_index_xml( false );
 
 		$this->assertNotFalse( $index_xml, 'Index XML should be generated successfully' );
 		$this->assertStringContainsString( '<sitemapindex', $index_xml, 'Should contain sitemapindex element' );
@@ -58,12 +54,8 @@ class SitemapIndexTest extends TestCase {
 		$repository = new SitemapPostRepository();
 		$repository->delete_all();
 
-		// Test sitemap index generation via reflection
-		$reflection = new \ReflectionClass( SitemapEndpointHandler::class );
-		$method = $reflection->getMethod( 'get_sitemap_index_xml' );
-		$method->setAccessible( true );
-
-		$index_xml = $method->invoke( null, false );
+		$sitemap_endpoint_handler = $this->get_service( SitemapEndpointHandler::class );
+		$index_xml                = $sitemap_endpoint_handler->get_sitemap_index_xml( false );
 
 		$this->assertFalse( $index_xml, 'Index XML should return false when no sitemaps exist' );
 	}
@@ -79,19 +71,16 @@ class SitemapIndexTest extends TestCase {
 		// Build sitemaps from those posts
 		$this->build_sitemaps();
 
-		// Test sitemap index generation with year filter via reflection
-		$reflection = new \ReflectionClass( SitemapEndpointHandler::class );
-		$method = $reflection->getMethod( 'get_sitemap_index_xml' );
-		$method->setAccessible( true );
+		$sitemap_endpoint_handler = $this->get_service( SitemapEndpointHandler::class );
 
 		// Test 2024 only
-		$index_xml_2024 = $method->invoke( null, 2024 );
+		$index_xml_2024 = $sitemap_endpoint_handler->get_sitemap_index_xml( 2024 );
 		$this->assertNotFalse( $index_xml_2024, 'Should generate index for 2024' );
 		$this->assertStringContainsString( '2024', $index_xml_2024, 'Should contain 2024 entries' );
 		$this->assertStringNotContainsString( '2023', $index_xml_2024, 'Should not contain 2023 entries' );
 
 		// Test 2023 only
-		$index_xml_2023 = $method->invoke( null, 2023 );
+		$index_xml_2023 = $sitemap_endpoint_handler->get_sitemap_index_xml( 2023 );
 		$this->assertNotFalse( $index_xml_2023, 'Should generate index for 2023' );
 		$this->assertStringContainsString( '2023', $index_xml_2023, 'Should contain 2023 entries' );
 		$this->assertStringNotContainsString( '2024', $index_xml_2023, 'Should not contain 2024 entries' );

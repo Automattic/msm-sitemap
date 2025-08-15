@@ -80,7 +80,7 @@ class SitemapContainerTest extends TestCase {
 		$container = new SitemapContainer();
 
 		$sitemap_service = $container->get( SitemapService::class );
-		$stats_service = $container->get( SitemapStatsService::class );
+		$stats_service   = $container->get( SitemapStatsService::class );
 
 		// Test that services are properly instantiated (no errors)
 		$this->assertInstanceOf( SitemapService::class, $sitemap_service );
