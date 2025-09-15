@@ -16,6 +16,8 @@ use Automattic\MSM_Sitemap\Application\Services\SitemapValidationService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapExportService;
 use Automattic\MSM_Sitemap\Application\Services\SettingsService;
 use Automattic\MSM_Sitemap\Domain\Contracts\SitemapRepositoryInterface;
+use Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase;
+use Automattic\MSM_Sitemap\Application\Commands\GenerateSitemapCommand;
 use WP_CLI;
 use WP_CLI_Command;
 use function WP_CLI\Utils\format_items;
@@ -71,6 +73,13 @@ class CLICommand extends WP_CLI_Command {
 	private SettingsService $settings_service;
 
 	/**
+	 * The generate sitemap use case.
+	 *
+	 * @var GenerateSitemapUseCase
+	 */
+	private GenerateSitemapUseCase $generate_use_case;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SitemapService $sitemap_service The sitemap service.
@@ -80,6 +89,7 @@ class CLICommand extends WP_CLI_Command {
 	 * @param SitemapExportService $export_service The export service.
 	 * @param CronManagementService $cron_management The cron management service.
 	 * @param SettingsService $settings_service The settings service.
+	 * @param GenerateSitemapUseCase $generate_use_case The generate sitemap use case.
 	 */
 	public function __construct( 
 		SitemapService $sitemap_service,
@@ -88,7 +98,8 @@ class CLICommand extends WP_CLI_Command {
 		SitemapValidationService $validation_service,
 		SitemapExportService $export_service,
 		CronManagementService $cron_management,
-		SettingsService $settings_service
+		SettingsService $settings_service,
+		GenerateSitemapUseCase $generate_use_case
 	) {
 		$this->sitemap_service    = $sitemap_service;
 		$this->stats_service      = $stats_service;
@@ -96,6 +107,7 @@ class CLICommand extends WP_CLI_Command {
 		$this->export_service     = $export_service;
 		$this->cron_management    = $cron_management;
 		$this->settings_service   = $settings_service;
+		$this->generate_use_case  = $generate_use_case;
 	}
 
 	/**
@@ -113,7 +125,8 @@ class CLICommand extends WP_CLI_Command {
 			$container->get( SitemapValidationService::class ),
 			$container->get( SitemapExportService::class ),
 			$container->get( CronManagementService::class ),
-			$container->get( SettingsService::class )
+			$container->get( SettingsService::class ),
+			$container->get( GenerateSitemapUseCase::class )
 		);
 	}
 
@@ -139,26 +152,23 @@ class CLICommand extends WP_CLI_Command {
 	 * @subcommand generate
 	 */
 	public function generate( $args, $assoc_args ) {
-		$quiet        = ! empty( $assoc_args['quiet'] );
-		$force        = ! empty( $assoc_args['force'] );
-		$all          = ! empty( $assoc_args['all'] );
-		$date         = $assoc_args['date'] ?? null;
-		$date_queries = $this->parse_date_query( $date, $all );
+		$quiet = ! empty( $assoc_args['quiet'] );
+		$force = ! empty( $assoc_args['force'] );
+		$all   = ! empty( $assoc_args['all'] );
+		$date  = $assoc_args['date'] ?? null;
 
-		// For --all, we need to generate for all years with posts
-		// Since we removed generate_for_all_years, we'll use a comprehensive date query
-		if ( $all ) {
-			// Get all years from 1970 to current year
-			$current_year = (int) gmdate( 'Y' );
-			$date_queries = array();
-			for ( $year = 1970; $year <= $current_year; $year++ ) {
-				$date_queries[] = array( 'year' => $year );
-			}
-		}
+		// Create command with parameters
+		$command = new GenerateSitemapCommand(
+			$date,
+			array(), // Will be handled by the use case
+			$force,
+			$all
+		);
 
-		// Generate for specific date queries
-		$result = $this->sitemap_service->generate_for_date_queries( $date_queries, $force );
+		// Execute the use case
+		$result = $this->generate_use_case->execute( $command );
 
+		// CLI-specific output handling
 		if ( ! $quiet ) {
 			if ( $result->is_success() ) {
 				WP_CLI::success( $result->get_message() );

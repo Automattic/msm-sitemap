@@ -27,9 +27,9 @@ class SitemapDeletionTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$this->assertNotFalse( $sitemap_id );
 
 		$content_types_service = $this->get_service( \Automattic\MSM_Sitemap\Application\Services\ContentTypesService::class );
-		$generator  = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
-		$repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
-		$service    = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
+		$generator             = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
+		$repository            = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
+		$service               = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
 		$service->delete_for_date( $date );
 		$sitemap_id2 = $this->get_sitemap_post_id( 2018, 1, 4 );
 		$this->assertFalse( $sitemap_id2 );
@@ -116,9 +116,9 @@ class SitemapDeletionTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function test_handles_invalid_date_format_gracefully( ?string $invalid_date ): void {
 		$content_types_service = $this->get_service( \Automattic\MSM_Sitemap\Application\Services\ContentTypesService::class );
-		$generator  = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
-		$repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
-		$service    = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
+		$generator             = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
+		$repository            = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
+		$service               = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
 
 		// Should not throw an exception for valid dates
 		if ( null !== $invalid_date ) {
@@ -155,9 +155,9 @@ class SitemapDeletionTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$this->assertFalse( $sitemap_id, 'No sitemap should exist for this date' );
 
 		$content_types_service = $this->get_service( \Automattic\MSM_Sitemap\Application\Services\ContentTypesService::class );
-		$generator  = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
-		$repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
-		$service    = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
+		$generator             = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
+		$repository            = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
+		$service               = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
 
 		// Should not throw an exception when trying to delete non-existent sitemap
 		$result = $service->delete_for_date( $date );
@@ -171,9 +171,9 @@ class SitemapDeletionTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$future_date = gmdate( 'Y-m-d', strtotime( '+1 year' ) );
 		
 		$content_types_service = $this->get_service( \Automattic\MSM_Sitemap\Application\Services\ContentTypesService::class );
-		$generator  = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
-		$repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
-		$service    = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
+		$generator             = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
+		$repository            = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
+		$service               = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
 
 		// Should handle future dates gracefully
 		$result = $service->delete_for_date( $future_date );
@@ -188,9 +188,9 @@ class SitemapDeletionTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$old_date = '1900-01-01';
 		
 		$content_types_service = $this->get_service( \Automattic\MSM_Sitemap\Application\Services\ContentTypesService::class );
-		$generator  = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
-		$repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
-		$service    = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
+		$generator             = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
+		$repository            = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
+		$service               = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
 
 		// Should handle very old dates gracefully
 		$result = $service->delete_for_date( $old_date );

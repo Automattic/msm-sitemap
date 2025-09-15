@@ -148,8 +148,8 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 
 		if ( is_wp_error( $post_data['ID'] ) || 0 === $post_data['ID'] ) {
 			$error_message = is_wp_error( $post_data['ID'] ) 
-				? "Error: WP Error encountered inserting post. " . implode( ', ', $post_data['ID']->get_error_messages() )
-				: "Error: Failed to insert post. ID: " . $post_data['ID'];
+				? 'Error: WP Error encountered inserting post. ' . implode( ', ', $post_data['ID']->get_error_messages() )
+				: 'Error: Failed to insert post. ID: ' . $post_data['ID'];
 			$this->fail( $error_message );
 		}
 

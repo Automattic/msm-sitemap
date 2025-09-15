@@ -22,6 +22,9 @@ use Automattic\MSM_Sitemap\Application\Services\SitemapService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapStatsService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapValidationService;
 use Automattic\MSM_Sitemap\Application\Services\ContentTypesService;
+use Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase;
+use Automattic\MSM_Sitemap\Application\Listeners\SitemapStatsListener;
+use Automattic\MSM_Sitemap\Infrastructure\Events\EventDispatcher;
 use Automattic\MSM_Sitemap\Domain\Contracts\SitemapRepositoryInterface;
 use Automattic\MSM_Sitemap\Domain\Contracts\PostRepositoryInterface;
 use Automattic\MSM_Sitemap\Domain\Contracts\ImageRepositoryInterface;
@@ -323,8 +326,8 @@ class SitemapContainer {
 				$cron_scheduler             = $container->get( CronSchedulingService::class );
 				$missing_detection_service  = $container->get( MissingSitemapDetectionService::class );
 				$missing_generation_handler = $container->get( MissingSitemapGenerationHandler::class );
-				$sitemap_service            = $container->get( SitemapService::class );
-				return new MissingSitemapGenerationService( $cron_scheduler, $missing_detection_service, $missing_generation_handler, $sitemap_service );
+				$generate_use_case          = $container->get( GenerateSitemapUseCase::class );
+				return new MissingSitemapGenerationService( $cron_scheduler, $missing_detection_service, $missing_generation_handler, $generate_use_case );
 			} 
 		);
 
@@ -373,6 +376,43 @@ class SitemapContainer {
 			} 
 		);
 
+		// Register Event Dispatcher
+		$this->register(
+			EventDispatcher::class,
+			function ( $container ) {
+				return new EventDispatcher();
+			}
+		);
+
+		// Register Event Listeners
+		$this->register(
+			SitemapStatsListener::class,
+			function ( $container ) {
+				$stats_service = $container->get( SitemapStatsService::class );
+				$listener      = new SitemapStatsListener( $stats_service );
+				
+				// Wire up the listener to the event dispatcher
+				$event_dispatcher = $container->get( EventDispatcher::class );
+				$event_dispatcher->add_listener(
+					'Automattic\MSM_Sitemap\Application\Events\SitemapGeneratedEvent',
+					array( $listener, 'on_sitemap_generated' )
+				);
+				
+				return $listener;
+			}
+		);
+
+		// Register Use Cases
+		$this->register(
+			GenerateSitemapUseCase::class,
+			function ( $container ) {
+				$sitemap_service  = $container->get( SitemapService::class );
+				$event_dispatcher = $container->get( EventDispatcher::class );
+				return new GenerateSitemapUseCase( $sitemap_service, $event_dispatcher );
+			}
+		);
+
+		// Register CLI Command with Use Case
 		$this->register(
 			CLICommand::class,
 			function ( $container ) {
@@ -383,6 +423,7 @@ class SitemapContainer {
 				$export_service          = $container->get( SitemapExportService::class );
 				$cron_management_service = $container->get( CronManagementService::class );
 				$settings_service        = $container->get( SettingsService::class );
+				$generate_use_case       = $container->get( GenerateSitemapUseCase::class );
 			
 				return new CLICommand(
 					$sitemap_service,
@@ -391,7 +432,8 @@ class SitemapContainer {
 					$validation_service,
 					$export_service,
 					$cron_management_service,
-					$settings_service
+					$settings_service,
+					$generate_use_case
 				);
 			} 
 		);
@@ -399,11 +441,11 @@ class SitemapContainer {
 		$this->register(
 			MissingSitemapGenerationHandler::class,
 			function ( $container ) {
-				$cron_scheduler  = $container->get( CronSchedulingService::class );
-				$missing_service = $container->get( MissingSitemapDetectionService::class );
-				$sitemap_service = $container->get( SitemapService::class );
-				$cleanup_service = $container->get( SitemapCleanupService::class );
-				return new MissingSitemapGenerationHandler( $cron_scheduler, $missing_service, $sitemap_service, $cleanup_service );
+				$cron_scheduler   = $container->get( CronSchedulingService::class );
+				$missing_service  = $container->get( MissingSitemapDetectionService::class );
+				$generate_use_case = $container->get( GenerateSitemapUseCase::class );
+				$cleanup_service  = $container->get( SitemapCleanupService::class );
+				return new MissingSitemapGenerationHandler( $cron_scheduler, $missing_service, $generate_use_case, $cleanup_service );
 			} 
 		);
 
@@ -414,7 +456,8 @@ class SitemapContainer {
 				$post_repository       = $container->get( PostRepository::class );
 				$content_types_service = $container->get( ContentTypesService::class );
 				$sitemap_generator     = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
-				return new FullGenerationHandler( $cron_scheduler, $post_repository, $sitemap_generator );
+				$generate_use_case     = $container->get( GenerateSitemapUseCase::class );
+				return new FullGenerationHandler( $cron_scheduler, $post_repository, $sitemap_generator, $generate_use_case );
 			} 
 		);
 
@@ -431,25 +474,23 @@ class SitemapContainer {
 		$this->register(
 			REST_API_Controller::class,
 			function ( $container ) {
-				$sitemap_service                    = $container->get( SitemapService::class );
-				$stats_service                      = $container->get( SitemapStatsService::class );
-				$validation_service                 = $container->get( SitemapValidationService::class );
-				$export_service                     = $container->get( SitemapExportService::class );
-				$missing_sitemap_generation_service = $container->get( MissingSitemapGenerationService::class );
-				$full_sitemap_generation_service    = $container->get( FullSitemapGenerationService::class );
-				$cron_management_service            = $container->get( CronManagementService::class );
-				$content_types_service              = $container->get( ContentTypesService::class );
-				$sitemap_generator                  = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
+				$sitemap_service       = $container->get( SitemapService::class );
+				$stats_service         = $container->get( SitemapStatsService::class );
+				$validation_service    = $container->get( SitemapValidationService::class );
+				$export_service        = $container->get( SitemapExportService::class );
+				$cron_management_service = $container->get( CronManagementService::class );
+				$content_types_service = $container->get( ContentTypesService::class );
+				$sitemap_generator     = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
+				$generate_use_case     = $container->get( GenerateSitemapUseCase::class );
 			
 				return new REST_API_Controller(
 					$sitemap_service,
 					$stats_service,
 					$validation_service,
 					$export_service,
-					$missing_sitemap_generation_service,
-					$full_sitemap_generation_service,
 					$cron_management_service,
-					$sitemap_generator
+					$sitemap_generator,
+					$generate_use_case
 				);
 			} 
 		);

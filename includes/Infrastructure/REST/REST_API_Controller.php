@@ -14,10 +14,11 @@ use Automattic\MSM_Sitemap\Application\Services\SitemapStatsService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapValidationService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapExportService;
 use Automattic\MSM_Sitemap\Application\Services\CronManagementService;
-use Automattic\MSM_Sitemap\Application\Services\MissingSitemapGenerationService;
-use Automattic\MSM_Sitemap\Application\Services\FullSitemapGenerationService;
+
 use Automattic\MSM_Sitemap\Application\Services\SitemapGenerator;
 use Automattic\MSM_Sitemap\Application\DTOs\SitemapOperationResult;
+use Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase;
+use Automattic\MSM_Sitemap\Application\Commands\GenerateSitemapCommand;
 use Automattic\MSM_Sitemap\Domain\Contracts\WordPressIntegrationInterface;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository;
 use WP_REST_Request;
@@ -57,19 +58,7 @@ class REST_API_Controller implements WordPressIntegrationInterface {
 	 */
 	private SitemapExportService $export_service;
 
-	/**
-	 * The missing sitemap generation service.
-	 *
-	 * @var MissingSitemapGenerationService
-	 */
-	private MissingSitemapGenerationService $missing_sitemap_generation_service;
 
-	/**
-	 * The full sitemap generation service.
-	 *
-	 * @var FullSitemapGenerationService
-	 */
-	private FullSitemapGenerationService $full_sitemap_generation_service;
 
 	/**
 	 * The cron management service.
@@ -86,35 +75,39 @@ class REST_API_Controller implements WordPressIntegrationInterface {
 	private SitemapGenerator $sitemap_generator;
 
 	/**
+	 * The generate sitemap use case.
+	 *
+	 * @var GenerateSitemapUseCase
+	 */
+	private GenerateSitemapUseCase $generate_use_case;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SitemapService $sitemap_service The sitemap service.
 	 * @param SitemapStatsService $stats_service The stats service.
 	 * @param SitemapValidationService $validation_service The validation service.
 	 * @param SitemapExportService $export_service The export service.
-	 * @param MissingSitemapGenerationService $missing_sitemap_generation_service The missing sitemap generation service.
-	 * @param FullSitemapGenerationService $full_sitemap_generation_service The full sitemap generation service.
 	 * @param CronManagementService $cron_management_service The cron management service.
 	 * @param SitemapGenerator $sitemap_generator The sitemap generator.
+	 * @param GenerateSitemapUseCase $generate_use_case The generate sitemap use case.
 	 */
 	public function __construct(
 		SitemapService $sitemap_service,
 		SitemapStatsService $stats_service,
 		SitemapValidationService $validation_service,
 		SitemapExportService $export_service,
-		MissingSitemapGenerationService $missing_sitemap_generation_service,
-		FullSitemapGenerationService $full_sitemap_generation_service,
 		CronManagementService $cron_management_service,
-		SitemapGenerator $sitemap_generator
+		SitemapGenerator $sitemap_generator,
+		GenerateSitemapUseCase $generate_use_case
 	) {
-		$this->sitemap_service                    = $sitemap_service;
-		$this->stats_service                      = $stats_service;
-		$this->validation_service                 = $validation_service;
-		$this->export_service                     = $export_service;
-		$this->missing_sitemap_generation_service = $missing_sitemap_generation_service;
-		$this->full_sitemap_generation_service    = $full_sitemap_generation_service;
-		$this->cron_management_service            = $cron_management_service;
-		$this->sitemap_generator                  = $sitemap_generator;
+		$this->sitemap_service       = $sitemap_service;
+		$this->stats_service         = $stats_service;
+		$this->validation_service    = $validation_service;
+		$this->export_service        = $export_service;
+		$this->cron_management_service = $cron_management_service;
+		$this->sitemap_generator     = $sitemap_generator;
+		$this->generate_use_case     = $generate_use_case;
 	}
 
 	/**
@@ -476,6 +469,10 @@ class REST_API_Controller implements WordPressIntegrationInterface {
 				'default'           => false,
 				'sanitize_callback' => 'rest_sanitize_boolean',
 			),
+			'all'          => array(
+				'default'           => false,
+				'sanitize_callback' => 'rest_sanitize_boolean',
+			),
 		);
 	}
 
@@ -734,18 +731,11 @@ class REST_API_Controller implements WordPressIntegrationInterface {
 		$date         = $request->get_param( 'date' );
 		$date_queries = $request->get_param( 'date_queries' );
 		$force        = $request->get_param( 'force' );
+		$all          = $request->get_param( 'all' );
 
-		if ( $date ) {
-			$result = $this->sitemap_service->create_for_date( $date, $force );
-		} elseif ( $date_queries ) {
-			$result = $this->sitemap_service->generate_for_date_queries( $date_queries, $force );
-		} else {
-			return new WP_Error(
-				'rest_missing_param',
-				__( 'Either date or date_queries parameter is required.', 'msm-sitemap' ),
-				array( 'status' => 400 )
-			);
-		}
+		// Use the new use case for all sitemap generation
+		$command = new GenerateSitemapCommand( $date, $date_queries ? $date_queries : array(), $force, $all );
+		$result  = $this->generate_use_case->execute( $command );
 
 		// Convert SitemapOperationResult to array for JSON serialization
 		$response_data = array(
@@ -1187,16 +1177,7 @@ class REST_API_Controller implements WordPressIntegrationInterface {
 		return $response;
 	}
 
-	/**
-	 * Generate missing sitemaps.
-	 *
-	 * @param WP_REST_Request $request The request object.
-	 * @return WP_REST_Response The response object.
-	 */
-	public function generate_missing_sitemaps( WP_REST_Request $request ) {
-		$result = $this->missing_sitemap_generation_service->generate_missing_sitemaps();
-		return rest_ensure_response( $result );
-	}
+
 
 	/**
 	 * Recount URLs for sitemaps.
@@ -1244,37 +1225,7 @@ class REST_API_Controller implements WordPressIntegrationInterface {
 		return rest_ensure_response( $recent_counts );
 	}
 
-	/**
-	 * Generate full sitemaps.
-	 *
-	 * @param WP_REST_Request $request The request object.
-	 * @return WP_REST_Response|WP_Error The response object.
-	 */
-	public function generate_full_sitemaps( WP_REST_Request $request ) {
-		$result = $this->full_sitemap_generation_service->start_full_generation();
-		
-		$status_code = $result['success'] ? 200 : 403;
 
-		$response = rest_ensure_response( $result );
-		$response->set_status( $status_code );
-		return $response;
-	}
-
-	/**
-	 * Halt generation.
-	 *
-	 * @param WP_REST_Request $request The request object.
-	 * @return WP_REST_Response The response object.
-	 */
-	public function halt_generation( WP_REST_Request $request ) {
-		$result = $this->full_sitemap_generation_service->halt_generation();
-		
-		$status_code = $result['success'] ? 200 : 400;
-
-		$response = rest_ensure_response( $result );
-		$response->set_status( $status_code );
-		return $response;
-	}
 
 	/**
 	 * Update cron frequency.

@@ -91,3 +91,5 @@ interface ImageRepositoryInterface extends RepositoryInterface {
 	 */
 	public function get_included_image_types(): array;
 }
+
+

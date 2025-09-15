@@ -11,9 +11,10 @@ namespace Automattic\MSM_Sitemap\Infrastructure\Cron;
 
 use Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService;
 use Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService;
-use Automattic\MSM_Sitemap\Application\Services\SitemapService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapCleanupService;
 use Automattic\MSM_Sitemap\Domain\Contracts\CronHandlerInterface;
+use Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase;
+use Automattic\MSM_Sitemap\Application\Commands\GenerateSitemapCommand;
 
 /**
  * Handler class for managing missing sitemap generation via cron jobs.
@@ -38,11 +39,11 @@ class MissingSitemapGenerationHandler implements CronHandlerInterface {
 	private MissingSitemapDetectionService $missing_service;
 
 	/**
-	 * The sitemap service.
+	 * The generate sitemap use case.
 	 *
-	 * @var SitemapService
+	 * @var GenerateSitemapUseCase
 	 */
-	private SitemapService $sitemap_service;
+	private GenerateSitemapUseCase $generate_use_case;
 
 	/**
 	 * The sitemap cleanup service.
@@ -56,19 +57,19 @@ class MissingSitemapGenerationHandler implements CronHandlerInterface {
 	 *
 	 * @param CronSchedulingService $cron_scheduler The cron scheduling service.
 	 * @param MissingSitemapDetectionService $missing_service The missing sitemap detection service.
-	 * @param SitemapService $sitemap_service The sitemap service.
+	 * @param GenerateSitemapUseCase $generate_use_case The generate sitemap use case.
 	 * @param SitemapCleanupService $cleanup_service The sitemap cleanup service.
 	 */
 	public function __construct( 
 		CronSchedulingService $cron_scheduler,
 		MissingSitemapDetectionService $missing_service,
-		SitemapService $sitemap_service,
+		GenerateSitemapUseCase $generate_use_case,
 		SitemapCleanupService $cleanup_service
 	) {
-		$this->cron_scheduler = $cron_scheduler;
-		$this->missing_service = $missing_service;
-		$this->sitemap_service = $sitemap_service;
-		$this->cleanup_service = $cleanup_service;
+		$this->cron_scheduler    = $cron_scheduler;
+		$this->missing_service   = $missing_service;
+		$this->generate_use_case = $generate_use_case;
+		$this->cleanup_service   = $cleanup_service;
 	}
 
 	/**
@@ -139,7 +140,11 @@ class MissingSitemapGenerationHandler implements CronHandlerInterface {
 			$dates_needing_updates = $missing_data['dates_needing_updates'] ?? array();
 			$force_generation      = in_array( $date, $dates_needing_updates, true );
 
-			$this->sitemap_service->create_for_date( $date, $force_generation );
+			// Create command for specific date generation
+			$command = new GenerateSitemapCommand( $date, array(), $force_generation, false );
+			
+			// Execute use case
+			$this->generate_use_case->execute( $command );
 			$sitemaps_generated = true;
 		}
 
