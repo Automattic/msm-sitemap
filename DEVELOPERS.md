@@ -309,6 +309,117 @@ function my_on_delete_sitemap_post( int $sitemap_id, string $year, string $month
 }
 ~~~
 
+## XSL Stylesheet Customization
+
+Metro Sitemap provides its own XSL stylesheets for displaying sitemaps in browsers. These stylesheets work independently of WordPress core sitemaps and can be customized or disabled as needed.
+
+### Disable XSL Stylesheet References
+
+**Business case:**
+If you encounter issues with the XSL stylesheets or want to serve plain XML without styling, you can disable the XSL references entirely.
+
+~~~php
+add_filter( 'msm_sitemap_include_xsl_reference', '__return_false' );
+~~~
+
+This will remove the `<?xml-stylesheet>` declarations from both individual sitemaps and the sitemap index, making them display as plain XML in browsers.
+
+### Customize XSL Stylesheet Content
+
+**Business case:**
+If you need to modify the XSL stylesheet content (e.g., to change branding, add custom CSS, or modify the display structure), use these filters.
+
+~~~php
+add_filter( 'msm_sitemaps_stylesheet_content', 'my_customize_sitemap_stylesheet' );
+/**
+ * Filter the content of the MSM sitemap stylesheet.
+ *
+ * @param string $xsl_content Full content for the XML stylesheet.
+ * @return string Modified XSL content.
+ */
+function my_customize_sitemap_stylesheet( string $xsl_content ): string {
+    // Example: replace the branding text
+    $xsl_content = str_replace(
+        'Metro Sitemap',
+        'My Custom Sitemap',
+        $xsl_content
+    );
+    
+    // Example: add custom CSS
+    $custom_css = '
+        .my-custom-class {
+            background-color: #f0f0f0;
+            padding: 10px;
+        }
+    ';
+    
+    $xsl_content = str_replace(
+        '</style>',
+        $custom_css . '</style>',
+        $xsl_content
+    );
+    
+    return $xsl_content;
+}
+
+add_filter( 'msm_sitemaps_stylesheet_index_content', 'my_customize_sitemap_index_stylesheet' );
+/**
+ * Filter the content of the MSM sitemap index stylesheet.
+ *
+ * @param string $xsl_content Full content for the XML stylesheet.
+ * @return string Modified XSL content.
+ */
+function my_customize_sitemap_index_stylesheet( string $xsl_content ): string {
+    // Example: customize the index page branding
+    $xsl_content = str_replace(
+        'Sitemap Index',
+        'My Custom Sitemap Index',
+        $xsl_content
+    );
+    
+    return $xsl_content;
+}
+~~~
+
+### Customize XSL Stylesheet CSS
+
+**Business case:**
+If you only need to modify the CSS styling without changing the XSL structure, use this more targeted filter.
+
+~~~php
+add_filter( 'msm_sitemaps_stylesheet_css', 'my_customize_sitemap_css' );
+/**
+ * Filter the CSS for the sitemap stylesheet.
+ *
+ * @param string $css CSS to be applied to the XSL file.
+ * @return string Modified CSS.
+ */
+function my_customize_sitemap_css( string $css ): string {
+    // Example: change the color scheme
+    $custom_css = '
+        body {
+            background-color: #f8f9fa;
+            color: #212529;
+        }
+        
+        #sitemap__table tr:nth-child(odd) td {
+            background-color: #e9ecef;
+        }
+        
+        a {
+            color: #007bff;
+        }
+        
+        a:hover {
+            color: #0056b3;
+            text-decoration: underline;
+        }
+    ';
+    
+    return $css . $custom_css;
+}
+~~~
+
 ## WP-CLI Command Reference
 
 Metro Sitemap provides a flexible WP-CLI interface for advanced management:

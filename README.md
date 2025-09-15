@@ -1,6 +1,6 @@
 # Metro Sitemap
 
-Stable tag: 1.5.2  
+Stable tag: 1.5.3  
 Requires at least: 5.9  
 Tested up to: 6.8  
 Requires PHP: 7.4  
@@ -20,6 +20,7 @@ High-performance XML sitemaps for large-scale WordPress sites. Built for speed, 
 * **WP-CLI support** for advanced management
 * **Extensible** via hooks and filters ([see developer docs](./DEVELOPERS.md))
 * **Admin UI** for stats, manual actions, and cron management
+* **Browser-friendly XSL styling** with independent stylesheet endpoints
 
 ## Installation
 
@@ -82,6 +83,16 @@ Sitemap XML is stored in a custom post type (`msm_sitemap`) and served on-demand
 ### Can I customize the number of posts per sitemap?
 
 Yes, this is filterable. See the [Developer Guide](./DEVELOPERS.md).
+
+### How do I disable the XSL styling for sitemaps?
+
+If you want to serve plain XML without browser styling, you can disable the XSL stylesheet references:
+
+```php
+add_filter( 'msm_sitemap_include_xsl_reference', '__return_false' );
+```
+
+For more XSL customization options, see the [Developer Guide](./DEVELOPERS.md).
 
 ## WP-CLI Commands
 
