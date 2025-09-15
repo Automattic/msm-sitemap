@@ -11,7 +11,7 @@
  * Plugin Name:       Metro Sitemap
  * Plugin URI:        https://github.com/Automattic/msm-sitemap
  * Description:       Comprehensive sitemaps for your WordPress site.
- * Version:           1.5.2
+ * Version:           1.5.3
  * Requires at least: 5.9
  * Requires PHP:      7.4
  * Author:            Metro.co.uk, MAKE, Alley Interactive, WordPress VIP.
@@ -63,11 +63,12 @@ class Metro_Sitemap {
 			MSM_Sitemap_Builder_Cron::setup();
 		}
 
-		// Setup WordPress core integration and stylesheet management
-		require_once __DIR__ . '/includes/CoreIntegration.php';
+		// Setup stylesheet management and disable WordPress core sitemaps
 		require_once __DIR__ . '/includes/StylesheetManager.php';
-		\Automattic\MSM_Sitemap\CoreIntegration::setup();
 		\Automattic\MSM_Sitemap\StylesheetManager::setup();
+		
+		// Disable WordPress core sitemaps to prevent conflicts
+		add_filter( 'wp_sitemaps_enabled', '__return_false' );
 	}
 
 	/**
