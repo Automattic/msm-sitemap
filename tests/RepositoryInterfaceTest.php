@@ -26,7 +26,7 @@ class RepositoryInterfaceTest extends TestCase {
 	 * Test that repositories implement the base interface.
 	 */
 	public function test_repositories_implement_base_interface(): void {
-		$post_repository = $this->get_service( PostRepository::class );
+		$post_repository  = $this->get_service( PostRepository::class );
 		$image_repository = $this->get_service( ImageRepository::class );
 
 		// Test that repositories implement the base interface
@@ -43,8 +43,8 @@ class RepositoryInterfaceTest extends TestCase {
 	 */
 	public function test_repositories_can_be_resolved_by_interfaces(): void {
 		// Test that we can get repositories by their interfaces
-		$post_repository = $this->get_service( PostRepositoryInterface::class );
-		$image_repository = $this->get_service( ImageRepositoryInterface::class );
+		$post_repository    = $this->get_service( PostRepositoryInterface::class );
+		$image_repository   = $this->get_service( ImageRepositoryInterface::class );
 		$sitemap_repository = $this->get_service( SitemapRepositoryInterface::class );
 
 		$this->assertInstanceOf( PostRepository::class, $post_repository );
@@ -56,7 +56,7 @@ class RepositoryInterfaceTest extends TestCase {
 	 * Test that base repository methods work correctly.
 	 */
 	public function test_base_repository_methods_work(): void {
-		$post_repository = $this->get_service( PostRepositoryInterface::class );
+		$post_repository  = $this->get_service( PostRepositoryInterface::class );
 		$image_repository = $this->get_service( ImageRepositoryInterface::class );
 
 		// Test find method
@@ -81,7 +81,7 @@ class RepositoryInterfaceTest extends TestCase {
 	 * Test that domain-specific methods work correctly.
 	 */
 	public function test_domain_specific_methods_work(): void {
-		$post_repository = $this->get_service( PostRepositoryInterface::class );
+		$post_repository  = $this->get_service( PostRepositoryInterface::class );
 		$image_repository = $this->get_service( ImageRepositoryInterface::class );
 
 		// Test post repository domain methods
@@ -117,3 +117,5 @@ class RepositoryInterfaceTest extends TestCase {
 		$this->assertGreaterThan( 0, count( $image_repositories ) );
 	}
 }
+
+

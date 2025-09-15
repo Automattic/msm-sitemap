@@ -46,9 +46,9 @@ class FullGenerationHandlerTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function test_schedules_years_for_processing_when_full_generation_triggered(): void {
 		// Reset sitemap data via service.
 		$content_types_service = $this->get_service( \Automattic\MSM_Sitemap\Application\Services\ContentTypesService::class );
-		$generator  = \Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
-		$repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
-		$service    = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
+		$generator             = \Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
+		$repository            = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
+		$service               = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
 		$service->reset_all_data();
 		delete_option( 'msm_stop_processing' );
 		

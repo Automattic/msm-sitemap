@@ -11,6 +11,10 @@ namespace Automattic\MSM_Sitemap\Application\Services;
 
 use Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService;
 use Automattic\MSM_Sitemap\Infrastructure\Cron\MissingSitemapGenerationHandler;
+use Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService;
+use Automattic\MSM_Sitemap\Application\Services\SitemapService;
+use Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase;
+use Automattic\MSM_Sitemap\Application\Commands\GenerateSitemapCommand;
 
 /**
  * Service for generating missing sitemaps
@@ -39,11 +43,11 @@ class MissingSitemapGenerationService {
 	private MissingSitemapGenerationHandler $missing_generation_handler;
 
 	/**
-	 * The sitemap service.
+	 * The generate sitemap use case.
 	 *
-	 * @var SitemapService
+	 * @var GenerateSitemapUseCase
 	 */
-	private SitemapService $sitemap_service;
+	private GenerateSitemapUseCase $generate_use_case;
 
 	/**
 	 * Constructor.
@@ -51,18 +55,18 @@ class MissingSitemapGenerationService {
 	 * @param CronSchedulingService $cron_scheduler The cron scheduling service.
 	 * @param MissingSitemapDetectionService $missing_detection_service The missing sitemap detection service.
 	 * @param MissingSitemapGenerationHandler $missing_generation_handler The missing sitemap generation handler.
-	 * @param SitemapService $sitemap_service The sitemap service.
+	 * @param GenerateSitemapUseCase $generate_use_case The generate sitemap use case.
 	 */
 	public function __construct( 
 		CronSchedulingService $cron_scheduler, 
 		MissingSitemapDetectionService $missing_detection_service,
 		MissingSitemapGenerationHandler $missing_generation_handler,
-		SitemapService $sitemap_service
+		GenerateSitemapUseCase $generate_use_case
 	) {
 		$this->cron_scheduler             = $cron_scheduler;
 		$this->missing_detection_service  = $missing_detection_service;
 		$this->missing_generation_handler = $missing_generation_handler;
-		$this->sitemap_service            = $sitemap_service;
+		$this->generate_use_case          = $generate_use_case;
 	}
 
 	/**
@@ -133,7 +137,11 @@ class MissingSitemapGenerationService {
 			// Check if this date needs force generation (has sitemap but needs update)
 			$force_generation = in_array( $date, $dates_needing_updates, true );
 			
-			$result = $this->sitemap_service->create_for_date( $date, $force_generation );
+			// Create command for specific date generation
+			$command = new GenerateSitemapCommand( $date, array(), $force_generation, false );
+			
+			// Execute use case
+			$result = $this->generate_use_case->execute( $command );
 			if ( $result && $result->is_success() ) {
 				++$generated_count;
 			}

@@ -53,8 +53,8 @@ class SitemapStatsService {
 		?PostRepository $post_repository = null,
 		?PostTypeRegistration $post_type_registration = null
 	) {
-		$this->repository      = $repository;
-		$this->post_repository = $post_repository ?? new PostRepository();
+		$this->repository             = $repository;
+		$this->post_repository        = $post_repository ?? new PostRepository();
 		$this->post_type_registration = $post_type_registration ?? new PostTypeRegistration();
 	}
 

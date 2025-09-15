@@ -37,23 +37,21 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 
 		// Create mock services
 		$sitemap_service                    = $this->createMock( SitemapService::class );
-		$stats_service                      = $this->createMock( SitemapStatsService::class );
-		$validation_service                 = $this->createMock( SitemapValidationService::class );
-		$export_service                     = $this->createMock( SitemapExportService::class );
-		$missing_sitemap_generation_service = $this->createMock( \Automattic\MSM_Sitemap\Application\Services\MissingSitemapGenerationService::class );
-		$full_sitemap_generation_service    = $this->createMock( \Automattic\MSM_Sitemap\Application\Services\FullSitemapGenerationService::class );
-		$cron_management_service            = $this->createMock( \Automattic\MSM_Sitemap\Application\Services\CronManagementService::class );
-		$sitemap_generator                  = $this->createMock( \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator::class );
+		$stats_service         = $this->createMock( SitemapStatsService::class );
+		$validation_service    = $this->createMock( SitemapValidationService::class );
+		$export_service        = $this->createMock( SitemapExportService::class );
+		$cron_management_service = $this->createMock( \Automattic\MSM_Sitemap\Application\Services\CronManagementService::class );
+		$sitemap_generator     = $this->createMock( \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator::class );
+		$generate_use_case     = $this->createMock( \Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase::class );
 
 		$this->controller = new REST_API_Controller(
 			$sitemap_service,
 			$stats_service,
 			$validation_service,
 			$export_service,
-			$missing_sitemap_generation_service,
-			$full_sitemap_generation_service,
 			$cron_management_service,
-			$sitemap_generator
+			$sitemap_generator,
+			$generate_use_case
 		);
 	}
 
@@ -202,10 +200,9 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 			$this->createMock( SitemapStatsService::class ),
 			$this->createMock( SitemapValidationService::class ),
 			$this->createMock( SitemapExportService::class ),
-			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\MissingSitemapGenerationService::class ),
-			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\FullSitemapGenerationService::class ),
 			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\CronManagementService::class ),
-			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator::class )
+			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator::class ),
+			$this->createMock( \Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase::class )
 		);
 
 		$response = $controller->get_sitemap( $request );
@@ -253,10 +250,9 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 			$this->createMock( SitemapStatsService::class ),
 			$this->createMock( SitemapValidationService::class ),
 			$this->createMock( SitemapExportService::class ),
-			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\MissingSitemapGenerationService::class ),
-			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\FullSitemapGenerationService::class ),
 			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\CronManagementService::class ),
-			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator::class )
+			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator::class ),
+			$this->createMock( \Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase::class )
 		);
 
 		$response = $controller->get_sitemap( $request );
