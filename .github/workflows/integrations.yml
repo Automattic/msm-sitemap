@@ -21,7 +21,7 @@ jobs:
 
     strategy:
       matrix:
-        wordpress: [ '5.9', '6.8' ]
+        wordpress: [ '6.4', 'latest' ]
         php: [ '7.4', '8.3' ]
         allowed_failure: [ false ]
         include:
