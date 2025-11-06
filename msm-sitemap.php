@@ -12,7 +12,7 @@
  * Plugin URI:        https://github.com/Automattic/msm-sitemap
  * Description:       Comprehensive sitemaps for your WordPress site.
  * Version:           1.5.3
- * Requires at least: 5.9
+ * Requires at least: 6.4
  * Requires PHP:      7.4
  * Author:            Metro.co.uk, MAKE, Alley Interactive, WordPress VIP.
  * Text Domain:       msm-sitemap
