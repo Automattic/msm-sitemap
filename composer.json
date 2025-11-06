@@ -1,31 +1,41 @@
 {
 	"name": "automattic/msm-sitemap",
-	"type": "wordpress-plugin",
 	"description": "Comprehensive sitemaps for your WordPress.com VIP site.",
-	"homepage": "https://github.com/Automattic/msm-sitemap/",
 	"license": "GPL-2.0-or-later",
+	"type": "wordpress-plugin",
 	"authors": [
 		{
 			"name": "Automattic",
 			"homepage": "https://automattic.com/"
 		}
 	],
+	"homepage": "https://github.com/Automattic/msm-sitemap/",
+	"support": {
+		"issues": "https://github.com/Automattic/msm-sitemap/issues",
+		"source": "https://github.com/Automattic/msm-sitemap"
+	},
 	"require": {
 		"php": ">=7.4",
-		"composer/installers": "~1.0"
+		"composer/installers": "^1.0 || ^2.0"
 	},
 	"require-dev": {
 		"automattic/vipwpcs": "^3.0",
 		"php-parallel-lint/php-parallel-lint": "^1.0",
 		"phpcompatibility/phpcompatibility-wp": "^2.1",
 		"phpunit/phpunit": "^9",
-		"wp-coding-standards/wpcs": "^3.0",
 		"yoast/wp-test-utils": "^1.2.0"
 	},
 	"autoload-dev": {
 		"psr-4": {
 			"Automattic\\MSM_Sitemap\\Tests\\": "tests/"
 		}
+	},
+	"config": {
+		"allow-plugins": {
+			"composer/installers": true,
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		},
+		"sort-packages": true
 	},
 	"scripts": {
 		"coverage": [
@@ -34,12 +44,13 @@
 		"coverage-ci": [
 			"@php ./vendor/bin/phpunit"
 		],
-		"cbf": [
-			"@php ./vendor/bin/phpcbf -q"
-		],
 		"cs": [
 			"@php ./vendor/bin/phpcs -q"
 		],
+		"cs-fix": [
+			"@php ./vendor/bin/phpcbf -q"
+		],
+		"i18n": "@php wp i18n make-pot . ./languages/msm-sitemap.pot",
 		"lint": [
 			"@php ./vendor/php-parallel-lint/php-parallel-lint/parallel-lint . -e php --exclude vendor --exclude .git"
 		],
@@ -57,14 +68,16 @@
 			"@composer test"
 		]
 	},
-	"support": {
-		"issues": "https://github.com/Automattic/msm-sitemap/issues",
-		"source": "https://github.com/Automattic/msm-sitemap"
-	},
-	"config": {
-		"allow-plugins": {
-			"composer/installers": true,
-			"dealerdirect/phpcodesniffer-composer-installer": true
-		}
+	"scripts-descriptions": {
+		"coverage": "Run tests with code coverage reporting",
+		"coverage-ci": "Run tests with code coverage reporting and send results to stdout",
+		"cs": "Run PHP Code Sniffer",
+		"cs-fix": "Run PHP Code Sniffer and fix violations",
+		"i18n": "Generate a POT file for translation",
+		"lint": "Run PHP linting",
+		"lint-ci": "Run PHP linting and send results to stdout",
+		"prepare-ci": "Prepare the environment for integration tests",
+		"test": "Run all tests for the msm-sitemap plugin",
+		"test-ms": "Run integration tests for the msm-sitemap plugin in multisite mode"
 	}
 }
