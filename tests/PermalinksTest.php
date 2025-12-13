@@ -14,14 +14,12 @@ class PermalinksTest extends TestCase {
 	/**
 	 * @var string
 	 */
-	private $site_url = 'http://example.org';
+	private $site_url;
 
 	protected function setUp(): void {
 		parent::setUp();
-		// Mock home_url() globally for these tests.
-		if ( ! function_exists( 'home_url' ) ) {
-			eval( 'function home_url($path = "") { return "http://example.org" . $path; }' );
-		}
+		// Use the actual home_url() for test comparisons.
+		$this->site_url = home_url();
 	}
 
 	/**
