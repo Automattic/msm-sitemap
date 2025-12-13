@@ -1,3 +1,9 @@
 /.phpunit.cache/
 /composer.lock
 /vendor/
+
+# Node.js
+/node_modules/
+
+# wp-env local overrides
+/.wp-env.override.json

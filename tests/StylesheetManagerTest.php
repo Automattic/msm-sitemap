@@ -20,7 +20,17 @@ class StylesheetManagerTest extends TestCase {
 	/**
 	 * @var string
 	 */
-	private $site_url = 'http://example.org';
+	private string $site_url;
+
+	/**
+	 * Set up test environment.
+	 *
+	 * @return void
+	 */
+	public function setUp(): void {
+		parent::setUp();
+		$this->site_url = home_url();
+	}
 
 	/**
 	 * Test that setup method registers the correct filters.
