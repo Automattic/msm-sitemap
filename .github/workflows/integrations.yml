@@ -1,77 +1,93 @@
-name: Run PHPUnit
+name: Integration Tests
 
 on:
-  # Run on all pushes and on all pull requests.
-  # Prevent the "push" build from running when there are only irrelevant changes.
   push:
-    paths-ignore:
-      - "**.md"
+    paths:
+      - '**.php'
+      - 'composer.json'
+      - 'phpunit.xml.dist'
+      - '.wp-env.json'
+      - '.github/workflows/integrations.yml'
   pull_request:
-  # Allow manually triggering the workflow.
+    branches: [develop, main]
+    paths:
+      - '**.php'
+      - 'composer.json'
+      - 'phpunit.xml.dist'
+      - '.wp-env.json'
+      - '.github/workflows/integrations.yml'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
-  test:
-    name: WP ${{ matrix.wordpress }} on PHP ${{ matrix.php }}
+  integration-tests:
+    name: WP ${{ matrix.wordpress }} on PHP ${{ matrix.php }}${{ matrix.multisite && ' (MS)' || '' }}
     runs-on: ubuntu-latest
     continue-on-error: ${{ matrix.allowed_failure }}
-
-    env:
-      WP_VERSION: ${{ matrix.wordpress }}
+    timeout-minutes: 20
 
     strategy:
-      matrix:
-        wordpress: [ '6.4', 'latest' ]
-        php: [ '7.4', '8.3' ]
-        allowed_failure: [ false ]
-        include:
-          # Check upcoming WP.
-          - php: '8.3'
-            wordpress: 'trunk'
-            allowed_failure: true
-          # Check upcoming PHP.
-#          - php: '8.4'
-#            wordpress: 'latest'
-#            allowed_failure: true
-          - php: '8.2'
-            extensions: pcov
-            ini-values: pcov.directory=., "pcov.exclude=\"~(vendor|tests)~\""
-            coverage: pcov
-            allowed_failure: false
       fail-fast: false
+      matrix:
+        include:
+          - wordpress: '6.4'
+            php: '8.1'
+            multisite: false
+            allowed_failure: false
+          - wordpress: '6.9'
+            php: '8.4'
+            multisite: false
+            allowed_failure: false
+          - wordpress: '6.9'
+            php: '8.4'
+            multisite: true
+            allowed_failure: false
+          - wordpress: 'master'
+            php: '8.4'
+            multisite: false
+            allowed_failure: true
+
+    env:
+      WP_ENV_PHP_VERSION: ${{ matrix.php }}
+      WP_ENV_CORE: ${{ matrix.wordpress == 'master' && 'WordPress/WordPress#master' || format('https://wordpress.org/wordpress-{0}.zip', matrix.wordpress) }}
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Node.js dependencies
+        run: npm ci
 
       - name: Setup PHP ${{ matrix.php }}
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@6d7209f44a25a59e904b1ee9f3b0c33ab2cd888d # v2.34.0
         with:
           php-version: ${{ matrix.php }}
-          extensions: ${{ matrix.extensions }}
-          ini-values: ${{ matrix.ini-values }}
-          coverage: ${{ matrix.coverage }}
-
-      - name: Setup problem matchers for PHP
-        run: echo "::add-matcher::${{ runner.tool_cache }}/php.json"
-
-      - name: Setup Problem Matchers for PHPUnit
-        run: echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
+          coverage: none
 
       - name: Install Composer dependencies
-        uses: ramsey/composer-install@v2
+        uses: ramsey/composer-install@3cf229dc2919194e9e36783941438d17239e8520 # v3.1.1
 
-      - name: Start MySQL Service
-        run: sudo systemctl start mysql.service
-
-      - name: Prepare environment for integration tests
-        run: composer prepare-ci
+      - name: Start wp-env
+        run: npm run wp-env start
 
       - name: Run integration tests (single site)
-        if: ${{ matrix.php != 8.2 }}
-        run: composer test
-      - name: Run integration tests (single site with code coverage)
-        if: ${{ matrix.php == 8.2 }}
-        run: composer coverage-ci
+        if: ${{ ! matrix.multisite }}
+        run: composer test:integration
+
       - name: Run integration tests (multisite)
-        run: composer test-ms
+        if: ${{ matrix.multisite }}
+        run: composer test:integration-ms
