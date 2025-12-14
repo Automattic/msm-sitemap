@@ -15,8 +15,12 @@
          testdox="true"
          verbose="true">
     <testsuites>
+        <testsuite name="Unit">
+            <directory suffix="Test.php">tests/Unit</directory>
+        </testsuite>
         <testsuite name="WP_Tests">
             <directory>tests</directory>
+            <exclude>tests/Unit</exclude>
         </testsuite>
     </testsuites>
 

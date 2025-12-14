@@ -11,6 +11,38 @@ namespace Automattic\MSM_Sitemap\Tests;
 
 use Yoast\WPTestUtils\WPIntegration;
 
+// Composer autoloader.
+require_once dirname( __DIR__ ) . '/vendor/autoload.php';
+
+// Check for a `--testsuite Unit` arg when calling phpunit.
+$argv_local = $GLOBALS['argv'] ?? [];
+$key        = (int) array_search( '--testsuite', $argv_local, true );
+$is_unit    = false;
+
+// Check for --testsuite Unit (two separate args).
+if ( $key && isset( $argv_local[ $key + 1 ] ) && 'Unit' === $argv_local[ $key + 1 ] ) {
+	$is_unit = true;
+}
+
+// Check for --testsuite=Unit (single arg with equals).
+foreach ( $argv_local as $arg ) {
+	if ( '--testsuite=Unit' === $arg ) {
+		$is_unit = true;
+		break;
+	}
+}
+
+if ( $is_unit ) {
+	// Unit tests use Brain Monkey - no WordPress loaded.
+	// Load plugin classes that can be tested without WordPress.
+	require_once dirname( __DIR__ ) . '/includes/Domain/ValueObjects/UrlEntry.php';
+	require_once dirname( __DIR__ ) . '/includes/Domain/ValueObjects/SitemapIndexEntry.php';
+	require_once dirname( __DIR__ ) . '/includes/Domain/ValueObjects/SitemapIndexCollection.php';
+	require_once dirname( __DIR__ ) . '/includes/Domain/ValueObjects/UrlSet.php';
+	require_once __DIR__ . '/Unit/TestCase.php';
+	return;
+}
+
 require_once dirname( __DIR__ ) . '/vendor/yoast/wp-test-utils/src/WPIntegration/bootstrap-functions.php';
 
 $_tests_dir = WPIntegration\get_path_to_wp_test_dir();
