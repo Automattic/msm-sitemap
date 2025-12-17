@@ -10,6 +10,10 @@ on:
   # Allow manually triggering the workflow.
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 # Restrict permissions to minimum required for this workflow
 permissions:
   contents: read
@@ -71,6 +75,12 @@ jobs:
         with:
           xml-file: ./phpunit.xml.dist
           xml-schema-file: ./vendor/phpunit/phpunit/phpunit.xsd
+
+      - name: Lint .phpcs.xml.dist
+        uses: ChristophWurst/xmllint-action@7c54ff113fc0f6d4588a15cb4dfe31b6ecca5212 # v1.2.1
+        with:
+          xml-file: ./.phpcs.xml.dist
+          xml-schema-file: ./vendor/squizlabs/php_codesniffer/phpcs.xsd
 
       # Check the code-style consistency of the PHP files.
 #      - name: Check PHP code style
