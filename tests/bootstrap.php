@@ -80,4 +80,4 @@ require $_tests_dir . '/includes/bootstrap.php';
 WPIntegration\register_mockobject_autoloader();
 
 // Add custom test case.
-require __DIR__ . '/TestCase.php';
+require __DIR__ . '/Integration/TestCase.php';
