@@ -27,7 +27,9 @@
 	},
 	"autoload-dev": {
 		"psr-4": {
-			"Automattic\\MSM_Sitemap\\Tests\\": "tests/"
+			"Automattic\\MSM_Sitemap\\Tests\\": "tests/",
+			"Automattic\\MSM_Sitemap\\Tests\\Integration\\": "tests/Integration/",
+			"Automattic\\MSM_Sitemap\\Tests\\Unit\\": "tests/Unit/"
 		}
 	},
 	"config": {
@@ -54,9 +56,9 @@
 		"lint-ci": [
 			"@php ./vendor/php-parallel-lint/php-parallel-lint/parallel-lint . -e php --exclude vendor --exclude .git --checkstyle"
 		],
-		"test:unit": "@php ./vendor/bin/phpunit --testsuite Unit",
-		"test:integration": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/msm-sitemap ./vendor/bin/phpunit --testsuite WP_Tests --no-coverage",
-		"test:integration-ms": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/msm-sitemap /bin/bash -c 'WP_MULTISITE=1 ./vendor/bin/phpunit --testsuite WP_Tests --no-coverage'"
+		"test:unit": "@php ./vendor/bin/phpunit --testsuite unit",
+		"test:integration": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/msm-sitemap ./vendor/bin/phpunit --testsuite integration --no-coverage",
+		"test:integration-ms": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/msm-sitemap /bin/bash -c 'WP_MULTISITE=1 ./vendor/bin/phpunit --testsuite integration --no-coverage'"
 	},
 	"scripts-descriptions": {
 		"coverage": "Run tests with code coverage reporting",
