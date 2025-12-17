@@ -14,19 +14,19 @@ use Yoast\WPTestUtils\WPIntegration;
 // Composer autoloader.
 require_once dirname( __DIR__ ) . '/vendor/autoload.php';
 
-// Check for a `--testsuite Unit` arg when calling phpunit.
+// Check for a `--testsuite unit` arg when calling phpunit.
 $argv_local = $GLOBALS['argv'] ?? [];
 $key        = (int) array_search( '--testsuite', $argv_local, true );
 $is_unit    = false;
 
-// Check for --testsuite Unit (two separate args).
-if ( $key && isset( $argv_local[ $key + 1 ] ) && 'Unit' === $argv_local[ $key + 1 ] ) {
+// Check for --testsuite unit (two separate args).
+if ( $key && isset( $argv_local[ $key + 1 ] ) && 'unit' === $argv_local[ $key + 1 ] ) {
 	$is_unit = true;
 }
 
-// Check for --testsuite=Unit (single arg with equals).
+// Check for --testsuite=unit (single arg with equals).
 foreach ( $argv_local as $arg ) {
-	if ( '--testsuite=Unit' === $arg ) {
+	if ( '--testsuite=unit' === $arg ) {
 		$is_unit = true;
 		break;
 	}
