@@ -43,8 +43,7 @@ jobs:
             php: 'latest'
 
     env:
-      WP_ENV_PHP_VERSION: ${{ matrix.php }}
-      WP_ENV_CORE: ${{ matrix.wordpress == 'master' && 'WordPress/WordPress#master' || format('https://wordpress.org/wordpress-{0}.zip', matrix.wordpress) }}
+      WP_ENV_CORE: WordPress/WordPress#${{ matrix.wordpress }}
 
     steps:
       - name: Checkout code
