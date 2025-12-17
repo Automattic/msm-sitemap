@@ -230,7 +230,8 @@ class Metro_Sitemap {
 		$stats = array();
 
 		for ( $i = 0; $i < $n; $i++ ) {
-			$date = date( 'Y-m-d', strtotime( "-$i days" ) );
+			$date = wp_date( 'Y-m-d' );
+			$date = date( 'Y-m-d', strtotime( "-$i days", strtotime( $date ) ) );
 
 			list( $year, $month, $day ) = explode( '-', $date );
 
@@ -365,7 +366,7 @@ class Metro_Sitemap {
 		}
 
 		if ( null !== $oldest_post_date_year ) {
-			$current_year = date( 'Y' );
+			$current_year = wp_date( 'Y' );
 			return range( (int) $oldest_post_date_year, $current_year );
 		}
 
@@ -667,15 +668,19 @@ class Metro_Sitemap {
 
 		$sitemap_last_run = get_option( 'msm_sitemap_update_last_run', false );
 
-		$date = date( 'Y-m-d H:i:s', ( time() - 3600 ) ); // posts changed within the last hour
+		// Use current time minus 1 hour for posts changed within the last hour
+		$date = date( 'Y-m-d H:i:s', time() - 3600 );
 
 		if ( $sitemap_last_run ) {
 			$date = date( 'Y-m-d H:i:s', $sitemap_last_run );
 		}
 
+		// Convert local time to GMT for database query since post_modified_gmt is in GMT
+		$date_gmt = get_gmt_from_date( $date );
+
 		$post_types_in = self::get_supported_post_types_in();
 
-		$query = $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_status = %s AND post_modified_gmt >= %s LIMIT 1000", self::get_post_status(), $date );
+		$query = $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_status = %s AND post_modified_gmt >= %s LIMIT 1000", self::get_post_status(), $date_gmt );
 
 		/**
 		 * Filter the query used to get the last modified posts.

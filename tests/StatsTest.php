@@ -50,7 +50,7 @@ class StatsTest extends TestCase {
 	 * that already has a sitemap.
 	 */
 	public function test_site_stats_for_new_post(): void {
-		$today_str = date( 'Y-m-d' );
+		$today_str = wp_date( 'Y-m-d' );
 
 		// Insert a new post for today.
 		$this->create_dummy_posts( array( $today_str . ' 00:00:00' ) );

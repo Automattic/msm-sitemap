@@ -66,9 +66,9 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 					delete_option( 'msm_stop_processing' );
 					break;
 				}
-				$max_month = ( $year == date( 'Y' ) ) ? date( 'n' ) : 12;
+				$max_month = ( $year == wp_date( 'Y' ) ) ? wp_date( 'n' ) : 12;
 				for ( $month = 1; $month <= $max_month; $month++ ) {
-					$max_day = ( $year == date( 'Y' ) && $month == date( 'n' ) ) ? date( 'j' ) : $this->cal_days_in_month( $month, $year );
+					$max_day = ( $year == wp_date( 'Y' ) && $month == wp_date( 'n' ) ) ? wp_date( 'j' ) : $this->cal_days_in_month( $month, $year );
 					for ( $day = 1; $day <= $max_day; $day++ ) {
 						if ( $this->halt_execution() ) {
 							delete_option( 'msm_stop_processing' );
@@ -110,7 +110,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 					}
 					$year    = $query['year'];
 					$month   = $query['month'];
-					$max_day = ( $year == date( 'Y' ) && $month == date( 'n' ) ) ? date( 'j' ) : $this->cal_days_in_month( $month, $year );
+					$max_day = ( $year == wp_date( 'Y' ) && $month == wp_date( 'n' ) ) ? wp_date( 'j' ) : $this->cal_days_in_month( $month, $year );
 					for ( $day = 1; $day <= $max_day; $day++ ) {
 						if ( $this->halt_execution() ) {
 							delete_option( 'msm_stop_processing' );
@@ -131,9 +131,9 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 						break;
 					}
 					$year      = $query['year'];
-					$max_month = ( $year == date( 'Y' ) ) ? date( 'n' ) : 12;
+					$max_month = ( $year == wp_date( 'Y' ) ) ? wp_date( 'n' ) : 12;
 					for ( $month = 1; $month <= $max_month; $month++ ) {
-						$max_day = ( $year == date( 'Y' ) && $month == date( 'n' ) ) ? date( 'j' ) : $this->cal_days_in_month( $month, $year );
+						$max_day = ( $year == wp_date( 'Y' ) && $month == wp_date( 'n' ) ) ? wp_date( 'j' ) : $this->cal_days_in_month( $month, $year );
 						for ( $day = 1; $day <= $max_day; $day++ ) {
 							if ( $this->halt_execution() ) {
 								delete_option( 'msm_stop_processing' );
@@ -163,7 +163,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 	 * Helper: Generate all sitemaps for a year.
 	 */
 	private function generate_for_year( $year, $force, $quiet ) {
-		$max_month = ( $year == date( 'Y' ) ) ? date( 'n' ) : 12;
+		$max_month = ( $year == wp_date( 'Y' ) ) ? wp_date( 'n' ) : 12;
 		$count     = 0;
 		for ( $month = 1; $month <= $max_month; $month++ ) {
 			$count += $this->generate_for_month( $year, $month, $force, $quiet );
@@ -175,7 +175,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 	 * Helper: Generate all sitemaps for a month.
 	 */
 	private function generate_for_month( $year, $month, $force, $quiet ) {
-		$max_day = ( $year == date( 'Y' ) && $month == date( 'n' ) ) ? date( 'j' ) : $this->cal_days_in_month( $month, $year );
+		$max_day = ( $year == wp_date( 'Y' ) && $month == wp_date( 'n' ) ) ? wp_date( 'j' ) : $this->cal_days_in_month( $month, $year );
 		$count   = 0;
 		for ( $day = 1; $day <= $max_day; $day++ ) {
 			$count += $this->generate_for_day( $year, $month, $day, $force, $quiet );
@@ -797,7 +797,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		$items  = array(
 			array(
 				'enabled'        => $status['enabled'] ? 'Yes' : 'No',
-				'next_scheduled' => $status['next_scheduled'] ? date( 'Y-m-d H:i:s T', $status['next_scheduled'] ) : 'Not scheduled',
+				'next_scheduled' => $status['next_scheduled'] ? wp_date( 'Y-m-d H:i:s T', $status['next_scheduled'] ) : 'Not scheduled',
 				'blog_public'    => $status['blog_public'] ? 'Yes' : 'No',
 				'generating'     => $status['generating'] ? 'Yes' : 'No',
 				'halted'         => $status['halted'] ? 'Yes' : 'No',
@@ -932,7 +932,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 	/**
 	 * Return max number of days in a month of a year.
 	 *
-	 * Uses cal_days_in_month if available, if not, takes advantage of `date( 't' )` and `mktime`.
+	 * Uses cal_days_in_month if available, if not, takes advantage of `wp_date( 't' )` and `mktime`.
 	 *
 	 * @param int $month Month
 	 * @param int $year Year
@@ -944,7 +944,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 			return cal_days_in_month( CAL_GREGORIAN, $month, $year );
 		}
 		// Calculate actual number of days in the month since we don't have cal_days_in_month available
-		return date( 't', mktime( 0, 0, 0, $month, 1, $year ) );
+		return wp_date( 't', mktime( 0, 0, 0, $month, 1, $year ) );
 	}
 
 	/**
@@ -982,7 +982,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 			if ( $month < 1 || $month > 12 ) {
 				WP_CLI::error( __( 'Invalid month. Please specify a month between 1 and 12.', 'msm-sitemap' ) );
 			}
-			if ( $year < 1970 || $year > (int) date( 'Y' ) ) {
+			if ( $year < 1970 || $year > (int) wp_date( 'Y' ) ) {
 				WP_CLI::error( __( 'Invalid year. Please specify a year between 1970 and the current year.', 'msm-sitemap' ) );
 			}
 			return array(
@@ -993,7 +993,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 			);
 		} elseif ( count( $parts ) === 1 && strlen( $parts[0] ) === 4 ) {
 			$year = (int) $parts[0];
-			if ( $year < 1970 || $year > (int) date( 'Y' ) ) {
+			if ( $year < 1970 || $year > (int) wp_date( 'Y' ) ) {
 				WP_CLI::error( __( 'Invalid year. Please specify a year between 1970 and the current year.', 'msm-sitemap' ) );
 			}
 			return array( array( 'year' => $year ) );

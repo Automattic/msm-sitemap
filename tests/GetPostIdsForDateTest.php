@@ -139,7 +139,7 @@ class GetPostIdsForDateTest extends TestCase {
 	 * Posts with future dates should be excluded.
 	 */
 	public function test_get_post_ids_for_date_excludes_future_posts(): void {
-		$future_date = date( 'Y-m-d', strtotime( '+1 year' ) );
+		$future_date = wp_date( 'Y-m-d', strtotime( '+1 year' ) );
 		$this->create_dummy_post( $future_date . ' 00:00:00', 'publish' );
 		$post_ids = Metro_Sitemap::get_post_ids_for_date( $future_date, 10 );
 		$this->assertCount( 0, $post_ids );

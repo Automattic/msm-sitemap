@@ -191,8 +191,8 @@ class MSM_Sitemap_Builder_Cron {
 
 		$year      = $args['year'];
 		$max_month = 12;
-		if ( $year == date( 'Y' ) ) {
-			$max_month = date( 'n' );
+		if ( $year == wp_date( 'Y' ) ) {
+			$max_month = wp_date( 'n' );
 		}
 
 		if ( empty( $is_partial_or_running ) ) {
@@ -240,8 +240,8 @@ class MSM_Sitemap_Builder_Cron {
 			$max_days = cal_days_in_month( CAL_GREGORIAN, (int) $month, (int) $year );
 		}
 
-		if ( date( 'Y' ) == $year && $month == date( 'n' ) ) {
-			$max_days = date( 'j' );
+		if ( wp_date( 'Y' ) == $year && $month == wp_date( 'n' ) ) {
+			$max_days = wp_date( 'j' );
 		}
 
 		if ( empty( $is_partial_or_running ) ) {
