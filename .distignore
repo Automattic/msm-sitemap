@@ -20,3 +20,7 @@ composer.lock
 package.json
 package-lock.json
 phpunit.xml.dist
+
+# Caches and logs
+.phpunit.cache/
+*.log
