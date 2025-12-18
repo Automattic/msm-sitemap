@@ -744,6 +744,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 				$this->cron_reset( array(), $assoc_args );
 				break;
 			default:
+				/* translators: %s: The unknown subcommand name. */
 				WP_CLI::error( sprintf( __( 'Unknown subcommand: %s', 'msm-sitemap' ), $command ) );
 		}
 	}
