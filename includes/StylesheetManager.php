@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap;
 
+use Automattic\MSM_Sitemap\Site;
+
 /**
  * Manages MSM-specific stylesheet modifications and references.
  *

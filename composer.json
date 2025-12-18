@@ -1,70 +1,74 @@
 {
 	"name": "automattic/msm-sitemap",
-	"type": "wordpress-plugin",
 	"description": "Comprehensive sitemaps for your WordPress.com VIP site.",
-	"homepage": "https://github.com/Automattic/msm-sitemap/",
 	"license": "GPL-2.0-or-later",
+	"type": "wordpress-plugin",
 	"authors": [
 		{
 			"name": "Automattic",
 			"homepage": "https://automattic.com/"
 		}
 	],
+	"homepage": "https://github.com/Automattic/msm-sitemap/",
+	"support": {
+		"issues": "https://github.com/Automattic/msm-sitemap/issues",
+		"source": "https://github.com/Automattic/msm-sitemap"
+	},
 	"require": {
 		"php": ">=7.4",
-		"composer/installers": "~1.0"
+		"composer/installers": "^1.0 || ^2.0"
 	},
 	"require-dev": {
 		"automattic/vipwpcs": "^3.0",
 		"php-parallel-lint/php-parallel-lint": "^1.0",
 		"phpcompatibility/phpcompatibility-wp": "^2.1",
 		"phpunit/phpunit": "^9",
-		"wp-coding-standards/wpcs": "^3.0",
 		"yoast/wp-test-utils": "^1.2.0"
 	},
 	"autoload-dev": {
 		"psr-4": {
-			"Automattic\\MSM_Sitemap\\Tests\\": "tests/"
+			"Automattic\\MSM_Sitemap\\Tests\\": "tests/",
+			"Automattic\\MSM_Sitemap\\Tests\\Integration\\": "tests/Integration/",
+			"Automattic\\MSM_Sitemap\\Tests\\Unit\\": "tests/Unit/"
 		}
+	},
+	"config": {
+		"allow-plugins": {
+			"composer/installers": true,
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		},
+		"sort-packages": true
 	},
 	"scripts": {
 		"coverage": [
 			"@php ./vendor/bin/phpunit --coverage-html ./.phpunit.cache/code-coverage-html"
 		],
-		"coverage-ci": [
-			"@php ./vendor/bin/phpunit"
-		],
-		"cbf": [
-			"@php ./vendor/bin/phpcbf -q"
-		],
 		"cs": [
 			"@php ./vendor/bin/phpcs -q"
 		],
+		"cs-fix": [
+			"@php ./vendor/bin/phpcbf -q"
+		],
+		"i18n": "@php wp i18n make-pot . ./languages/msm-sitemap.pot",
 		"lint": [
 			"@php ./vendor/php-parallel-lint/php-parallel-lint/parallel-lint . -e php --exclude vendor --exclude .git"
 		],
 		"lint-ci": [
 			"@php ./vendor/php-parallel-lint/php-parallel-lint/parallel-lint . -e php --exclude vendor --exclude .git --checkstyle"
 		],
-		"prepare-ci": [
-			"bash bin/install-wp-tests.sh wordpress_test root root localhost"
-		],
-		"test": [
-			"@php ./vendor/bin/phpunit --testsuite WP_Tests --no-coverage"
-		],
-		"test-ms": [
-			"@putenv WP_MULTISITE=1",
-			"@composer test"
-		]
+		"test:unit": "@php ./vendor/bin/phpunit --testsuite unit",
+		"test:integration": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/msm-sitemap ./vendor/bin/phpunit --testsuite integration --no-coverage",
+		"test:integration-ms": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/msm-sitemap /bin/bash -c 'WP_MULTISITE=1 ./vendor/bin/phpunit --testsuite integration --no-coverage'"
 	},
-	"support": {
-		"issues": "https://github.com/Automattic/msm-sitemap/issues",
-		"source": "https://github.com/Automattic/msm-sitemap"
-	},
-	"config": {
-		"allow-plugins": {
-			"composer/installers": true,
-			"dealerdirect/phpcodesniffer-composer-installer": true
-		}
+	"scripts-descriptions": {
+		"coverage": "Run tests with code coverage reporting",
+		"cs": "Run PHP Code Sniffer",
+		"cs-fix": "Run PHP Code Sniffer and fix violations",
+		"i18n": "Generate a POT file for translation",
+		"lint": "Run PHP linting",
+		"lint-ci": "Run PHP linting and send results to stdout",
+		"test:unit": "Run unit tests (no WordPress required)",
+		"test:integration": "Run integration tests via wp-env",
+		"test:integration-ms": "Run integration tests in multisite mode via wp-env"
 	}
 }

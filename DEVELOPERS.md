@@ -98,6 +98,28 @@ function my_filter_sitemap_index( array $sitemaps, $year ) : array {
 }
 ~~~
 
+### Override Cron Status (Testing)
+
+**Business case:**
+If you're writing tests or need to override the cron enabled status for development purposes, use this filter.
+
+~~~php
+add_filter( 'msm_sitemap_cron_enabled', 'my_override_cron_status' );
+/**
+ * Override the cron enabled status.
+ *
+ * @param bool $enabled Whether cron is currently enabled.
+ * @return bool The desired cron status.
+ */
+function my_override_cron_status( bool $enabled ): bool {
+    // Force cron to be enabled for testing
+    return true;
+    
+    // Or force it to be disabled
+    // return false;
+}
+~~~
+
 ### Customize the Last Modified Posts Query
 
 **Business case:**
@@ -558,6 +580,50 @@ Metro Sitemap provides a flexible WP-CLI interface for advanced management:
     +-------+--------------------------+---------------------+
     ```
 
+### Cron Management Commands
+
+- **cron enable**: Enable automatic sitemap updates.
+  - No arguments.
+  - **Example:**
+    ```shell
+    # Enable automatic sitemap updates
+    $ wp msm-sitemap cron enable
+    Success: ✅ Sitemap cron enabled successfully.
+    ```
+
+- **cron disable**: Disable automatic sitemap updates.
+  - No arguments.
+  - **Example:**
+    ```shell
+    # Disable automatic sitemap updates
+    $ wp msm-sitemap cron disable
+    Success: ✅ Sitemap cron disabled successfully.
+    ✅ Cron events cleared successfully.
+    ```
+
+- **cron status**: Check the status of automatic updates.
+  - `--format=<format>` – table, json, csv.
+  - **Example:**
+    ```shell
+    # Check cron status in table format
+    $ wp msm-sitemap cron status --format=table
+    +---------+-------------------------+-------------+------------+--------+
+    | enabled | next_scheduled          | blog_public | generating | halted |
+    +---------+-------------------------+-------------+------------+--------+
+    | Yes     | 2025-08-01 14:30:00 UTC | Yes         | No         | No     |
+    +---------+-------------------------+-------------+------------+--------+
+    ```
+
+- **cron reset**: Reset cron to clean state (for testing).
+  - No arguments.
+  - **Example:**
+    ```shell
+    # Reset cron to clean state
+    $ wp msm-sitemap cron reset
+    Success: ✅ Sitemap cron reset to clean state.
+    📝 This simulates a fresh install state.
+    ```
+
 See `wp help msm-sitemap <command>` for full details and options.
 
 ### Legacy Commands (1.4.2 and earlier)
@@ -601,6 +667,21 @@ composer cs
 
 * **Contributions:** Please open issues or pull requests on [GitHub](https://github.com/Automattic/msm-sitemap).
 
+### Testing Architecture
+
+The plugin uses a **filter-based testing approach** to ensure clean separation between production and test code:
+
+#### Cron Testing
+The `msm_sitemap_cron_enabled` filter allows tests to override cron status without modifying production code:
+
+~~~php
+// In tests, force cron to be enabled
+add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
+
+// Or force it to be disabled
+add_filter( 'msm_sitemap_cron_enabled', '__return_false' );
+~~~
+
 ## Internal Architecture Details
 
 * **Custom Post Type:** Sitemaps are stored as `msm_sitemap` posts, one per date.
@@ -608,6 +689,44 @@ composer cs
 * **Async Generation:** Uses WP-Cron or CLI to generate sitemaps in batches, avoiding timeouts.
 * **Admin UI:** Tools > Sitemap provides stats and manual actions for admins.
 * **Multisite:** Each site has its own sitemaps; can be network-activated.
+
+### Service Layer Architecture
+
+The plugin uses a **Service Layer pattern** for cron management and admin interface to ensure separation of concerns and maintainability:
+
+#### Cron Management
+* **`Cron_Service`** (`includes/CronService.php`): Single source of truth for all cron management logic
+  - Handles enabling/disabling cron functionality
+  - Manages WordPress cron events and options
+  - Provides status checking and consistency validation
+  - Used by CLI, admin UI, and cron job handlers
+  - **Filter Support**: `msm_sitemap_cron_enabled` filter allows overriding cron status (useful for testing)
+
+#### Admin Interface
+* **`Admin\UI`** (`includes/Admin/UI.php`): Handles all admin page rendering
+  - Manages admin page structure and sections
+  - Provides user-friendly messages and status display
+  - Delegates to `Action_Handlers` for processing form submissions
+  - Renders cron management, generation, and stats sections
+
+* **`Admin\Action_Handlers`** (`includes/Admin/ActionHandlers.php`): Handles all admin form actions
+  - Processes button clicks and form submissions
+  - Delegates to appropriate service classes for operations
+  - Provides user feedback and error handling
+  - Maintains clean separation between UI and business logic
+
+#### Sitemap Generation
+* **`MSM_Sitemap_Builder_Cron`** (`includes/msm-sitemap-builder-cron.php`): Handles sitemap generation
+  - Manages the actual sitemap generation process
+  - Uses `Cron_Service` for cron status checks
+  - Maintains backward compatibility with deprecated methods
+
+This architecture ensures:
+- **Single Responsibility**: Each class has a clear, focused purpose
+- **Testability**: Service logic can be tested independently using filters
+- **Maintainability**: Changes to cron logic only require updating the service
+- **Extensibility**: New features can be added without affecting existing code
+- **Clean Separation**: UI rendering is separate from action handling
 
 ## Further Reading
 

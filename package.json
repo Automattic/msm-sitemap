@@ -1,0 +1,11 @@
+{
+  "name": "msm-sitemap",
+  "private": true,
+  "description": "Comprehensive sitemaps for your WordPress.com VIP site.",
+  "scripts": {
+    "wp-env": "wp-env"
+  },
+  "devDependencies": {
+    "@wordpress/env": "^10.0.0"
+  }
+}

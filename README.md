@@ -1,8 +1,8 @@
 # Metro Sitemap
 
-Stable tag: 1.5.3  
-Requires at least: 5.9  
-Tested up to: 6.8  
+Stable tag: 1.5.4  
+Requires at least: 6.4  
+Tested up to: 6.9  
 Requires PHP: 7.4  
 License: GPLv2 or later  
 License URI: https://www.gnu.org/licenses/gpl-2.0.html  
@@ -19,7 +19,7 @@ High-performance XML sitemaps for large-scale WordPress sites. Built for speed, 
 * **Multisite compatible**
 * **WP-CLI support** for advanced management
 * **Extensible** via hooks and filters ([see developer docs](./DEVELOPERS.md))
-* **Admin UI** for stats and manual actions
+* **Admin UI** for stats, manual actions, and cron management
 * **Browser-friendly XSL styling** with independent stylesheet endpoints
 
 ## Installation
@@ -34,6 +34,22 @@ High-performance XML sitemaps for large-scale WordPress sites. Built for speed, 
 * Your sitemap index will be available at `/sitemap.xml` (e.g., `https://example.com/sitemap.xml`).
 * Sitemaps are generated in the background and updated as you publish new content.
 * The admin UI (Tools > Sitemap) provides stats and lets you manually trigger generation if needed.
+
+### Automatic Updates
+
+By default, automatic sitemap updates are **disabled** to prevent resource issues on large sites. To enable automatic updates:
+
+**Via Admin UI:**
+1. Go to **Tools > Sitemap** in your WordPress admin
+2. In the "Cron Management" section, click "Enable Automatic Updates"
+3. Once enabled, you can use the "Generate" section to manually trigger sitemap generation
+
+**Via WP-CLI:**
+```shell
+wp msm-sitemap cron enable
+```
+
+**Important:** Automatic updates can use significant resources on sites with many posts. For large sites, consider using date-targeted WP-CLI commands instead (see below).
 
 ## Frequently Asked Questions
 
@@ -82,6 +98,8 @@ For more XSL customization options, see the [Developer Guide](./DEVELOPERS.md).
 
 Metro Sitemap supports advanced management via WP-CLI. Here are the most common commands:
 
+### Core Commands
+
 - **generate**: Generate sitemaps for all or specific dates.
   ```shell
   wp msm-sitemap generate --all
@@ -113,6 +131,25 @@ Metro Sitemap supports advanced management via WP-CLI. Here are the most common 
 - **stats**: Show sitemap statistics (total, most recent, etc).
   ```shell
   wp msm-sitemap stats --format=table
+  ```
+
+### Cron Management Commands
+
+- **cron enable**: Enable automatic sitemap updates.
+  ```shell
+  wp msm-sitemap cron enable
+  ```
+- **cron disable**: Disable automatic sitemap updates.
+  ```shell
+  wp msm-sitemap cron disable
+  ```
+- **cron status**: Check the status of automatic updates.
+  ```shell
+  wp msm-sitemap cron status
+  ```
+- **cron reset**: Reset cron to clean state (for testing).
+  ```shell
+  wp msm-sitemap cron reset
   ```
 
 For the full list of commands, options, and legacy command mapping, see [DEVELOPERS.md](./DEVELOPERS.md).

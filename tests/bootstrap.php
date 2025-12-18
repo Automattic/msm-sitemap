@@ -5,51 +5,71 @@
  * @package Automattic\MSM_Sitemap
  */
 
+declare(strict_types=1);
+
 namespace Automattic\MSM_Sitemap\Tests;
 
 use Yoast\WPTestUtils\WPIntegration;
 
+// Composer autoloader.
+require_once dirname( __DIR__ ) . '/vendor/autoload.php';
+
+// Check for a `--testsuite unit` arg when calling phpunit.
+$argv_local = $GLOBALS['argv'] ?? [];
+$key        = (int) array_search( '--testsuite', $argv_local, true );
+$is_unit    = false;
+
+// Check for --testsuite unit (two separate args).
+if ( $key && isset( $argv_local[ $key + 1 ] ) && 'unit' === $argv_local[ $key + 1 ] ) {
+	$is_unit = true;
+}
+
+// Check for --testsuite=unit (single arg with equals).
+foreach ( $argv_local as $arg ) {
+	if ( '--testsuite=unit' === $arg ) {
+		$is_unit = true;
+		break;
+	}
+}
+
+if ( $is_unit ) {
+	// Unit tests use Brain Monkey - no WordPress loaded.
+	// Load plugin classes that can be tested without WordPress.
+	require_once dirname( __DIR__ ) . '/includes/Domain/ValueObjects/UrlEntry.php';
+	require_once dirname( __DIR__ ) . '/includes/Domain/ValueObjects/SitemapIndexEntry.php';
+	require_once dirname( __DIR__ ) . '/includes/Domain/ValueObjects/SitemapIndexCollection.php';
+	require_once dirname( __DIR__ ) . '/includes/Domain/ValueObjects/UrlSet.php';
+	require_once __DIR__ . '/Unit/TestCase.php';
+	return;
+}
+
 require_once dirname( __DIR__ ) . '/vendor/yoast/wp-test-utils/src/WPIntegration/bootstrap-functions.php';
 
-// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
-$_tests_dir = getenv( 'WP_TESTS_DIR' );
+$_tests_dir = WPIntegration\get_path_to_wp_test_dir();
 
-if ( ! $_tests_dir ) {
-	// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
-	$_tests_dir = rtrim( sys_get_temp_dir(), '/\\' ) . '/wordpress-tests-lib';
-}
-
-// Forward custom PHPUnit Polyfills configuration to PHPUnit bootstrap file.
-// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
-$_phpunit_polyfills_path = getenv( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH' );
-if ( false !== $_phpunit_polyfills_path ) {
-	// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound
-	define( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH', $_phpunit_polyfills_path );
-}
-
-if ( ! file_exists( "{$_tests_dir}/includes/functions.php" ) ) {
-	echo "Could not find {$_tests_dir}/includes/functions.php, have you run bin/install-wp-tests.sh ?" . PHP_EOL; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+if ( empty( $_tests_dir ) ) {
+	echo 'ERROR: Could not find WordPress test library directory.' . PHP_EOL;
+	echo 'Make sure wp-env is running: npm run wp-env start' . PHP_EOL;
 	exit( 1 );
 }
 
 // Give access to tests_add_filter() function.
-require_once "{$_tests_dir}/includes/functions.php";
+require_once $_tests_dir . '/includes/functions.php';
 
 /**
  * Manually load the plugin being tested.
  */
-function _manually_load_plugin() {
-	// Updated from default (__FILE__), since this bootstrap is an extra level down in tests/Integration/.
+function _manually_load_plugin(): void {
 	require dirname( __DIR__ ) . '/msm-sitemap.php';
 }
 
-tests_add_filter( 'muplugins_loaded', __NAMESPACE__ . '\\_manually_load_plugin' );
+\tests_add_filter( 'muplugins_loaded', __NAMESPACE__ . '\\_manually_load_plugin' );
 
 // Make sure the Composer autoload file has been generated.
 WPIntegration\check_composer_autoload_exists();
 
 // Start up the WP testing environment.
-require "{$_tests_dir}/includes/bootstrap.php";
+require $_tests_dir . '/includes/bootstrap.php';
 
 /*
  * Register the custom autoloader to overload the PHPUnit MockObject classes when running on PHP 8.
@@ -60,4 +80,4 @@ require "{$_tests_dir}/includes/bootstrap.php";
 WPIntegration\register_mockobject_autoloader();
 
 // Add custom test case.
-require __DIR__ . '/TestCase.php';
+require __DIR__ . '/Integration/TestCase.php';

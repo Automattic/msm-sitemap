@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap;
 
+use Automattic\MSM_Sitemap\Site;
+
 /**
  * Permalinks handler for msm_sitemap posts.
  *
@@ -19,7 +21,7 @@ class Permalinks {
 	/**
 	 * Register the permalink filter.
 	 */
-	public static function register(): void {
+	public static function setup(): void {
 		add_filter( 'post_type_link', array( __CLASS__, 'filter_post_type_link' ), 10, 2 );
 	}
 
@@ -37,18 +39,15 @@ class Permalinks {
 		
 		$date = $post->post_name; // e.g., '2022-11-11' or '2022'.
 		
-		// Check if we should index by year (via filter).
-		$index_by_year = apply_filters( 'msm_sitemap_index_by_year', false );
-
-		if ( $index_by_year && preg_match( '/^(\d{4})$/', $date, $matches ) ) {
-			$year = $matches[1];
-			return home_url( "/sitemap-$year.xml" );
+		if ( Site::is_indexed_by_year() && preg_match( '/^(\d{4})$/', $date, $matches ) ) {
+			$year = (int) $matches[1];
+			return Site::get_sitemap_index_url( $year );
 		}
 		if ( preg_match( '/^(\d{4})-(\d{2})-(\d{2})$/', $date, $matches ) ) {
 			$year  = $matches[1];
 			$month = $matches[2];
 			$day   = $matches[3];
-			return home_url( "/sitemap.xml?yyyy=$year&mm=$month&dd=$day" );
+			return Site::get_home_url( "/sitemap.xml?yyyy=$year&mm=$month&dd=$day" );
 		}
 		// Fallback: return the default permalink if the date format is unexpected.
 		return $permalink;
