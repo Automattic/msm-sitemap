@@ -7,7 +7,7 @@ on:
       - 'composer.json'
       - 'phpunit.xml.dist'
       - '.wp-env.json'
-      - '.github/workflows/integrations.yml'
+      - '.github/workflows/integration.yml'
   pull_request:
     branches: [develop, main]
     paths:
@@ -15,7 +15,7 @@ on:
       - 'composer.json'
       - 'phpunit.xml.dist'
       - '.wp-env.json'
-      - '.github/workflows/integrations.yml'
+      - '.github/workflows/integration.yml'
   workflow_dispatch:
 
 concurrency:

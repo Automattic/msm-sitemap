@@ -4,7 +4,7 @@
          bootstrap="tests/bootstrap.php"
          cacheResultFile=".phpunit.cache/test-results"
 		 colors="true"
-         executionOrder="random"
+         executionOrder="depends,defects"
          forceCoversAnnotation="false"
          beStrictAboutCoversAnnotation="true"
          beStrictAboutOutputDuringTests="true"
@@ -15,12 +15,11 @@
          testdox="true"
          verbose="true">
     <testsuites>
-        <testsuite name="Unit">
+        <testsuite name="unit">
             <directory suffix="Test.php">tests/Unit</directory>
         </testsuite>
-        <testsuite name="WP_Tests">
-            <directory>tests</directory>
-            <exclude>tests/Unit</exclude>
+        <testsuite name="integration">
+            <directory suffix="Test.php">tests/Integration</directory>
         </testsuite>
     </testsuites>
 
