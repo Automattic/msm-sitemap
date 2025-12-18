@@ -83,15 +83,28 @@ class SitemapIndexEntryFactory {
 	/**
 	 * Create sitemap index entries from an array of sitemap dates.
 	 *
+	 * Uses WordPress 5.3+ date/time functions for proper timezone handling.
+	 *
+	 * @see https://make.wordpress.org/core/2019/09/23/date-time-improvements-wp-5-3/
+	 *
 	 * @param array<string> $sitemap_dates Array of sitemap dates in MySQL DATETIME format.
 	 * @return array<SitemapIndexEntry> Array of sitemap index entries.
 	 */
 	public static function from_sitemap_dates( array $sitemap_dates ): array {
-		$entries = array();
+		$entries  = array();
+		$timezone = wp_timezone();
 
 		foreach ( $sitemap_dates as $sitemap_date ) {
 			$loc = self::build_sitemap_url( $sitemap_date );
-			$lastmod = gmdate( 'c', strtotime( $sitemap_date ) );
+
+			// Parse the date in the site's timezone.
+			// The sitemap date (from post_date) is stored in local time, so we
+			// need to interpret it in the site's timezone to get the correct offset.
+			// Using DateTimeImmutable per WordPress 5.3+ best practices.
+			$datetime = new \DateTimeImmutable( $sitemap_date, $timezone );
+
+			// Format using wp_date() for consistency with WordPress conventions.
+			$lastmod = wp_date( 'c', $datetime->getTimestamp(), $timezone );
 
 			$entries[] = new SitemapIndexEntry( $loc, $lastmod );
 		}
@@ -106,28 +119,29 @@ class SitemapIndexEntryFactory {
 	 * @return string The sitemap URL.
 	 */
 	private static function build_sitemap_url( string $sitemap_date ): string {
-		$sitemap_time = strtotime( $sitemap_date );
-		$year = (int) date( 'Y', $sitemap_time );
+		// Parse the date in the site's timezone.
+		// The sitemap date (from post_date) is stored in local time.
+		// Using DateTimeImmutable per WordPress 5.3+ best practices.
+		$datetime = new \DateTimeImmutable( $sitemap_date, wp_timezone() );
+		$year     = $datetime->format( 'Y' );
+		$month    = $datetime->format( 'm' );
+		$day      = $datetime->format( 'd' );
 
 		if ( Site::is_indexed_by_year() ) {
-			$sitemap_url = add_query_arg(
-				array(
-					'mm' => date( 'm', $sitemap_time ),
-					'dd' => date( 'd', $sitemap_time ),
-				),
-				Site::get_sitemap_index_url( $year )
+			$query_args = array(
+				'mm' => $month,
+				'dd' => $day,
 			);
+			$base_url   = Site::get_sitemap_index_url( (int) $year );
 		} else {
-			$sitemap_url = add_query_arg(
-				array(
-					'yyyy' => date( 'Y', $sitemap_time ),
-					'mm'   => date( 'm', $sitemap_time ),
-					'dd'   => date( 'd', $sitemap_time ),
-				),
-				Site::get_sitemap_index_url()
+			$query_args = array(
+				'yyyy' => $year,
+				'mm'   => $month,
+				'dd'   => $day,
 			);
+			$base_url   = Site::get_sitemap_index_url();
 		}
 
-		return $sitemap_url;
+		return add_query_arg( $query_args, $base_url );
 	}
 }
