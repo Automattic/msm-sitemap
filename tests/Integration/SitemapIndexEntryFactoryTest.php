@@ -184,4 +184,85 @@ class SitemapIndexEntryFactoryTest extends TestCase {
 		$this->assertCount( 0, $entries );
 		$this->assertIsArray( $entries );
 	}
+
+	/**
+	 * Test that sitemap index lastmod respects site timezone.
+	 *
+	 * When the site is in a non-UTC timezone (e.g., America/New_York),
+	 * the lastmod should include the correct timezone offset.
+	 */
+	public function test_from_sitemap_dates_respects_timezone(): void {
+		// Set timezone to New York (UTC-5 / UTC-4 during DST).
+		update_option( 'timezone_string', 'America/New_York' );
+		wp_cache_flush();
+
+		$sitemap_dates = array(
+			'2024-01-15 00:00:00', // Winter: UTC-5.
+			'2024-07-15 00:00:00', // Summer: UTC-4 (DST).
+		);
+
+		$entries = SitemapIndexEntryFactory::from_sitemap_dates( $sitemap_dates );
+
+		$this->assertCount( 2, $entries );
+
+		// Winter date should have -05:00 offset (EST).
+		$this->assertEquals( '2024-01-15T00:00:00-05:00', $entries[0]->lastmod() );
+
+		// Summer date should have -04:00 offset (EDT).
+		$this->assertEquals( '2024-07-15T00:00:00-04:00', $entries[1]->lastmod() );
+
+		// Reset timezone.
+		update_option( 'timezone_string', 'UTC' );
+		wp_cache_flush();
+	}
+
+	/**
+	 * Test that sitemap index lastmod respects UTC timezone.
+	 *
+	 * When the site is in UTC, the lastmod should have +00:00 offset.
+	 */
+	public function test_from_sitemap_dates_with_utc_timezone(): void {
+		// Ensure timezone is UTC.
+		update_option( 'timezone_string', 'UTC' );
+		wp_cache_flush();
+
+		$sitemap_dates = array(
+			'2024-01-15 00:00:00',
+		);
+
+		$entries = SitemapIndexEntryFactory::from_sitemap_dates( $sitemap_dates );
+
+		$this->assertCount( 1, $entries );
+		$this->assertEquals( '2024-01-15T00:00:00+00:00', $entries[0]->lastmod() );
+	}
+
+	/**
+	 * Test that sitemap index lastmod respects Australian timezone.
+	 *
+	 * Australia/Sydney is ahead of UTC, so this tests positive offsets.
+	 */
+	public function test_from_sitemap_dates_with_sydney_timezone(): void {
+		// Set timezone to Sydney (UTC+10 / UTC+11 during DST).
+		update_option( 'timezone_string', 'Australia/Sydney' );
+		wp_cache_flush();
+
+		$sitemap_dates = array(
+			'2024-01-15 00:00:00', // Summer in Australia: UTC+11 (AEDT).
+			'2024-07-15 00:00:00', // Winter in Australia: UTC+10 (AEST).
+		);
+
+		$entries = SitemapIndexEntryFactory::from_sitemap_dates( $sitemap_dates );
+
+		$this->assertCount( 2, $entries );
+
+		// January (summer in Sydney) should have +11:00 offset (AEDT).
+		$this->assertEquals( '2024-01-15T00:00:00+11:00', $entries[0]->lastmod() );
+
+		// July (winter in Sydney) should have +10:00 offset (AEST).
+		$this->assertEquals( '2024-07-15T00:00:00+10:00', $entries[1]->lastmod() );
+
+		// Reset timezone.
+		update_option( 'timezone_string', 'UTC' );
+		wp_cache_flush();
+	}
 }
