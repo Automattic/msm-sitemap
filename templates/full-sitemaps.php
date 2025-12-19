@@ -33,5 +33,19 @@ if ( $build_xml === false ) {
 		array( 'response' => 404 )
 	);
 }
+
+// Explicitly set 200 OK status to override any previously set status.
+//
+// WordPress core sitemaps (introduced in WP 5.5) use the same 'sitemap' query var.
+// When core's sitemap handler runs and finds no matching core sitemap, it sets a
+// 404 status. Even though MSM Sitemap outputs valid XML, the 404 status persists
+// because we only set headers for Content-Type, not the HTTP status.
+//
+// This ensures search engines receive the correct 200 status with our valid sitemap.
+//
+// @see https://core.trac.wordpress.org/ticket/51136
+// @see https://github.com/Automattic/msm-sitemap/pull/168
+status_header( 200 );
+
 header( 'Content-type: application/xml; charset=UTF-8' );
 echo $build_xml;
