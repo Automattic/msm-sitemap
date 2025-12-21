@@ -138,10 +138,12 @@ final class GetTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		update_post_meta( $post_id2, 'msm_indexed_url_count', 1 );
 
 		$sitemap_url_partial = Site::is_indexed_by_year() ? 'sitemap-2024.xml?' : 'sitemap.xml?yyyy=2024&';
+		// Use home_url() to get the actual site URL (escaped for JSON)
+		$site_url_escaped = str_replace( '/', '\/', home_url() );
 
 		$expected =
-				'[{"id":' . $post_id2 . ',"date":"2024-07-11","url_count":1,"status":"publish","last_modified":"2024-07-11 00:00:00","sitemap_url":"http:\/\/example.org\/' . $sitemap_url_partial . 'mm=07&dd=11"},' .
-				'{"id":' . $this->post_id . ',"date":"2024-07-10","url_count":1,"status":"publish","last_modified":"2024-07-10 00:00:00","sitemap_url":"http:\/\/example.org\/' . $sitemap_url_partial . 'mm=07&dd=10"}]';
+				'[{"id":' . $post_id2 . ',"date":"2024-07-11","url_count":1,"status":"publish","last_modified":"2024-07-11 00:00:00","sitemap_url":"' . $site_url_escaped . '\/' . $sitemap_url_partial . 'mm=07&dd=11"},' .
+				'{"id":' . $this->post_id . ',"date":"2024-07-10","url_count":1,"status":"publish","last_modified":"2024-07-10 00:00:00","sitemap_url":"' . $site_url_escaped . '\/' . $sitemap_url_partial . 'mm=07&dd=10"}]';
 		$this->expectOutputString( $expected );
 		$cli->get( array( '2024-07' ), array( 'format' => 'json' ) );
 		wp_delete_post( $post_id2, true );
