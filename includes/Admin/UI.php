@@ -29,14 +29,17 @@ class UI {
 	 * Register admin menu for sitemap
 	 */
 	public static function register_admin_menu() {
-		$page_hook = add_options_page( 
-			__( 'MSM Sitemap', 'msm-sitemap' ), 
-			__( 'Sitemap', 'msm-sitemap' ), 
-			'manage_options', 
-			'msm-sitemap', 
-			array( __CLASS__, 'render_options_page' ) 
+		$page_hook = add_options_page(
+			__( 'MSM Sitemap', 'msm-sitemap' ),
+			__( 'Sitemap', 'msm-sitemap' ),
+			'manage_options',
+			'msm-sitemap',
+			array( __CLASS__, 'render_options_page' )
 		);
 		add_action( 'admin_print_scripts-' . $page_hook, array( __CLASS__, 'enqueue_admin_assets' ) );
+
+		// Add contextual help tabs.
+		HelpTabs::setup( $page_hook );
 	}
 
 	/**
