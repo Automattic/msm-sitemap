@@ -12,7 +12,7 @@
 	],
 	"require": {
 		"php": ">=7.4",
-		"composer/installers": "~1.0"
+		"composer/installers": "^1.0 || ^2.0"
 	},
 	"require-dev": {
 		"automattic/vipwpcs": "^3.0",
@@ -32,34 +32,21 @@
 		"coverage": [
 			"@php ./vendor/bin/phpunit --coverage-html ./.phpunit.cache/code-coverage-html"
 		],
-		"coverage-ci": [
-			"@php ./vendor/bin/phpunit"
-		],
-		"cbf": [
-			"@php ./vendor/bin/phpcbf -q"
-		],
 		"cs": [
 			"@php ./vendor/bin/phpcs -q"
 		],
+		"cs-fix": [
+			"@php ./vendor/bin/phpcbf -q"
+		],
+		"i18n": "@php wp i18n make-pot . ./languages/msm-sitemap.pot",
 		"lint": [
 			"@php ./vendor/php-parallel-lint/php-parallel-lint/parallel-lint . -e php --exclude vendor --exclude .git"
 		],
 		"lint-ci": [
 			"@php ./vendor/php-parallel-lint/php-parallel-lint/parallel-lint . -e php --exclude vendor --exclude .git --checkstyle"
 		],
-		"prepare-ci": [
-			"bash bin/install-wp-tests.sh wordpress_test root root localhost"
-		],
-		"test": [
-			"@php ./vendor/bin/phpunit --testsuite WP_Tests --no-coverage"
-		],
-		"test-slow": [
-			"@php ./vendor/bin/phpunit --testsuite WP_Tests --no-coverage --group slow"
-		],
-		"test-ms": [
-			"@putenv WP_MULTISITE=1",
-			"@composer test"
-		]
+		"test:integration": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/msm-sitemap ./vendor/bin/phpunit --testsuite WP_Tests --no-coverage",
+		"test:integration-ms": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/msm-sitemap /bin/bash -c 'WP_MULTISITE=1 ./vendor/bin/phpunit --testsuite WP_Tests --no-coverage'"
 	},
 	"support": {
 		"issues": "https://github.com/Automattic/msm-sitemap/issues",
