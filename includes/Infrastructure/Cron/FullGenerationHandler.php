@@ -142,7 +142,7 @@ class FullGenerationHandler implements CronHandlerInterface {
 			$start_date = sprintf( '%04d-%02d-01', $year, $month );
 			
 			// Validate month before calling cal_days_in_month to avoid ValueError in PHP 8.0+
-			$days_in_month = cal_days_in_month( CAL_GREGORIAN, $month, $year );
+			$days_in_month = \cal_days_in_month( \CAL_GREGORIAN, $month, $year );
 			$end_date = sprintf( '%04d-%02d-%02d', $year, $month, $days_in_month );
 			
 			$post_repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository();
@@ -191,7 +191,7 @@ class FullGenerationHandler implements CronHandlerInterface {
 
 		// Get all days for this month that have posts
 		$days_with_posts = array();
-		$days_in_month = cal_days_in_month( CAL_GREGORIAN, $month, $year );
+		$days_in_month = \cal_days_in_month( \CAL_GREGORIAN, $month, $year );
 		
 		for ( $day = 1; $day <= $days_in_month; $day++ ) {
 			$date = sprintf( '%04d-%02d-%02d', $year, $month, $day );
