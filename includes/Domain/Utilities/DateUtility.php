@@ -54,6 +54,6 @@ class DateUtility {
 			throw new \InvalidArgumentException( sprintf( 'Invalid month: %d. Month must be between 1 and 12.', esc_html( (string) $month ) ) );
 		}
 		
-		return (int) cal_days_in_month( CAL_GREGORIAN, $month, $year );
+		return (int) \cal_days_in_month( \CAL_GREGORIAN, $month, $year );
 	}
 }

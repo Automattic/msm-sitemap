@@ -136,7 +136,7 @@ class SitemapCleanupService {
 					continue;
 				}
 				
-				$max_day = ( (int) gmdate( 'Y' ) === $year && (int) gmdate( 'n' ) === $month ) ? (int) gmdate( 'j' ) : cal_days_in_month( CAL_GREGORIAN, $month, $year );
+				$max_day = ( (int) gmdate( 'Y' ) === $year && (int) gmdate( 'n' ) === $month ) ? (int) gmdate( 'j' ) : \cal_days_in_month( \CAL_GREGORIAN, $month, $year );
 				
 				for ( $day = 1; $day <= $max_day; $day++ ) {
 					$dates[] = sprintf( '%04d-%02d-%02d', $year, $month, $day );
@@ -146,7 +146,7 @@ class SitemapCleanupService {
 				$max_month = ( (int) gmdate( 'Y' ) === $year ) ? (int) gmdate( 'n' ) : 12;
 				
 				for ( $month = 1; $month <= $max_month; $month++ ) {
-					$max_day = ( (int) gmdate( 'Y' ) === $year && (int) gmdate( 'n' ) === $month ) ? (int) gmdate( 'j' ) : cal_days_in_month( CAL_GREGORIAN, $month, $year );
+					$max_day = ( (int) gmdate( 'Y' ) === $year && (int) gmdate( 'n' ) === $month ) ? (int) gmdate( 'j' ) : \cal_days_in_month( \CAL_GREGORIAN, $month, $year );
 					
 					for ( $day = 1; $day <= $max_day; $day++ ) {
 						$dates[] = sprintf( '%04d-%02d-%02d', $year, $month, $day );
