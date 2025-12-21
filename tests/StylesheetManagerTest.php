@@ -13,14 +13,18 @@ use Automattic\MSM_Sitemap\Infrastructure\WordPress\StylesheetManager;
 use Automattic\MSM_Sitemap\Tests\TestCase;
 
 /**
- * Unit Tests for StylesheetManager class.
+ * Tests for StylesheetManager class.
  */
 class StylesheetManagerTest extends TestCase {
 
 	/**
-	 * @var string
+	 * Get the site URL dynamically from WordPress.
+	 *
+	 * @return string
 	 */
-	private $site_url = 'http://example.org';
+	private function get_site_url(): string {
+		return home_url();
+	}
 
 	/**
 	 * Test that setup method registers the correct filters.
@@ -56,7 +60,7 @@ class StylesheetManagerTest extends TestCase {
 		$this->assertStringContainsString( 'type="text/xsl"', $reference );
 		$this->assertStringContainsString( 'href="', $reference );
 		$this->assertStringContainsString( '/wp-sitemap.xsl', $reference );
-		$this->assertStringContainsString( $this->site_url, $reference );
+		$this->assertStringContainsString( $this->get_site_url(), $reference );
 	}
 
 	/**
@@ -69,7 +73,7 @@ class StylesheetManagerTest extends TestCase {
 		$this->assertStringContainsString( 'type="text/xsl"', $reference );
 		$this->assertStringContainsString( 'href="', $reference );
 		$this->assertStringContainsString( '/wp-sitemap-index.xsl', $reference );
-		$this->assertStringContainsString( $this->site_url, $reference );
+		$this->assertStringContainsString( $this->get_site_url(), $reference );
 	}
 
 	/**
@@ -179,10 +183,11 @@ class StylesheetManagerTest extends TestCase {
 	public function test_stylesheet_references_use_correct_home_url(): void {
 		$sitemap_reference = StylesheetManager::get_sitemap_stylesheet_reference();
 		$index_reference   = StylesheetManager::get_index_stylesheet_reference();
+		$site_url          = $this->get_site_url();
 
 		// Both should use the same home URL
-		$this->assertStringContainsString( $this->site_url, $sitemap_reference );
-		$this->assertStringContainsString( $this->site_url, $index_reference );
+		$this->assertStringContainsString( $site_url, $sitemap_reference );
+		$this->assertStringContainsString( $site_url, $index_reference );
 
 		// URLs should be different
 		$this->assertStringContainsString( '/wp-sitemap.xsl', $sitemap_reference );
