@@ -18,8 +18,12 @@
         <extension class="Ergebnis\PHPUnit\SlowTestDetector\Extension"/>
     </extensions>
     <testsuites>
+        <testsuite name="unit">
+            <directory suffix="Test.php">tests/Unit</directory>
+        </testsuite>
         <testsuite name="WP_Tests">
             <directory>tests</directory>
+            <exclude>tests/Unit</exclude>
         </testsuite>
     </testsuites>
 

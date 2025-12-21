@@ -1,3 +1,25 @@
-/.phpunit.cache/
-/composer.lock
+# Dependencies
+/node_modules/
 /vendor/
+
+# Built assets
+/build/
+
+# WordPress environment
+/.wp-env.override.json
+
+# Tests
+/.phpunit.cache/
+/phpunit.xml
+/coverage/
+
+# PHPCS
+/phpcs.xml
+/.phpcs.xml
+
+# Composer
+/composer.lock
+
+# Logs
+*.log
+npm-debug.log*

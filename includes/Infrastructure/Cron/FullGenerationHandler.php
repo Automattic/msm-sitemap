@@ -9,11 +9,12 @@ declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap\Infrastructure\Cron;
 
-use Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService;
-use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
 use Automattic\MSM_Sitemap\Application\Services\SitemapService;
-use Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository;
 use Automattic\MSM_Sitemap\Domain\Contracts\CronHandlerInterface;
+use Automattic\MSM_Sitemap\Domain\Utilities\DateUtility;
+use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
+use Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService;
+use Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository;
 
 /**
  * Handler class for managing full sitemap generation via cascading cron jobs.
@@ -140,9 +141,7 @@ class FullGenerationHandler implements CronHandlerInterface {
 		$months_with_posts = array();
 		for ( $month = 1; $month <= 12; $month++ ) {
 			$start_date = sprintf( '%04d-%02d-01', $year, $month );
-			
-			// Validate month before calling cal_days_in_month to avoid ValueError in PHP 8.0+
-			$days_in_month = cal_days_in_month( CAL_GREGORIAN, $month, $year );
+			$days_in_month = DateUtility::get_days_in_month( $year, $month );
 			$end_date = sprintf( '%04d-%02d-%02d', $year, $month, $days_in_month );
 			
 			$post_repository = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository();
@@ -191,7 +190,7 @@ class FullGenerationHandler implements CronHandlerInterface {
 
 		// Get all days for this month that have posts
 		$days_with_posts = array();
-		$days_in_month = cal_days_in_month( CAL_GREGORIAN, $month, $year );
+		$days_in_month = DateUtility::get_days_in_month( $year, $month );
 		
 		for ( $day = 1; $day <= $days_in_month; $day++ ) {
 			$date = sprintf( '%04d-%02d-%02d', $year, $month, $day );

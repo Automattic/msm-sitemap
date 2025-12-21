@@ -44,16 +44,26 @@ class DateUtility {
 	/**
 	 * Get the number of days in a given month and year
 	 *
+	 * Uses cal_days_in_month if available, otherwise falls back to a date
+	 * calculation that works in environments without the calendar extension.
+	 *
 	 * @param int $year The year
 	 * @param int $month The month (1-12)
 	 * @return int Number of days in the month
 	 */
 	public static function get_days_in_month( int $year, int $month ): int {
-		// Validate month before calling cal_days_in_month to avoid ValueError in PHP 8.0+
+		// Validate month before calculation to avoid errors in PHP 8.0+
 		if ( $month < 1 || $month > 12 ) {
 			throw new \InvalidArgumentException( sprintf( 'Invalid month: %d. Month must be between 1 and 12.', esc_html( (string) $month ) ) );
 		}
-		
-		return (int) cal_days_in_month( CAL_GREGORIAN, $month, $year );
+
+		// Use cal_days_in_month if available (requires calendar extension).
+		if ( function_exists( 'cal_days_in_month' ) ) {
+			return (int) \cal_days_in_month( \CAL_GREGORIAN, $month, $year );
+		}
+
+		// Fallback: use gmdate('t') which returns days in the month.
+		// Create a timestamp for the first day of the month and get days.
+		return (int) gmdate( 't', mktime( 0, 0, 0, $month, 1, $year ) );
 	}
 }
