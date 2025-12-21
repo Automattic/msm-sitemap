@@ -10,6 +10,8 @@
 	<!-- Ignoring Files and Folders:
 		https://github.com/squizlabs/PHP_CodeSniffer/wiki/Advanced-Usage#ignoring-files-and-folders -->
 	<exclude-pattern>/vendor/</exclude-pattern>
+	<!-- Mock files for testing have intentional code patterns -->
+	<exclude-pattern>/tests/Includes/mock-wp-cli.php</exclude-pattern>
 
 	<!-- How to scan -->
 	<!-- Usage instructions: https://github.com/squizlabs/PHP_CodeSniffer/wiki/Usage -->
@@ -49,13 +51,16 @@
 		https://github.com/Automattic/VIP-Coding-Standards -->
 	<rule ref="WordPress-VIP-Go"/>
 
+	<!-- Prefix configuration: msm_sitemap_ for new code, msm_ accepted for legacy hooks -->
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
 			<property name="prefixes" type="array">
-				<element value="msm"/>
+				<element value="msm_sitemap"/>
 				<element value="Automattic\MSM_Sitemap"/>
 			</property>
 		</properties>
+		<!-- Allow legacy 'msm_' prefix for backwards compatibility -->
+		<exclude name="WordPress.NamingConventions.PrefixAllGlobals.ShortPrefixPassed"/>
 	</rule>
 
 	<rule ref="WordPress.WP.I18n">

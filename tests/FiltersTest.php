@@ -26,6 +26,7 @@ class FiltersTest extends TestCase {
 
 		// Verify post_pre_query on sitemap query_var returns empty array
 		set_query_var( 'sitemap', 'true' );
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Testing WordPress core hook.
 		$posts = apply_filters_ref_array( 'posts_pre_query', array( null, $wp_query ) );
 		$this->assertIsArray( $posts );
 		$this->assertEmpty( $posts );
@@ -45,6 +46,7 @@ class FiltersTest extends TestCase {
 				'sitemap'   => 'true',
 			) 
 		);
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Testing WordPress core hook.
 		$sitemap_posts = apply_filters_ref_array( 'posts_pre_query', array( $exp_result, $query ) );
 		$this->assertEquals( $exp_result, $sitemap_posts, 'Non-Main WP_Query is being modified from sitemap query var' );
 	}

@@ -41,19 +41,21 @@ class CoreIntegration implements WordPressIntegrationInterface {
 	 * Register WordPress hooks and filters for core sitemap integration.
 	 */
 	public function register_hooks(): void {
+		// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Using WordPress core hooks.
 		// Enable WordPress core sitemaps for stylesheet support, but prevent them from interfering with MSM
 		add_action( 'wp_sitemaps_init', array( $this, 'disable_core_providers' ), 999 );
 		add_action( 'wp_sitemaps_init', array( $this, 'remove_core_robots_hook' ), 1000 );
 		add_filter( 'wp_sitemaps_robots', '__return_empty_string' ); // Prevent core sitemaps from being added to robots.txt
-		
+
 		// Disable main query for sitemap rendering to improve performance
 		add_filter( 'posts_pre_query', array( $this, 'disable_main_query_for_sitemap_xml' ), 10, 2 );
-		
+
 		// Disable canonical redirects for sitemap files to prevent interference
 		add_filter( 'redirect_canonical', array( $this, 'disable_canonical_redirects_for_sitemap_xml' ), 10, 2 );
 
 		// Add entries to the bottom of robots.txt
 		add_filter( 'robots_txt', array( $this, 'robots_txt' ), 10, 2 );
+		// phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 
 		// Hook into post deletion/trashing to trigger sitemap updates
 		add_action( 'deleted_post', array( $this, 'handle_post_deletion' ), 10, 2 );
@@ -161,7 +163,8 @@ class CoreIntegration implements WordPressIntegrationInterface {
 		$month = get_the_date( 'm', $post );
 		$day   = get_the_date( 'd', $post );
 
-		do_action( 'msm_update_sitemap_for_year_month_date', array( $year, $month, $day ), current_time( 'timestamp' ) );
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Legacy hook name for backwards compatibility.
+		do_action( 'msm_update_sitemap_for_year_month_date', array( $year, $month, $day ), time() );
 	}
 
 	/**

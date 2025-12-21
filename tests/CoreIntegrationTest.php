@@ -26,6 +26,7 @@ class CoreIntegrationTest extends TestCase {
 		// Remove any existing hooks to start fresh
 		$core_integration = $this->get_service( CoreIntegration::class );
 		remove_action( 'wp_sitemaps_init', array( $core_integration, 'disable_core_providers' ), 999 );
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Testing WordPress core hook.
 		remove_filter( 'wp_sitemaps_robots', '__return_empty_string' );
 
 		// Call register_hooks
@@ -33,6 +34,7 @@ class CoreIntegrationTest extends TestCase {
 
 		// Verify hooks are registered (has_action/has_filter return priority, not boolean)
 		$action_priority = has_action( 'wp_sitemaps_init', array( $core_integration, 'disable_core_providers' ) );
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Testing WordPress core hook.
 		$filter_priority = has_filter( 'wp_sitemaps_robots', '__return_empty_string' );
 		$this->assertIsInt( $action_priority );
 		$this->assertIsInt( $filter_priority );
@@ -104,6 +106,7 @@ class CoreIntegrationTest extends TestCase {
 	 * Test that robots.txt filter prevents core sitemaps from being added.
 	 */
 	public function test_robots_filter_prevents_core_sitemaps(): void {
+		// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Testing WordPress core hook.
 		// Add the filter
 		add_filter( 'wp_sitemaps_robots', '__return_empty_string' );
 
@@ -113,6 +116,7 @@ class CoreIntegrationTest extends TestCase {
 
 		// Clean up
 		remove_filter( 'wp_sitemaps_robots', '__return_empty_string' );
+		// phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 	}
 
 	/**
@@ -120,7 +124,9 @@ class CoreIntegrationTest extends TestCase {
 	 */
 	public function test_core_sitemaps_enabled_for_stylesheets(): void {
 		// Verify that core sitemaps are enabled (not disabled by MSM)
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Testing WordPress core hook.
 		$this->assertTrue( apply_filters( 'wp_sitemaps_enabled', true ) );
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Testing WordPress core hook.
 		$this->assertNotFalse( apply_filters( 'wp_sitemaps_enabled', true ) );
 	}
 

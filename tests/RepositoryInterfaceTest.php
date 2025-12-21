@@ -117,6 +117,3 @@ class RepositoryInterfaceTest extends TestCase {
 		$this->assertGreaterThan( 0, count( $image_repositories ) );
 	}
 }
-
-
-

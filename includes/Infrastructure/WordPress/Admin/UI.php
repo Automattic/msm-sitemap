@@ -314,10 +314,11 @@ class UI implements WordPressIntegrationInterface {
 	 */
 	private function render_stats_section() {
 		$sitemap_update_last_run = get_option( 'msm_sitemap_update_last_run' );
-		$date_range              = $_GET['date_range'] ?? 'all';
-		$start_date              = $_GET['start_date'] ?? '';
-		$end_date                = $_GET['end_date'] ?? '';
-		$comprehensive_stats     = $this->stats_service->get_comprehensive_stats( $date_range, $start_date, $end_date );
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only admin filtering, no state modification.
+		$date_range          = isset( $_GET['date_range'] ) ? sanitize_text_field( wp_unslash( $_GET['date_range'] ) ) : 'all';
+		$start_date          = isset( $_GET['start_date'] ) ? sanitize_text_field( wp_unslash( $_GET['start_date'] ) ) : '';
+		$end_date            = isset( $_GET['end_date'] ) ? sanitize_text_field( wp_unslash( $_GET['end_date'] ) ) : '';
+		$comprehensive_stats = $this->stats_service->get_comprehensive_stats( $date_range, $start_date, $end_date );
 		$sitemap_count           = $comprehensive_stats['overview']['total_sitemaps'];
 		?>
 		<h2><?php esc_html_e( 'Sitemap Statistics', 'msm-sitemap' ); ?></h2>
@@ -328,12 +329,12 @@ class UI implements WordPressIntegrationInterface {
 				<input type="hidden" name="page" value="msm-sitemap">
 				<label for="stats-date-range"><?php esc_html_e( 'Date Range:', 'msm-sitemap' ); ?></label>
 				<select id="stats-date-range" name="date_range">
-					<option value="all" <?php selected( $_GET['date_range'] ?? 'all', 'all' ); ?>><?php esc_html_e( 'All Time', 'msm-sitemap' ); ?></option>
-					<option value="7" <?php selected( $_GET['date_range'] ?? 'all', '7' ); ?>><?php esc_html_e( 'Last 7 Days', 'msm-sitemap' ); ?></option>
-					<option value="30" <?php selected( $_GET['date_range'] ?? 'all', '30' ); ?>><?php esc_html_e( 'Last 30 Days', 'msm-sitemap' ); ?></option>
-					<option value="90" <?php selected( $_GET['date_range'] ?? 'all', '90' ); ?>><?php esc_html_e( 'Last 90 Days', 'msm-sitemap' ); ?></option>
-					<option value="180" <?php selected( $_GET['date_range'] ?? 'all', '180' ); ?>><?php esc_html_e( 'Last 6 Months', 'msm-sitemap' ); ?></option>
-					<option value="365" <?php selected( $_GET['date_range'] ?? 'all', '365' ); ?>><?php esc_html_e( 'Last 12 Months', 'msm-sitemap' ); ?></option>
+					<option value="all" <?php selected( $date_range, 'all' ); ?>><?php esc_html_e( 'All Time', 'msm-sitemap' ); ?></option>
+					<option value="7" <?php selected( $date_range, '7' ); ?>><?php esc_html_e( 'Last 7 Days', 'msm-sitemap' ); ?></option>
+					<option value="30" <?php selected( $date_range, '30' ); ?>><?php esc_html_e( 'Last 30 Days', 'msm-sitemap' ); ?></option>
+					<option value="90" <?php selected( $date_range, '90' ); ?>><?php esc_html_e( 'Last 90 Days', 'msm-sitemap' ); ?></option>
+					<option value="180" <?php selected( $date_range, '180' ); ?>><?php esc_html_e( 'Last 6 Months', 'msm-sitemap' ); ?></option>
+					<option value="365" <?php selected( $date_range, '365' ); ?>><?php esc_html_e( 'Last 12 Months', 'msm-sitemap' ); ?></option>
 					<?php
 					// Get available years from sitemap data
 					$all_sitemap_dates = $this->sitemap_repository->get_all_sitemap_dates();
@@ -350,18 +351,18 @@ class UI implements WordPressIntegrationInterface {
 					foreach ( $years as $year ) {
 						$year_option = 'year_' . $year;
 						?>
-						<option value="<?php echo esc_attr( $year_option ); ?>" <?php selected( $_GET['date_range'] ?? 'all', $year_option ); ?>><?php echo esc_html( $year ); ?></option>
+						<option value="<?php echo esc_attr( $year_option ); ?>" <?php selected( $date_range, $year_option ); ?>><?php echo esc_html( $year ); ?></option>
 						<?php
 					}
 					?>
-					<option value="custom" <?php selected( $_GET['date_range'] ?? 'all', 'custom' ); ?>><?php esc_html_e( 'Custom Range', 'msm-sitemap' ); ?></option>
+					<option value="custom" <?php selected( $date_range, 'custom' ); ?>><?php esc_html_e( 'Custom Range', 'msm-sitemap' ); ?></option>
 				</select>
-				
-				<span id="custom-date-range" style="display: <?php echo ( $_GET['date_range'] ?? 'all' ) === 'custom' ? 'inline' : 'none'; ?>; margin-left: 10px;">
+
+				<span id="custom-date-range" style="display: <?php echo 'custom' === $date_range ? 'inline' : 'none'; ?>; margin-left: 10px;">
 					<label for="start-date"><?php esc_html_e( 'From:', 'msm-sitemap' ); ?></label>
-					<input type="date" id="start-date" name="start_date" value="<?php echo esc_attr( $_GET['start_date'] ?? '' ); ?>" style="margin-right: 10px;">
+					<input type="date" id="start-date" name="start_date" value="<?php echo esc_attr( $start_date ); ?>" style="margin-right: 10px;">
 					<label for="end-date"><?php esc_html_e( 'To:', 'msm-sitemap' ); ?></label>
-					<input type="date" id="end-date" name="end_date" value="<?php echo esc_attr( $_GET['end_date'] ?? '' ); ?>" style="margin-right: 10px;">
+					<input type="date" id="end-date" name="end_date" value="<?php echo esc_attr( $end_date ); ?>" style="margin-right: 10px;">
 					<button type="submit" class="button button-secondary"><?php esc_html_e( 'Apply', 'msm-sitemap' ); ?></button>
 				</span>
 			</form>
@@ -372,6 +373,7 @@ class UI implements WordPressIntegrationInterface {
 			<?php $this->render_detailed_stats( $comprehensive_stats ); ?>
 		</div>
 		<?php
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	/**
@@ -710,7 +712,7 @@ class UI implements WordPressIntegrationInterface {
 		$current_frequency = $this->settings_service->get_setting( 'cron_frequency', '15min' );
 		
 		// Calculate relative time for next check
-		$next_check_relative = $next_scheduled ? human_time_diff( current_time( 'timestamp' ), $next_scheduled ) : '';
+		$next_check_relative = $next_scheduled ? human_time_diff( time(), $next_scheduled ) : '';
 		
 		// Get last check time (when cron last ran)
 		$last_check = get_option( 'msm_sitemap_last_check' );
@@ -723,16 +725,16 @@ class UI implements WordPressIntegrationInterface {
 			}
 		}
 		$last_check_timestamp = is_numeric( $last_check ) ? (int) $last_check : strtotime( $last_check );
-		$last_check_text      = $last_check ? gmdate( 'Y-m-d H:i:s T', $last_check_timestamp ) : __( 'Never', 'msm-sitemap' );
-		$last_check_relative  = $last_check ? human_time_diff( $last_check_timestamp, current_time( 'timestamp' ) ) : '';
-		
+		$last_check_text      = $last_check ? wp_date( 'Y-m-d H:i:s T', $last_check_timestamp ) : __( 'Never', 'msm-sitemap' );
+		$last_check_relative  = $last_check ? human_time_diff( $last_check_timestamp, time() ) : '';
+
 		// Get last update time (when sitemaps were actually generated)
 		$last_update = get_option( 'msm_sitemap_last_update' );
 		// For existing installations, we don't have historical data about when sitemaps were actually generated
 		// So we'll show "Never" for now, and it will be populated on the next cron run that generates sitemaps
 		$last_update_timestamp = is_numeric( $last_update ) ? (int) $last_update : strtotime( $last_update );
-		$last_update_text      = $last_update ? gmdate( 'Y-m-d H:i:s T', $last_update_timestamp ) : __( 'Never', 'msm-sitemap' );
-		$last_update_relative  = $last_update ? human_time_diff( $last_update_timestamp, current_time( 'timestamp' ) ) : '';
+		$last_update_text      = $last_update ? wp_date( 'Y-m-d H:i:s T', $last_update_timestamp ) : __( 'Never', 'msm-sitemap' );
+		$last_update_relative  = $last_update ? human_time_diff( $last_update_timestamp, time() ) : '';
 		?>
 		<h2><?php esc_html_e( 'Automatic Sitemap Updates', 'msm-sitemap' ); ?></h2>
 		
@@ -800,9 +802,9 @@ class UI implements WordPressIntegrationInterface {
 						/* translators: %s: Time until next check (e.g., "2 hours", "3 days") */
 						printf( esc_html__( 'in %s', 'msm-sitemap' ), esc_html( $next_check_relative ) );
 						?>
-						<br><small style="color: #666;">(<?php echo esc_html( gmdate( 'Y-m-d H:i:s T', $next_scheduled ) ); ?>)</small>
+						<br><small style="color: #666;">(<?php echo esc_html( wp_date( 'Y-m-d H:i:s T', $next_scheduled ) ); ?>)</small>
 					<?php else : ?>
-						<?php echo esc_html( gmdate( 'Y-m-d H:i:s T', $next_scheduled ) ); ?>
+						<?php echo esc_html( wp_date( 'Y-m-d H:i:s T', $next_scheduled ) ); ?>
 					<?php endif; ?>
 				</div>
 			</div>

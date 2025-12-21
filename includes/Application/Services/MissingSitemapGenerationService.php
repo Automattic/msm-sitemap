@@ -89,7 +89,7 @@ class MissingSitemapGenerationService {
 		}
 
 		// Update last check timestamp (when generation was initiated)
-		update_option( 'msm_sitemap_last_check', current_time( 'timestamp' ) );
+		update_option( 'msm_sitemap_last_check', time() );
 
 		// Decide whether to use cron or direct generation
 		if ( $this->cron_scheduler->is_cron_enabled() ) {
@@ -149,11 +149,11 @@ class MissingSitemapGenerationService {
 		
 		// Update last update timestamp if sitemaps were actually generated
 		if ( $generated_count > 0 ) {
-			update_option( 'msm_sitemap_last_update', current_time( 'timestamp' ) );
+			update_option( 'msm_sitemap_last_update', time() );
 		}
 		
 		// Always update the last run timestamp since we checked for missing/outdated sitemaps
-		update_option( 'msm_sitemap_update_last_run', current_time( 'timestamp' ) );
+		update_option( 'msm_sitemap_update_last_run', time() );
 		
 		$message = sprintf( 
 			/* translators: %d is the number of sitemaps generated */

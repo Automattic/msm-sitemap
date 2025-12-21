@@ -138,10 +138,10 @@ class PostRepository implements PostRepositoryInterface {
 	public function get_modified_posts_since( $since_timestamp = false ): array {
 		global $wpdb;
 
-		$date = date( 'Y-m-d H:i:s', ( time() - 3600 ) ); // posts changed within the last hour
+		$date = gmdate( 'Y-m-d H:i:s', ( time() - 3600 ) ); // posts changed within the last hour
 
 		if ( $since_timestamp ) {
-			$date = date( 'Y-m-d H:i:s', (int) $since_timestamp );
+			$date = gmdate( 'Y-m-d H:i:s', (int) $since_timestamp );
 		}
 
 		$post_types    = $this->get_supported_post_types();
@@ -165,6 +165,7 @@ class PostRepository implements PostRepositoryInterface {
 		 * @param string $post_types_in A comma-separated list of post types to include in the query.
 		 * @param string $date          The date to use as the cutoff for the query.
 		 */
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Legacy hook name for backwards compatibility.
 		$query = apply_filters( 'msm_pre_get_last_modified_posts', $query, $post_types_in, $date );
 
 		return $wpdb->get_results( $query );
@@ -339,7 +340,7 @@ class PostRepository implements PostRepositoryInterface {
 		}
 
 		if ( null !== $oldest_post_date_year ) {
-			$current_year = (int) date( 'Y' );
+			$current_year = (int) gmdate( 'Y' );
 			return range( (int) $oldest_post_date_year, $current_year );
 		}
 

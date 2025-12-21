@@ -75,6 +75,7 @@ class SitemapEndpointHandler {
 		}
 
 		// Parse request parameters
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Public sitemap endpoint, no state modification.
 		$req_year = get_query_var( 'sitemap-year' );
 		if ( empty( $req_year ) ) {
 			$req_year = ( isset( $_GET['yyyy'] ) ) ? intval( $_GET['yyyy'] ) : false;
@@ -82,6 +83,7 @@ class SitemapEndpointHandler {
 
 		$req_month = ( isset( $_GET['mm'] ) ) ? intval( $_GET['mm'] ) : false;
 		$req_day   = ( isset( $_GET['dd'] ) ) ? intval( $_GET['dd'] ) : false;
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		// Determine what type of sitemap to serve
 		if ( ( false === $req_year || is_numeric( $req_year ) ) && false === $req_month && false === $req_day ) {

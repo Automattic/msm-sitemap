@@ -66,7 +66,7 @@ class SitemapValidationService {
 
 		// Check for required elements
 		$urlset = $dom->getElementsByTagName( 'urlset' );
-		if ( $urlset->length === 0 ) {
+		if ( 0 === $urlset->length ) {
 			$errors[] = 'Root element must be <urlset>';
 		} elseif ( $urlset->length > 1 ) {
 			$warnings[] = 'Multiple <urlset> elements found (should be only one)';
@@ -74,13 +74,13 @@ class SitemapValidationService {
 
 		// Check for required namespace
 		$root_element = $dom->documentElement;
-		if ( $root_element && $root_element->namespaceURI !== 'http://www.sitemaps.org/schemas/sitemap/0.9' ) {
+		if ( $root_element && 'http://www.sitemaps.org/schemas/sitemap/0.9' !== $root_element->namespaceURI ) {
 			$errors[] = 'Missing or invalid sitemap namespace';
 		}
 
 		// Check for URLs
 		$urls = $dom->getElementsByTagName( 'url' );
-		if ( $urls->length === 0 ) {
+		if ( 0 === $urls->length ) {
 			$errors[] = 'Sitemap must contain at least one <url> entry';
 		}
 
@@ -166,7 +166,7 @@ class SitemapValidationService {
 			}
 		}
 
-		if ( $total_sitemaps === 0 ) {
+		if ( 0 === $total_sitemaps ) {
 			return SitemapValidationResult::failure(
 				'No sitemaps found to validate.',
 				'no_sitemaps_found'
@@ -201,7 +201,7 @@ class SitemapValidationService {
 
 		// Check for loc element
 		$loc = $url_element->getElementsByTagName( 'loc' );
-		if ( $loc->length === 0 ) {
+		if ( 0 === $loc->length ) {
 			$errors[] = 'URL missing required <loc> element';
 		} elseif ( $loc->length > 1 ) {
 			$errors[] = 'URL has multiple <loc> elements (should be only one)';

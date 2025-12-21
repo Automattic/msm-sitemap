@@ -50,7 +50,7 @@ class FullSitemapGenerationService {
 		$sitemap_create_in_progress = (bool) get_option( 'msm_generation_in_progress' );
 		
 		// Update last check timestamp (when manual generation was initiated)
-		update_option( 'msm_sitemap_last_check', current_time( 'timestamp' ) );
+		update_option( 'msm_sitemap_last_check', time() );
 		
 		// Delegate to the full generation service
 		$this->cron_scheduler->handle_full_generation();

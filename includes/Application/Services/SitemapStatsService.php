@@ -290,8 +290,8 @@ class SitemapStatsService {
 		sort( $values );
 		
 		$count  = count( $values );
-		$median = $count % 2 === 0 
-			? ( $values[ $count / 2 - 1 ] + $values[ $count / 2 ] ) / 2 
+		$median = 0 === $count % 2
+			? ( $values[ $count / 2 - 1 ] + $values[ $count / 2 ] ) / 2
 			: $values[ ( $count - 1 ) / 2 ];
 
 		// Create distribution buckets

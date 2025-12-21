@@ -109,7 +109,7 @@ class ImageRepository implements ImageRepositoryInterface {
 	 */
 	public function delete( $id ): bool {
 		$result = wp_delete_post( (int) $id, true );
-		return $result !== false;
+		return false !== $result;
 	}
 
 	/**
