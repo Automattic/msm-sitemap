@@ -9,8 +9,6 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests\Unit;
 
-use PHPUnit\Framework\TestCase;
-
 /**
  * Placeholder test class.
  *
