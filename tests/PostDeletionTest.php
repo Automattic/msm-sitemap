@@ -104,17 +104,19 @@ class PostDeletionTest extends TestCase {
 			'post_author'  => 1,
 			'post_date'    => 'invalid-date',
 		);
-		
+
 		$post_id = wp_insert_post( $post_data );
-		
+
 		// Call handle_post_deletion
 		CoreIntegration::handle_post_deletion( $post_id, null );
-		
+
 		// Method should not throw an error
 		$this->assertTrue( true );
-		
-		// Clean up
-		wp_delete_post( $post_id, true );
+
+		// Clean up - only delete if post was actually created (WP 6.9+ returns 0 for invalid posts)
+		if ( $post_id > 0 ) {
+			wp_delete_post( $post_id, true );
+		}
 	}
 
 	/**

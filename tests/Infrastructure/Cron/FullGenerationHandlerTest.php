@@ -92,24 +92,28 @@ class FullGenerationHandlerTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * Test that month processing schedules days correctly
 	 */
 	public function test_schedules_days_for_processing_when_month_processed(): void {
-		// Create posts for the days we expect to be processed (1 to current day) in the correct year
-		$current_day = (int) gmdate( 'j' );
+		// Get current date components
+		$current_year  = (int) gmdate( 'Y' );
+		$current_month = (int) gmdate( 'n' );
+		$current_day   = (int) gmdate( 'j' );
+
+		// Create posts for the days we expect to be processed (1 to current day)
 		for ( $day = 1; $day <= $current_day; $day++ ) {
-			$date = '2024-' . gmdate( 'm' ) . '-' . sprintf( '%02d', $day ) . ' 10:00:00';
+			$date = sprintf( '%04d-%02d-%02d 10:00:00', $current_year, $current_month, $day );
 			$this->create_dummy_post( $date );
 		}
 
-		// Call month processing directly instead of using fake_cron
-		FullGenerationHandler::generate_sitemap_for_year_month( 2024, 8 );
+		// Call month processing directly for the current year and month
+		FullGenerationHandler::generate_sitemap_for_year_month( $current_year, $current_month );
 
 		$days_being_processed = (array) get_option( 'msm_days_to_process', array() );
-		$expected_days = range( 1, gmdate( 'j' ) );
+		$expected_days        = range( 1, $current_day );
 
 		// Validate Current Month only processes days that have passed and today.
-		$this->assertSame( 
-			array_diff( $expected_days, $days_being_processed ), 
-			array_diff( $days_being_processed, $expected_days ), 
-			"Current Month shouldn't process days in future." 
+		$this->assertSame(
+			array_diff( $expected_days, $days_being_processed ),
+			array_diff( $days_being_processed, $expected_days ),
+			"Current Month shouldn't process days in future."
 		);
 
 		// Test that the cron system is working by verifying we can process multiple days
