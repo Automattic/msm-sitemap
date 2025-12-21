@@ -45,6 +45,7 @@
 		"lint-ci": [
 			"@php ./vendor/php-parallel-lint/php-parallel-lint/parallel-lint . -e php --exclude vendor --exclude .git --checkstyle"
 		],
+		"test:unit": "@php ./vendor/bin/phpunit --testsuite unit --no-coverage",
 		"test:integration": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/msm-sitemap ./vendor/bin/phpunit --testsuite WP_Tests --no-coverage",
 		"test:integration-ms": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/msm-sitemap /bin/bash -c 'WP_MULTISITE=1 ./vendor/bin/phpunit --testsuite WP_Tests --no-coverage'"
 	},
