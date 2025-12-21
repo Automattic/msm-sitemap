@@ -43,6 +43,7 @@ class IndexesTest extends TestCase {
 		// Check that we have a single instance of sitemap.xml in robots.txt
 		// We can't actually use the core function since it outputs headers,
 		// but we only care about our stuff output to a public blog.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Testing WordPress core hook.
 		preg_match_all( '|sitemap\.xml|', apply_filters( 'robots_txt', '', true ), $matches );
 
 		// Check that we've indexed the proper total number of URLs.
@@ -60,6 +61,7 @@ class IndexesTest extends TestCase {
 		// Check that we have a single instance of sitemap.xml in robots.txt
 		// We can't actually use the core function since it outputs headers,
 		// but we only care about our stuff output to a public blog.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Testing WordPress core hook.
 		preg_match_all( '|sitemap-(\d{4})\.xml|', apply_filters( 'robots_txt', '', true ), $matches );
 
 		// Check that we've indexed the proper total number of URLs.

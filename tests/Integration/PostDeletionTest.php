@@ -141,19 +141,19 @@ class PostDeletionTest extends TestCase {
 				$action_args   = array( $date_array, $time );
 			},
 			10,
-			2 
+			2
 		);
-		
+
 		// Call handle_post_deletion
 		$core_integration = $this->get_service( CoreIntegration::class );
 		$core_integration->handle_post_deletion( $post_id, null );
-		
+
 		// Verify the action was called
 		$this->assertTrue( $action_called );
 		$this->assertIsArray( $action_args );
 		$this->assertCount( 2, $action_args );
 		$this->assertEquals( array( 2018, 1, 4 ), $action_args[0] );
-		
+
 		// Clean up
 		remove_all_actions( 'msm_update_sitemap_for_year_month_date' );
 	}

@@ -79,7 +79,7 @@ class SitemapQueryService {
 				return array();
 			}
 
-			$max_day = ( $year == date( 'Y' ) && $month == date( 'n' ) ) ? (int) date( 'j' ) : DateUtility::get_days_in_month( $year, $month );
+			$max_day = ( gmdate( 'Y' ) == $year && gmdate( 'n' ) == $month ) ? (int) gmdate( 'j' ) : DateUtility::get_days_in_month( $year, $month );
 			
 			for ( $day = 1; $day <= $max_day; $day++ ) {
 				$date_str = sprintf( '%04d-%02d-%02d', $year, $month, $day );
@@ -89,10 +89,10 @@ class SitemapQueryService {
 			}
 		} elseif ( isset( $query['year'] ) ) {
 			$year      = $query['year'];
-			$max_month = ( $year == date( 'Y' ) ) ? (int) date( 'n' ) : 12;
+			$max_month = ( gmdate( 'Y' ) == $year ) ? (int) gmdate( 'n' ) : 12;
 
 			for ( $month = 1; $month <= $max_month; $month++ ) {
-				$max_day = ( $year == date( 'Y' ) && $month == date( 'n' ) ) ? (int) date( 'j' ) : DateUtility::get_days_in_month( $year, $month );
+				$max_day = ( gmdate( 'Y' ) == $year && gmdate( 'n' ) == $month ) ? (int) gmdate( 'j' ) : DateUtility::get_days_in_month( $year, $month );
 
 				for ( $day = 1; $day <= $max_day; $day++ ) {
 					$date_str = sprintf( '%04d-%02d-%02d', $year, $month, $day );
@@ -132,17 +132,17 @@ class SitemapQueryService {
 					continue;
 				}
 
-				$max_day = ( $year == date( 'Y' ) && $month == date( 'n' ) ) ? (int) date( 'j' ) : DateUtility::get_days_in_month( $year, $month );
+				$max_day = ( gmdate( 'Y' ) == $year && gmdate( 'n' ) == $month ) ? (int) gmdate( 'j' ) : DateUtility::get_days_in_month( $year, $month );
 
 				for ( $day = 1; $day <= $max_day; $day++ ) {
 					$all_dates[] = sprintf( '%04d-%02d-%02d', $year, $month, $day );
 				}
 			} elseif ( isset( $query['year'] ) ) {
 				$year      = $query['year'];
-				$max_month = ( $year == date( 'Y' ) ) ? (int) date( 'n' ) : 12;
+				$max_month = ( gmdate( 'Y' ) == $year ) ? (int) gmdate( 'n' ) : 12;
 
 				for ( $month = 1; $month <= $max_month; $month++ ) {
-					$max_day = ( $year == date( 'Y' ) && $month == date( 'n' ) ) ? (int) date( 'j' ) : DateUtility::get_days_in_month( $year, $month );
+					$max_day = ( gmdate( 'Y' ) == $year && gmdate( 'n' ) == $month ) ? (int) gmdate( 'j' ) : DateUtility::get_days_in_month( $year, $month );
 
 					for ( $day = 1; $day <= $max_day; $day++ ) {
 						$all_dates[] = sprintf( '%04d-%02d-%02d', $year, $month, $day );

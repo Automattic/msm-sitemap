@@ -566,7 +566,7 @@ class CLICommand extends WP_CLI_Command {
 			}
 			
 			if ( 'json' === $format ) {
-				WP_CLI::log( json_encode( $stats, JSON_PRETTY_PRINT ) );
+				WP_CLI::log( wp_json_encode( $stats, JSON_PRETTY_PRINT ) );
 			} else {
 				// For table format, show overview by default
 				$overview_stats = $stats['overview'] ?? $stats;
@@ -749,7 +749,7 @@ class CLICommand extends WP_CLI_Command {
 		$items  = array(
 			array(
 				'enabled'           => $status['enabled'] ? 'Yes' : 'No',
-				'next_scheduled'    => $status['next_scheduled'] ? date( 'Y-m-d H:i:s T', $status['next_scheduled'] ) : 'Not scheduled',
+				'next_scheduled'    => $status['next_scheduled'] ? wp_date( 'Y-m-d H:i:s T', $status['next_scheduled'] ) : 'Not scheduled',
 				'blog_public'       => $status['blog_public'] ? 'Yes' : 'No',
 				'generating'        => $status['generating'] ? 'Yes' : 'No',
 				'halted'            => $status['halted'] ? 'Yes' : 'No',
@@ -757,7 +757,6 @@ class CLICommand extends WP_CLI_Command {
 			),
 		);
 		format_items( $format, $items, $fields );
-		return;
 	}
 
 	/**
@@ -911,7 +910,7 @@ class CLICommand extends WP_CLI_Command {
 		$format   = $assoc_args['format'] ?? 'table';
 		
 		if ( 'json' === $format ) {
-			WP_CLI::log( json_encode( $settings, JSON_PRETTY_PRINT ) );
+			WP_CLI::log( wp_json_encode( $settings, JSON_PRETTY_PRINT ) );
 		} else {
 			$items = array();
 			foreach ( $settings as $key => $value ) {
@@ -1124,7 +1123,7 @@ class CLICommand extends WP_CLI_Command {
 			if ( $month < 1 || $month > 12 ) {
 				WP_CLI::error( __( 'Invalid month. Please specify a month between 1 and 12.', 'msm-sitemap' ) );
 			}
-			if ( $year < 1970 || $year > (int) date( 'Y' ) ) {
+			if ( $year < 1970 || $year > (int) gmdate( 'Y' ) ) {
 				WP_CLI::error( __( 'Invalid year. Please specify a year between 1970 and the current year.', 'msm-sitemap' ) );
 			}
 			return array(
@@ -1135,7 +1134,7 @@ class CLICommand extends WP_CLI_Command {
 			);
 		} elseif ( count( $parts ) === 1 && strlen( $parts[0] ) === 4 ) {
 			$year = (int) $parts[0];
-			if ( $year < 1970 || $year > (int) date( 'Y' ) ) {
+			if ( $year < 1970 || $year > (int) gmdate( 'Y' ) ) {
 				WP_CLI::error( __( 'Invalid year. Please specify a year between 1970 and the current year.', 'msm-sitemap' ) );
 			}
 			return array( array( 'year' => $year ) );

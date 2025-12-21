@@ -308,7 +308,7 @@ class FullGenerationHandler implements CronHandlerInterface {
 
 		// Update last update timestamp if sitemap was successfully created
 		if ( $result->is_success() ) {
-			update_option( 'msm_sitemap_last_update', current_time( 'timestamp' ) );
+			update_option( 'msm_sitemap_last_update', time() );
 		}
 
 		// Continue to next day or cascade up
@@ -386,7 +386,7 @@ class FullGenerationHandler implements CronHandlerInterface {
 			delete_option( 'msm_sitemap_stop_generation' );
 			
 			// Update the last run timestamp
-			update_option( 'msm_sitemap_update_last_run', current_time( 'timestamp' ) );
+			update_option( 'msm_sitemap_update_last_run', time() );
 		}
 	}
 }

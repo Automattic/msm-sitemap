@@ -101,13 +101,13 @@ class REST_API_Controller implements WordPressIntegrationInterface {
 		SitemapGenerator $sitemap_generator,
 		GenerateSitemapUseCase $generate_use_case
 	) {
-		$this->sitemap_service       = $sitemap_service;
-		$this->stats_service         = $stats_service;
-		$this->validation_service    = $validation_service;
-		$this->export_service        = $export_service;
+		$this->sitemap_service         = $sitemap_service;
+		$this->stats_service           = $stats_service;
+		$this->validation_service      = $validation_service;
+		$this->export_service          = $export_service;
 		$this->cron_management_service = $cron_management_service;
-		$this->sitemap_generator     = $sitemap_generator;
-		$this->generate_use_case     = $generate_use_case;
+		$this->sitemap_generator       = $sitemap_generator;
+		$this->generate_use_case       = $generate_use_case;
 	}
 
 	/**

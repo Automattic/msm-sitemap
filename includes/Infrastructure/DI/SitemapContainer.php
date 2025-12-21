@@ -441,10 +441,10 @@ class SitemapContainer {
 		$this->register(
 			MissingSitemapGenerationHandler::class,
 			function ( $container ) {
-				$cron_scheduler   = $container->get( CronSchedulingService::class );
-				$missing_service  = $container->get( MissingSitemapDetectionService::class );
+				$cron_scheduler    = $container->get( CronSchedulingService::class );
+				$missing_service   = $container->get( MissingSitemapDetectionService::class );
 				$generate_use_case = $container->get( GenerateSitemapUseCase::class );
-				$cleanup_service  = $container->get( SitemapCleanupService::class );
+				$cleanup_service   = $container->get( SitemapCleanupService::class );
 				return new MissingSitemapGenerationHandler( $cron_scheduler, $missing_service, $generate_use_case, $cleanup_service );
 			} 
 		);
@@ -474,14 +474,14 @@ class SitemapContainer {
 		$this->register(
 			REST_API_Controller::class,
 			function ( $container ) {
-				$sitemap_service       = $container->get( SitemapService::class );
-				$stats_service         = $container->get( SitemapStatsService::class );
-				$validation_service    = $container->get( SitemapValidationService::class );
-				$export_service        = $container->get( SitemapExportService::class );
+				$sitemap_service         = $container->get( SitemapService::class );
+				$stats_service           = $container->get( SitemapStatsService::class );
+				$validation_service      = $container->get( SitemapValidationService::class );
+				$export_service          = $container->get( SitemapExportService::class );
 				$cron_management_service = $container->get( CronManagementService::class );
-				$content_types_service = $container->get( ContentTypesService::class );
-				$sitemap_generator     = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
-				$generate_use_case     = $container->get( GenerateSitemapUseCase::class );
+				$content_types_service   = $container->get( ContentTypesService::class );
+				$sitemap_generator       = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
+				$generate_use_case       = $container->get( GenerateSitemapUseCase::class );
 			
 				return new REST_API_Controller(
 					$sitemap_service,

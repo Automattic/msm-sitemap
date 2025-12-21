@@ -222,7 +222,7 @@ class SitemapGenerationService {
 
 		$message = implode( ', ', $message_parts );
 
-		if ( $failure_count === 0 && $success_count > 0 ) {
+		if ( 0 === $failure_count && $success_count > 0 ) {
 			return SitemapOperationResult::success(
 				$success_count,
 				$message
