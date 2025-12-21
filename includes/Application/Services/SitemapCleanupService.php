@@ -10,6 +10,7 @@ declare( strict_types=1 );
 namespace Automattic\MSM_Sitemap\Application\Services;
 
 use Automattic\MSM_Sitemap\Domain\Contracts\SitemapRepositoryInterface;
+use Automattic\MSM_Sitemap\Domain\Utilities\DateUtility;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository;
 
 /**
@@ -129,25 +130,25 @@ class SitemapCleanupService {
 			} elseif ( isset( $query['year'], $query['month'] ) ) {
 				$year = $query['year'];
 				$month = $query['month'];
-				
-				// Validate month before calling cal_days_in_month to avoid ValueError in PHP 8.0+
+
+				// Validate month to avoid ValueError in PHP 8.0+
 				if ( 1 > $month || 12 < $month ) {
 					// Invalid month - skip this query
 					continue;
 				}
-				
-				$max_day = ( (int) gmdate( 'Y' ) === $year && (int) gmdate( 'n' ) === $month ) ? (int) gmdate( 'j' ) : \cal_days_in_month( \CAL_GREGORIAN, $month, $year );
-				
+
+				$max_day = ( (int) gmdate( 'Y' ) === $year && (int) gmdate( 'n' ) === $month ) ? (int) gmdate( 'j' ) : DateUtility::get_days_in_month( $year, $month );
+
 				for ( $day = 1; $day <= $max_day; $day++ ) {
 					$dates[] = sprintf( '%04d-%02d-%02d', $year, $month, $day );
 				}
 			} elseif ( isset( $query['year'] ) ) {
 				$year = $query['year'];
 				$max_month = ( (int) gmdate( 'Y' ) === $year ) ? (int) gmdate( 'n' ) : 12;
-				
+
 				for ( $month = 1; $month <= $max_month; $month++ ) {
-					$max_day = ( (int) gmdate( 'Y' ) === $year && (int) gmdate( 'n' ) === $month ) ? (int) gmdate( 'j' ) : \cal_days_in_month( \CAL_GREGORIAN, $month, $year );
-					
+					$max_day = ( (int) gmdate( 'Y' ) === $year && (int) gmdate( 'n' ) === $month ) ? (int) gmdate( 'j' ) : DateUtility::get_days_in_month( $year, $month );
+
 					for ( $day = 1; $day <= $max_day; $day++ ) {
 						$dates[] = sprintf( '%04d-%02d-%02d', $year, $month, $day );
 					}

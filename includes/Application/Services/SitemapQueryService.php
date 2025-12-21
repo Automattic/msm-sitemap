@@ -9,6 +9,8 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Application\Services;
 
+use Automattic\MSM_Sitemap\Domain\Utilities\DateUtility;
+
 /**
  * Service for handling sitemap date queries and matching logic.
  */
@@ -71,13 +73,13 @@ class SitemapQueryService {
 			$year = $query['year'];
 			$month = $query['month'];
 			
-			// Validate month before calling cal_days_in_month to avoid ValueError in PHP 8.0+
+			// Validate month to avoid ValueError in PHP 8.0+
 			if ( $month < 1 || $month > 12 ) {
 				// Invalid month - return empty array
 				return array();
 			}
-			
-			$max_day = ( $year == date( 'Y' ) && $month == date( 'n' ) ) ? date( 'j' ) : \cal_days_in_month( \CAL_GREGORIAN, $month, $year );
+
+			$max_day = ( $year == date( 'Y' ) && $month == date( 'n' ) ) ? (int) date( 'j' ) : DateUtility::get_days_in_month( $year, $month );
 			
 			for ( $day = 1; $day <= $max_day; $day++ ) {
 				$date_str = sprintf( '%04d-%02d-%02d', $year, $month, $day );
@@ -87,11 +89,11 @@ class SitemapQueryService {
 			}
 		} elseif ( isset( $query['year'] ) ) {
 			$year = $query['year'];
-			$max_month = ( $year == date( 'Y' ) ) ? date( 'n' ) : 12;
-			
+			$max_month = ( $year == date( 'Y' ) ) ? (int) date( 'n' ) : 12;
+
 			for ( $month = 1; $month <= $max_month; $month++ ) {
-				$max_day = ( $year == date( 'Y' ) && $month == date( 'n' ) ) ? date( 'j' ) : \cal_days_in_month( \CAL_GREGORIAN, $month, $year );
-				
+				$max_day = ( $year == date( 'Y' ) && $month == date( 'n' ) ) ? (int) date( 'j' ) : DateUtility::get_days_in_month( $year, $month );
+
 				for ( $day = 1; $day <= $max_day; $day++ ) {
 					$date_str = sprintf( '%04d-%02d-%02d', $year, $month, $day );
 					if ( in_array( $date_str, $available_dates, true ) ) {
@@ -100,7 +102,7 @@ class SitemapQueryService {
 				}
 			}
 		}
-		
+
 		return $matching_dates;
 	}
 
@@ -119,25 +121,25 @@ class SitemapQueryService {
 			} elseif ( isset( $query['year'], $query['month'] ) ) {
 				$year = $query['year'];
 				$month = $query['month'];
-				
-				// Validate month before calling cal_days_in_month to avoid ValueError in PHP 8.0+
+
+				// Validate month to avoid ValueError in PHP 8.0+
 				if ( $month < 1 || $month > 12 ) {
 					// Invalid month - skip this query
 					continue;
 				}
-				
-				$max_day = ( $year == date( 'Y' ) && $month == date( 'n' ) ) ? date( 'j' ) : \cal_days_in_month( \CAL_GREGORIAN, $month, $year );
-				
+
+				$max_day = ( $year == date( 'Y' ) && $month == date( 'n' ) ) ? (int) date( 'j' ) : DateUtility::get_days_in_month( $year, $month );
+
 				for ( $day = 1; $day <= $max_day; $day++ ) {
 					$all_dates[] = sprintf( '%04d-%02d-%02d', $year, $month, $day );
 				}
 			} elseif ( isset( $query['year'] ) ) {
 				$year = $query['year'];
-				$max_month = ( $year == date( 'Y' ) ) ? date( 'n' ) : 12;
-				
+				$max_month = ( $year == date( 'Y' ) ) ? (int) date( 'n' ) : 12;
+
 				for ( $month = 1; $month <= $max_month; $month++ ) {
-					$max_day = ( $year == date( 'Y' ) && $month == date( 'n' ) ) ? date( 'j' ) : \cal_days_in_month( \CAL_GREGORIAN, $month, $year );
-					
+					$max_day = ( $year == date( 'Y' ) && $month == date( 'n' ) ) ? (int) date( 'j' ) : DateUtility::get_days_in_month( $year, $month );
+
 					for ( $day = 1; $day <= $max_day; $day++ ) {
 						$all_dates[] = sprintf( '%04d-%02d-%02d', $year, $month, $day );
 					}
