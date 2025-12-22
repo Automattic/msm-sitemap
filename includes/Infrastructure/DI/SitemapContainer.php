@@ -474,15 +474,17 @@ class SitemapContainer {
 		$this->register(
 			REST_API_Controller::class,
 			function ( $container ) {
-				$sitemap_service         = $container->get( SitemapService::class );
-				$stats_service           = $container->get( SitemapStatsService::class );
-				$validation_service      = $container->get( SitemapValidationService::class );
-				$export_service          = $container->get( SitemapExportService::class );
-				$cron_management_service = $container->get( CronManagementService::class );
-				$content_types_service   = $container->get( ContentTypesService::class );
-				$sitemap_generator       = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
-				$generate_use_case       = $container->get( GenerateSitemapUseCase::class );
-			
+				$sitemap_service            = $container->get( SitemapService::class );
+				$stats_service              = $container->get( SitemapStatsService::class );
+				$validation_service         = $container->get( SitemapValidationService::class );
+				$export_service             = $container->get( SitemapExportService::class );
+				$cron_management_service    = $container->get( CronManagementService::class );
+				$content_types_service      = $container->get( ContentTypesService::class );
+				$sitemap_generator          = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
+				$generate_use_case          = $container->get( GenerateSitemapUseCase::class );
+				$missing_detection_service  = $container->get( MissingSitemapDetectionService::class );
+				$missing_generation_service = $container->get( MissingSitemapGenerationService::class );
+
 				return new REST_API_Controller(
 					$sitemap_service,
 					$stats_service,
@@ -490,9 +492,11 @@ class SitemapContainer {
 					$export_service,
 					$cron_management_service,
 					$sitemap_generator,
-					$generate_use_case
+					$generate_use_case,
+					$missing_detection_service,
+					$missing_generation_service
 				);
-			} 
+			}
 		);
 
 		$this->register(
