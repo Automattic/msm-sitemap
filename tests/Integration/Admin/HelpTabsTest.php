@@ -9,7 +9,7 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests\Admin;
 
-use Automattic\MSM_Sitemap\Admin\HelpTabs;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\HelpTabs;
 use Automattic\MSM_Sitemap\Tests\TestCase;
 
 /**

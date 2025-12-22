@@ -15,14 +15,14 @@ jQuery(document).ready(function($) {
         const originalText = $button.val();
 
         // Show loading state
-        $button.prop('disabled', true).val(msmSitemapAjax.generatingText || 'Generating...');
+        $button.prop('disabled', true).val(msmSitemapAdmin.generatingText || 'Generating...');
         $content.html('<span class="dashicons dashicons-update" style="animation: spin 1s linear infinite;"></span> ' +
-            (msmSitemapAjax.generatingText || 'Generating missing sitemaps...'));
+            (msmSitemapAdmin.generatingText || 'Generating missing sitemaps...'));
 
-        fetch(msmSitemapAjax.restUrl + 'generate-missing', {
+        fetch(msmSitemapAdmin.restUrl + 'generate-missing', {
             method: 'POST',
             headers: {
-                'X-WP-Nonce': msmSitemapAjax.nonce,
+                'X-WP-Nonce': msmSitemapAdmin.nonce,
                 'Content-Type': 'application/json'
             }
         })
@@ -34,11 +34,11 @@ jQuery(document).ready(function($) {
         .then(function(result) {
             if (result.ok && result.data.success) {
                 $content.html('<span style="color: #46b450;">✅ ' +
-                    (result.data.message || msmSitemapAjax.generationSuccessText || 'Generation started successfully.') +
+                    (result.data.message || msmSitemapAdmin.generationSuccessText || 'Generation started successfully.') +
                     '</span>');
             } else {
                 $content.html('<span style="color: #dc3232;">❌ ' +
-                    (result.data.message || msmSitemapAjax.generationErrorText || 'Failed to start generation.') +
+                    (result.data.message || msmSitemapAdmin.generationErrorText || 'Failed to start generation.') +
                     '</span>');
             }
 
@@ -48,7 +48,7 @@ jQuery(document).ready(function($) {
         .catch(function(error) {
             console.error('Error generating missing sitemaps:', error);
             $content.html('<span style="color: #dc3232;">❌ ' +
-                (msmSitemapAjax.generationErrorText || 'Failed to start generation. Please try again.') +
+                (msmSitemapAdmin.generationErrorText || 'Failed to start generation. Please try again.') +
                 '</span>');
             $button.prop('disabled', false).val(originalText);
         });
@@ -62,10 +62,10 @@ jQuery(document).ready(function($) {
             return;
         }
 
-        fetch(msmSitemapAjax.restUrl + 'missing', {
+        fetch(msmSitemapAdmin.restUrl + 'missing', {
             method: 'GET',
             headers: {
-                'X-WP-Nonce': msmSitemapAjax.nonce,
+                'X-WP-Nonce': msmSitemapAdmin.nonce,
                 'Content-Type': 'application/json'
             }
         })
@@ -102,6 +102,8 @@ jQuery(document).ready(function($) {
                 }
             } else {
                 $button.removeClass('button-primary').addClass('button-secondary').prop('disabled', true);
+                // Reset button text to default when no missing sitemaps
+                $button.val(msmSitemapAdmin.generateMissingText || 'Generate Missing Sitemaps');
             }
         })
         .catch(function(error) {
@@ -125,11 +127,11 @@ jQuery(document).ready(function($) {
         if (content.style.display === 'none') {
             content.style.display = 'block';
             icon.className = 'dashicons dashicons-arrow-up-alt2';
-            text.textContent = msmSitemapAjax.hideDetailedStatsText || 'Hide Detailed Statistics';
+            text.textContent = msmSitemapAdmin.hideDetailedStatsText || 'Hide Detailed Statistics';
         } else {
             content.style.display = 'none';
             icon.className = 'dashicons dashicons-arrow-down-alt2';
-            text.textContent = msmSitemapAjax.showDetailedStatsText || 'Show Detailed Statistics';
+            text.textContent = msmSitemapAdmin.showDetailedStatsText || 'Show Detailed Statistics';
         }
     }
 
@@ -165,17 +167,17 @@ jQuery(document).ready(function($) {
         if (content.style.display === 'none') {
             content.style.display = 'grid';
             icon.className = 'dashicons dashicons-arrow-up-alt2';
-            text.textContent = msmSitemapAjax.hideText || 'Hide';
+            text.textContent = msmSitemapAdmin.hideText || 'Hide';
         } else {
             content.style.display = 'none';
             icon.className = 'dashicons dashicons-arrow-down-alt2';
-            text.textContent = msmSitemapAjax.showText || 'Show';
+            text.textContent = msmSitemapAdmin.showText || 'Show';
         }
     }
 
     // Confirm reset action
     function confirmReset() {
-        return confirm(msmSitemapAjax.confirmResetText || 'Are you sure you want to reset all sitemap data? This action cannot be undone and will delete all sitemaps, metadata, and statistics.');
+        return confirm(msmSitemapAdmin.confirmResetText || 'Are you sure you want to reset all sitemap data? This action cannot be undone and will delete all sitemaps, metadata, and statistics.');
     }
 
     // Toggle images settings visibility
