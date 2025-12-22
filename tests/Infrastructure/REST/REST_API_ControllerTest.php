@@ -14,6 +14,8 @@ use Automattic\MSM_Sitemap\Application\Services\SitemapService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapStatsService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapValidationService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapExportService;
+use Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService;
+use Automattic\MSM_Sitemap\Application\Services\MissingSitemapGenerationService;
 use WP_REST_Request;
 use WP_Test_REST_TestCase;
 
@@ -36,13 +38,15 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 		parent::setUp();
 
 		// Create mock services
-		$sitemap_service         = $this->createMock( SitemapService::class );
-		$stats_service           = $this->createMock( SitemapStatsService::class );
-		$validation_service      = $this->createMock( SitemapValidationService::class );
-		$export_service          = $this->createMock( SitemapExportService::class );
-		$cron_management_service = $this->createMock( \Automattic\MSM_Sitemap\Application\Services\CronManagementService::class );
-		$sitemap_generator       = $this->createMock( \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator::class );
-		$generate_use_case       = $this->createMock( \Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase::class );
+		$sitemap_service            = $this->createMock( SitemapService::class );
+		$stats_service              = $this->createMock( SitemapStatsService::class );
+		$validation_service         = $this->createMock( SitemapValidationService::class );
+		$export_service             = $this->createMock( SitemapExportService::class );
+		$cron_management_service    = $this->createMock( \Automattic\MSM_Sitemap\Application\Services\CronManagementService::class );
+		$sitemap_generator          = $this->createMock( \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator::class );
+		$generate_use_case          = $this->createMock( \Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase::class );
+		$missing_detection_service  = $this->createMock( MissingSitemapDetectionService::class );
+		$missing_generation_service = $this->createMock( MissingSitemapGenerationService::class );
 
 		$this->controller = new REST_API_Controller(
 			$sitemap_service,
@@ -51,7 +55,9 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 			$export_service,
 			$cron_management_service,
 			$sitemap_generator,
-			$generate_use_case
+			$generate_use_case,
+			$missing_detection_service,
+			$missing_generation_service
 		);
 	}
 
@@ -62,12 +68,14 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 		// Trigger the rest_api_init action to properly register routes
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		do_action( 'rest_api_init' );
-		
+
 		// Verify that routes are registered by checking if they exist
 		$routes = rest_get_server()->get_routes();
 		$this->assertArrayHasKey( '/msm-sitemap/v1/sitemaps', $routes );
 		$this->assertArrayHasKey( '/msm-sitemap/v1/stats', $routes );
 		$this->assertArrayHasKey( '/msm-sitemap/v1/health', $routes );
+		$this->assertArrayHasKey( '/msm-sitemap/v1/missing', $routes );
+		$this->assertArrayHasKey( '/msm-sitemap/v1/generate-missing', $routes );
 	}
 
 	/**
@@ -202,7 +210,9 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 			$this->createMock( SitemapExportService::class ),
 			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\CronManagementService::class ),
 			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator::class ),
-			$this->createMock( \Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase::class )
+			$this->createMock( \Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase::class ),
+			$this->createMock( MissingSitemapDetectionService::class ),
+			$this->createMock( MissingSitemapGenerationService::class )
 		);
 
 		$response = $controller->get_sitemap( $request );
@@ -252,7 +262,9 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 			$this->createMock( SitemapExportService::class ),
 			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\CronManagementService::class ),
 			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator::class ),
-			$this->createMock( \Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase::class )
+			$this->createMock( \Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase::class ),
+			$this->createMock( MissingSitemapDetectionService::class ),
+			$this->createMock( MissingSitemapGenerationService::class )
 		);
 
 		$response = $controller->get_sitemap( $request );
@@ -260,5 +272,188 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 		$this->assertWPError( $response );
 		$this->assertEquals( 'rest_not_found', $response->get_error_code() );
 		$this->assertEquals( 404, $response->get_error_data()['status'] );
+	}
+
+	/**
+	 * Test get missing sitemaps endpoint.
+	 */
+	public function test_get_missing_sitemaps(): void {
+		$request = new WP_REST_Request( 'GET', '/msm-sitemap/v1/missing' );
+
+		// Mock the detection service
+		$missing_detection_service = $this->createMock( MissingSitemapDetectionService::class );
+		$missing_detection_service->method( 'get_missing_sitemaps' )
+			->willReturn(
+				array(
+					'missing_dates_count'     => 3,
+					'recently_modified_count' => 1,
+				)
+			);
+		$missing_detection_service->method( 'get_missing_content_summary' )
+			->willReturn(
+				array(
+					'has_missing' => true,
+					'message'     => '3 missing sitemaps detected.',
+				)
+			);
+
+		// Mock the cron management service
+		$cron_management_service = $this->createMock( \Automattic\MSM_Sitemap\Application\Services\CronManagementService::class );
+		$cron_management_service->method( 'get_cron_status' )
+			->willReturn( array( 'enabled' => true ) );
+
+		$controller = new REST_API_Controller(
+			$this->createMock( SitemapService::class ),
+			$this->createMock( SitemapStatsService::class ),
+			$this->createMock( SitemapValidationService::class ),
+			$this->createMock( SitemapExportService::class ),
+			$cron_management_service,
+			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator::class ),
+			$this->createMock( \Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase::class ),
+			$missing_detection_service,
+			$this->createMock( MissingSitemapGenerationService::class )
+		);
+
+		$response = $controller->get_missing_sitemaps( $request );
+
+		$this->assertNotWPError( $response );
+		$this->assertEquals( 200, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertArrayHasKey( 'missing_dates_count', $data );
+		$this->assertArrayHasKey( 'recently_modified_count', $data );
+		$this->assertArrayHasKey( 'summary', $data );
+		$this->assertArrayHasKey( 'button_text', $data );
+		$this->assertEquals( 3, $data['missing_dates_count'] );
+		$this->assertEquals( 1, $data['recently_modified_count'] );
+		$this->assertTrue( $data['summary']['has_missing'] );
+	}
+
+	/**
+	 * Test get missing sitemaps with no missing sitemaps.
+	 */
+	public function test_get_missing_sitemaps_none_missing(): void {
+		$request = new WP_REST_Request( 'GET', '/msm-sitemap/v1/missing' );
+
+		// Mock the detection service with no missing sitemaps
+		$missing_detection_service = $this->createMock( MissingSitemapDetectionService::class );
+		$missing_detection_service->method( 'get_missing_sitemaps' )
+			->willReturn(
+				array(
+					'missing_dates_count'     => 0,
+					'recently_modified_count' => 0,
+				)
+			);
+		$missing_detection_service->method( 'get_missing_content_summary' )
+			->willReturn(
+				array(
+					'has_missing' => false,
+					'message'     => 'No missing sitemaps detected.',
+				)
+			);
+
+		// Mock the cron management service
+		$cron_management_service = $this->createMock( \Automattic\MSM_Sitemap\Application\Services\CronManagementService::class );
+		$cron_management_service->method( 'get_cron_status' )
+			->willReturn( array( 'enabled' => true ) );
+
+		$controller = new REST_API_Controller(
+			$this->createMock( SitemapService::class ),
+			$this->createMock( SitemapStatsService::class ),
+			$this->createMock( SitemapValidationService::class ),
+			$this->createMock( SitemapExportService::class ),
+			$cron_management_service,
+			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator::class ),
+			$this->createMock( \Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase::class ),
+			$missing_detection_service,
+			$this->createMock( MissingSitemapGenerationService::class )
+		);
+
+		$response = $controller->get_missing_sitemaps( $request );
+
+		$this->assertNotWPError( $response );
+		$data = $response->get_data();
+		$this->assertEquals( 0, $data['missing_dates_count'] );
+		$this->assertFalse( $data['summary']['has_missing'] );
+	}
+
+	/**
+	 * Test generate missing sitemaps endpoint success.
+	 */
+	public function test_generate_missing_sitemaps_success(): void {
+		$request = new WP_REST_Request( 'POST', '/msm-sitemap/v1/generate-missing' );
+
+		// Mock the generation service
+		$missing_generation_service = $this->createMock( MissingSitemapGenerationService::class );
+		$missing_generation_service->method( 'generate_missing_sitemaps' )
+			->willReturn(
+				array(
+					'success'         => true,
+					'message'         => 'Scheduled generation of 3 missing sitemaps.',
+					'method'          => 'cron',
+					'generated_count' => 3,
+				)
+			);
+
+		$controller = new REST_API_Controller(
+			$this->createMock( SitemapService::class ),
+			$this->createMock( SitemapStatsService::class ),
+			$this->createMock( SitemapValidationService::class ),
+			$this->createMock( SitemapExportService::class ),
+			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\CronManagementService::class ),
+			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator::class ),
+			$this->createMock( \Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase::class ),
+			$this->createMock( MissingSitemapDetectionService::class ),
+			$missing_generation_service
+		);
+
+		$response = $controller->generate_missing_sitemaps( $request );
+
+		$this->assertNotWPError( $response );
+		$this->assertEquals( 200, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertTrue( $data['success'] );
+		$this->assertEquals( 'Scheduled generation of 3 missing sitemaps.', $data['message'] );
+		$this->assertEquals( 'cron', $data['method'] );
+		$this->assertEquals( 3, $data['generated_count'] );
+	}
+
+	/**
+	 * Test generate missing sitemaps endpoint failure.
+	 */
+	public function test_generate_missing_sitemaps_failure(): void {
+		$request = new WP_REST_Request( 'POST', '/msm-sitemap/v1/generate-missing' );
+
+		// Mock the generation service with failure
+		$missing_generation_service = $this->createMock( MissingSitemapGenerationService::class );
+		$missing_generation_service->method( 'generate_missing_sitemaps' )
+			->willReturn(
+				array(
+					'success' => false,
+					'message' => 'No missing sitemaps to generate.',
+				)
+			);
+
+		$controller = new REST_API_Controller(
+			$this->createMock( SitemapService::class ),
+			$this->createMock( SitemapStatsService::class ),
+			$this->createMock( SitemapValidationService::class ),
+			$this->createMock( SitemapExportService::class ),
+			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\CronManagementService::class ),
+			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator::class ),
+			$this->createMock( \Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase::class ),
+			$this->createMock( MissingSitemapDetectionService::class ),
+			$missing_generation_service
+		);
+
+		$response = $controller->generate_missing_sitemaps( $request );
+
+		$this->assertNotWPError( $response );
+		$this->assertEquals( 400, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertFalse( $data['success'] );
+		$this->assertEquals( 'No missing sitemaps to generate.', $data['message'] );
 	}
 }

@@ -117,8 +117,6 @@ class UI implements WordPressIntegrationInterface {
 	 */
 	public function register_hooks(): void {
 		add_action( 'admin_menu', array( $this, 'register_admin_menu' ) );
-		add_action( 'wp_ajax_msm-sitemap-get-sitemap-counts', array( $this, 'ajax_get_sitemap_counts' ) );
-		$this->init_ajax_handlers();
 	}
 
 	/**
@@ -159,14 +157,17 @@ class UI implements WordPressIntegrationInterface {
 			true
 		);
 
-		// Localize script for AJAX and UI interactions
+		// Localize script for REST API and UI interactions.
 		wp_localize_script(
 			'msm-sitemap-admin',
-			'msmSitemapAjax',
+			'msmSitemapAdmin',
 			array(
-				'ajaxurl'               => admin_url( 'admin-ajax.php' ),
-				'nonce'                 => wp_create_nonce( 'msm_sitemap_ajax_nonce' ),
+				'restUrl'               => rest_url( 'msm-sitemap/v1/' ),
+				'nonce'                 => wp_create_nonce( 'wp_rest' ),
 				'generateMissingText'   => __( 'Generate Missing Sitemaps', 'msm-sitemap' ),
+				'generatingText'        => __( 'Generating...', 'msm-sitemap' ),
+				'generationSuccessText' => __( 'Generation started successfully.', 'msm-sitemap' ),
+				'generationErrorText'   => __( 'Failed to start generation. Please try again.', 'msm-sitemap' ),
 				'confirmResetText'      => __( 'Are you sure you want to reset all sitemap data? This action cannot be undone and will delete all sitemaps, metadata, and statistics.', 'msm-sitemap' ),
 				'showText'              => __( 'Show', 'msm-sitemap' ),
 				'hideText'              => __( 'Hide', 'msm-sitemap' ),
@@ -175,11 +176,6 @@ class UI implements WordPressIntegrationInterface {
 			)
 		);
 	}
-
-	/**
-	 * Handle AJAX request for sitemap counts and statistics
-	 */
-
 
 	/**
 	 * Render the complete admin options page
@@ -211,42 +207,6 @@ class UI implements WordPressIntegrationInterface {
 			
 		</div>
 		<?php
-	}
-
-	/**
-	 * Initialize AJAX handlers
-	 */
-	private function init_ajax_handlers(): void {
-		add_action( 'wp_ajax_msm_get_missing_sitemaps', array( $this, 'ajax_get_missing_sitemaps' ) );
-	}
-
-	/**
-	 * AJAX handler for getting missing sitemaps count
-	 */
-	public function ajax_get_missing_sitemaps(): void {
-		check_ajax_referer( 'msm_sitemap_ajax_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'msm-sitemap' ) );
-		}
-
-		$missing_data = $this->missing_detection_service->get_missing_sitemaps();
-		$summary      = $this->missing_detection_service->get_missing_content_summary();
-
-		// Determine button text based on cron status
-		$cron_status = $this->cron_scheduler->get_cron_status();
-		$button_text = $cron_status['enabled'] 
-			? __( 'Generate Missing Sitemaps', 'msm-sitemap' )
-			: __( 'Generate Missing Sitemaps (Direct)', 'msm-sitemap' );
-
-		wp_send_json_success(
-			array(
-				'missing_dates_count'     => $missing_data['missing_dates_count'],
-				'recently_modified_count' => $missing_data['recently_modified_count'],
-				'summary'                 => $summary,
-				'button_text'             => $button_text,
-			)
-		);
 	}
 
 	/**
