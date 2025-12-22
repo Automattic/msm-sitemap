@@ -1,63 +1,112 @@
 /**
  * MSM Sitemap Admin JavaScript
- * Handles AJAX loading of missing sitemaps count and UI interactions
+ * Handles REST API loading of missing sitemaps count and UI interactions
  */
 
 jQuery(document).ready(function($) {
     'use strict';
 
-    // Load missing sitemaps count via AJAX
+    // Generate missing sitemaps via REST API
+    function generateMissingSitemaps(e) {
+        e.preventDefault();
+
+        const $button = $('#generate-missing-button');
+        const $content = $('#missing-sitemaps-content');
+        const originalText = $button.val();
+
+        // Show loading state
+        $button.prop('disabled', true).val(msmSitemapAjax.generatingText || 'Generating...');
+        $content.html('<span class="dashicons dashicons-update" style="animation: spin 1s linear infinite;"></span> ' +
+            (msmSitemapAjax.generatingText || 'Generating missing sitemaps...'));
+
+        fetch(msmSitemapAjax.restUrl + 'generate-missing', {
+            method: 'POST',
+            headers: {
+                'X-WP-Nonce': msmSitemapAjax.nonce,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(function(response) {
+            return response.json().then(function(data) {
+                return { ok: response.ok, data: data };
+            });
+        })
+        .then(function(result) {
+            if (result.ok && result.data.success) {
+                $content.html('<span style="color: #46b450;">✅ ' +
+                    (result.data.message || msmSitemapAjax.generationSuccessText || 'Generation started successfully.') +
+                    '</span>');
+            } else {
+                $content.html('<span style="color: #dc3232;">❌ ' +
+                    (result.data.message || msmSitemapAjax.generationErrorText || 'Failed to start generation.') +
+                    '</span>');
+            }
+
+            // Refresh the missing sitemaps status after a short delay
+            setTimeout(loadMissingSitemapsCount, 2000);
+        })
+        .catch(function(error) {
+            console.error('Error generating missing sitemaps:', error);
+            $content.html('<span style="color: #dc3232;">❌ ' +
+                (msmSitemapAjax.generationErrorText || 'Failed to start generation. Please try again.') +
+                '</span>');
+            $button.prop('disabled', false).val(originalText);
+        });
+    }
+
+    // Load missing sitemaps count via REST API
     function loadMissingSitemapsCount() {
         const $content = $('#missing-sitemaps-content');
-        
+
         if ($content.length === 0) {
             return;
         }
 
-        $.ajax({
-            url: msmSitemapAjax.ajaxurl,
-            type: 'POST',
-            data: {
-                action: 'msm_get_missing_sitemaps',
-                nonce: msmSitemapAjax.nonce
-            },
-            success: function(response) {
-                if (response.success) {
-                    const data = response.data;
-                    const summary = data.summary;
-                    
-                    let html = '';
-                    
-                    if (summary.has_missing) {
-                        html += '<span style="color: #dc3232; font-weight: bold;">';
-                        html += '🔍 ' + summary.message;
-                        html += '</span>';
-                    } else {
-                        html += '<span style="color: #46b450;">';
-                        html += '✅ ' + summary.message;
-                        html += '</span>';
-                    }
-                    
-                    $content.html(html);
-                    
-                    // Update button state
-                    const $button = $('#generate-missing-button');
-                    if (summary.has_missing) {
-                        $button.removeClass('button-secondary').addClass('button-primary').prop('disabled', false);
-                        // Update button text based on cron status
-                        if (data.button_text) {
-                            $button.val(data.button_text);
-                        }
-                    } else {
-                        $button.removeClass('button-primary').addClass('button-secondary').prop('disabled', true);
-                    }
-                } else {
-                    $content.html('<p style="margin: 0 0 15px 0; font-size: 13px; color: #dc3232;">Error loading missing sitemaps data.</p>');
-                }
-            },
-            error: function() {
-                $content.html('<p style="margin: 0 0 15px 0; font-size: 13px; color: #dc3232;">Failed to load missing sitemaps data. Please refresh the page.</p>');
+        fetch(msmSitemapAjax.restUrl + 'missing', {
+            method: 'GET',
+            headers: {
+                'X-WP-Nonce': msmSitemapAjax.nonce,
+                'Content-Type': 'application/json'
             }
+        })
+        .then(function(response) {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(function(data) {
+            const summary = data.summary;
+
+            let html = '';
+
+            if (summary.has_missing) {
+                html += '<span style="color: #dc3232; font-weight: bold;">';
+                html += '🔍 ' + summary.message;
+                html += '</span>';
+            } else {
+                html += '<span style="color: #46b450;">';
+                html += '✅ ' + summary.message;
+                html += '</span>';
+            }
+
+            $content.html(html);
+
+            // Update button state
+            const $button = $('#generate-missing-button');
+            if (summary.has_missing) {
+                $button.removeClass('button-secondary').addClass('button-primary').prop('disabled', false);
+                // Update button text based on cron status
+                if (data.button_text) {
+                    $button.val(data.button_text);
+                }
+            } else {
+                $button.removeClass('button-primary').addClass('button-secondary').prop('disabled', true);
+            }
+        })
+        .catch(function(error) {
+            console.error('Error loading missing sitemaps:', error);
+            $content.html('<p style="margin: 0 0 15px 0; font-size: 13px; color: #dc3232;">Failed to load missing sitemaps data. Please refresh the page.</p>');
         });
     }
 
@@ -143,6 +192,15 @@ jQuery(document).ready(function($) {
 
     // Initialize event listeners
     function initializeEventListeners() {
+        // Generate missing sitemaps button - intercept form submit
+        const generateButton = document.getElementById('generate-missing-button');
+        if (generateButton) {
+            const form = generateButton.closest('form');
+            if (form) {
+                form.addEventListener('submit', generateMissingSitemaps);
+            }
+        }
+
         // Stats date range change
         const statsDateRange = document.getElementById('stats-date-range');
         if (statsDateRange) {

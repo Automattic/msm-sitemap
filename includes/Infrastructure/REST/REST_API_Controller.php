@@ -14,6 +14,8 @@ use Automattic\MSM_Sitemap\Application\Services\SitemapStatsService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapValidationService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapExportService;
 use Automattic\MSM_Sitemap\Application\Services\CronManagementService;
+use Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService;
+use Automattic\MSM_Sitemap\Application\Services\MissingSitemapGenerationService;
 
 use Automattic\MSM_Sitemap\Application\Services\SitemapGenerator;
 use Automattic\MSM_Sitemap\Application\DTOs\SitemapOperationResult;
@@ -82,6 +84,20 @@ class REST_API_Controller implements WordPressIntegrationInterface {
 	private GenerateSitemapUseCase $generate_use_case;
 
 	/**
+	 * The missing sitemap detection service.
+	 *
+	 * @var MissingSitemapDetectionService
+	 */
+	private MissingSitemapDetectionService $missing_detection_service;
+
+	/**
+	 * The missing sitemap generation service.
+	 *
+	 * @var MissingSitemapGenerationService
+	 */
+	private MissingSitemapGenerationService $missing_generation_service;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SitemapService $sitemap_service The sitemap service.
@@ -91,6 +107,8 @@ class REST_API_Controller implements WordPressIntegrationInterface {
 	 * @param CronManagementService $cron_management_service The cron management service.
 	 * @param SitemapGenerator $sitemap_generator The sitemap generator.
 	 * @param GenerateSitemapUseCase $generate_use_case The generate sitemap use case.
+	 * @param MissingSitemapDetectionService $missing_detection_service The missing sitemap detection service.
+	 * @param MissingSitemapGenerationService $missing_generation_service The missing sitemap generation service.
 	 */
 	public function __construct(
 		SitemapService $sitemap_service,
@@ -99,15 +117,19 @@ class REST_API_Controller implements WordPressIntegrationInterface {
 		SitemapExportService $export_service,
 		CronManagementService $cron_management_service,
 		SitemapGenerator $sitemap_generator,
-		GenerateSitemapUseCase $generate_use_case
+		GenerateSitemapUseCase $generate_use_case,
+		MissingSitemapDetectionService $missing_detection_service,
+		MissingSitemapGenerationService $missing_generation_service
 	) {
-		$this->sitemap_service         = $sitemap_service;
-		$this->stats_service           = $stats_service;
-		$this->validation_service      = $validation_service;
-		$this->export_service          = $export_service;
-		$this->cron_management_service = $cron_management_service;
-		$this->sitemap_generator       = $sitemap_generator;
-		$this->generate_use_case       = $generate_use_case;
+		$this->sitemap_service            = $sitemap_service;
+		$this->stats_service              = $stats_service;
+		$this->validation_service         = $validation_service;
+		$this->export_service             = $export_service;
+		$this->cron_management_service    = $cron_management_service;
+		$this->sitemap_generator          = $sitemap_generator;
+		$this->generate_use_case          = $generate_use_case;
+		$this->missing_detection_service  = $missing_detection_service;
+		$this->missing_generation_service = $missing_generation_service;
 	}
 
 	/**
@@ -281,6 +303,19 @@ class REST_API_Controller implements WordPressIntegrationInterface {
 				array(
 					'methods'             => 'POST',
 					'callback'            => array( $this, 'reset_cron' ),
+					'permission_callback' => array( $this, 'check_manage_options_permission' ),
+				),
+			)
+		);
+
+		// Missing sitemap detection endpoint
+		register_rest_route(
+			'msm-sitemap/v1',
+			'/missing',
+			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => array( $this, 'get_missing_sitemaps' ),
 					'permission_callback' => array( $this, 'check_manage_options_permission' ),
 				),
 			)
@@ -1169,7 +1204,7 @@ class REST_API_Controller implements WordPressIntegrationInterface {
 	 */
 	public function reset_cron( WP_REST_Request $request ) {
 		$result = $this->cron_management_service->reset_cron();
-		
+
 		$status_code = $result['success'] ? 200 : 400;
 
 		$response = rest_ensure_response( $result );
@@ -1177,7 +1212,57 @@ class REST_API_Controller implements WordPressIntegrationInterface {
 		return $response;
 	}
 
+	/**
+	 * Get missing sitemaps status.
+	 *
+	 * @param WP_REST_Request $request The request object.
+	 * @return WP_REST_Response The response object.
+	 */
+	public function get_missing_sitemaps( WP_REST_Request $request ) {
+		$missing_data = $this->missing_detection_service->get_missing_sitemaps();
+		$summary      = $this->missing_detection_service->get_missing_content_summary();
 
+		// Determine button text based on cron status
+		$cron_status = $this->cron_management_service->get_cron_status();
+		$button_text = $cron_status['enabled']
+			? __( 'Generate Missing Sitemaps', 'msm-sitemap' )
+			: __( 'Generate Missing Sitemaps (Direct)', 'msm-sitemap' );
+
+		$response_data = array(
+			'missing_dates_count'     => $missing_data['missing_dates_count'],
+			'recently_modified_count' => $missing_data['recently_modified_count'],
+			'summary'                 => $summary,
+			'button_text'             => $button_text,
+		);
+
+		return rest_ensure_response( $response_data );
+	}
+
+	/**
+	 * Generate missing sitemaps.
+	 *
+	 * @param WP_REST_Request $request The request object.
+	 * @return WP_REST_Response The response object.
+	 */
+	public function generate_missing_sitemaps( WP_REST_Request $request ) {
+		$result = $this->missing_generation_service->generate_missing_sitemaps();
+
+		$response_data = array(
+			'success' => $result['success'],
+			'message' => $result['message'] ?? '',
+			'method'  => $result['method'] ?? '',
+		);
+
+		if ( isset( $result['generated_count'] ) ) {
+			$response_data['generated_count'] = $result['generated_count'];
+		}
+
+		$status_code = $result['success'] ? 200 : 400;
+
+		$response = rest_ensure_response( $response_data );
+		$response->set_status( $status_code );
+		return $response;
+	}
 
 	/**
 	 * Recount URLs for sitemaps.
