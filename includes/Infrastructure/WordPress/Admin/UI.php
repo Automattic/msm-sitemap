@@ -157,10 +157,10 @@ class UI implements WordPressIntegrationInterface {
 			true
 		);
 
-		// Localize script for REST API and UI interactions
+		// Localize script for REST API and UI interactions.
 		wp_localize_script(
 			'msm-sitemap-admin',
-			'msmSitemapAjax',
+			'msmSitemapAdmin',
 			array(
 				'restUrl'               => rest_url( 'msm-sitemap/v1/' ),
 				'nonce'                 => wp_create_nonce( 'wp_rest' ),
