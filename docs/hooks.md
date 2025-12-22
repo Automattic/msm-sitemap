@@ -96,6 +96,34 @@ function my_filter_sitemap_index( array $sitemaps, $year ) : array {
 }
 ```
 
+### Control Sitemap Availability on Non-Public Sites
+
+**Business case:**
+By default, sitemaps are only available when `blog_public` is set to `1`. However, you may need sitemaps accessible on staging or development environments that aren't marked as public, without affecting other SEO-related features tied to `blog_public`. This filter provides granular control over sitemap availability independently of the site's public status.
+
+```php
+add_filter( 'msm_sitemap_is_enabled', 'my_enable_sitemaps_on_staging' );
+/**
+ * Enable sitemaps on staging environments regardless of blog_public setting.
+ *
+ * @param bool $is_enabled Whether sitemaps are enabled (default: based on blog_public).
+ * @return bool True to enable sitemaps, false to disable.
+ */
+function my_enable_sitemaps_on_staging( bool $is_enabled ): bool {
+    // Enable sitemaps on staging environments
+    if ( wp_get_environment_type() === 'staging' ) {
+        return true;
+    }
+
+    // Or disable sitemaps during maintenance even on public sites
+    if ( defined( 'WP_MAINTENANCE_MODE' ) && WP_MAINTENANCE_MODE ) {
+        return false;
+    }
+
+    return $is_enabled;
+}
+```
+
 ### Override Cron Status (Testing)
 
 **Business case:**
@@ -112,7 +140,7 @@ add_filter( 'msm_sitemap_cron_enabled', 'my_override_cron_status' );
 function my_override_cron_status( bool $enabled ): bool {
     // Force cron to be enabled for testing
     return true;
-    
+
     // Or force it to be disabled
     // return false;
 }
