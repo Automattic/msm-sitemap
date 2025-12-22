@@ -30,6 +30,34 @@ class Site {
 	}
 
 	/**
+	 * Check if MSM Sitemaps are enabled.
+	 *
+	 * By default, sitemaps are enabled when the site is public. This method
+	 * provides a filter to allow enabling sitemaps on non-public sites
+	 * (e.g., staging environments) without affecting the broader blog_public
+	 * setting that may impact other SEO-related features.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return bool True if sitemaps are enabled, false otherwise.
+	 */
+	public static function are_sitemaps_enabled(): bool {
+		$is_public = self::is_public();
+
+		/**
+		 * Filters whether MSM Sitemaps are enabled.
+		 *
+		 * Allows enabling sitemaps on non-public sites (e.g., staging environments)
+		 * without affecting the broader blog_public setting.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param bool $is_enabled Whether sitemaps are enabled. Default is based on blog_public.
+		 */
+		return (bool) apply_filters( 'msm_sitemap_is_enabled', $is_public );
+	}
+
+	/**
 	 * Get the home URL for the site.
 	 *
 	 * Returns the home URL of the site, which is typically used for
