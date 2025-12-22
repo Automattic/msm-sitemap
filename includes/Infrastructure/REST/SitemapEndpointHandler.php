@@ -66,10 +66,10 @@ class SitemapEndpointHandler {
 	 * Handle sitemap requests and output appropriate responses.
 	 */
 	public function handle_sitemap_request(): void {
-		// Check if site is public
-		if ( ! Site::is_public() ) {
-			$this->send_sitemap_error_response( 
-				__( 'Sorry, this site is not public so sitemaps are not available.', 'msm-sitemap' )
+		// Check if sitemaps are enabled
+		if ( ! Site::are_sitemaps_enabled() ) {
+			$this->send_sitemap_error_response(
+				__( 'Sorry, sitemaps are not available on this site.', 'msm-sitemap' )
 			);
 			return;
 		}
