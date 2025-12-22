@@ -185,8 +185,8 @@ class UI implements WordPressIntegrationInterface {
 			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'msm-sitemap' ) );
 		}
 
-		// Check if blog is public
-		if ( ! Site::is_public() ) {
+		// Check if sitemaps are enabled
+		if ( ! Site::are_sitemaps_enabled() ) {
 			$this->render_private_site_message();
 			return;
 		}
