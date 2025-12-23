@@ -9,20 +9,20 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests;
 
-use Automattic\MSM_Sitemap\Infrastructure\Cron\CronScheduler;
+use Automattic\MSM_Sitemap\Application\Services\CronManagementService;
 
 /**
- * Unit Tests for Cron_Service class
+ * Unit Tests for Cron Management Service
  */
 class CronServiceTest extends TestCase {
 
 	/**
-	 * Get a CronScheduler instance for testing.
+	 * Get a CronManagementService instance for testing.
 	 *
-	 * @return CronScheduler
+	 * @return CronManagementService
 	 */
-	private function get_cron_scheduler(): \Automattic\MSM_Sitemap\Infrastructure\Cron\CronScheduler {
-		return $this->get_service( CronScheduler::class );
+	private function get_cron_management(): CronManagementService {
+		return $this->get_service( CronManagementService::class );
 	}
 
 	/**
@@ -31,7 +31,7 @@ class CronServiceTest extends TestCase {
 	public function setUp(): void {
 		parent::setUp();
 		// Clear any existing cron options
-		delete_option( CronScheduler::CRON_ENABLED_OPTION );
+		delete_option( CronManagementService::CRON_ENABLED_OPTION );
 		wp_unschedule_hook( 'msm_cron_update_sitemap' );
 	}
 
@@ -40,7 +40,7 @@ class CronServiceTest extends TestCase {
 	 */
 	public function tearDown(): void {
 		// Clean up cron options and events
-		delete_option( CronScheduler::CRON_ENABLED_OPTION );
+		delete_option( CronManagementService::CRON_ENABLED_OPTION );
 		wp_unschedule_hook( 'msm_cron_update_sitemap' );
 		parent::tearDown();
 	}
@@ -51,13 +51,13 @@ class CronServiceTest extends TestCase {
 	public function test_enable_cron(): void {
 		// Remove the filter that forces cron enabled in tests
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
-		$result = $this->get_cron_scheduler()->enable_cron();
-		
-		$this->assertTrue( $result );
-		$this->assertTrue( (bool) get_option( CronScheduler::CRON_ENABLED_OPTION ) );
+
+		$result = $this->get_cron_management()->enable_cron();
+
+		$this->assertTrue( $result['success'] );
+		$this->assertTrue( (bool) get_option( CronManagementService::CRON_ENABLED_OPTION ) );
 		$this->assertNotFalse( wp_next_scheduled( 'msm_cron_update_sitemap' ) );
-		
+
 		// Restore the filter for other tests
 		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 	}
@@ -68,16 +68,16 @@ class CronServiceTest extends TestCase {
 	public function test_enable_cron_when_already_enabled(): void {
 		// Remove the filter that forces cron enabled in tests
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
+
 		// Enable cron first
-		$this->get_cron_scheduler()->enable_cron();
-		
+		$this->get_cron_management()->enable_cron();
+
 		// Try to enable again
-		$result = $this->get_cron_scheduler()->enable_cron();
-		
-		$this->assertFalse( $result );
-		$this->assertTrue( (bool) get_option( CronScheduler::CRON_ENABLED_OPTION ) );
-		
+		$result = $this->get_cron_management()->enable_cron();
+
+		$this->assertFalse( $result['success'] );
+		$this->assertTrue( (bool) get_option( CronManagementService::CRON_ENABLED_OPTION ) );
+
 		// Restore the filter for other tests
 		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 	}
@@ -87,12 +87,12 @@ class CronServiceTest extends TestCase {
 	 */
 	public function test_disable_cron(): void {
 		// Enable cron first
-		$this->get_cron_scheduler()->enable_cron();
-		
-		$result = $this->get_cron_scheduler()->disable_cron();
-		
-		$this->assertTrue( $result );
-		$this->assertFalse( (bool) get_option( CronScheduler::CRON_ENABLED_OPTION ) );
+		$this->get_cron_management()->enable_cron();
+
+		$result = $this->get_cron_management()->disable_cron();
+
+		$this->assertTrue( $result['success'] );
+		$this->assertFalse( (bool) get_option( CronManagementService::CRON_ENABLED_OPTION ) );
 		$this->assertFalse( wp_next_scheduled( 'msm_cron_update_sitemap' ) );
 	}
 
@@ -102,35 +102,35 @@ class CronServiceTest extends TestCase {
 	public function test_disable_cron_when_already_disabled(): void {
 		// Remove the filter that forces cron enabled in tests
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
-		$result = $this->get_cron_scheduler()->disable_cron();
-		
-		$this->assertFalse( $result );
-		$this->assertFalse( (bool) get_option( CronScheduler::CRON_ENABLED_OPTION ) );
-		
+
+		$result = $this->get_cron_management()->disable_cron();
+
+		$this->assertFalse( $result['success'] );
+		$this->assertFalse( (bool) get_option( CronManagementService::CRON_ENABLED_OPTION ) );
+
 		// Restore the filter for other tests
 		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 	}
 
 	/**
-	 * Test that is_cron_enabled() returns true when enabled.
+	 * Test that is_enabled() returns true when enabled.
 	 */
-	public function test_is_cron_enabled_when_enabled(): void {
-		$this->get_cron_scheduler()->enable_cron();
+	public function test_is_enabled_when_enabled(): void {
+		$this->get_cron_management()->enable_cron();
 		
-		$result = $this->get_cron_scheduler()->is_cron_enabled();
+		$result = $this->get_cron_management()->is_enabled();
 		
 		$this->assertTrue( $result );
 	}
 
 	/**
-	 * Test that is_cron_enabled() returns false when disabled.
+	 * Test that is_enabled() returns false when disabled.
 	 */
-	public function test_is_cron_enabled_when_disabled(): void {
+	public function test_is_enabled_when_disabled(): void {
 		// Remove the filter that forces cron enabled in tests
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
-		$result = $this->get_cron_scheduler()->is_cron_enabled();
+		$result = $this->get_cron_management()->is_enabled();
 		
 		$this->assertFalse( $result );
 		
@@ -139,31 +139,33 @@ class CronServiceTest extends TestCase {
 	}
 
 	/**
-	 * Test that is_cron_enabled() clears scheduled events when option doesn't exist.
+	 * Test that get_cron_status() clears scheduled events when option doesn't exist.
+	 *
+	 * Note: This cleanup behavior is now in get_cron_status(), not is_enabled().
 	 */
-	public function test_is_cron_enabled_clears_events_when_option_missing(): void {
+	public function test_get_cron_status_clears_events_when_option_missing(): void {
 		// Remove the filter that forces cron enabled in tests
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
+
 		// Manually schedule an event without setting the option
 		wp_schedule_event( time(), 'hourly', 'msm_cron_update_sitemap' );
-		
-		$result = $this->get_cron_scheduler()->is_cron_enabled();
-		
-		$this->assertFalse( $result );
+
+		$status = $this->get_cron_management()->get_cron_status();
+
+		$this->assertFalse( $status['enabled'] );
 		$this->assertFalse( wp_next_scheduled( 'msm_cron_update_sitemap' ) );
-		
+
 		// Restore the filter for other tests
 		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 	}
 
 	/**
-	 * Test that is_cron_enabled() respects the filter.
+	 * Test that is_enabled() respects the filter.
 	 */
-	public function test_is_cron_enabled_with_filter(): void {
+	public function test_is_enabled_with_filter(): void {
 		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
-		$result = $this->get_cron_scheduler()->is_cron_enabled();
+		$result = $this->get_cron_management()->is_enabled();
 		
 		$this->assertTrue( $result );
 		
@@ -174,9 +176,9 @@ class CronServiceTest extends TestCase {
 	 * Test that get_cron_status() returns correct status when enabled.
 	 */
 	public function test_get_cron_status_when_enabled(): void {
-		$this->get_cron_scheduler()->enable_cron();
+		$this->get_cron_management()->enable_cron();
 		
-		$status = $this->get_cron_scheduler()->get_cron_status();
+		$status = $this->get_cron_management()->get_cron_status();
 		
 		$this->assertTrue( $status['enabled'] );
 		// next_scheduled might be false if cron event hasn't been scheduled yet
@@ -193,7 +195,7 @@ class CronServiceTest extends TestCase {
 		// Remove the filter that forces cron enabled in tests
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
-		$status = $this->get_cron_scheduler()->get_cron_status();
+		$status = $this->get_cron_management()->get_cron_status();
 		
 		$this->assertFalse( $status['enabled'] );
 		$this->assertFalse( $status['next_scheduled'] );
@@ -213,10 +215,10 @@ class CronServiceTest extends TestCase {
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
 		// Set option to false but schedule an event
-		update_option( CronScheduler::CRON_ENABLED_OPTION, false );
+		update_option( CronManagementService::CRON_ENABLED_OPTION, false );
 		wp_schedule_event( time(), 'hourly', 'msm_cron_update_sitemap' );
 		
-		$status = $this->get_cron_scheduler()->get_cron_status();
+		$status = $this->get_cron_management()->get_cron_status();
 		
 		$this->assertFalse( $status['enabled'] );
 		$this->assertFalse( $status['next_scheduled'] );
@@ -231,16 +233,16 @@ class CronServiceTest extends TestCase {
 	 */
 	public function test_reset_cron(): void {
 		// Enable cron and add some processing options
-		$this->get_cron_scheduler()->enable_cron();
+		$this->get_cron_management()->enable_cron();
 		update_option( 'msm_generation_in_progress', true );
 		update_option( 'msm_sitemap_stop_generation', true );
 		update_option( 'msm_background_generation_in_progress', true );
 		update_option( 'msm_background_generation_total', 10 );
 		update_option( 'msm_background_generation_remaining', 5 );
 
-		$this->get_cron_scheduler()->reset_cron();
+		$this->get_cron_management()->reset_cron();
 
-		$this->assertFalse( (bool) get_option( CronScheduler::CRON_ENABLED_OPTION ) );
+		$this->assertFalse( (bool) get_option( CronManagementService::CRON_ENABLED_OPTION ) );
 		$this->assertFalse( wp_next_scheduled( 'msm_cron_update_sitemap' ) );
 		$this->assertFalse( (bool) get_option( 'msm_generation_in_progress' ) );
 		$this->assertFalse( (bool) get_option( 'msm_sitemap_stop_generation' ) );
@@ -256,7 +258,7 @@ class CronServiceTest extends TestCase {
 	 */
 	public function test_incremental_update_handles_orphaned_sitemaps() {
 		// Enable cron
-		$this->get_cron_scheduler()->enable_cron();
+		$this->get_cron_management()->enable_cron();
 		
 		// Create a post for August 6th
 		$post_id = wp_insert_post(
@@ -311,6 +313,6 @@ class CronServiceTest extends TestCase {
 		
 		// Clean up
 		wp_delete_post( $post_id, true );
-		$this->get_cron_scheduler()->disable_cron();
+		$this->get_cron_management()->disable_cron();
 	}
 } 

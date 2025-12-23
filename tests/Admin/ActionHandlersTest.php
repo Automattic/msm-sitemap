@@ -10,7 +10,7 @@ declare( strict_types=1 );
 namespace Automattic\MSM_Sitemap\Tests\Admin;
 
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\ActionHandlers;
-use Automattic\MSM_Sitemap\Infrastructure\Cron\CronScheduler;
+use Automattic\MSM_Sitemap\Application\Services\CronManagementService;
 
 /**
  * Unit Tests for Admin\Action_Handlers class
@@ -18,12 +18,12 @@ use Automattic\MSM_Sitemap\Infrastructure\Cron\CronScheduler;
 class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 
 	/**
-	 * Get a CronScheduler instance for testing.
+	 * Get a CronManagementService instance for testing.
 	 *
-	 * @return \Automattic\MSM_Sitemap\Infrastructure\Cron\CronScheduler
+	 * @return CronManagementService
 	 */
-	private function get_cron_scheduler(): \Automattic\MSM_Sitemap\Infrastructure\Cron\CronScheduler {
-		return $this->get_service( \Automattic\MSM_Sitemap\Infrastructure\Cron\CronScheduler::class );
+	private function get_cron_management(): CronManagementService {
+		return $this->get_service( CronManagementService::class );
 	}
 
 	/**
@@ -41,7 +41,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function setUp(): void {
 		parent::setUp();
 		// Clear any existing cron options
-		delete_option( CronScheduler::CRON_ENABLED_OPTION );
+		delete_option( CronManagementService::CRON_ENABLED_OPTION );
 		wp_unschedule_hook( 'msm_cron_update_sitemap' );
 		// Clear any generation progress
 		delete_option( 'msm_generation_in_progress' );
@@ -53,7 +53,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function tearDown(): void {
 		// Clean up cron options and events
-		delete_option( CronScheduler::CRON_ENABLED_OPTION );
+		delete_option( CronManagementService::CRON_ENABLED_OPTION );
 		wp_unschedule_hook( 'msm_cron_update_sitemap' );
 		delete_option( 'msm_generation_in_progress' );
 		delete_option( 'msm_stop_processing' );
@@ -71,7 +71,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$this->get_action_handlers()->handle_enable_cron();
 		$output = ob_get_clean();
 
-		$this->assertTrue( (bool) get_option( CronScheduler::CRON_ENABLED_OPTION ) );
+		$this->assertTrue( (bool) get_option( CronManagementService::CRON_ENABLED_OPTION ) );
 		$this->assertNotFalse( wp_next_scheduled( 'msm_cron_update_sitemap' ) );
 		$this->assertStringContainsString( 'Automatic sitemap updates enabled successfully', $output );
 		
@@ -87,7 +87,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
 		// Enable cron first
-		$this->get_cron_scheduler()->enable_cron();
+		$this->get_cron_management()->enable_cron();
 
 		ob_start();
 		$this->get_action_handlers()->handle_enable_cron();
@@ -107,13 +107,13 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
 		// Enable cron first
-		$this->get_cron_scheduler()->enable_cron();
+		$this->get_cron_management()->enable_cron();
 
 		ob_start();
 		$this->get_action_handlers()->handle_disable_cron();
 		$output = ob_get_clean();
 
-		$this->assertFalse( (bool) get_option( CronScheduler::CRON_ENABLED_OPTION ) );
+		$this->assertFalse( (bool) get_option( CronManagementService::CRON_ENABLED_OPTION ) );
 		$this->assertFalse( wp_next_scheduled( 'msm_cron_update_sitemap' ) );
 		$this->assertStringContainsString( 'Automatic sitemap updates disabled successfully', $output );
 		
@@ -143,7 +143,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function test_handle_generate_full(): void {
 		// Enable cron first
-		$this->get_cron_scheduler()->enable_cron();
+		$this->get_cron_management()->enable_cron();
 
 		// Create a post to ensure there are years with posts
 		$post_id = wp_insert_post(
@@ -189,7 +189,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function test_handle_generate_from_latest(): void {
 		// Enable cron first
-		$this->get_cron_scheduler()->enable_cron();
+		$this->get_cron_management()->enable_cron();
 
 		// Create a recent post to ensure there are latest posts
 		$post_id = wp_insert_post(
@@ -242,7 +242,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function test_handle_schedule_background_generation(): void {
 		// Enable cron first
-		$this->get_cron_scheduler()->enable_cron();
+		$this->get_cron_management()->enable_cron();
 
 		// Create a recent post to ensure there are missing sitemaps
 		$post_id = wp_insert_post(

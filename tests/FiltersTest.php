@@ -9,7 +9,7 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests;
 
-use Automattic\MSM_Sitemap\Infrastructure\REST\SitemapEndpointHandler;
+use Automattic\MSM_Sitemap\Infrastructure\REST\SitemapXmlRequestHandler;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository;
 use WP_Query;
 
@@ -65,7 +65,7 @@ class FiltersTest extends TestCase {
 			} 
 		);
 		
-		$sitemap_endpoint_handler = $this->get_service( SitemapEndpointHandler::class );
+		$sitemap_endpoint_handler = $this->get_service( SitemapXmlRequestHandler::class );
 		$sitemap_endpoint_handler->get_sitemap_index_xml();
 
 		$this->assertTrue( $ran );
@@ -111,7 +111,7 @@ class FiltersTest extends TestCase {
 			3
 		);
 
-		$sitemap_endpoint_handler = $this->get_service( SitemapEndpointHandler::class );
+		$sitemap_endpoint_handler = $this->get_service( SitemapXmlRequestHandler::class );
 		$xml                      = $sitemap_endpoint_handler->get_sitemap_index_xml();
 		
 		$this->assertStringContainsString( $append_xml, $xml );
@@ -145,7 +145,7 @@ class FiltersTest extends TestCase {
 			3
 		);
 
-		$sitemap_endpoint_handler = $this->get_service( SitemapEndpointHandler::class );
+		$sitemap_endpoint_handler = $this->get_service( SitemapXmlRequestHandler::class );
 		$xml                      = $sitemap_endpoint_handler->get_sitemap_index_xml();
 		
 		$this->assertEquals( $replacement_xml, $xml );

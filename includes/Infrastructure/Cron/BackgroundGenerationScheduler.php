@@ -1,6 +1,6 @@
 <?php
 /**
- * Sitemap Generation Scheduler
+ * Background Generation Scheduler
  *
  * @package Automattic\MSM_Sitemap\Infrastructure\Cron
  */
@@ -13,15 +13,18 @@ use Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase;
 use Automattic\MSM_Sitemap\Application\Commands\GenerateSitemapCommand;
 use Automattic\MSM_Sitemap\Application\DTOs\SitemapOperationResult;
 use Automattic\MSM_Sitemap\Application\Services\GenerationStateService;
+use Automattic\MSM_Sitemap\Application\Services\CronManagementService;
 
 /**
- * Scheduler for sitemap generation tasks.
+ * Scheduler for background sitemap generation tasks.
  *
  * Provides both direct (blocking) and background (async via cron) generation methods.
  * Used by different callers (missing detection, stale detection, full regeneration)
  * to schedule sitemap generation for specific dates.
+ *
+ * For recurring automatic update scheduling, see AutomaticUpdateScheduler.
  */
-class SitemapGenerationScheduler {
+class BackgroundGenerationScheduler {
 
 	/**
 	 * Interval between scheduled sitemap generation events (in seconds).
@@ -41,11 +44,11 @@ class SitemapGenerationScheduler {
 	private GenerateSitemapUseCase $generate_use_case;
 
 	/**
-	 * The cron scheduling service.
+	 * The cron management service.
 	 *
-	 * @var CronScheduler
+	 * @var CronManagementService
 	 */
-	private CronScheduler $cron_scheduler;
+	private CronManagementService $cron_management;
 
 	/**
 	 * The generation state service.
@@ -58,16 +61,16 @@ class SitemapGenerationScheduler {
 	 * Constructor.
 	 *
 	 * @param GenerateSitemapUseCase $generate_use_case The generate sitemap use case.
-	 * @param CronScheduler  $cron_scheduler    The cron scheduling service.
+	 * @param CronManagementService  $cron_management   The cron management service.
 	 * @param GenerationStateService $generation_state  The generation state service.
 	 */
 	public function __construct(
 		GenerateSitemapUseCase $generate_use_case,
-		CronScheduler $cron_scheduler,
+		CronManagementService $cron_management,
 		GenerationStateService $generation_state
 	) {
 		$this->generate_use_case = $generate_use_case;
-		$this->cron_scheduler    = $cron_scheduler;
+		$this->cron_management   = $cron_management;
 		$this->generation_state  = $generation_state;
 	}
 
@@ -232,6 +235,6 @@ class SitemapGenerationScheduler {
 	 * @return bool True if cron is enabled.
 	 */
 	public function is_cron_available(): bool {
-		return $this->cron_scheduler->is_cron_enabled();
+		return $this->cron_management->is_enabled();
 	}
 }

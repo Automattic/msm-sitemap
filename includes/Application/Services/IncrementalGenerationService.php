@@ -9,7 +9,7 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Application\Services;
 
-use Automattic\MSM_Sitemap\Infrastructure\Cron\SitemapGenerationScheduler;
+use Automattic\MSM_Sitemap\Infrastructure\Cron\BackgroundGenerationScheduler;
 
 /**
  * Service for incremental sitemap generation (missing + stale).
@@ -25,9 +25,9 @@ class IncrementalGenerationService {
 	/**
 	 * The sitemap generation scheduler.
 	 *
-	 * @var SitemapGenerationScheduler
+	 * @var BackgroundGenerationScheduler
 	 */
-	private SitemapGenerationScheduler $scheduler;
+	private BackgroundGenerationScheduler $scheduler;
 
 	/**
 	 * The detection service (finds missing + stale dates).
@@ -39,11 +39,11 @@ class IncrementalGenerationService {
 	/**
 	 * Constructor.
 	 *
-	 * @param SitemapGenerationScheduler     $scheduler         The scheduler.
+	 * @param BackgroundGenerationScheduler     $scheduler         The scheduler.
 	 * @param MissingSitemapDetectionService $detection_service The detection service.
 	 */
 	public function __construct(
-		SitemapGenerationScheduler $scheduler,
+		BackgroundGenerationScheduler $scheduler,
 		MissingSitemapDetectionService $detection_service
 	) {
 		$this->scheduler         = $scheduler;

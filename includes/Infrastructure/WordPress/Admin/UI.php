@@ -7,6 +7,7 @@
 
 namespace Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin;
 
+use Automattic\MSM_Sitemap\Application\Services\CronManagementService;
 use Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapStatsService;
 use Automattic\MSM_Sitemap\Application\Services\SettingsService;
@@ -16,7 +17,6 @@ use Automattic\MSM_Sitemap\Domain\Contracts\WordPressIntegrationInterface;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\ActionHandlers;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\HelpTabs;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\Notifications;
-use Automattic\MSM_Sitemap\Infrastructure\Cron\CronScheduler;
 
 
 /**
@@ -25,11 +25,11 @@ use Automattic\MSM_Sitemap\Infrastructure\Cron\CronScheduler;
 class UI implements WordPressIntegrationInterface {
 
 	/**
-	 * The cron scheduling service.
+	 * The cron management service.
 	 *
-	 * @var CronScheduler
+	 * @var CronManagementService
 	 */
-	private CronScheduler $cron_scheduler;
+	private CronManagementService $cron_management;
 
 	/**
 	 * The plugin file path.
@@ -83,18 +83,18 @@ class UI implements WordPressIntegrationInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param CronScheduler $cron_scheduler The cron scheduling service.
-	 * @param string $plugin_file_path The path to the main plugin file.
-	 * @param string $plugin_version The plugin version.
+	 * @param CronManagementService          $cron_management           The cron management service.
+	 * @param string                         $plugin_file_path          The path to the main plugin file.
+	 * @param string                         $plugin_version            The plugin version.
 	 * @param MissingSitemapDetectionService $missing_detection_service The missing sitemap detection service.
-	 * @param SitemapStatsService $stats_service The sitemap stats service.
-	 * @param SettingsService $settings_service The settings service.
-	 * @param SitemapRepositoryInterface $sitemap_repository The sitemap repository.
-	 * @param ActionHandlers $action_handlers The action handlers.
+	 * @param SitemapStatsService            $stats_service             The sitemap stats service.
+	 * @param SettingsService                $settings_service          The settings service.
+	 * @param SitemapRepositoryInterface     $sitemap_repository        The sitemap repository.
+	 * @param ActionHandlers                 $action_handlers           The action handlers.
 	 */
-	public function __construct( 
-		CronScheduler $cron_scheduler, 
-		string $plugin_file_path, 
+	public function __construct(
+		CronManagementService $cron_management,
+		string $plugin_file_path,
 		string $plugin_version,
 		MissingSitemapDetectionService $missing_detection_service,
 		SitemapStatsService $stats_service,
@@ -102,7 +102,7 @@ class UI implements WordPressIntegrationInterface {
 		SitemapRepositoryInterface $sitemap_repository,
 		ActionHandlers $action_handlers
 	) {
-		$this->cron_scheduler            = $cron_scheduler;
+		$this->cron_management           = $cron_management;
 		$this->plugin_file_path          = $plugin_file_path;
 		$this->plugin_version            = $plugin_version;
 		$this->missing_detection_service = $missing_detection_service;
@@ -668,7 +668,7 @@ class UI implements WordPressIntegrationInterface {
 	 * Render the automatic sitemap updates section
 	 */
 	private function render_cron_section() {
-		$cron_status       = $this->cron_scheduler->get_cron_status();
+		$cron_status       = $this->cron_management->get_cron_status();
 		$cron_enabled      = $cron_status['enabled'];
 		$next_scheduled    = $cron_status['next_scheduled'];
 		$current_frequency = $this->settings_service->get_setting( 'cron_frequency', '15min' );
@@ -806,7 +806,7 @@ class UI implements WordPressIntegrationInterface {
 	 * Render the manual generation section
 	 */
 	private function render_generate_section() {
-		$cron_status                = $this->cron_scheduler->get_cron_status();
+		$cron_status                = $this->cron_management->get_cron_status();
 		$sitemap_create_in_progress = (bool) get_option( 'msm_generation_in_progress' );
 		$sitemap_halt_in_progress   = (bool) get_option( 'msm_sitemap_stop_generation' );
 
@@ -872,7 +872,7 @@ class UI implements WordPressIntegrationInterface {
 	 * Render a note about enabling automatic updates when generate buttons are disabled
 	 */
 	private function render_generate_note() {
-		$cron_status = $this->cron_scheduler->get_cron_status();
+		$cron_status = $this->cron_management->get_cron_status();
 		
 		if ( ! $cron_status['enabled'] ) {
 			echo '<p style="margin-top: 10px; color: #666; font-style: italic;">';
@@ -885,7 +885,7 @@ class UI implements WordPressIntegrationInterface {
 	 * Render the dangerous actions section
 	 */
 	private function render_dangerous_actions_section() {
-		$cron_status                = $this->cron_scheduler->get_cron_status();
+		$cron_status                = $this->cron_management->get_cron_status();
 		$sitemap_create_in_progress = (bool) get_option( 'msm_generation_in_progress' );
 		$sitemap_halt_in_progress   = (bool) get_option( 'msm_sitemap_stop_generation' );
 		
