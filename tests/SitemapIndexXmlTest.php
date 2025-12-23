@@ -9,7 +9,7 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests;
 
-use Automattic\MSM_Sitemap\Infrastructure\REST\SitemapXmlRequestHandler;
+use Automattic\MSM_Sitemap\Infrastructure\HTTP\SitemapXmlRequestHandler;
 
 /**
  * Tests for sitemap index XML generation using the new DDD services.
