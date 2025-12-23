@@ -9,10 +9,11 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Infrastructure\DI;
 
+use Automattic\MSM_Sitemap\Application\Services\AllDatesWithPostsService;
 use Automattic\MSM_Sitemap\Application\Services\CronManagementService;
-use Automattic\MSM_Sitemap\Application\Services\FullSitemapGenerationService;
+use Automattic\MSM_Sitemap\Application\Services\FullGenerationService;
 use Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService;
-use Automattic\MSM_Sitemap\Application\Services\MissingSitemapGenerationService;
+use Automattic\MSM_Sitemap\Application\Services\IncrementalGenerationService;
 use Automattic\MSM_Sitemap\Application\Services\SettingsService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapExportService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapCleanupService;
@@ -22,6 +23,7 @@ use Automattic\MSM_Sitemap\Application\Services\SitemapService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapStatsService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapValidationService;
 use Automattic\MSM_Sitemap\Application\Services\ContentTypesService;
+use Automattic\MSM_Sitemap\Application\Services\StaleSitemapDetectionService;
 use Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase;
 use Automattic\MSM_Sitemap\Application\Listeners\SitemapStatsListener;
 use Automattic\MSM_Sitemap\Infrastructure\Events\EventDispatcher;
@@ -34,8 +36,9 @@ use Automattic\MSM_Sitemap\Infrastructure\Formatters\SitemapXmlFormatter;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\ImageRepository;
-use Automattic\MSM_Sitemap\Infrastructure\Cron\MissingSitemapGenerationHandler;
-use Automattic\MSM_Sitemap\Infrastructure\Cron\FullGenerationHandler;
+use Automattic\MSM_Sitemap\Infrastructure\Cron\AutomaticUpdateCronHandler;
+use Automattic\MSM_Sitemap\Infrastructure\Cron\BackgroundGenerationCronHandler;
+use Automattic\MSM_Sitemap\Infrastructure\Cron\SitemapGenerationScheduler;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\UI;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\ActionHandlers;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\CoreIntegration;
@@ -311,24 +314,61 @@ class SitemapContainer {
 		);
 
 		$this->register(
-			MissingSitemapDetectionService::class,
+			StaleSitemapDetectionService::class,
 			function ( $container ) {
 				$repository      = $container->get( SitemapRepositoryInterface::class );
 				$post_repository = $container->get( PostRepository::class );
-			
-				return new MissingSitemapDetectionService( $repository, $post_repository );
-			} 
+
+				return new StaleSitemapDetectionService( $repository, $post_repository );
+			}
 		);
 
 		$this->register(
-			MissingSitemapGenerationService::class,
+			AllDatesWithPostsService::class,
+			function () {
+				return new AllDatesWithPostsService();
+			}
+		);
+
+		$this->register(
+			MissingSitemapDetectionService::class,
 			function ( $container ) {
-				$cron_scheduler             = $container->get( CronSchedulingService::class );
-				$missing_detection_service  = $container->get( MissingSitemapDetectionService::class );
-				$missing_generation_handler = $container->get( MissingSitemapGenerationHandler::class );
-				$generate_use_case          = $container->get( GenerateSitemapUseCase::class );
-				return new MissingSitemapGenerationService( $cron_scheduler, $missing_detection_service, $missing_generation_handler, $generate_use_case );
-			} 
+				$repository              = $container->get( SitemapRepositoryInterface::class );
+				$post_repository         = $container->get( PostRepository::class );
+				$stale_detection_service = $container->get( StaleSitemapDetectionService::class );
+
+				return new MissingSitemapDetectionService( $repository, $post_repository, $stale_detection_service );
+			}
+		);
+
+		$this->register(
+			SitemapGenerationScheduler::class,
+			function ( $container ) {
+				$generate_use_case = $container->get( GenerateSitemapUseCase::class );
+				$cron_scheduler    = $container->get( CronSchedulingService::class );
+
+				return new SitemapGenerationScheduler( $generate_use_case, $cron_scheduler );
+			}
+		);
+
+		$this->register(
+			BackgroundGenerationCronHandler::class,
+			function ( $container ) {
+				$scheduler       = $container->get( SitemapGenerationScheduler::class );
+				$cleanup_service = $container->get( SitemapCleanupService::class );
+
+				return new BackgroundGenerationCronHandler( $scheduler, $cleanup_service );
+			}
+		);
+
+		$this->register(
+			IncrementalGenerationService::class,
+			function ( $container ) {
+				$scheduler         = $container->get( SitemapGenerationScheduler::class );
+				$detection_service = $container->get( MissingSitemapDetectionService::class );
+
+				return new IncrementalGenerationService( $scheduler, $detection_service );
+			}
 		);
 
 		$this->register(
@@ -341,11 +381,13 @@ class SitemapContainer {
 		);
 
 		$this->register(
-			FullSitemapGenerationService::class,
+			FullGenerationService::class,
 			function ( $container ) {
-				$cron_scheduler = $container->get( CronSchedulingService::class );
-				return new FullSitemapGenerationService( $cron_scheduler );
-			} 
+				$scheduler         = $container->get( SitemapGenerationScheduler::class );
+				$all_dates_service = $container->get( AllDatesWithPostsService::class );
+
+				return new FullGenerationService( $scheduler, $all_dates_service );
+			}
 		);
 
 		$this->register(
@@ -439,26 +481,14 @@ class SitemapContainer {
 		);
 
 		$this->register(
-			MissingSitemapGenerationHandler::class,
+			AutomaticUpdateCronHandler::class,
 			function ( $container ) {
-				$cron_scheduler    = $container->get( CronSchedulingService::class );
-				$missing_service   = $container->get( MissingSitemapDetectionService::class );
-				$generate_use_case = $container->get( GenerateSitemapUseCase::class );
-				$cleanup_service   = $container->get( SitemapCleanupService::class );
-				return new MissingSitemapGenerationHandler( $cron_scheduler, $missing_service, $generate_use_case, $cleanup_service );
-			} 
-		);
+				$generation_service = $container->get( IncrementalGenerationService::class );
+				$cron_scheduler     = $container->get( CronSchedulingService::class );
+				$cleanup_service    = $container->get( SitemapCleanupService::class );
 
-		$this->register(
-			FullGenerationHandler::class,
-			function ( $container ) {
-				$cron_scheduler        = $container->get( CronSchedulingService::class );
-				$post_repository       = $container->get( PostRepository::class );
-				$content_types_service = $container->get( ContentTypesService::class );
-				$sitemap_generator     = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
-				$generate_use_case     = $container->get( GenerateSitemapUseCase::class );
-				return new FullGenerationHandler( $cron_scheduler, $post_repository, $sitemap_generator, $generate_use_case );
-			} 
+				return new AutomaticUpdateCronHandler( $generation_service, $cron_scheduler, $cleanup_service );
+			}
 		);
 
 		$this->register(
@@ -474,16 +504,16 @@ class SitemapContainer {
 		$this->register(
 			REST_API_Controller::class,
 			function ( $container ) {
-				$sitemap_service            = $container->get( SitemapService::class );
-				$stats_service              = $container->get( SitemapStatsService::class );
-				$validation_service         = $container->get( SitemapValidationService::class );
-				$export_service             = $container->get( SitemapExportService::class );
-				$cron_management_service    = $container->get( CronManagementService::class );
-				$content_types_service      = $container->get( ContentTypesService::class );
-				$sitemap_generator          = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
-				$generate_use_case          = $container->get( GenerateSitemapUseCase::class );
-				$missing_detection_service  = $container->get( MissingSitemapDetectionService::class );
-				$missing_generation_service = $container->get( MissingSitemapGenerationService::class );
+				$sitemap_service               = $container->get( SitemapService::class );
+				$stats_service                 = $container->get( SitemapStatsService::class );
+				$validation_service            = $container->get( SitemapValidationService::class );
+				$export_service                = $container->get( SitemapExportService::class );
+				$cron_management_service       = $container->get( CronManagementService::class );
+				$content_types_service         = $container->get( ContentTypesService::class );
+				$sitemap_generator             = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
+				$generate_use_case             = $container->get( GenerateSitemapUseCase::class );
+				$missing_detection_service     = $container->get( MissingSitemapDetectionService::class );
+				$incremental_generation_service = $container->get( IncrementalGenerationService::class );
 
 				return new REST_API_Controller(
 					$sitemap_service,
@@ -494,7 +524,7 @@ class SitemapContainer {
 					$sitemap_generator,
 					$generate_use_case,
 					$missing_detection_service,
-					$missing_generation_service
+					$incremental_generation_service
 				);
 			}
 		);
@@ -517,13 +547,20 @@ class SitemapContainer {
 		$this->register(
 			ActionHandlers::class,
 			function ( $container ) {
-				$cron_management_service            = $container->get( CronManagementService::class );
-				$settings_service                   = $container->get( SettingsService::class );
-				$sitemap_service                    = $container->get( SitemapService::class );
-				$full_sitemap_generation_service    = $container->get( FullSitemapGenerationService::class );
-				$missing_sitemap_generation_service = $container->get( MissingSitemapGenerationService::class );
-				return new ActionHandlers( $cron_management_service, $settings_service, $sitemap_service, $full_sitemap_generation_service, $missing_sitemap_generation_service );
-			} 
+				$cron_management_service       = $container->get( CronManagementService::class );
+				$settings_service              = $container->get( SettingsService::class );
+				$sitemap_service               = $container->get( SitemapService::class );
+				$full_generation_service       = $container->get( FullGenerationService::class );
+				$incremental_generation_service = $container->get( IncrementalGenerationService::class );
+
+				return new ActionHandlers(
+					$cron_management_service,
+					$settings_service,
+					$sitemap_service,
+					$full_generation_service,
+					$incremental_generation_service
+				);
+			}
 		);
 
 		$this->register(

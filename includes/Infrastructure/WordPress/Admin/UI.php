@@ -162,17 +162,19 @@ class UI implements WordPressIntegrationInterface {
 			'msm-sitemap-admin',
 			'msmSitemapAdmin',
 			array(
-				'restUrl'               => rest_url( 'msm-sitemap/v1/' ),
-				'nonce'                 => wp_create_nonce( 'wp_rest' ),
-				'generateMissingText'   => __( 'Generate Missing Sitemaps', 'msm-sitemap' ),
-				'generatingText'        => __( 'Generating...', 'msm-sitemap' ),
-				'generationSuccessText' => __( 'Generation started successfully.', 'msm-sitemap' ),
-				'generationErrorText'   => __( 'Failed to start generation. Please try again.', 'msm-sitemap' ),
-				'confirmResetText'      => __( 'Are you sure you want to reset all sitemap data? This action cannot be undone and will delete all sitemaps, metadata, and statistics.', 'msm-sitemap' ),
-				'showText'              => __( 'Show', 'msm-sitemap' ),
-				'hideText'              => __( 'Hide', 'msm-sitemap' ),
-				'showDetailedStatsText' => __( 'Show Detailed Statistics', 'msm-sitemap' ),
-				'hideDetailedStatsText' => __( 'Hide Detailed Statistics', 'msm-sitemap' ),
+				'restUrl'                => rest_url( 'msm-sitemap/v1/' ),
+				'nonce'                  => wp_create_nonce( 'wp_rest' ),
+				'generateMissingText'    => __( 'Generate Missing Sitemaps', 'msm-sitemap' ),
+				'generatingText'         => __( 'Generating...', 'msm-sitemap' ),
+				'schedulingText'         => __( 'Scheduling...', 'msm-sitemap' ),
+				'generationSuccessText'  => __( 'Generation completed successfully.', 'msm-sitemap' ),
+				'generationErrorText'    => __( 'Failed to start generation. Please try again.', 'msm-sitemap' ),
+				'backgroundProgressText' => __( 'Background generation in progress...', 'msm-sitemap' ),
+				'confirmResetText'       => __( 'Are you sure you want to reset all sitemap data? This action cannot be undone and will delete all sitemaps, metadata, and statistics.', 'msm-sitemap' ),
+				'showText'               => __( 'Show', 'msm-sitemap' ),
+				'hideText'               => __( 'Hide', 'msm-sitemap' ),
+				'showDetailedStatsText'  => __( 'Show Detailed Statistics', 'msm-sitemap' ),
+				'hideDetailedStatsText'  => __( 'Hide Detailed Statistics', 'msm-sitemap' ),
 			)
 		);
 	}
@@ -807,28 +809,23 @@ class UI implements WordPressIntegrationInterface {
 		$cron_status                = $this->cron_scheduler->get_cron_status();
 		$sitemap_create_in_progress = (bool) get_option( 'msm_generation_in_progress' );
 		$sitemap_halt_in_progress   = (bool) get_option( 'msm_sitemap_stop_generation' );
-		
+
 		// Clear the halt flag if generation is not actually running
 		if ( $sitemap_halt_in_progress && ! $sitemap_create_in_progress ) {
 			delete_option( 'msm_sitemap_stop_generation' );
 			$sitemap_halt_in_progress = false;
 		}
-		
+
 		// Determine if generate buttons should be enabled
 		$buttons_enabled = ! $sitemap_create_in_progress && ! $sitemap_halt_in_progress;
-		
+
 		// Get missing content summary
 		$missing_data    = $this->missing_detection_service->get_missing_sitemaps();
 		$missing_summary = $this->missing_detection_service->get_missing_content_summary();
-		
-		// Determine button text based on cron status
-		$button_text = $cron_status['enabled'] 
-			? __( 'Generate Missing Sitemaps', 'msm-sitemap' )
-			: __( 'Generate Missing Sitemaps (Direct)', 'msm-sitemap' );
-		
+
 		?>
 		<h2><?php esc_html_e( 'Missing Sitemaps', 'msm-sitemap' ); ?></h2>
-		
+
 		<div style="display: table; width: 100%; margin-bottom: 20px;">
 			<div style="display: table-row;">
 				<div style="display: table-cell; width: 120px; padding: 8px 0; font-weight: bold; vertical-align: text-bottom;">
@@ -839,19 +836,35 @@ class UI implements WordPressIntegrationInterface {
 						<span class="dashicons dashicons-update" style="animation: spin 1s linear infinite;"></span>
 						<?php esc_html_e( 'Loading missing sitemaps...', 'msm-sitemap' ); ?>
 					</div>
-					
-					<form action="<?php echo esc_url( menu_page_url( 'msm-sitemap', false ) ); ?>" method="post" style="display: inline; margin-left: 15px; vertical-align: text-bottom;">
-						<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
-						<input type="submit" name="action" id="generate-missing-button" class="button-secondary" value="<?php echo esc_attr( $button_text ); ?>" disabled="disabled">
-					</form>
+
+					<?php if ( $cron_status['enabled'] ) : ?>
+						<!-- Two buttons when cron is enabled -->
+						<span style="margin-left: 15px; vertical-align: text-bottom;">
+							<button type="button" id="generate-missing-direct-button" class="button button-secondary" disabled="disabled">
+								<?php esc_html_e( 'Generate Now (Direct)', 'msm-sitemap' ); ?>
+							</button>
+							<button type="button" id="generate-missing-background-button" class="button button-secondary" disabled="disabled" style="margin-left: 5px;">
+								<?php esc_html_e( 'Generate in Background', 'msm-sitemap' ); ?>
+							</button>
+						</span>
+					<?php else : ?>
+						<!-- Single button when cron is disabled -->
+						<button type="button" id="generate-missing-direct-button" class="button button-secondary" disabled="disabled" style="margin-left: 15px; vertical-align: text-bottom;">
+							<?php esc_html_e( 'Generate Missing Sitemaps', 'msm-sitemap' ); ?>
+						</button>
+					<?php endif; ?>
 				</div>
 			</div>
 		</div>
-			
 
-			
-			<?php $this->render_generate_note(); ?>
-		</form>
+		<!-- Background generation progress area -->
+		<div id="background-generation-progress" style="display: none; margin-bottom: 20px; padding: 10px; background: #f0f6fc; border: 1px solid #c5d7e8; border-radius: 4px;">
+			<span class="dashicons dashicons-update" style="animation: spin 1s linear infinite; margin-right: 5px;"></span>
+			<span id="background-progress-text"><?php esc_html_e( 'Background generation in progress...', 'msm-sitemap' ); ?></span>
+			<span id="background-progress-count" style="margin-left: 10px; font-weight: bold;"></span>
+		</div>
+
+		<?php $this->render_generate_note(); ?>
 		<?php
 	}
 
@@ -897,10 +910,10 @@ class UI implements WordPressIntegrationInterface {
 						<?php esc_html_e( 'Full Generation', 'msm-sitemap' ); ?>
 					</h3>
 					<p style="margin: 0 0 10px 0; color: #666; font-size: 13px;">
-						<strong><?php esc_html_e( '⚠️ Warning:', 'msm-sitemap' ); ?></strong> <?php esc_html_e( 'This will spend a while brute-force checking each date for posts, and is only really needed if existing sitemaps need to be force generated without deleting them first.', 'msm-sitemap' ); ?>
+						<strong><?php esc_html_e( '⚠️ Warning:', 'msm-sitemap' ); ?></strong> <?php esc_html_e( 'This will regenerate ALL sitemaps for every date with posts, even if they already exist and are up to date.', 'msm-sitemap' ); ?>
 					</p>
 					<p style="margin: 0 0 15px 0; color: #666; font-size: 13px; font-style: italic;">
-						<?php esc_html_e( 'For most cases, use "Generate Missing Sitemaps" instead.', 'msm-sitemap' ); ?>
+						<?php esc_html_e( 'For most cases, use "Generate Now" or "Schedule Background Generation" instead, which only regenerates missing or stale sitemaps.', 'msm-sitemap' ); ?>
 					</p>
 					
 					<form action="<?php echo esc_url( menu_page_url( 'msm-sitemap', false ) ); ?>" method="post" style="display: inline;">

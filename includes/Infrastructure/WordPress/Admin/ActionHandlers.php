@@ -8,10 +8,10 @@
 namespace Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin;
 
 use Automattic\MSM_Sitemap\Application\Services\CronManagementService;
+use Automattic\MSM_Sitemap\Application\Services\FullGenerationService;
+use Automattic\MSM_Sitemap\Application\Services\IncrementalGenerationService;
 use Automattic\MSM_Sitemap\Application\Services\SettingsService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapService;
-use Automattic\MSM_Sitemap\Application\Services\FullSitemapGenerationService;
-use Automattic\MSM_Sitemap\Application\Services\MissingSitemapGenerationService;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\Notifications;
 
 /**
@@ -41,40 +41,40 @@ class ActionHandlers {
 	private SitemapService $sitemap_service;
 
 	/**
-	 * The full sitemap generation service.
+	 * The full generation service.
 	 *
-	 * @var FullSitemapGenerationService
+	 * @var FullGenerationService
 	 */
-	private FullSitemapGenerationService $full_sitemap_generation_service;
+	private FullGenerationService $full_generation_service;
 
 	/**
-	 * The missing sitemap generation service.
+	 * The incremental generation service.
 	 *
-	 * @var MissingSitemapGenerationService
+	 * @var IncrementalGenerationService
 	 */
-	private MissingSitemapGenerationService $missing_sitemap_generation_service;
+	private IncrementalGenerationService $incremental_generation_service;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param CronManagementService $cron_management The cron management service.
-	 * @param SettingsService $settings The settings service.
-	 * @param SitemapService $sitemap_service The sitemap service.
-	 * @param FullSitemapGenerationService $full_sitemap_generation_service The full sitemap generation service.
-	 * @param MissingSitemapGenerationService $missing_sitemap_generation_service The missing sitemap generation service.
+	 * @param CronManagementService        $cron_management                 The cron management service.
+	 * @param SettingsService              $settings                        The settings service.
+	 * @param SitemapService               $sitemap_service                 The sitemap service.
+	 * @param FullGenerationService        $full_generation_service         The full generation service.
+	 * @param IncrementalGenerationService $incremental_generation_service  The incremental generation service.
 	 */
-	public function __construct( 
-		CronManagementService $cron_management, 
-		SettingsService $settings, 
+	public function __construct(
+		CronManagementService $cron_management,
+		SettingsService $settings,
 		SitemapService $sitemap_service,
-		FullSitemapGenerationService $full_sitemap_generation_service,
-		MissingSitemapGenerationService $missing_sitemap_generation_service
+		FullGenerationService $full_generation_service,
+		IncrementalGenerationService $incremental_generation_service
 	) {
-		$this->cron_management                    = $cron_management;
-		$this->settings                           = $settings;
-		$this->sitemap_service                    = $sitemap_service;
-		$this->full_sitemap_generation_service    = $full_sitemap_generation_service;
-		$this->missing_sitemap_generation_service = $missing_sitemap_generation_service;
+		$this->cron_management                = $cron_management;
+		$this->settings                       = $settings;
+		$this->sitemap_service                = $sitemap_service;
+		$this->full_generation_service        = $full_generation_service;
+		$this->incremental_generation_service = $incremental_generation_service;
 	}
 
 	/**
@@ -105,8 +105,8 @@ class ActionHandlers {
 	 * Handle generate full sitemap action
 	 */
 	public function handle_generate_full(): void {
-		$result = $this->full_sitemap_generation_service->start_full_generation();
-		
+		$result = $this->full_generation_service->start_full_generation();
+
 		if ( $result['success'] ) {
 			Notifications::show_success( $result['message'] );
 		} else {
@@ -115,11 +115,11 @@ class ActionHandlers {
 	}
 
 	/**
-	 * Handle generate missing sitemaps action
+	 * Handle generate missing sitemaps action (direct/blocking)
 	 */
 	public function handle_generate_missing_sitemaps(): void {
-		$result = $this->missing_sitemap_generation_service->generate_missing_sitemaps();
-		
+		$result = $this->incremental_generation_service->generate();
+
 		if ( $result['success'] ) {
 			Notifications::show_success( $result['message'] );
 		} else {
@@ -128,16 +128,38 @@ class ActionHandlers {
 	}
 
 	/**
-	 * Handle halt generation action
+	 * Handle schedule background generation action
 	 */
-	public function handle_halt_generation(): void {
-		$result = $this->full_sitemap_generation_service->halt_generation();
-		
+	public function handle_schedule_background_generation(): void {
+		$result = $this->incremental_generation_service->schedule();
+
 		if ( $result['success'] ) {
 			Notifications::show_success( $result['message'] );
 		} else {
 			Notifications::show_warning( $result['message'] );
 		}
+	}
+
+	/**
+	 * Handle halt generation action
+	 */
+	public function handle_halt_generation(): void {
+		// Check if halt is already in progress
+		if ( (bool) get_option( 'msm_sitemap_stop_generation' ) ) {
+			Notifications::show_warning( __( 'Sitemap generation is already being halted.', 'msm-sitemap' ) );
+			return;
+		}
+
+		// Check if generation is actually in progress
+		$progress = $this->full_generation_service->get_progress();
+		if ( ! $progress['in_progress'] && ! (bool) get_option( 'msm_generation_in_progress' ) ) {
+			Notifications::show_warning( __( 'Sitemap generation is not in progress.', 'msm-sitemap' ) );
+			return;
+		}
+
+		// Cancel the generation
+		$this->full_generation_service->cancel();
+		Notifications::show_success( __( 'Stopping sitemap generation...', 'msm-sitemap' ) );
 	}
 
 	/**

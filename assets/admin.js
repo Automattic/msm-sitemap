@@ -6,25 +6,38 @@
 jQuery(document).ready(function($) {
     'use strict';
 
-    // Generate missing sitemaps via REST API
-    function generateMissingSitemaps(e) {
-        e.preventDefault();
+    // Track background generation polling interval
+    var backgroundProgressInterval = null;
 
-        const $button = $('#generate-missing-button');
-        const $content = $('#missing-sitemaps-content');
-        const originalText = $button.val();
+    /**
+     * Generate missing sitemaps via REST API
+     *
+     * @param {boolean} background Whether to use background generation
+     */
+    function generateMissingSitemaps(background) {
+        var $directButton = $('#generate-missing-direct-button');
+        var $backgroundButton = $('#generate-missing-background-button');
+        var $content = $('#missing-sitemaps-content');
 
-        // Show loading state
-        $button.prop('disabled', true).val(msmSitemapAdmin.generatingText || 'Generating...');
-        $content.html('<span class="dashicons dashicons-update" style="animation: spin 1s linear infinite;"></span> ' +
-            (msmSitemapAdmin.generatingText || 'Generating missing sitemaps...'));
+        // Show loading state on both buttons
+        $directButton.prop('disabled', true);
+        if ($backgroundButton.length) {
+            $backgroundButton.prop('disabled', true);
+        }
+
+        var loadingText = background
+            ? (msmSitemapAdmin.schedulingText || 'Scheduling...')
+            : (msmSitemapAdmin.generatingText || 'Generating...');
+
+        $content.html('<span class="dashicons dashicons-update" style="animation: spin 1s linear infinite;"></span> ' + loadingText);
 
         fetch(msmSitemapAdmin.restUrl + 'generate-missing', {
             method: 'POST',
             headers: {
                 'X-WP-Nonce': msmSitemapAdmin.nonce,
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({ background: background })
         })
         .then(function(response) {
             return response.json().then(function(data) {
@@ -33,13 +46,22 @@ jQuery(document).ready(function($) {
         })
         .then(function(result) {
             if (result.ok && result.data.success) {
-                $content.html('<span style="color: #46b450;">✅ ' +
-                    (result.data.message || msmSitemapAdmin.generationSuccessText || 'Generation started successfully.') +
-                    '</span>');
+                var successMessage = result.data.message || msmSitemapAdmin.generationSuccessText || 'Operation completed successfully.';
+                $content.html('<span style="color: #46b450;">✅ ' + successMessage + '</span>');
+
+                // If background generation was started, begin polling for progress
+                if (background && result.data.method === 'background') {
+                    startBackgroundProgressPolling();
+                }
             } else {
                 $content.html('<span style="color: #dc3232;">❌ ' +
-                    (result.data.message || msmSitemapAdmin.generationErrorText || 'Failed to start generation.') +
+                    (result.data.message || msmSitemapAdmin.generationErrorText || 'Operation failed.') +
                     '</span>');
+                // Re-enable buttons on error
+                $directButton.prop('disabled', false);
+                if ($backgroundButton.length) {
+                    $backgroundButton.prop('disabled', false);
+                }
             }
 
             // Refresh the missing sitemaps status after a short delay
@@ -50,13 +72,86 @@ jQuery(document).ready(function($) {
             $content.html('<span style="color: #dc3232;">❌ ' +
                 (msmSitemapAdmin.generationErrorText || 'Failed to start generation. Please try again.') +
                 '</span>');
-            $button.prop('disabled', false).val(originalText);
+            // Re-enable buttons on error
+            $directButton.prop('disabled', false);
+            if ($backgroundButton.length) {
+                $backgroundButton.prop('disabled', false);
+            }
         });
     }
 
-    // Load missing sitemaps count via REST API
+    /**
+     * Start polling for background generation progress
+     */
+    function startBackgroundProgressPolling() {
+        var $progressArea = $('#background-generation-progress');
+        var $progressText = $('#background-progress-text');
+        var $progressCount = $('#background-progress-count');
+
+        $progressArea.show();
+
+        // Clear any existing interval
+        if (backgroundProgressInterval) {
+            clearInterval(backgroundProgressInterval);
+        }
+
+        // Poll every 5 seconds
+        backgroundProgressInterval = setInterval(function() {
+            checkBackgroundProgress();
+        }, 5000);
+
+        // Also check immediately
+        checkBackgroundProgress();
+    }
+
+    /**
+     * Check background generation progress
+     */
+    function checkBackgroundProgress() {
+        var $progressArea = $('#background-generation-progress');
+        var $progressText = $('#background-progress-text');
+        var $progressCount = $('#background-progress-count');
+
+        fetch(msmSitemapAdmin.restUrl + 'background-progress', {
+            method: 'GET',
+            headers: {
+                'X-WP-Nonce': msmSitemapAdmin.nonce,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(data) {
+            if (data.in_progress) {
+                var completed = data.completed || 0;
+                var total = data.total || 0;
+                var remaining = data.remaining || 0;
+
+                $progressText.text(msmSitemapAdmin.backgroundProgressText || 'Background generation in progress...');
+                $progressCount.text('(' + completed + ' / ' + total + ' completed)');
+                $progressArea.show();
+            } else {
+                // Generation complete
+                $progressArea.hide();
+                if (backgroundProgressInterval) {
+                    clearInterval(backgroundProgressInterval);
+                    backgroundProgressInterval = null;
+                }
+                // Refresh the missing sitemaps count
+                loadMissingSitemapsCount();
+            }
+        })
+        .catch(function(error) {
+            console.error('Error checking background progress:', error);
+        });
+    }
+
+    /**
+     * Load missing sitemaps count via REST API
+     */
     function loadMissingSitemapsCount() {
-        const $content = $('#missing-sitemaps-content');
+        var $content = $('#missing-sitemaps-content');
 
         if ($content.length === 0) {
             return;
@@ -76,9 +171,9 @@ jQuery(document).ready(function($) {
             return response.json();
         })
         .then(function(data) {
-            const summary = data.summary;
+            var summary = data.summary;
 
-            let html = '';
+            var html = '';
 
             if (summary.has_missing) {
                 html += '<span style="color: #dc3232; font-weight: bold;">';
@@ -92,19 +187,24 @@ jQuery(document).ready(function($) {
 
             $content.html(html);
 
-            // Update button state
-            const $button = $('#generate-missing-button');
+            // Update button states
+            var $directButton = $('#generate-missing-direct-button');
+            var $backgroundButton = $('#generate-missing-background-button');
+
             if (summary.has_missing) {
-                $button.removeClass('button-secondary').addClass('button-primary').prop('disabled', false);
-                // Update button text based on cron status
-                if (data.button_text) {
-                    $button.val(data.button_text);
+                $directButton.removeClass('button-secondary').addClass('button-primary').prop('disabled', false);
+                if ($backgroundButton.length) {
+                    $backgroundButton.removeClass('button-secondary').addClass('button-primary').prop('disabled', false);
                 }
             } else {
-                $button.removeClass('button-primary').addClass('button-secondary').prop('disabled', true);
-                // Reset button text to default when no missing sitemaps
-                $button.val(msmSitemapAdmin.generateMissingText || 'Generate Missing Sitemaps');
+                $directButton.removeClass('button-primary').addClass('button-secondary').prop('disabled', true);
+                if ($backgroundButton.length) {
+                    $backgroundButton.removeClass('button-primary').addClass('button-secondary').prop('disabled', true);
+                }
             }
+
+            // Also check if background generation is in progress
+            checkBackgroundProgressOnLoad();
         })
         .catch(function(error) {
             console.error('Error loading missing sitemaps:', error);
@@ -112,18 +212,45 @@ jQuery(document).ready(function($) {
         });
     }
 
-    // Toggle detailed statistics section
+    /**
+     * Check if background generation is in progress on page load
+     */
+    function checkBackgroundProgressOnLoad() {
+        fetch(msmSitemapAdmin.restUrl + 'background-progress', {
+            method: 'GET',
+            headers: {
+                'X-WP-Nonce': msmSitemapAdmin.nonce,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(data) {
+            if (data.in_progress) {
+                // Start polling if generation is in progress
+                startBackgroundProgressPolling();
+            }
+        })
+        .catch(function(error) {
+            console.error('Error checking background progress:', error);
+        });
+    }
+
+    /**
+     * Toggle detailed statistics section
+     */
     function toggleDetailedStats() {
-        const content = document.querySelector('.detailed-stats-content');
-        const button = document.querySelector('.detailed-stats-toggle');
-        
+        var content = document.querySelector('.detailed-stats-content');
+        var button = document.querySelector('.detailed-stats-toggle');
+
         if (!content || !button) {
             return;
         }
-        
-        const icon = button.querySelector('.dashicons');
-        const text = button.querySelector('span:not(.dashicons)');
-        
+
+        var icon = button.querySelector('.dashicons');
+        var text = button.querySelector('span:not(.dashicons)');
+
         if (content.style.display === 'none') {
             content.style.display = 'block';
             icon.className = 'dashicons dashicons-arrow-up-alt2';
@@ -135,35 +262,39 @@ jQuery(document).ready(function($) {
         }
     }
 
-    // Toggle custom date range input fields
+    /**
+     * Toggle custom date range input fields
+     */
     function toggleCustomDateRange(value) {
-        const customRange = document.getElementById('custom-date-range');
+        var customRange = document.getElementById('custom-date-range');
         if (!customRange) {
             return;
         }
-        
+
         if (value === 'custom') {
             customRange.style.display = 'inline-block';
         } else {
             customRange.style.display = 'none';
             // Auto-submit for non-custom ranges
-            const form = document.querySelector('#stats-date-range');
+            var form = document.querySelector('#stats-date-range');
             if (form && form.form) {
                 form.form.submit();
             }
         }
     }
 
-    // Toggle danger zone section
+    /**
+     * Toggle danger zone section
+     */
     function toggleDangerZone() {
-        const content = document.getElementById('danger-zone-content');
-        const icon = document.getElementById('danger-zone-icon');
-        const text = document.getElementById('danger-zone-toggle-text');
-        
+        var content = document.getElementById('danger-zone-content');
+        var icon = document.getElementById('danger-zone-icon');
+        var text = document.getElementById('danger-zone-toggle-text');
+
         if (!content || !icon || !text) {
             return;
         }
-        
+
         if (content.style.display === 'none') {
             content.style.display = 'grid';
             icon.className = 'dashicons dashicons-arrow-up-alt2';
@@ -175,36 +306,51 @@ jQuery(document).ready(function($) {
         }
     }
 
-    // Confirm reset action
+    /**
+     * Confirm reset action
+     */
     function confirmReset() {
         return confirm(msmSitemapAdmin.confirmResetText || 'Are you sure you want to reset all sitemap data? This action cannot be undone and will delete all sitemaps, metadata, and statistics.');
     }
 
-    // Toggle images settings visibility
+    /**
+     * Toggle images settings visibility
+     */
     function toggleImagesSettings() {
-        const imagesCheckbox = document.getElementById('images_provider_enabled');
-        const imagesSettings = document.getElementById('images_settings');
-        
+        var imagesCheckbox = document.getElementById('images_provider_enabled');
+        var imagesSettings = document.getElementById('images_settings');
+
         if (!imagesCheckbox || !imagesSettings) {
             return;
         }
-        
+
         imagesSettings.style.display = imagesCheckbox.checked ? 'block' : 'none';
     }
 
-    // Initialize event listeners
+    /**
+     * Initialize event listeners
+     */
     function initializeEventListeners() {
-        // Generate missing sitemaps button - intercept form submit
-        const generateButton = document.getElementById('generate-missing-button');
-        if (generateButton) {
-            const form = generateButton.closest('form');
-            if (form) {
-                form.addEventListener('submit', generateMissingSitemaps);
-            }
+        // Direct generate button click
+        var directButton = document.getElementById('generate-missing-direct-button');
+        if (directButton) {
+            directButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                generateMissingSitemaps(false);
+            });
+        }
+
+        // Background generate button click
+        var backgroundButton = document.getElementById('generate-missing-background-button');
+        if (backgroundButton) {
+            backgroundButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                generateMissingSitemaps(true);
+            });
         }
 
         // Stats date range change
-        const statsDateRange = document.getElementById('stats-date-range');
+        var statsDateRange = document.getElementById('stats-date-range');
         if (statsDateRange) {
             statsDateRange.addEventListener('change', function() {
                 toggleCustomDateRange(this.value);
@@ -212,13 +358,13 @@ jQuery(document).ready(function($) {
         }
 
         // Danger zone toggle
-        const dangerZoneToggle = document.getElementById('danger-zone-toggle');
+        var dangerZoneToggle = document.getElementById('danger-zone-toggle');
         if (dangerZoneToggle) {
             dangerZoneToggle.addEventListener('click', toggleDangerZone);
         }
 
         // Reset form confirmation
-        const resetForm = document.querySelector('form[onsubmit="return confirmReset();"]');
+        var resetForm = document.querySelector('form[onsubmit="return confirmReset();"]');
         if (resetForm) {
             // Remove the inline onsubmit attribute
             resetForm.removeAttribute('onsubmit');
@@ -230,13 +376,13 @@ jQuery(document).ready(function($) {
         }
 
         // Images provider checkbox
-        const imagesCheckbox = document.getElementById('images_provider_enabled');
+        var imagesCheckbox = document.getElementById('images_provider_enabled');
         if (imagesCheckbox) {
             imagesCheckbox.addEventListener('change', toggleImagesSettings);
         }
 
         // Detailed stats toggle (if exists)
-        const detailedStatsToggle = document.querySelector('button[onclick="toggleDetailedStats()"]');
+        var detailedStatsToggle = document.querySelector('button[onclick="toggleDetailedStats()"]');
         if (detailedStatsToggle) {
             // Remove the inline onclick attribute
             detailedStatsToggle.removeAttribute('onclick');
