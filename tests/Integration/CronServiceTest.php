@@ -298,9 +298,9 @@ class CronServiceTest extends TestCase {
 		$updated_post = get_post( $post_id );
 		$this->assertEquals( '2025-08-07 10:00:00', $updated_post->post_date );
 		
-		// Run the incremental update
-		$missing_handler = $this->get_service( \Automattic\MSM_Sitemap\Infrastructure\Cron\MissingSitemapGenerationHandler::class );
-		$missing_handler->execute();
+		// Run the automatic update
+		$automatic_handler = $this->get_service( \Automattic\MSM_Sitemap\Infrastructure\Cron\AutomaticUpdateCronHandler::class );
+		$automatic_handler->execute();
 		
 		// Verify sitemap for August 6th is deleted (orphaned)
 		$this->assertFalse( $this->get_sitemap_post_id( 2025, 8, 6 ) );

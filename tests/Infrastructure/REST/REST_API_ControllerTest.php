@@ -15,7 +15,7 @@ use Automattic\MSM_Sitemap\Application\Services\SitemapStatsService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapValidationService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapExportService;
 use Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService;
-use Automattic\MSM_Sitemap\Application\Services\MissingSitemapGenerationService;
+use Automattic\MSM_Sitemap\Application\Services\IncrementalGenerationService;
 use WP_REST_Request;
 use WP_Test_REST_TestCase;
 
@@ -46,7 +46,7 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 		$sitemap_generator          = $this->createMock( \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator::class );
 		$generate_use_case          = $this->createMock( \Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase::class );
 		$missing_detection_service  = $this->createMock( MissingSitemapDetectionService::class );
-		$missing_generation_service = $this->createMock( MissingSitemapGenerationService::class );
+		$incremental_generation_service = $this->createMock( IncrementalGenerationService::class );
 
 		$this->controller = new REST_API_Controller(
 			$sitemap_service,
@@ -57,7 +57,7 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 			$sitemap_generator,
 			$generate_use_case,
 			$missing_detection_service,
-			$missing_generation_service
+			$incremental_generation_service
 		);
 	}
 
@@ -212,7 +212,7 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator::class ),
 			$this->createMock( \Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase::class ),
 			$this->createMock( MissingSitemapDetectionService::class ),
-			$this->createMock( MissingSitemapGenerationService::class )
+			$this->createMock( IncrementalGenerationService::class )
 		);
 
 		$response = $controller->get_sitemap( $request );
@@ -264,7 +264,7 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator::class ),
 			$this->createMock( \Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase::class ),
 			$this->createMock( MissingSitemapDetectionService::class ),
-			$this->createMock( MissingSitemapGenerationService::class )
+			$this->createMock( IncrementalGenerationService::class )
 		);
 
 		$response = $controller->get_sitemap( $request );
@@ -311,7 +311,7 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator::class ),
 			$this->createMock( \Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase::class ),
 			$missing_detection_service,
-			$this->createMock( MissingSitemapGenerationService::class )
+			$this->createMock( IncrementalGenerationService::class )
 		);
 
 		$response = $controller->get_missing_sitemaps( $request );
@@ -366,7 +366,7 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator::class ),
 			$this->createMock( \Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase::class ),
 			$missing_detection_service,
-			$this->createMock( MissingSitemapGenerationService::class )
+			$this->createMock( IncrementalGenerationService::class )
 		);
 
 		$response = $controller->get_missing_sitemaps( $request );
@@ -384,8 +384,8 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 		$request = new WP_REST_Request( 'POST', '/msm-sitemap/v1/generate-missing' );
 
 		// Mock the generation service
-		$missing_generation_service = $this->createMock( MissingSitemapGenerationService::class );
-		$missing_generation_service->method( 'generate_missing_sitemaps' )
+		$incremental_generation_service = $this->createMock( IncrementalGenerationService::class );
+		$incremental_generation_service->method( 'generate' )
 			->willReturn(
 				array(
 					'success'         => true,
@@ -404,7 +404,7 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator::class ),
 			$this->createMock( \Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase::class ),
 			$this->createMock( MissingSitemapDetectionService::class ),
-			$missing_generation_service
+			$incremental_generation_service
 		);
 
 		$response = $controller->generate_missing_sitemaps( $request );
@@ -426,8 +426,8 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 		$request = new WP_REST_Request( 'POST', '/msm-sitemap/v1/generate-missing' );
 
 		// Mock the generation service with failure
-		$missing_generation_service = $this->createMock( MissingSitemapGenerationService::class );
-		$missing_generation_service->method( 'generate_missing_sitemaps' )
+		$incremental_generation_service = $this->createMock( IncrementalGenerationService::class );
+		$incremental_generation_service->method( 'generate' )
 			->willReturn(
 				array(
 					'success' => false,
@@ -444,7 +444,7 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 			$this->createMock( \Automattic\MSM_Sitemap\Application\Services\SitemapGenerator::class ),
 			$this->createMock( \Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase::class ),
 			$this->createMock( MissingSitemapDetectionService::class ),
-			$missing_generation_service
+			$incremental_generation_service
 		);
 
 		$response = $controller->generate_missing_sitemaps( $request );

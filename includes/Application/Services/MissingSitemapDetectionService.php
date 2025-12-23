@@ -5,17 +5,21 @@
  * @package Automattic\MSM_Sitemap\Application\Services
  */
 
-declare(strict_types=1);
+declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Application\Services;
 
+use Automattic\MSM_Sitemap\Domain\Contracts\SitemapDateProviderInterface;
 use Automattic\MSM_Sitemap\Domain\Contracts\SitemapRepositoryInterface;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository;
 
 /**
- * Service for detecting missing sitemaps and providing counts for generation
+ * Service for detecting missing sitemaps.
+ *
+ * A sitemap is considered missing when there are published posts on a date
+ * but no corresponding sitemap exists.
  */
-class MissingSitemapDetectionService {
+class MissingSitemapDetectionService implements SitemapDateProviderInterface {
 
 	/**
 	 * The sitemap repository.
@@ -32,25 +36,41 @@ class MissingSitemapDetectionService {
 	private PostRepository $post_repository;
 
 	/**
+	 * The stale sitemap detection service.
+	 *
+	 * @var StaleSitemapDetectionService|null
+	 */
+	private ?StaleSitemapDetectionService $stale_detection_service;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SitemapRepositoryInterface $sitemap_repository The sitemap repository.
-	 * @param PostRepository $post_repository The post repository.
+	 * @param SitemapRepositoryInterface        $sitemap_repository       The sitemap repository.
+	 * @param PostRepository                    $post_repository          The post repository.
+	 * @param StaleSitemapDetectionService|null $stale_detection_service  The stale detection service (optional).
 	 */
-	public function __construct( SitemapRepositoryInterface $sitemap_repository, PostRepository $post_repository ) {
-		$this->sitemap_repository = $sitemap_repository;
-		$this->post_repository    = $post_repository;
+	public function __construct(
+		SitemapRepositoryInterface $sitemap_repository,
+		PostRepository $post_repository,
+		?StaleSitemapDetectionService $stale_detection_service = null
+	) {
+		$this->sitemap_repository       = $sitemap_repository;
+		$this->post_repository          = $post_repository;
+		$this->stale_detection_service  = $stale_detection_service;
 	}
 
 	/**
-	 * Get missing sitemap dates and counts using optimized queries
+	 * Get dates with missing sitemaps.
 	 *
-	 * @return array Array with missing dates and counts
+	 * Implements SitemapDateProviderInterface.
+	 *
+	 * @return array<string> Array of dates in YYYY-MM-DD format.
 	 */
-	public function get_missing_sitemaps(): array {
+	public function get_dates(): array {
 		global $wpdb;
 
 		// Get all unique post dates that should have sitemaps
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$post_dates = $wpdb->get_col(
 			$wpdb->prepare(
 				"SELECT DISTINCT DATE(post_date) as post_date
@@ -65,6 +85,7 @@ class MissingSitemapDetectionService {
 		);
 
 		// Get all existing sitemap dates
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$sitemap_dates = $wpdb->get_col(
 			$wpdb->prepare(
 				"SELECT post_title
@@ -77,11 +98,56 @@ class MissingSitemapDetectionService {
 		);
 
 		// Find missing dates (dates with posts but no sitemaps)
-		$missing_dates = array_diff( $post_dates, $sitemap_dates );
-		$missing_dates = array_values( $missing_dates ); // Re-index array
+		$missing_dates = array_diff( $post_dates ?: array(), $sitemap_dates ?: array() );
 
-		// Find dates that need updates (have sitemaps but posts were modified recently)
-		$dates_needing_updates = $this->get_dates_needing_updates( $sitemap_dates );
+		return array_values( $missing_dates ); // Re-index array
+	}
+
+	/**
+	 * Get the provider type identifier.
+	 *
+	 * @return string The provider type.
+	 */
+	public function get_type(): string {
+		return 'missing';
+	}
+
+	/**
+	 * Get a human-readable description of what this provider detects.
+	 *
+	 * @return string The description.
+	 */
+	public function get_description(): string {
+		return __( 'Dates with posts but no sitemap', 'msm-sitemap' );
+	}
+
+	/**
+	 * Get comprehensive missing sitemap data including stale sitemaps.
+	 *
+	 * This method provides backward compatibility and combines data from
+	 * both missing and stale detection services.
+	 *
+	 * @return array{
+	 *     missing_dates: array<string>,
+	 *     dates_needing_updates: array<string>,
+	 *     all_dates_to_generate: array<string>,
+	 *     missing_dates_count: int,
+	 *     dates_needing_updates_count: int,
+	 *     all_dates_count: int,
+	 *     total_posts_count: int,
+	 *     recently_modified_count: int
+	 * }
+	 */
+	public function get_missing_sitemaps(): array {
+		global $wpdb;
+
+		$missing_dates = $this->get_dates();
+
+		// Get stale dates from the stale detection service if available
+		$dates_needing_updates = array();
+		if ( $this->stale_detection_service ) {
+			$dates_needing_updates = $this->stale_detection_service->get_dates();
+		}
 
 		// Combine missing dates and dates needing updates
 		$all_dates_to_generate = array_unique( array_merge( $missing_dates, $dates_needing_updates ) );
@@ -89,9 +155,11 @@ class MissingSitemapDetectionService {
 		// Count posts for all dates that need generation
 		$total_posts_count = 0;
 		if ( ! empty( $all_dates_to_generate ) ) {
-			$placeholders      = implode( ',', array_fill( 0, count( $all_dates_to_generate ), '%s' ) );
+			$placeholders = implode( ',', array_fill( 0, count( $all_dates_to_generate ), '%s' ) );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$total_posts_count = $wpdb->get_var(
 				$wpdb->prepare(
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 					"SELECT COUNT(*)
 					FROM {$wpdb->posts}
 					WHERE post_type IN (%s, %s)
@@ -109,7 +177,8 @@ class MissingSitemapDetectionService {
 		if ( $last_run ) {
 			// Ensure $last_run is an integer timestamp
 			$last_run_timestamp = is_numeric( $last_run ) ? (int) $last_run : strtotime( $last_run );
-			
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$recently_modified_count = $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT COUNT(*)
@@ -138,48 +207,9 @@ class MissingSitemapDetectionService {
 	}
 
 	/**
-	 * Get dates that need updates due to recent post modifications
+	 * Check if there are any missing sitemaps or recently modified content.
 	 *
-	 * @param array $sitemap_dates Array of existing sitemap dates.
-	 * @return array Array of dates that need updates.
-	 */
-	private function get_dates_needing_updates( array $sitemap_dates ): array {
-		global $wpdb;
-
-		if ( empty( $sitemap_dates ) ) {
-			return $sitemap_dates;
-		}
-
-		// Get the last sitemap update time
-		$last_update = get_option( 'msm_sitemap_update_last_run' );
-		if ( ! $last_update ) {
-			return $sitemap_dates;
-		}
-
-		// Ensure $last_update is an integer timestamp
-		$last_update_timestamp = is_numeric( $last_update ) ? (int) $last_update : strtotime( $last_update );
-
-		// Find dates that have posts modified since the last sitemap update
-		$placeholders                    = implode( ',', array_fill( 0, count( $sitemap_dates ), '%s' ) );
-		$dates_with_recent_modifications = $wpdb->get_col(
-			$wpdb->prepare(
-				"SELECT DISTINCT DATE(post_date) as post_date
-				FROM {$wpdb->posts}
-				WHERE post_type IN (%s, %s)
-				AND post_status = %s
-				AND DATE(post_date) IN ($placeholders)
-				AND post_modified_gmt > %s",
-				array_merge( array( 'post', 'page', 'publish' ), $sitemap_dates, array( gmdate( 'Y-m-d H:i:s', $last_update_timestamp ) ) )
-			)
-		);
-
-		return $dates_with_recent_modifications;
-	}
-
-	/**
-	 * Check if there are any missing sitemaps or recently modified content
-	 *
-	 * @return bool True if there are missing sitemaps or recent content
+	 * @return bool True if there are missing sitemaps or recent content.
 	 */
 	public function has_missing_content(): bool {
 		$missing_data = $this->get_missing_sitemaps();
@@ -187,13 +217,13 @@ class MissingSitemapDetectionService {
 	}
 
 	/**
-	 * Get a summary of missing content for display
+	 * Get a summary of missing content for display.
 	 *
-	 * @return array Summary data for UI display
+	 * @return array{has_missing: bool, message: string, counts: array<string>}
 	 */
 	public function get_missing_content_summary(): array {
 		$missing_data = $this->get_missing_sitemaps();
-		
+
 		$summary = array(
 			'has_missing' => false,
 			'message'     => '',
@@ -202,7 +232,7 @@ class MissingSitemapDetectionService {
 
 		if ( $missing_data['all_dates_count'] > 0 || $missing_data['recently_modified_count'] > 0 ) {
 			$summary['has_missing'] = true;
-			
+
 			// Use the centralized method for message parts
 			$counts = $this->get_success_message_parts();
 
@@ -225,9 +255,9 @@ class MissingSitemapDetectionService {
 	}
 
 	/**
-	 * Get message parts for success notifications
+	 * Get message parts for success notifications.
 	 *
-	 * @return array Array of message parts for display
+	 * @return array<string> Array of message parts for display.
 	 */
 	public function get_success_message_parts(): array {
 		$missing_data  = $this->get_missing_sitemaps();

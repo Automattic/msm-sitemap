@@ -22,10 +22,12 @@ use Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapIndexCollectionFactor
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\StylesheetManager;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\PostTypeRegistration;
 
+use Automattic\MSM_Sitemap\Domain\Contracts\WordPressIntegrationInterface;
+
 /**
  * Handles sitemap endpoint requests and responses.
  */
-class SitemapEndpointHandler {
+class SitemapEndpointHandler implements WordPressIntegrationInterface {
 
 	/**
 	 * The sitemap service.
@@ -46,6 +48,13 @@ class SitemapEndpointHandler {
 	public function __construct( SitemapService $sitemap_service, ?PostTypeRegistration $post_type_registration = null ) {
 		$this->sitemap_service        = $sitemap_service;
 		$this->post_type_registration = $post_type_registration ?? new PostTypeRegistration();
+	}
+
+	/**
+	 * Register WordPress hooks and filters for sitemap endpoint handling.
+	 */
+	public function register_hooks(): void {
+		add_filter( 'template_include', array( $this, 'handle_template_include' ) );
 	}
 
 	/**

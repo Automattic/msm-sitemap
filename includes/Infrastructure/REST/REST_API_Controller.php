@@ -15,7 +15,7 @@ use Automattic\MSM_Sitemap\Application\Services\SitemapValidationService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapExportService;
 use Automattic\MSM_Sitemap\Application\Services\CronManagementService;
 use Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService;
-use Automattic\MSM_Sitemap\Application\Services\MissingSitemapGenerationService;
+use Automattic\MSM_Sitemap\Application\Services\IncrementalGenerationService;
 
 use Automattic\MSM_Sitemap\Application\Services\SitemapGenerator;
 use Automattic\MSM_Sitemap\Application\DTOs\SitemapOperationResult;
@@ -91,24 +91,24 @@ class REST_API_Controller implements WordPressIntegrationInterface {
 	private MissingSitemapDetectionService $missing_detection_service;
 
 	/**
-	 * The missing sitemap generation service.
+	 * The incremental generation service.
 	 *
-	 * @var MissingSitemapGenerationService
+	 * @var IncrementalGenerationService
 	 */
-	private MissingSitemapGenerationService $missing_generation_service;
+	private IncrementalGenerationService $incremental_generation_service;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param SitemapService $sitemap_service The sitemap service.
-	 * @param SitemapStatsService $stats_service The stats service.
-	 * @param SitemapValidationService $validation_service The validation service.
-	 * @param SitemapExportService $export_service The export service.
-	 * @param CronManagementService $cron_management_service The cron management service.
-	 * @param SitemapGenerator $sitemap_generator The sitemap generator.
-	 * @param GenerateSitemapUseCase $generate_use_case The generate sitemap use case.
-	 * @param MissingSitemapDetectionService $missing_detection_service The missing sitemap detection service.
-	 * @param MissingSitemapGenerationService $missing_generation_service The missing sitemap generation service.
+	 * @param SitemapService                 $sitemap_service                 The sitemap service.
+	 * @param SitemapStatsService            $stats_service                   The stats service.
+	 * @param SitemapValidationService       $validation_service              The validation service.
+	 * @param SitemapExportService           $export_service                  The export service.
+	 * @param CronManagementService          $cron_management_service         The cron management service.
+	 * @param SitemapGenerator               $sitemap_generator               The sitemap generator.
+	 * @param GenerateSitemapUseCase         $generate_use_case               The generate sitemap use case.
+	 * @param MissingSitemapDetectionService $missing_detection_service       The missing sitemap detection service.
+	 * @param IncrementalGenerationService   $incremental_generation_service  The incremental generation service.
 	 */
 	public function __construct(
 		SitemapService $sitemap_service,
@@ -119,17 +119,17 @@ class REST_API_Controller implements WordPressIntegrationInterface {
 		SitemapGenerator $sitemap_generator,
 		GenerateSitemapUseCase $generate_use_case,
 		MissingSitemapDetectionService $missing_detection_service,
-		MissingSitemapGenerationService $missing_generation_service
+		IncrementalGenerationService $incremental_generation_service
 	) {
-		$this->sitemap_service            = $sitemap_service;
-		$this->stats_service              = $stats_service;
-		$this->validation_service         = $validation_service;
-		$this->export_service             = $export_service;
-		$this->cron_management_service    = $cron_management_service;
-		$this->sitemap_generator          = $sitemap_generator;
-		$this->generate_use_case          = $generate_use_case;
-		$this->missing_detection_service  = $missing_detection_service;
-		$this->missing_generation_service = $missing_generation_service;
+		$this->sitemap_service                = $sitemap_service;
+		$this->stats_service                  = $stats_service;
+		$this->validation_service             = $validation_service;
+		$this->export_service                 = $export_service;
+		$this->cron_management_service        = $cron_management_service;
+		$this->sitemap_generator              = $sitemap_generator;
+		$this->generate_use_case              = $generate_use_case;
+		$this->missing_detection_service      = $missing_detection_service;
+		$this->incremental_generation_service = $incremental_generation_service;
 	}
 
 	/**
@@ -329,6 +329,26 @@ class REST_API_Controller implements WordPressIntegrationInterface {
 				array(
 					'methods'             => 'POST',
 					'callback'            => array( $this, 'generate_missing_sitemaps' ),
+					'permission_callback' => array( $this, 'check_manage_options_permission' ),
+					'args'                => array(
+						'background' => array(
+							'default'           => false,
+							'sanitize_callback' => 'rest_sanitize_boolean',
+							'description'       => 'Whether to schedule background generation (true) or run directly (false)',
+						),
+					),
+				),
+			)
+		);
+
+		// Background generation progress endpoint
+		register_rest_route(
+			'msm-sitemap/v1',
+			'/background-progress',
+			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => array( $this, 'get_background_generation_progress' ),
 					'permission_callback' => array( $this, 'check_manage_options_permission' ),
 				),
 			)
@@ -1245,7 +1265,13 @@ class REST_API_Controller implements WordPressIntegrationInterface {
 	 * @return WP_REST_Response The response object.
 	 */
 	public function generate_missing_sitemaps( WP_REST_Request $request ) {
-		$result = $this->missing_generation_service->generate_missing_sitemaps();
+		$background = $request->get_param( 'background' );
+
+		if ( $background ) {
+			$result = $this->incremental_generation_service->schedule();
+		} else {
+			$result = $this->incremental_generation_service->generate();
+		}
 
 		$response_data = array(
 			'success' => $result['success'],
@@ -1257,11 +1283,27 @@ class REST_API_Controller implements WordPressIntegrationInterface {
 			$response_data['generated_count'] = $result['generated_count'];
 		}
 
+		if ( isset( $result['scheduled_count'] ) ) {
+			$response_data['scheduled_count'] = $result['scheduled_count'];
+		}
+
 		$status_code = $result['success'] ? 200 : 400;
 
 		$response = rest_ensure_response( $response_data );
 		$response->set_status( $status_code );
 		return $response;
+	}
+
+	/**
+	 * Get background generation progress.
+	 *
+	 * @param WP_REST_Request $request The request object.
+	 * @return WP_REST_Response The response object.
+	 */
+	public function get_background_generation_progress( WP_REST_Request $request ) {
+		$progress = $this->incremental_generation_service->get_progress();
+
+		return rest_ensure_response( $progress );
 	}
 
 	/**
