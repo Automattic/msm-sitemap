@@ -10,7 +10,7 @@ declare(strict_types=1);
 namespace Automattic\MSM_Sitemap\Tests;
 
 use Automattic\MSM_Sitemap\Domain\Contracts\WordPressIntegrationInterface;
-use Automattic\MSM_Sitemap\Infrastructure\WordPress\StylesheetManager;
+use Automattic\MSM_Sitemap\Infrastructure\HTTP\XslRequestHandler;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\Permalinks;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\PluginLinks;
 use Automattic\MSM_Sitemap\Infrastructure\CLI\CLISetup;
@@ -32,7 +32,7 @@ class WordPressIntegrationInterfaceTest extends TestCase {
 	 */
 	public function test_classes_implement_interface(): void {
 		$classes = array(
-			StylesheetManager::class,
+			XslRequestHandler::class,
 			Permalinks::class,
 			PluginLinks::class,
 			CLISetup::class,
@@ -57,9 +57,9 @@ class WordPressIntegrationInterfaceTest extends TestCase {
 	 */
 	public function test_setup_method_can_be_called(): void {
 		$container = $this->container;
-		
+
 		$integrations = array(
-			$container->get( StylesheetManager::class ),
+			$container->get( XslRequestHandler::class ),
 			$container->get( Permalinks::class ),
 			$container->get( PluginLinks::class ),
 			$container->get( CLISetup::class ),

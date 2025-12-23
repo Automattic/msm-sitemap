@@ -30,7 +30,7 @@ class SitemapXmlFormatterTest extends TestCase {
 		$xml = $formatter->format( $content );
 
 		$this->assertStringContainsString( '<?xml-stylesheet type="text/xsl"', $xml );
-		$this->assertStringContainsString( '/wp-sitemap.xsl', $xml );
+		$this->assertStringContainsString( '/msm-sitemap.xsl', $xml );
 	}
 
 	/**
