@@ -18,8 +18,8 @@ use Automattic\MSM_Sitemap\Infrastructure\WordPress\CoreIntegration;
 use Automattic\MSM_Sitemap\Infrastructure\REST\REST_API_Controller;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\PostTypeRegistration;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\UI;
-use Automattic\MSM_Sitemap\Infrastructure\Cron\MissingSitemapGenerationHandler;
-use Automattic\MSM_Sitemap\Infrastructure\Cron\FullGenerationHandler;
+use Automattic\MSM_Sitemap\Infrastructure\Cron\AutomaticUpdateCronHandler;
+use Automattic\MSM_Sitemap\Infrastructure\Cron\BackgroundGenerationCronHandler;
 use Automattic\MSM_Sitemap\Tests\TestCase;
 
 /**
@@ -40,8 +40,8 @@ class WordPressIntegrationInterfaceTest extends TestCase {
 			REST_API_Controller::class,
 			PostTypeRegistration::class,
 			UI::class,
-			MissingSitemapGenerationHandler::class,
-			FullGenerationHandler::class,
+			AutomaticUpdateCronHandler::class,
+			BackgroundGenerationCronHandler::class,
 		);
 
 		foreach ( $classes as $class ) {
@@ -67,8 +67,8 @@ class WordPressIntegrationInterfaceTest extends TestCase {
 			$container->get( REST_API_Controller::class ),
 			$container->get( PostTypeRegistration::class ),
 			$container->get( UI::class ),
-			$container->get( MissingSitemapGenerationHandler::class ),
-			$container->get( FullGenerationHandler::class ),
+			$container->get( AutomaticUpdateCronHandler::class ),
+			$container->get( BackgroundGenerationCronHandler::class ),
 		);
 
 		foreach ( $integrations as $integration ) {

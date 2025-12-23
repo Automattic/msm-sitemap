@@ -9,8 +9,6 @@ namespace Automattic\MSM_Sitemap;
 
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\CoreIntegration;
 
-
-use Automattic\MSM_Sitemap\Infrastructure\REST\SitemapEndpointHandler;
 use Automattic\MSM_Sitemap\Infrastructure\Cron\FullGenerationHandler;
 use Automattic\MSM_Sitemap\Domain\Contracts\WordPressIntegrationInterface;
 use function Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container;
@@ -50,7 +48,6 @@ class Plugin {
 	 */
 	public function run(): void {
 		add_action( 'init', array( $this, 'setup_components' ) );
-		add_filter( 'template_include', array( SitemapEndpointHandler::class, 'handle_template_include' ) );
 	}
 
 	/**

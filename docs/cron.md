@@ -8,38 +8,230 @@ MSM Sitemap uses asynchronous generation via WP-Cron to avoid timeouts and memor
 
 - **Automatic sitemap updates** when new content is published
 - **Missing sitemap generation** for dates without sitemaps
+- **Stale sitemap regeneration** for dates with modified content
 - **Full sitemap regeneration** for complete rebuilds
-- **Frequency management** for update scheduling
 
-## Service Layer Architecture
+## Architecture
 
-The plugin uses a **Service Layer pattern** for cron management to ensure separation of concerns and maintainability:
+The sitemap generation system follows the Single Responsibility Principle with separate services for detection, scheduling, and execution.
 
-### Cron Management Services
+### Detection Services (What needs generation?)
 
-* **`Cron_Service`** (`includes/CronService.php`): Single source of truth for all cron management logic
-  - Handles enabling/disabling cron functionality
-  - Manages WordPress cron events and options
-  - Provides status checking and consistency validation
-  - Used by CLI, admin UI, and cron job handlers
-  - **Filter Support**: `msm_sitemap_cron_enabled` filter allows overriding cron status (useful for testing)
+These services implement `SitemapDateProviderInterface` and identify dates that need sitemap generation:
 
-* **`CronManagementService`** (`includes/Application/Services/CronManagementService.php`): Centralized business logic
-  - Manages cron frequency updates
-  - Provides consistent messages and status information
-  - Handles cron enable/disable operations
-  - Used by CLI, REST API, and admin UI
+```
+┌─────────────────────────────────────┐
+│    SitemapDateProviderInterface     │
+│    get_dates(): array<string>       │
+│    get_type(): string               │
+│    get_description(): string        │
+└─────────────────────────────────────┘
+         ▲           ▲           ▲
+         │           │           │
+┌────────┴──┐ ┌──────┴─────┐ ┌───┴────────────┐
+│  Missing  │ │   Stale    │ │  AllDates      │
+│ Detection │ │ Detection  │ │ WithPosts      │
+│  Service  │ │  Service   │ │  Service       │
+└───────────┘ └────────────┘ └────────────────┘
+```
 
-* **`FullSitemapGenerationService`** (`includes/Application/Services/FullSitemapGenerationService.php`): Full generation management
-  - Handles full sitemap generation initiation
-  - Manages generation state and progress
-  - Provides halt functionality for ongoing generation
+- **`MissingSitemapDetectionService`**: Finds dates with posts but no sitemap
+- **`StaleSitemapDetectionService`**: Finds dates where sitemap is older than latest post modification
+- **`AllDatesWithPostsService`**: Provides all dates with published posts (for full regeneration)
 
-### Sitemap Generation Services
+### Scheduling & Execution (How generation happens?)
 
-* **`FullGenerationCronService`**: Handles full sitemap generation
-* **`IncrementalGenerationCronService`**: Handles incremental updates
-* **`MissingSitemapGenerationService`**: Manages missing sitemap detection and generation
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                    SitemapGenerationScheduler                     │
+│   (Central scheduler for both direct and background generation)  │
+├──────────────────────────────────────────────────────────────────┤
+│  schedule(dates): Schedule background cron events                 │
+│  generate_now(dates): Generate sitemaps directly (blocking)       │
+│  generate_for_date(date): Generate single sitemap                 │
+│  is_in_progress(): Check if background generation is running      │
+│  get_progress(): Get {total, remaining, completed}                │
+│  cancel(): Cancel in-progress generation                          │
+└──────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                 BackgroundGenerationCronHandler                   │
+│      (Handles scheduled individual date generation events)        │
+├──────────────────────────────────────────────────────────────────┤
+│  register_hooks(): Register cron action handler                   │
+│  handle_generate_for_date(date): Handle individual cron event     │
+└──────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                     GenerateSitemapUseCase                        │
+│                  (Core sitemap generation logic)                  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### High-Level Generation Services
+
+These orchestrate the detection and scheduling for specific workflows:
+
+- **`FullGenerationService`**: Full sitemap regeneration
+  - Uses `AllDatesWithPostsService` to get all dates
+  - Schedules via `SitemapGenerationScheduler`
+
+- **`IncrementalGenerationService`**: Missing/stale sitemap generation ("incremental" = only what needs updating)
+  - Uses `MissingSitemapDetectionService` (which includes stale detection)
+  - Provides both direct (`generate()`) and background (`schedule()`) methods
+
+- **`AutomaticUpdateCronHandler`**: Handler for the recurring automatic update cron
+  - Handles `msm_cron_update_sitemap` hook (runs hourly by default)
+  - Calls `IncrementalGenerationService.generate()` for direct generation
+
+- **`BackgroundGenerationCronHandler`**: Handler for scheduled background generation events
+  - Handles `msm_cron_generate_sitemap_for_date` events (individual date generation)
+  - Used by both Full and Incremental background generation
+
+## Generation Workflows
+
+### 1. Automatic Incremental Updates
+
+When cron is enabled, the system periodically checks for missing or stale sitemaps:
+
+```
+Cron Event (msm_cron_update_sitemap)
+        │
+        ▼
+AutomaticUpdateCronHandler.execute()
+        │
+        ▼
+IncrementalGenerationService.generate()
+        │
+        ▼
+MissingSitemapDetectionService.get_missing_sitemaps()
+        │
+        ├── Missing dates (posts exist, no sitemap)
+        │
+        └── Stale dates (sitemap older than post modifications)
+        │
+        ▼
+SitemapGenerationScheduler.generate_now(dates)
+        │
+        ▼
+SitemapCleanupService.cleanup_all_orphaned_sitemaps()
+```
+
+### 2. Background Generation (Schedule Background Generation Button)
+
+When triggered from the admin UI:
+
+```
+Admin UI: "Schedule Background Generation" button
+        │
+        ▼
+IncrementalGenerationService.schedule()
+        │
+        ▼
+SitemapGenerationScheduler.schedule(dates)
+        │
+        ├── Set progress tracking options
+        │
+        └── Schedule staggered cron events (5 second intervals)
+                │
+                ▼
+        For each date (via cron):
+        msm_cron_generate_sitemap_for_date
+                │
+                ▼
+        BackgroundGenerationCronHandler.handle_generate_for_date()
+                │
+                ▼
+        SitemapGenerationScheduler.generate_for_date()
+                │
+                ▼
+        SitemapGenerationScheduler.record_date_completion()
+                │
+                ▼
+        (When last date completes):
+        SitemapCleanupService.cleanup_all_orphaned_sitemaps()
+```
+
+### 3. Direct Generation (Generate Now Button)
+
+For immediate generation without background scheduling:
+
+```
+Admin UI: "Generate Now" button
+        │
+        ▼
+IncrementalGenerationService.generate()
+        │
+        ▼
+MissingSitemapDetectionService.get_missing_sitemaps()
+        │
+        ▼
+SitemapGenerationScheduler.generate_now(dates)
+        │
+        ▼
+(Generates all sitemaps synchronously)
+```
+
+### 4. Full Regeneration
+
+When triggered from admin UI or CLI:
+
+```
+Admin UI: "Regenerate All Sitemaps" button
+        │
+        ▼
+FullGenerationService.start_full_generation()
+        │
+        ▼
+AllDatesWithPostsService.get_dates()
+        │
+        ▼
+SitemapGenerationScheduler.schedule(dates)
+        │
+        └── (Same background flow as section 2)
+```
+
+### 5. CLI Direct Generation
+
+For immediate generation without cron:
+
+```
+CLI: wp msm-sitemap generate --date=2024-01-15
+        │
+        ▼
+GenerateSitemapUseCase.execute(command)
+        │
+        ▼
+SitemapService.generate_for_date()
+```
+
+## Progress Tracking
+
+Background generation tracks progress via WordPress options:
+
+| Option | Description |
+|--------|-------------|
+| `msm_background_generation_in_progress` | Boolean: Is generation running? |
+| `msm_background_generation_total` | Integer: Total dates to generate |
+| `msm_background_generation_remaining` | Integer: Dates still pending |
+| `msm_generation_in_progress` | Boolean: Full generation flag (for UI) |
+
+Progress can be retrieved:
+
+```php
+$scheduler = $container->get( SitemapGenerationScheduler::class );
+$progress = $scheduler->get_progress();
+
+// Returns:
+// [
+//     'in_progress' => true,
+//     'total' => 150,
+//     'remaining' => 75,
+//     'completed' => 75
+// ]
+```
 
 ## Configuration
 
@@ -47,12 +239,21 @@ The plugin uses a **Service Layer pattern** for cron management to ensure separa
 
 Valid cron frequencies:
 - `5min` - Every 5 minutes
-- `10min` - Every 10 minutes  
+- `10min` - Every 10 minutes
 - `15min` - Every 15 minutes (default)
 - `30min` - Every 30 minutes
 - `hourly` - Every hour
 - `2hourly` - Every 2 hours
 - `3hourly` - Every 3 hours
+
+### Background Generation Interval
+
+Individual date generation events are scheduled 5 seconds apart to avoid server overload:
+
+```php
+// In SitemapGenerationScheduler
+private const INTERVAL_BETWEEN_EVENTS = 5; // seconds
+```
 
 ### WordPress Options
 
@@ -73,7 +274,7 @@ The plugin uses several WordPress options for cron management:
 # Enable automatic updates
 wp msm-sitemap cron enable
 
-# Disable automatic updates  
+# Disable automatic updates
 wp msm-sitemap cron disable
 
 # Check status
@@ -103,6 +304,12 @@ POST /wp-json/msm-sitemap/v1/cron/frequency
 
 # Reset cron
 POST /wp-json/msm-sitemap/v1/cron/reset
+
+# Get missing sitemaps status
+GET /wp-json/msm-sitemap/v1/missing
+
+# Generate missing sitemaps
+POST /wp-json/msm-sitemap/v1/generate-missing
 ```
 
 ### Admin Interface
@@ -114,6 +321,15 @@ The admin interface at **Settings > Sitemap** provides:
 - Frequency selection
 - Manual generation triggers
 - Generation status monitoring
+
+## WP VIP Compatibility
+
+The architecture is designed to work well with WP VIP Cron Control:
+
+1. **Staggered Events**: Individual date events are scheduled 5 seconds apart
+2. **Single Event Per Action**: Only one `msm_cron_generate_sitemap_for_date` event runs at a time
+3. **Non-Autoloaded Options**: Progress tracking uses `update_option(..., false)` to avoid autoload
+4. **Graceful Cancellation**: The `cancel()` method properly cleans up scheduled events
 
 ## Testing
 
@@ -132,7 +348,7 @@ add_filter( 'msm_sitemap_cron_enabled', 'my_override_cron_status' );
 function my_override_cron_status( bool $enabled ): bool {
     // Force cron to be enabled for testing
     return true;
-    
+
     // Or force it to be disabled
     // return false;
 }
@@ -150,22 +366,35 @@ add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 add_filter( 'msm_sitemap_cron_enabled', '__return_false' );
 ```
 
+### Manual Cron Event Execution
+
+For testing background generation in wp-env:
+
+```bash
+# Run a specific date's generation
+npx wp-env run cli wp cron event run msm_cron_generate_sitemap_for_date
+
+# List all scheduled events
+npx wp-env run cli wp cron event list
+```
+
 ## Architecture Benefits
 
 This architecture ensures:
 
-- **Single Responsibility**: Each class has a clear, focused purpose
-- **Testability**: Service logic can be tested independently using filters
-- **Maintainability**: Changes to cron logic only require updating the service
-- **Extensibility**: New features can be added without affecting existing code
-- **Clean Separation**: UI rendering is separate from action handling
+- **Single Responsibility**: Detection services find dates; scheduler handles execution
+- **Polymorphism**: All detection services implement the same interface
+- **Testability**: Services can be tested independently
+- **Flexibility**: Both direct and background generation share the same core scheduler
+- **Maintainability**: Clear separation between "what needs generation" and "how to generate"
+- **Extensibility**: New detection strategies can be added by implementing `SitemapDateProviderInterface`
 
 ## Troubleshooting
 
 ### Common Issues
 
 1. **Cron not running**: Check if WordPress cron is working on your site
-2. **Generation stuck**: Use the halt generation feature to stop ongoing processes
+2. **Generation stuck**: Use the cancel functionality or `wp msm-sitemap cron reset`
 3. **Frequency not updating**: Ensure the site has proper permissions to update options
 4. **Blog not public**: Cron requires the blog to be public (not private)
 
@@ -184,3 +413,14 @@ This will show:
 - Generation status
 - Halt status
 - Current frequency
+
+### Check Progress
+
+```bash
+# Check if generation is in progress
+wp option get msm_background_generation_in_progress
+
+# Check progress details
+wp option get msm_background_generation_total
+wp option get msm_background_generation_remaining
+```

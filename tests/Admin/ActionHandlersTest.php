@@ -160,7 +160,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$output = ob_get_clean();
 
 		$this->assertTrue( (bool) get_option( 'msm_generation_in_progress' ) );
-		$this->assertStringContainsString( 'Starting sitemap generation', $output );
+		$this->assertStringContainsString( 'Started full generation', $output );
 	}
 
 	/**
@@ -169,20 +169,23 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function test_handle_generate_full_when_cron_disabled(): void {
 		// Remove the filter that forces cron enabled in tests
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
+
 		ob_start();
 		$this->get_action_handlers()->handle_generate_full();
 		$output = ob_get_clean();
 
-		$this->assertStringContainsString( 'Cannot generate sitemap: automatic updates must be enabled', $output );
+		$this->assertStringContainsString( 'requires cron to be enabled', $output );
 		$this->assertFalse( (bool) get_option( 'msm_generation_in_progress' ) );
-		
+
 		// Restore the filter for other tests
 		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 	}
 
 	/**
-	 * Test that handle_generate_missing_sitemaps() starts generation and shows success message.
+	 * Test that handle_generate_missing_sitemaps() generates directly and shows success message.
+	 *
+	 * Note: As of 2.x, generate_missing_sitemaps() always runs directly (blocking).
+	 * Background generation is available via schedule_background_generation() method.
 	 */
 	public function test_handle_generate_from_latest(): void {
 		// Enable cron first
@@ -195,14 +198,15 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 				'post_content' => 'Test content',
 				'post_status'  => 'publish',
 				'post_date'    => current_time( 'mysql' ),
-			) 
+			)
 		);
 
 		ob_start();
 		$this->get_action_handlers()->handle_generate_missing_sitemaps();
 		$output = ob_get_clean();
 
-		$this->assertStringContainsString( 'Scheduled generation', $output );
+		// Should generate directly even when cron is enabled
+		$this->assertStringContainsString( 'Generated', $output );
 	}
 
 	/**
@@ -211,7 +215,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function test_handle_generate_from_latest_when_cron_disabled(): void {
 		// Remove the filter that forces cron enabled in tests
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
+
 		// Create a recent post to ensure there are latest posts
 		$post_id = wp_insert_post(
 			array(
@@ -219,7 +223,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 				'post_content' => 'Test content',
 				'post_status'  => 'publish',
 				'post_date'    => current_time( 'mysql' ),
-			) 
+			)
 		);
 
 		ob_start();
@@ -228,7 +232,50 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 
 		// Should work directly when cron is disabled
 		$this->assertStringContainsString( 'Generated', $output );
-		
+
+		// Restore the filter for other tests
+		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
+	}
+
+	/**
+	 * Test that handle_schedule_background_generation() schedules generation.
+	 */
+	public function test_handle_schedule_background_generation(): void {
+		// Enable cron first
+		$this->get_cron_scheduler()->enable_cron();
+
+		// Create a recent post to ensure there are missing sitemaps
+		$post_id = wp_insert_post(
+			array(
+				'post_title'   => 'Test Post',
+				'post_content' => 'Test content',
+				'post_status'  => 'publish',
+				'post_date'    => current_time( 'mysql' ),
+			)
+		);
+
+		ob_start();
+		$this->get_action_handlers()->handle_schedule_background_generation();
+		$output = ob_get_clean();
+
+		// Should schedule background generation
+		$this->assertStringContainsString( 'Scheduled background generation', $output );
+	}
+
+	/**
+	 * Test that handle_schedule_background_generation() requires cron to be enabled.
+	 */
+	public function test_handle_schedule_background_generation_requires_cron(): void {
+		// Remove the filter that forces cron enabled in tests
+		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
+
+		ob_start();
+		$this->get_action_handlers()->handle_schedule_background_generation();
+		$output = ob_get_clean();
+
+		// Should show warning about cron being required
+		$this->assertStringContainsString( 'Background generation requires cron', $output );
+
 		// Restore the filter for other tests
 		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 	}
@@ -256,7 +303,7 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$this->get_action_handlers()->handle_halt_generation();
 		$output = ob_get_clean();
 
-		$this->assertStringContainsString( 'Cannot stop sitemap generation: sitemap generation not in progress', $output );
+		$this->assertStringContainsString( 'Sitemap generation is not in progress', $output );
 	}
 
 	/**
