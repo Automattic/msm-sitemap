@@ -7,12 +7,12 @@
  * directly to search engines and users without going through the normal WordPress
  * template system.
  *
- * @package Automattic\MSM_Sitemap\Infrastructure\REST
+ * @package Automattic\MSM_Sitemap\Infrastructure\HTTP
  */
 
 declare(strict_types=1);
 
-namespace Automattic\MSM_Sitemap\Infrastructure\REST;
+namespace Automattic\MSM_Sitemap\Infrastructure\HTTP;
 
 use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
 use Automattic\MSM_Sitemap\Application\Services\SitemapService;

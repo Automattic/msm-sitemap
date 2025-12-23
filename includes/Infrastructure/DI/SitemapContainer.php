@@ -53,7 +53,7 @@ use Automattic\MSM_Sitemap\Infrastructure\Cron\BackgroundGenerationScheduler;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\UI;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\ActionHandlers;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\CoreIntegration;
-use Automattic\MSM_Sitemap\Infrastructure\REST\SitemapXmlRequestHandler;
+use Automattic\MSM_Sitemap\Infrastructure\HTTP\SitemapXmlRequestHandler;
 use Automattic\MSM_Sitemap\Infrastructure\REST\RESTSetup;
 use Automattic\MSM_Sitemap\Infrastructure\REST\Controllers\SitemapsController;
 use Automattic\MSM_Sitemap\Infrastructure\REST\Controllers\StatsController;
