@@ -8,9 +8,10 @@ declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap\Tests\Cli;
 
-use Automattic\MSM_Sitemap\Infrastructure\CLI\CLICommand;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\Commands\ListCommand;
+use function Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container;
+
 require_once __DIR__ . '/../Includes/mock-wp-cli.php';
-require_once __DIR__ . '/../../includes/Infrastructure/CLI/CLICommand.php';
 
 /**
  * Class ListTest
@@ -47,7 +48,7 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 					'post_title'  => $date,
 					'post_status' => 'publish',
 					'post_date'   => $date . ' 00:00:00',
-				) 
+				)
 			);
 			$this->assertIsInt( $post_id );
 			update_post_meta( $post_id, 'msm_indexed_url_count', 1 );
@@ -66,7 +67,7 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 				'post_status'    => 'any',
 				'fields'         => 'ids',
 				'posts_per_page' => -1,
-			) 
+			)
 		);
 		foreach ( $query->posts as $post_id ) {
 			wp_delete_post( $post_id, true );
@@ -75,20 +76,29 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	}
 
 	/**
+	 * Get the list command instance.
+	 *
+	 * @return ListCommand
+	 */
+	private function get_command(): ListCommand {
+		return msm_sitemap_container()->get( ListCommand::class );
+	}
+
+	/**
 	 * Test listing all sitemaps with --all.
 	 *
 	 * @return void
 	 */
 	public function test_list_all(): void {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 
 		ob_start();
-		$cli->list(
+		$command(
 			array(),
 			array(
 				'all'    => true,
 				'format' => 'json',
-			) 
+			)
 		);
 		$output = ob_get_clean();
 		$data   = json_decode( $output, true );
@@ -106,10 +116,10 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_list_by_year(): void {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 
 		ob_start();
-		$cli->list( array(), array( 'date' => '2024' ) );
+		$command( array(), array( 'date' => '2024' ) );
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( '2024-07-10', $output );
@@ -123,10 +133,10 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_list_by_year_month(): void {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 
 		ob_start();
-		$cli->list( array(), array( 'date' => '2024-07' ) );
+		$command( array(), array( 'date' => '2024-07' ) );
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( '2024-07-10', $output );
@@ -140,10 +150,10 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_list_by_year_month_day(): void {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 
 		ob_start();
-		$cli->list( array(), array( 'date' => '2024-07-10' ) );
+		$command( array(), array( 'date' => '2024-07-10' ) );
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( '2024-07-10', $output );
@@ -156,15 +166,15 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_list_with_fields(): void {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 
 		ob_start();
-		$cli->list(
+		$command(
 			array(),
 			array(
 				'all'    => true,
 				'fields' => 'id,date',
-			) 
+			)
 		);
 		$output = ob_get_clean();
 
@@ -179,10 +189,10 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_list_format_json(): void {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 
 		ob_start();
-		$cli->list(
+		$command(
 			array(),
 			array(
 				'all'    => true,
@@ -205,10 +215,10 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_list_format_csv(): void {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 
 		ob_start();
-		$cli->list(
+		$command(
 			array(),
 			array(
 				'all'    => true,
@@ -227,7 +237,7 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_list_no_sitemaps(): void {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 		// Delete all sitemaps
 		$query = new \WP_Query(
 			array(
@@ -235,16 +245,16 @@ final class ListTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 				'post_status'    => 'any',
 				'fields'         => 'ids',
 				'posts_per_page' => -1,
-			) 
+			)
 		);
 		foreach ( $query->posts as $post_id ) {
 			wp_delete_post( $post_id, true );
 		}
 
 		ob_start();
-		$cli->list( array(), array( 'all' => true ) );
+		$command( array(), array( 'all' => true ) );
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'No sitemaps found', $output );
 	}
-} 
+}

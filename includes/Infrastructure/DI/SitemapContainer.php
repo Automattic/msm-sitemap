@@ -31,7 +31,17 @@ use Automattic\MSM_Sitemap\Infrastructure\Events\EventDispatcher;
 use Automattic\MSM_Sitemap\Domain\Contracts\SitemapRepositoryInterface;
 use Automattic\MSM_Sitemap\Domain\Contracts\PostRepositoryInterface;
 use Automattic\MSM_Sitemap\Domain\Contracts\ImageRepositoryInterface;
-use Automattic\MSM_Sitemap\Infrastructure\CLI\CLICommand;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\Commands\GenerateCommand;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\Commands\DeleteCommand;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\Commands\ListCommand;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\Commands\GetCommand;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\Commands\StatsCommand;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\Commands\ValidateCommand;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\Commands\ExportCommand;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\Commands\RecountCommand;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\Commands\CronCommand;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\Commands\OptionsCommand;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\Commands\RecentUrlsCommand;
 use Automattic\MSM_Sitemap\Infrastructure\Cron\AutomaticUpdateScheduler;
 use Automattic\MSM_Sitemap\Infrastructure\Formatters\SitemapXmlFormatter;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository;
@@ -468,30 +478,82 @@ class SitemapContainer {
 			}
 		);
 
-		// Register CLI Command with Use Case
+		// Register CLI Commands (one class per command pattern)
 		$this->register(
-			CLICommand::class,
+			GenerateCommand::class,
 			function ( $container ) {
-				$sitemap_service         = $container->get( SitemapService::class );
-				$repository              = $container->get( SitemapRepositoryInterface::class );
-				$stats_service           = $container->get( SitemapStatsService::class );
-				$validation_service      = $container->get( SitemapValidationService::class );
-				$export_service          = $container->get( SitemapExportService::class );
-				$cron_management_service = $container->get( CronManagementService::class );
-				$settings_service        = $container->get( SettingsService::class );
-				$generate_use_case       = $container->get( GenerateSitemapUseCase::class );
-			
-				return new CLICommand(
-					$sitemap_service,
-					$repository,
-					$stats_service,
-					$validation_service,
-					$export_service,
-					$cron_management_service,
-					$settings_service,
-					$generate_use_case
-				);
-			} 
+				return new GenerateCommand( $container->get( GenerateSitemapUseCase::class ) );
+			}
+		);
+
+		$this->register(
+			DeleteCommand::class,
+			function ( $container ) {
+				return new DeleteCommand( $container->get( SitemapService::class ) );
+			}
+		);
+
+		$this->register(
+			ListCommand::class,
+			function ( $container ) {
+				return new ListCommand( $container->get( SitemapService::class ) );
+			}
+		);
+
+		$this->register(
+			GetCommand::class,
+			function ( $container ) {
+				return new GetCommand( $container->get( SitemapService::class ) );
+			}
+		);
+
+		$this->register(
+			StatsCommand::class,
+			function ( $container ) {
+				return new StatsCommand( $container->get( SitemapStatsService::class ) );
+			}
+		);
+
+		$this->register(
+			RecentUrlsCommand::class,
+			function ( $container ) {
+				return new RecentUrlsCommand( $container->get( SitemapStatsService::class ) );
+			}
+		);
+
+		$this->register(
+			ValidateCommand::class,
+			function ( $container ) {
+				return new ValidateCommand( $container->get( SitemapValidationService::class ) );
+			}
+		);
+
+		$this->register(
+			ExportCommand::class,
+			function ( $container ) {
+				return new ExportCommand( $container->get( SitemapExportService::class ) );
+			}
+		);
+
+		$this->register(
+			RecountCommand::class,
+			function ( $container ) {
+				return new RecountCommand( $container->get( SitemapService::class ) );
+			}
+		);
+
+		$this->register(
+			CronCommand::class,
+			function ( $container ) {
+				return new CronCommand( $container->get( CronManagementService::class ) );
+			}
+		);
+
+		$this->register(
+			OptionsCommand::class,
+			function ( $container ) {
+				return new OptionsCommand( $container->get( SettingsService::class ) );
+			}
 		);
 
 		$this->register(

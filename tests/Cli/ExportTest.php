@@ -8,9 +8,10 @@ declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap\Tests\Cli;
 
-use Automattic\MSM_Sitemap\Infrastructure\CLI\CLICommand;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\Commands\ExportCommand;
+use function Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container;
+
 require_once __DIR__ . '/../Includes/mock-wp-cli.php';
-require_once __DIR__ . '/../../includes/Infrastructure/CLI/CLICommand.php';
 
 /**
  * Class ExportTest
@@ -54,7 +55,7 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 				'post_title'  => $this->date,
 				'post_status' => 'publish',
 				'post_date'   => $this->date . ' 00:00:00',
-			) 
+			)
 		);
 		$this->assertIsInt( $post_id );
 		update_post_meta( $post_id, 'msm_sitemap_xml', '<urlset><url><loc>https://example.com/</loc></url></urlset>' );
@@ -72,7 +73,7 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 				'post_status'    => 'any',
 				'fields'         => 'ids',
 				'posts_per_page' => -1,
-			) 
+			)
 		);
 		foreach ( $query->posts as $post_id ) {
 			wp_delete_post( $post_id, true );
@@ -86,14 +87,23 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	}
 
 	/**
+	 * Get the export command instance.
+	 *
+	 * @return ExportCommand
+	 */
+	private function get_command(): ExportCommand {
+		return msm_sitemap_container()->get( ExportCommand::class );
+	}
+
+	/**
 	 * Test that export requires the output argument.
 	 *
 	 * @return void
 	 */
 	public function test_export_requires_output(): void {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 		$this->expectException( \Exception::class );
-		$cli->export( array(), array() );
+		$command( array(), array() );
 	}
 
 	/**
@@ -102,14 +112,14 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_export_creates_directory(): void {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 		$this->expectOutputRegex( '/Exported [0-9]+ sitemap/' );
 		if ( is_dir( $this->export_dir ) ) {
 			array_map( 'unlink', glob( $this->export_dir . '/*' ) );
 			// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.directory_rmdir
 			rmdir( $this->export_dir );
 		}
-		$cli->export( array(), array( 'output' => $this->export_dir ) );
+		$command( array(), array( 'output' => $this->export_dir ) );
 		$this->assertDirectoryExists( $this->export_dir );
 	}
 
@@ -119,9 +129,9 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_export_file_written(): void {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 		$this->expectOutputRegex( '/Exported [0-9]+ sitemap/' );
-		$cli->export( array(), array( 'output' => $this->export_dir ) );
+		$command( array(), array( 'output' => $this->export_dir ) );
 		$files = glob( $this->export_dir . '/*.xml' );
 		$this->assertNotEmpty( $files );
 		// phpcs:ignore WordPressVIPMinimum.Performance.FetchingRemoteData.FileGetContentsUnknown
@@ -135,14 +145,14 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_export_pretty_print(): void {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 		$this->expectOutputRegex( '/Exported [0-9]+ sitemap/' );
-		$cli->export(
+		$command(
 			array(),
 			array(
 				'output' => $this->export_dir,
 				'pretty' => true,
-			) 
+			)
 		);
 		$files = glob( $this->export_dir . '/*.xml' );
 		$this->assertNotEmpty( $files );
@@ -159,14 +169,14 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_export_by_date(): void {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 		$this->expectOutputRegex( '/Exported [0-9]+ sitemap/' );
-		$cli->export(
+		$command(
 			array(),
 			array(
 				'output' => $this->export_dir,
 				'date'   => $this->date,
-			) 
+			)
 		);
 		$files = glob( $this->export_dir . '/*.xml' );
 		$this->assertNotEmpty( $files );
@@ -178,14 +188,14 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_export_all(): void {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 		$this->expectOutputRegex( '/Exported [0-9]+ sitemap/' );
-		$cli->export(
+		$command(
 			array(),
 			array(
 				'output' => $this->export_dir,
 				'all'    => true,
-			) 
+			)
 		);
 		$files = glob( $this->export_dir . '/*.xml' );
 		$this->assertNotEmpty( $files );
@@ -197,8 +207,8 @@ final class ExportTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_export_output_message(): void {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 		$this->expectOutputRegex( '/Exported [0-9]+ sitemap.*' . preg_quote( $this->export_dir, '/' ) . '/s' );
-		$cli->export( array(), array( 'output' => $this->export_dir ) );
+		$command( array(), array( 'output' => $this->export_dir ) );
 	}
-} 
+}
