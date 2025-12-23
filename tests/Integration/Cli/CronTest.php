@@ -8,11 +8,11 @@ declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap\Tests\Cli;
 
-use Automattic\MSM_Sitemap\Infrastructure\CLI\CLICommand;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\Commands\CronCommand;
 use Automattic\MSM_Sitemap\Application\Services\CronManagementService;
+use function Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container;
 
 require_once __DIR__ . '/../Includes/mock-wp-cli.php';
-require_once __DIR__ . '/../../includes/Infrastructure/CLI/CLICommand.php';
 
 /**
  * Class CronTest
@@ -50,26 +50,12 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	}
 
 	/**
-	 * Test that cron enable command enables cron.
+	 * Get the cron command instance.
 	 *
-	 * @return void
+	 * @return CronCommand
 	 */
-	public function test_cron_enable(): void {
-		// Remove the filter that forces cron enabled in tests
-		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
-		$cli = CLICommand::create();
-
-		ob_start();
-		$cli->cron( array( 'enable' ), array() );
-		$output = ob_get_clean();
-
-		$this->assertStringContainsString( 'Automatic sitemap updates enabled successfully', $output );
-		$this->assertTrue( (bool) get_option( CronManagementService::CRON_ENABLED_OPTION ) );
-		$this->assertNotFalse( wp_next_scheduled( 'msm_cron_update_sitemap' ) );
-		
-		// Restore the filter for other tests
-		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
+	private function get_command(): CronCommand {
+		return msm_sitemap_container()->get( CronCommand::class );
 	}
 
 	/**
@@ -82,6 +68,29 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	}
 
 	/**
+	 * Test that cron enable command enables cron.
+	 *
+	 * @return void
+	 */
+	public function test_cron_enable(): void {
+		// Remove the filter that forces cron enabled in tests
+		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
+
+		$command = $this->get_command();
+
+		ob_start();
+		$command( array( 'enable' ), array() );
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( 'Automatic sitemap updates enabled successfully', $output );
+		$this->assertTrue( (bool) get_option( CronManagementService::CRON_ENABLED_OPTION ) );
+		$this->assertNotFalse( wp_next_scheduled( 'msm_cron_update_sitemap' ) );
+
+		// Restore the filter for other tests
+		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
+	}
+
+	/**
 	 * Test that cron enable command shows warning when already enabled.
 	 *
 	 * @return void
@@ -89,18 +98,18 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function test_cron_enable_when_already_enabled(): void {
 		// Remove the filter that forces cron enabled in tests
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
+
 		// Enable cron first
 		$this->get_cron_management()->enable_cron();
 
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 
 		ob_start();
-		$cli->cron( array( 'enable' ), array() );
+		$command( array( 'enable' ), array() );
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'Automatic updates are already enabled', $output );
-		
+
 		// Restore the filter for other tests
 		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 	}
@@ -113,20 +122,20 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function test_cron_disable(): void {
 		// Remove the filter that forces cron enabled in tests
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
+
 		// Enable cron first
 		$this->get_cron_management()->enable_cron();
 
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 
 		ob_start();
-		$cli->cron( array( 'disable' ), array() );
+		$command( array( 'disable' ), array() );
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'Automatic sitemap updates disabled successfully', $output );
 		$this->assertFalse( (bool) get_option( CronManagementService::CRON_ENABLED_OPTION ) );
 		$this->assertFalse( wp_next_scheduled( 'msm_cron_update_sitemap' ) );
-		
+
 		// Restore the filter for other tests
 		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 	}
@@ -139,15 +148,15 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function test_cron_disable_when_already_disabled(): void {
 		// Remove the filter that forces cron enabled in tests
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
-		$cli = CLICommand::create();
+
+		$command = $this->get_command();
 
 		ob_start();
-		$cli->cron( array( 'disable' ), array() );
+		$command( array( 'disable' ), array() );
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'Automatic updates are already disabled', $output );
-		
+
 		// Restore the filter for other tests
 		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 	}
@@ -161,10 +170,10 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		// Enable cron first
 		$this->get_cron_management()->enable_cron();
 
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 
 		ob_start();
-		$cli->cron( array( 'status' ), array() );
+		$command( array( 'status' ), array() );
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'Yes', $output );
@@ -179,16 +188,16 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function test_cron_status_when_disabled(): void {
 		// Remove the filter that forces cron enabled in tests
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
-		$cli = CLICommand::create();
+
+		$command = $this->get_command();
 
 		ob_start();
-		$cli->cron( array( 'status' ), array() );
+		$command( array( 'status' ), array() );
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'No', $output );
 		$this->assertStringContainsString( 'enabled', $output );
-		
+
 		// Restore the filter for other tests
 		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 	}
@@ -202,10 +211,10 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		// Enable cron first
 		$this->get_cron_management()->enable_cron();
 
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 
 		ob_start();
-		$cli->cron( array( 'status' ), array( 'format' => 'json' ) );
+		$command( array( 'status' ), array( 'format' => 'json' ) );
 		$output = ob_get_clean();
 		$data   = json_decode( $output, true );
 
@@ -236,10 +245,10 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		update_option( 'msm_background_generation_total', 10 );
 		update_option( 'msm_background_generation_remaining', 5 );
 
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 
 		ob_start();
-		$cli->cron( array( 'reset' ), array() );
+		$command( array( 'reset' ), array() );
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'Sitemap cron reset to clean state', $output );
@@ -261,10 +270,10 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_cron_without_subcommand(): void {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 
 		ob_start();
-		$cli->cron( array(), array() );
+		$command( array(), array() );
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'enabled', $output );
@@ -277,12 +286,12 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_cron_with_invalid_subcommand(): void {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 
 		// This test expects an exception to be thrown
 		$this->expectException( 'WP_CLI\ExitException' );
-		
-		$cli->cron( array( 'invalid' ), array() );
+
+		$command( array( 'invalid' ), array() );
 	}
 
 	/**
@@ -291,10 +300,10 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_cron_frequency_show_current(): void {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 
 		ob_start();
-		$cli->cron( array( 'frequency' ), array() );
+		$command( array( 'frequency' ), array() );
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'Current cron frequency:', $output );
@@ -319,9 +328,9 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		// Test the CronManagementService directly
 		$cron_management_service = $this->get_service( \Automattic\MSM_Sitemap\Application\Services\CronManagementService::class );
 		$result                  = $cron_management_service->update_frequency( 'hourly' );
-		
+
 		$this->assertTrue( $result['success'], 'CronManagementService::update_frequency failed: ' . ( $result['message'] ?? 'Unknown error' ) );
-		
+
 		// Debug: Check what the setting actually is
 		$actual_frequency = $settings_service->get_setting( 'cron_frequency' );
 		$this->assertEquals( 'hourly', $actual_frequency, "Expected 'hourly' but got '$actual_frequency'. Result: " . json_encode( $result ) );
@@ -336,11 +345,11 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 * @return void
 	 */
 	public function test_cron_frequency_invalid(): void {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 
 		// This test expects an exception to be thrown
 		$this->expectException( 'WP_CLI\ExitException' );
-		
-		$cli->cron( array( 'frequency', 'invalid' ), array() );
+
+		$command( array( 'frequency', 'invalid' ), array() );
 	}
-} 
+}

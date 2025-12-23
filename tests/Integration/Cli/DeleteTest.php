@@ -8,20 +8,22 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests\Cli;
 
-use Automattic\MSM_Sitemap\Infrastructure\CLI\CLICommand;
+use Automattic\MSM_Sitemap\Infrastructure\CLI\Commands\DeleteCommand;
 use Automattic\MSM_Sitemap\Tests\TestCase;
+use function Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container;
 
 require_once __DIR__ . '/../Includes/mock-wp-cli.php';
 
 /**
  * DeleteTest
- * 
+ *
  * Because the delete command is inherently destructive, it has an Are You Sure confirmation prompt.
  * We test the prompt appears via one test, and then pass `--yes` to the commands in other tests to bypass the check.
  *
  * @package Automattic\MSM_Sitemap
  */
 final class DeleteTest extends TestCase {
+
 	/**
 	 * Set up the test environment.
 	 */
@@ -48,7 +50,7 @@ final class DeleteTest extends TestCase {
 			$this->assertIsInt( $post_id );
 		}
 	}
-	
+
 	/**
 	 * Tear down the test environment.
 	 */
@@ -68,38 +70,47 @@ final class DeleteTest extends TestCase {
 	}
 
 	/**
+	 * Get the delete command instance.
+	 *
+	 * @return DeleteCommand
+	 */
+	private function get_command(): DeleteCommand {
+		return msm_sitemap_container()->get( DeleteCommand::class );
+	}
+
+	/**
 	 * Test that delete with no --date or --all errors and does not delete.
 	 *
 	 * @return void
 	 */
 	public function test_delete_requires_date_or_all(): void {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 		$this->expectException( \WP_CLI\ExitException::class );
-		$cli->delete( array(), array() );
+		$command( array(), array() );
 	}
 
 	/**
 	 * Test that deleting all sitemaps prompts for confirmation.
 	 */
 	public function test_delete_all_prompts_for_confirmation() {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 		$this->expectException( \WP_CLI_ConfirmationException::class );
 		$this->expectOutputRegex( '/Are you sure you want to delete ALL sitemaps?/' );
-		$cli->delete( array(), array( 'all' => true ) );
+		$command( array(), array( 'all' => true ) );
 	}
-	
+
 
 	/**
 	 * Test deleting all sitemaps using the --all flag.
 	 */
 	public function test_delete_all(): void {
-		$cli = CLICommand::create();
-		$cli->delete(
+		$command = $this->get_command();
+		$command(
 			array(),
 			array(
 				'all' => true,
 				'yes' => true,
-			) 
+			)
 		);
 		$this->expectOutputRegex( '/Deleted [0-9]+ sitemap/' );
 		$this->assertSitemapCount( 0 );
@@ -109,83 +120,83 @@ final class DeleteTest extends TestCase {
 	 * Test deleting all sitemaps for a given year.
 	 */
 	public function test_delete_by_year(): void {
-		$cli = CLICommand::create();
-		$cli->delete(
+		$command = $this->get_command();
+		$command(
 			array(),
 			array(
 				'date' => '2024',
 				'yes'  => true,
-			) 
+			)
 		);
 		$this->expectOutputRegex( '/Deleted [0-9]+ sitemap/' );
 		$this->assertSitemapCount( 1 );
 	}
-	
+
 	/**
 	 * Test deleting all sitemaps for a given year and month.
 	 */
 	public function test_delete_by_year_month(): void {
-		$cli = CLICommand::create();
-		$cli->delete(
+		$command = $this->get_command();
+		$command(
 			array(),
 			array(
 				'date' => '2024-07',
 				'yes'  => true,
-			) 
+			)
 		);
 		$this->expectOutputRegex( '/Deleted [0-9]+ sitemap/' );
 		$this->assertSitemapCount( 2 );
 	}
-	
+
 	/**
 	 * Test deleting a sitemap by year, month, and day.
 	 */
 	public function test_delete_by_year_month_day(): void {
-		$cli = CLICommand::create();
-		$cli->delete(
+		$command = $this->get_command();
+		$command(
 			array(),
 			array(
 				'date' => '2024-07-10',
 				'yes'  => true,
-			) 
+			)
 		);
 		$this->expectOutputRegex( '/Deleted [0-9]+ sitemap/' );
 		$this->assertSitemapCount( 3 );
 		$this->assertNull( get_page_by_path( '2024-07-10', OBJECT, 'msm_sitemap' ) );
 	}
-	
+
 	/**
 	 * Test that --quiet suppresses output for the delete command.
 	 */
 	public function test_delete_quiet(): void {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 
 		ob_start();
-		$cli->delete(
+		$command(
 			array(),
 			array(
 				'date'  => '2023-12-25',
 				'quiet' => true,
 				'yes'   => true,
-			) 
+			)
 		);
 		$output = ob_get_clean();
 		$this->assertSame( '', $output, 'Output should be empty with --quiet' );
 	}
-	
+
 	/**
 	 * Test that an invalid date (e.g., month=13) throws an exception.
 	 */
 	public function test_delete_invalid_date(): void {
-		$cli = CLICommand::create();
+		$command = $this->get_command();
 
 		$this->expectException( \Exception::class );
-		$cli->delete(
+		$command(
 			array(),
 			array(
 				'date' => '2024-13-01',
 				'yes'  => true,
-			) 
+			)
 		); // Invalid month
 	}
 
@@ -193,13 +204,13 @@ final class DeleteTest extends TestCase {
 	 * Test that deleting a date with no sitemaps does not throw and leaves no sitemaps for that date.
 	 */
 	public function test_delete_no_sitemaps_found(): void {
-		$cli = CLICommand::create();
-		$cli->delete(
+		$command = $this->get_command();
+		$command(
 			array(),
 			array(
 				'date' => '2022-01-01',
 				'yes'  => true,
-			) 
+			)
 		);
 		$this->expectOutputRegex( '/No sitemaps found to delete/' );
 		$this->assertSitemapCount( 4 );
@@ -220,15 +231,15 @@ final class DeleteTest extends TestCase {
 			)
 		);
 
-		$cli = CLICommand::create();
-		$cli->delete(
+		$command = $this->get_command();
+		$command(
 			array(),
 			array(
 				'date' => '2024-07-10',
 				'yes'  => true,
-			) 
+			)
 		);
 		$this->expectOutputRegex( '/Deleted [0-9]+ sitemap/' );
 		$this->assertSitemapCount( 3 ); // Original 4 plus 1, minus the two with the same post_date we deleted
 	}
-} 
+}
