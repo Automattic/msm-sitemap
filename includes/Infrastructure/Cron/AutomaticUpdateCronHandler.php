@@ -36,9 +36,9 @@ class AutomaticUpdateCronHandler implements CronHandlerInterface {
 	/**
 	 * The cron scheduling service.
 	 *
-	 * @var CronSchedulingService
+	 * @var CronScheduler
 	 */
-	private CronSchedulingService $cron_scheduler;
+	private CronScheduler $cron_scheduler;
 
 	/**
 	 * The sitemap cleanup service.
@@ -58,13 +58,13 @@ class AutomaticUpdateCronHandler implements CronHandlerInterface {
 	 * Constructor.
 	 *
 	 * @param IncrementalGenerationService $generation_service The incremental generation service.
-	 * @param CronSchedulingService        $cron_scheduler     The cron scheduling service.
+	 * @param CronScheduler        $cron_scheduler     The cron scheduling service.
 	 * @param SitemapCleanupService        $cleanup_service    The sitemap cleanup service.
 	 * @param GenerationStateService       $generation_state   The generation state service.
 	 */
 	public function __construct(
 		IncrementalGenerationService $generation_service,
-		CronSchedulingService $cron_scheduler,
+		CronScheduler $cron_scheduler,
 		SitemapCleanupService $cleanup_service,
 		GenerationStateService $generation_state
 	) {

@@ -9,7 +9,7 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests;
 
-use Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService;
+use Automattic\MSM_Sitemap\Infrastructure\Cron\CronScheduler;
 
 /**
  * Unit Tests for Cron_Service class
@@ -17,12 +17,12 @@ use Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService;
 class CronServiceTest extends TestCase {
 
 	/**
-	 * Get a CronSchedulingService instance for testing.
+	 * Get a CronScheduler instance for testing.
 	 *
-	 * @return CronSchedulingService
+	 * @return CronScheduler
 	 */
-	private function get_cron_scheduler(): \Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService {
-		return $this->get_service( CronSchedulingService::class );
+	private function get_cron_scheduler(): \Automattic\MSM_Sitemap\Infrastructure\Cron\CronScheduler {
+		return $this->get_service( CronScheduler::class );
 	}
 
 	/**
@@ -31,7 +31,7 @@ class CronServiceTest extends TestCase {
 	public function setUp(): void {
 		parent::setUp();
 		// Clear any existing cron options
-		delete_option( CronSchedulingService::CRON_ENABLED_OPTION );
+		delete_option( CronScheduler::CRON_ENABLED_OPTION );
 		wp_unschedule_hook( 'msm_cron_update_sitemap' );
 	}
 
@@ -40,7 +40,7 @@ class CronServiceTest extends TestCase {
 	 */
 	public function tearDown(): void {
 		// Clean up cron options and events
-		delete_option( CronSchedulingService::CRON_ENABLED_OPTION );
+		delete_option( CronScheduler::CRON_ENABLED_OPTION );
 		wp_unschedule_hook( 'msm_cron_update_sitemap' );
 		parent::tearDown();
 	}
@@ -55,7 +55,7 @@ class CronServiceTest extends TestCase {
 		$result = $this->get_cron_scheduler()->enable_cron();
 		
 		$this->assertTrue( $result );
-		$this->assertTrue( (bool) get_option( CronSchedulingService::CRON_ENABLED_OPTION ) );
+		$this->assertTrue( (bool) get_option( CronScheduler::CRON_ENABLED_OPTION ) );
 		$this->assertNotFalse( wp_next_scheduled( 'msm_cron_update_sitemap' ) );
 		
 		// Restore the filter for other tests
@@ -76,7 +76,7 @@ class CronServiceTest extends TestCase {
 		$result = $this->get_cron_scheduler()->enable_cron();
 		
 		$this->assertFalse( $result );
-		$this->assertTrue( (bool) get_option( CronSchedulingService::CRON_ENABLED_OPTION ) );
+		$this->assertTrue( (bool) get_option( CronScheduler::CRON_ENABLED_OPTION ) );
 		
 		// Restore the filter for other tests
 		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
@@ -92,7 +92,7 @@ class CronServiceTest extends TestCase {
 		$result = $this->get_cron_scheduler()->disable_cron();
 		
 		$this->assertTrue( $result );
-		$this->assertFalse( (bool) get_option( CronSchedulingService::CRON_ENABLED_OPTION ) );
+		$this->assertFalse( (bool) get_option( CronScheduler::CRON_ENABLED_OPTION ) );
 		$this->assertFalse( wp_next_scheduled( 'msm_cron_update_sitemap' ) );
 	}
 
@@ -106,7 +106,7 @@ class CronServiceTest extends TestCase {
 		$result = $this->get_cron_scheduler()->disable_cron();
 		
 		$this->assertFalse( $result );
-		$this->assertFalse( (bool) get_option( CronSchedulingService::CRON_ENABLED_OPTION ) );
+		$this->assertFalse( (bool) get_option( CronScheduler::CRON_ENABLED_OPTION ) );
 		
 		// Restore the filter for other tests
 		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
@@ -213,7 +213,7 @@ class CronServiceTest extends TestCase {
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 		
 		// Set option to false but schedule an event
-		update_option( CronSchedulingService::CRON_ENABLED_OPTION, false );
+		update_option( CronScheduler::CRON_ENABLED_OPTION, false );
 		wp_schedule_event( time(), 'hourly', 'msm_cron_update_sitemap' );
 		
 		$status = $this->get_cron_scheduler()->get_cron_status();
@@ -240,7 +240,7 @@ class CronServiceTest extends TestCase {
 
 		$this->get_cron_scheduler()->reset_cron();
 
-		$this->assertFalse( (bool) get_option( CronSchedulingService::CRON_ENABLED_OPTION ) );
+		$this->assertFalse( (bool) get_option( CronScheduler::CRON_ENABLED_OPTION ) );
 		$this->assertFalse( wp_next_scheduled( 'msm_cron_update_sitemap' ) );
 		$this->assertFalse( (bool) get_option( 'msm_generation_in_progress' ) );
 		$this->assertFalse( (bool) get_option( 'msm_sitemap_stop_generation' ) );

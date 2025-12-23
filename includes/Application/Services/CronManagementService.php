@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap\Application\Services;
 
-use Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService;
+use Automattic\MSM_Sitemap\Infrastructure\Cron\CronScheduler;
 
 /**
  * Service for managing cron functionality with centralized business logic
@@ -44,17 +44,17 @@ class CronManagementService {
 	/**
 	 * The cron scheduling service.
 	 *
-	 * @var CronSchedulingService
+	 * @var CronScheduler
 	 */
-	private CronSchedulingService $cron_scheduler;
+	private CronScheduler $cron_scheduler;
 
 	/**
 	 * Constructor.
 	 *
 	 * @param SettingsService $settings The settings service.
-	 * @param CronSchedulingService $cron_scheduler The cron scheduling service.
+	 * @param CronScheduler $cron_scheduler The cron scheduling service.
 	 */
-	public function __construct( SettingsService $settings, CronSchedulingService $cron_scheduler ) {
+	public function __construct( SettingsService $settings, CronScheduler $cron_scheduler ) {
 		$this->settings       = $settings;
 		$this->cron_scheduler = $cron_scheduler;
 	}
