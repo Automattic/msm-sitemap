@@ -54,7 +54,16 @@ use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\UI;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\ActionHandlers;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\CoreIntegration;
 use Automattic\MSM_Sitemap\Infrastructure\REST\SitemapXmlRequestHandler;
-use Automattic\MSM_Sitemap\Infrastructure\REST\REST_API_Controller;
+use Automattic\MSM_Sitemap\Infrastructure\REST\RESTSetup;
+use Automattic\MSM_Sitemap\Infrastructure\REST\Controllers\SitemapsController;
+use Automattic\MSM_Sitemap\Infrastructure\REST\Controllers\StatsController;
+use Automattic\MSM_Sitemap\Infrastructure\REST\Controllers\HealthController;
+use Automattic\MSM_Sitemap\Infrastructure\REST\Controllers\ValidationController;
+use Automattic\MSM_Sitemap\Infrastructure\REST\Controllers\ExportController;
+use Automattic\MSM_Sitemap\Infrastructure\REST\Controllers\CronController;
+use Automattic\MSM_Sitemap\Infrastructure\REST\Controllers\GenerationController;
+use Automattic\MSM_Sitemap\Infrastructure\REST\Controllers\RecountController;
+use Automattic\MSM_Sitemap\Infrastructure\REST\Controllers\ResetController;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\PostTypeRegistration;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\StylesheetManager;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\Permalinks;
@@ -578,31 +587,96 @@ class SitemapContainer {
 			}
 		);
 
+		// REST API Controllers
 		$this->register(
-			REST_API_Controller::class,
+			SitemapsController::class,
 			function ( $container ) {
-				$sitemap_service                = $container->get( SitemapService::class );
-				$stats_service                  = $container->get( SitemapStatsService::class );
-				$validation_service             = $container->get( SitemapValidationService::class );
-				$export_service                 = $container->get( SitemapExportService::class );
-				$cron_management_service        = $container->get( CronManagementService::class );
-				$content_types_service          = $container->get( ContentTypesService::class );
-				$sitemap_generator              = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
-				$generate_use_case              = $container->get( GenerateSitemapUseCase::class );
-				$missing_detection_service      = $container->get( MissingSitemapDetectionService::class );
-				$incremental_generation_service = $container->get( IncrementalGenerationService::class );
-
-				return new REST_API_Controller(
-					$sitemap_service,
-					$stats_service,
-					$validation_service,
-					$export_service,
-					$cron_management_service,
-					$sitemap_generator,
-					$generate_use_case,
-					$missing_detection_service,
-					$incremental_generation_service
+				return new SitemapsController(
+					$container->get( SitemapService::class ),
+					$container->get( GenerateSitemapUseCase::class )
 				);
+			}
+		);
+
+		$this->register(
+			StatsController::class,
+			function ( $container ) {
+				return new StatsController(
+					$container->get( SitemapStatsService::class )
+				);
+			}
+		);
+
+		$this->register(
+			HealthController::class,
+			function () {
+				return new HealthController();
+			}
+		);
+
+		$this->register(
+			ValidationController::class,
+			function ( $container ) {
+				return new ValidationController(
+					$container->get( SitemapService::class ),
+					$container->get( SitemapValidationService::class )
+				);
+			}
+		);
+
+		$this->register(
+			ExportController::class,
+			function ( $container ) {
+				return new ExportController(
+					$container->get( SitemapExportService::class )
+				);
+			}
+		);
+
+		$this->register(
+			CronController::class,
+			function ( $container ) {
+				return new CronController(
+					$container->get( CronManagementService::class )
+				);
+			}
+		);
+
+		$this->register(
+			GenerationController::class,
+			function ( $container ) {
+				$content_types_service = $container->get( ContentTypesService::class );
+				return new GenerationController(
+					$container->get( CronManagementService::class ),
+					$container->get( MissingSitemapDetectionService::class ),
+					$container->get( IncrementalGenerationService::class ),
+					SitemapGeneratorFactory::create( $content_types_service->get_content_types() )
+				);
+			}
+		);
+
+		$this->register(
+			RecountController::class,
+			function ( $container ) {
+				return new RecountController(
+					$container->get( SitemapService::class )
+				);
+			}
+		);
+
+		$this->register(
+			ResetController::class,
+			function ( $container ) {
+				return new ResetController(
+					$container->get( SitemapService::class )
+				);
+			}
+		);
+
+		$this->register(
+			RESTSetup::class,
+			function () {
+				return new RESTSetup();
 			}
 		);
 

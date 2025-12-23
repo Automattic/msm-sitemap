@@ -15,7 +15,7 @@ use Automattic\MSM_Sitemap\Infrastructure\WordPress\Permalinks;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\PluginLinks;
 use Automattic\MSM_Sitemap\Infrastructure\CLI\CLISetup;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\CoreIntegration;
-use Automattic\MSM_Sitemap\Infrastructure\REST\REST_API_Controller;
+use Automattic\MSM_Sitemap\Infrastructure\REST\RESTSetup;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\PostTypeRegistration;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\UI;
 use Automattic\MSM_Sitemap\Infrastructure\Cron\AutomaticUpdateCronHandler;
@@ -37,7 +37,7 @@ class WordPressIntegrationInterfaceTest extends TestCase {
 			PluginLinks::class,
 			CLISetup::class,
 			CoreIntegration::class,
-			REST_API_Controller::class,
+			RESTSetup::class,
 			PostTypeRegistration::class,
 			UI::class,
 			AutomaticUpdateCronHandler::class,
@@ -64,7 +64,7 @@ class WordPressIntegrationInterfaceTest extends TestCase {
 			$container->get( PluginLinks::class ),
 			$container->get( CLISetup::class ),
 			$container->get( CoreIntegration::class ),
-			$container->get( REST_API_Controller::class ),
+			$container->get( RESTSetup::class ),
 			$container->get( PostTypeRegistration::class ),
 			$container->get( UI::class ),
 			$container->get( AutomaticUpdateCronHandler::class ),
