@@ -12,6 +12,7 @@ namespace Automattic\MSM_Sitemap\Infrastructure\Cron;
 use Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase;
 use Automattic\MSM_Sitemap\Application\Commands\GenerateSitemapCommand;
 use Automattic\MSM_Sitemap\Application\DTOs\SitemapOperationResult;
+use Automattic\MSM_Sitemap\Application\Services\GenerationStateService;
 
 /**
  * Scheduler for sitemap generation tasks.
@@ -24,15 +25,11 @@ class SitemapGenerationScheduler {
 
 	/**
 	 * Interval between scheduled sitemap generation events (in seconds).
-	 *
-	 * @var int
 	 */
 	private const INTERVAL_BETWEEN_EVENTS = 5;
 
 	/**
 	 * The cron hook name for individual date generation.
-	 *
-	 * @var string
 	 */
 	public const CRON_HOOK = 'msm_cron_generate_sitemap_for_date';
 
@@ -51,17 +48,27 @@ class SitemapGenerationScheduler {
 	private CronSchedulingService $cron_scheduler;
 
 	/**
+	 * The generation state service.
+	 *
+	 * @var GenerationStateService
+	 */
+	private GenerationStateService $generation_state;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param GenerateSitemapUseCase $generate_use_case The generate sitemap use case.
 	 * @param CronSchedulingService  $cron_scheduler    The cron scheduling service.
+	 * @param GenerationStateService $generation_state  The generation state service.
 	 */
 	public function __construct(
 		GenerateSitemapUseCase $generate_use_case,
-		CronSchedulingService $cron_scheduler
+		CronSchedulingService $cron_scheduler,
+		GenerationStateService $generation_state
 	) {
 		$this->generate_use_case = $generate_use_case;
 		$this->cron_scheduler    = $cron_scheduler;
+		$this->generation_state  = $generation_state;
 	}
 
 	/**
@@ -82,9 +89,7 @@ class SitemapGenerationScheduler {
 		}
 
 		// Mark that background generation is in progress
-		update_option( 'msm_background_generation_in_progress', true, false );
-		update_option( 'msm_background_generation_total', count( $dates ), false );
-		update_option( 'msm_background_generation_remaining', count( $dates ), false );
+		$this->generation_state->start_background_generation( count( $dates ) );
 
 		// Schedule individual events for each date, staggered
 		$scheduled_count = 0;
@@ -128,7 +133,7 @@ class SitemapGenerationScheduler {
 
 		foreach ( $dates as $date ) {
 			// Check if generation should be stopped
-			if ( (bool) get_option( 'msm_sitemap_stop_generation', false ) ) {
+			if ( $this->generation_state->is_stop_requested() ) {
 				break;
 			}
 
@@ -138,13 +143,11 @@ class SitemapGenerationScheduler {
 			}
 		}
 
-		// Update last update timestamp if sitemaps were generated
+		// Update timestamps
 		if ( $generated_count > 0 ) {
-			update_option( 'msm_sitemap_last_update', time() );
+			$this->generation_state->update_last_update_time();
 		}
-
-		// Always update the last run timestamp
-		update_option( 'msm_sitemap_update_last_run', time() );
+		$this->generation_state->update_last_run_time();
 
 		$message = sprintf(
 			/* translators: %d is the number of sitemaps generated */
@@ -169,10 +172,7 @@ class SitemapGenerationScheduler {
 	 * @return SitemapOperationResult The result of the generation.
 	 */
 	public function generate_for_date( string $date ): SitemapOperationResult {
-		// Create command for specific date generation (always force)
 		$command = new GenerateSitemapCommand( $date, array(), true, false );
-
-		// Execute use case
 		return $this->generate_use_case->execute( $command );
 	}
 
@@ -184,22 +184,16 @@ class SitemapGenerationScheduler {
 	 * @param bool $was_successful Whether the generation was successful.
 	 */
 	public function record_date_completion( bool $was_successful ): void {
-		// Update timestamp if successful
 		if ( $was_successful ) {
-			update_option( 'msm_sitemap_last_update', time(), false );
+			$this->generation_state->update_last_update_time();
 		}
 
-		// Decrement remaining count
-		$remaining = (int) get_option( 'msm_background_generation_remaining', 0 );
-		if ( $remaining > 0 ) {
-			--$remaining;
-			update_option( 'msm_background_generation_remaining', $remaining, false );
+		$remaining = $this->generation_state->record_background_date_completed();
 
-			// If this was the last one, clean up state
-			if ( 0 === $remaining ) {
-				$this->clear_progress_state();
-				update_option( 'msm_sitemap_update_last_run', time(), false );
-			}
+		// If this was the last one, clean up state
+		if ( 0 === $remaining ) {
+			$this->generation_state->clear_background_generation_state();
+			$this->generation_state->update_last_run_time();
 		}
 	}
 
@@ -209,7 +203,7 @@ class SitemapGenerationScheduler {
 	 * @return bool True if background generation is in progress.
 	 */
 	public function is_in_progress(): bool {
-		return (bool) get_option( 'msm_background_generation_in_progress', false );
+		return $this->generation_state->is_background_generation_in_progress();
 	}
 
 	/**
@@ -218,16 +212,7 @@ class SitemapGenerationScheduler {
 	 * @return array{in_progress: bool, total: int, remaining: int, completed: int}
 	 */
 	public function get_progress(): array {
-		$in_progress = $this->is_in_progress();
-		$total       = (int) get_option( 'msm_background_generation_total', 0 );
-		$remaining   = (int) get_option( 'msm_background_generation_remaining', 0 );
-
-		return array(
-			'in_progress' => $in_progress,
-			'total'       => $total,
-			'remaining'   => $remaining,
-			'completed'   => $total - $remaining,
-		);
+		return $this->generation_state->get_background_progress();
 	}
 
 	/**
@@ -236,14 +221,9 @@ class SitemapGenerationScheduler {
 	 * Clears scheduled events and progress state.
 	 */
 	public function cancel(): void {
-		// Unschedule all pending events
 		wp_unschedule_hook( self::CRON_HOOK );
-
-		// Clear progress state
-		$this->clear_progress_state();
-
-		// Set stop flag for any currently running generation
-		update_option( 'msm_sitemap_stop_generation', true, false );
+		$this->generation_state->clear_background_generation_state();
+		$this->generation_state->request_stop();
 	}
 
 	/**
@@ -253,16 +233,5 @@ class SitemapGenerationScheduler {
 	 */
 	public function is_cron_available(): bool {
 		return $this->cron_scheduler->is_cron_enabled();
-	}
-
-	/**
-	 * Clear background generation progress state options.
-	 */
-	private function clear_progress_state(): void {
-		delete_option( 'msm_background_generation_in_progress' );
-		delete_option( 'msm_background_generation_total' );
-		delete_option( 'msm_background_generation_remaining' );
-		// Also clear the full generation flag (set by FullGenerationService)
-		delete_option( 'msm_generation_in_progress' );
 	}
 }

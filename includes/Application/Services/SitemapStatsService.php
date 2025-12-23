@@ -998,4 +998,47 @@ class SitemapStatsService {
 
 		return $duplicates;
 	}
+
+	/**
+	 * Option name for the indexed URL count.
+	 */
+	private const OPTION_INDEXED_URL_COUNT = 'msm_sitemap_indexed_url_count';
+
+	/**
+	 * Get the total indexed URL count.
+	 *
+	 * @return int The total number of indexed URLs.
+	 */
+	public function get_indexed_url_count(): int {
+		return (int) get_option( self::OPTION_INDEXED_URL_COUNT, 0 );
+	}
+
+	/**
+	 * Save the indexed URL count.
+	 *
+	 * Uses non-autoloaded option to avoid object cache thrashing.
+	 *
+	 * @param int $count The new URL count.
+	 */
+	public function save_indexed_url_count( int $count ): void {
+		update_option( self::OPTION_INDEXED_URL_COUNT, $count, false );
+	}
+
+	/**
+	 * Reset the indexed URL count to zero.
+	 */
+	public function reset_indexed_url_count(): void {
+		$this->save_indexed_url_count( 0 );
+	}
+
+	/**
+	 * Adjust the indexed URL count by a delta.
+	 *
+	 * @param int $delta The amount to adjust (positive or negative).
+	 */
+	public function adjust_indexed_url_count( int $delta ): void {
+		$current = $this->get_indexed_url_count();
+		$new_count = max( 0, $current + $delta );
+		$this->save_indexed_url_count( $new_count );
+	}
 }

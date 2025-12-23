@@ -11,6 +11,7 @@ namespace Automattic\MSM_Sitemap\Tests\Application\Services;
 
 use Automattic\MSM_Sitemap\Application\Services\SitemapService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapGenerator;
+use Automattic\MSM_Sitemap\Application\Services\GenerationStateService;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository;
 
 /**
@@ -27,7 +28,7 @@ class SitemapServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 
 		$generator  = new SitemapGenerator();
 		$repository = new SitemapPostRepository();
-		$service    = new SitemapService( $generator, $repository );
+		$service    = new SitemapService( $generator, $repository, new GenerationStateService() );
 
 		$date_queries = array(
 			array(
@@ -67,7 +68,7 @@ class SitemapServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 
 		$generator  = new SitemapGenerator();
 		$repository = new SitemapPostRepository();
-		$service    = new SitemapService( $generator, $repository );
+		$service    = new SitemapService( $generator, $repository, new GenerationStateService() );
 
 		$result = $service->recount_urls( true ); // Use full recount
 
@@ -100,7 +101,7 @@ class SitemapServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 
 		$generator  = new SitemapGenerator();
 		$repository = new SitemapPostRepository();
-		$service    = new SitemapService( $generator, $repository );
+		$service    = new SitemapService( $generator, $repository, new GenerationStateService() );
 
 		$validation_service = new \Automattic\MSM_Sitemap\Application\Services\SitemapValidationService( $repository );
 		$result             = $validation_service->validate_sitemaps();
@@ -131,7 +132,7 @@ class SitemapServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 
 		$generator  = new SitemapGenerator();
 		$repository = new SitemapPostRepository();
-		$service    = new SitemapService( $generator, $repository );
+		$service    = new SitemapService( $generator, $repository, new GenerationStateService() );
 
 		// Create a temporary directory for testing
 		$temp_dir = sys_get_temp_dir() . '/msm-sitemap-test-' . uniqid();
@@ -169,7 +170,7 @@ class SitemapServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 
 		$generator  = new SitemapGenerator();
 		$repository = new SitemapPostRepository();
-		$service    = new SitemapService( $generator, $repository );
+		$service    = new SitemapService( $generator, $repository, new GenerationStateService() );
 
 		$temp_dir = sys_get_temp_dir() . '/msm-sitemap-test-' . uniqid();
 
@@ -191,7 +192,7 @@ class SitemapServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function test_formats_xml_for_export_with_and_without_pretty_printing(): void {
 		$generator  = new SitemapGenerator();
 		$repository = new SitemapPostRepository();
-		$service    = new SitemapService( $generator, $repository );
+		$service    = new SitemapService( $generator, $repository, new GenerationStateService() );
 
 		$xml_content = '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://example.com/</loc></url></urlset>';
 
@@ -224,7 +225,7 @@ class SitemapServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 
 		$generator  = new SitemapGenerator();
 		$repository = new SitemapPostRepository();
-		$service    = new SitemapService( $generator, $repository );
+		$service    = new SitemapService( $generator, $repository, new GenerationStateService() );
 
 		$export_service = new \Automattic\MSM_Sitemap\Application\Services\SitemapExportService( $repository, new \Automattic\MSM_Sitemap\Application\Services\SitemapQueryService() );
 		$sitemaps       = $export_service->get_sitemaps_for_export();
@@ -246,7 +247,7 @@ class SitemapServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function test_handles_empty_date_queries_gracefully(): void {
 		$generator  = new SitemapGenerator();
 		$repository = new SitemapPostRepository();
-		$service    = new SitemapService( $generator, $repository );
+		$service    = new SitemapService( $generator, $repository, new GenerationStateService() );
 
 		$result = $service->generate_for_date_queries( array() );
 
@@ -263,7 +264,7 @@ class SitemapServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function test_handles_invalid_date_queries_gracefully( array $invalid_query, bool $expects_exception ): void {
 		$generator  = new SitemapGenerator();
 		$repository = new SitemapPostRepository();
-		$service    = new SitemapService( $generator, $repository );
+		$service    = new SitemapService( $generator, $repository, new GenerationStateService() );
 
 		if ( $expects_exception ) {
 			// Should throw exception for invalid dates (correct behavior)
@@ -312,7 +313,7 @@ class SitemapServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function test_handles_recount_with_no_sitemaps_gracefully(): void {
 		$generator  = new SitemapGenerator();
 		$repository = new SitemapPostRepository();
-		$service    = new SitemapService( $generator, $repository );
+		$service    = new SitemapService( $generator, $repository, new GenerationStateService() );
 
 		// Ensure no sitemaps exist
 		$sitemaps = get_posts(
@@ -338,7 +339,7 @@ class SitemapServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function test_handles_invalid_export_directory_gracefully(): void {
 		$generator  = new SitemapGenerator();
 		$repository = new SitemapPostRepository();
-		$service    = new SitemapService( $generator, $repository );
+		$service    = new SitemapService( $generator, $repository, new GenerationStateService() );
 
 		$invalid_dir = '';
 
@@ -358,7 +359,7 @@ class SitemapServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function test_handles_invalid_xml_for_export_gracefully(): void {
 		$generator  = new SitemapGenerator();
 		$repository = new SitemapPostRepository();
-		$service    = new SitemapService( $generator, $repository );
+		$service    = new SitemapService( $generator, $repository, new GenerationStateService() );
 
 		$invalid_xml_content = 'Invalid XML content <url><loc>unclosed';
 
@@ -386,7 +387,7 @@ class SitemapServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 
 		$generator  = new SitemapGenerator();
 		$repository = new SitemapPostRepository();
-		$service    = new SitemapService( $generator, $repository );
+		$service    = new SitemapService( $generator, $repository, new GenerationStateService() );
 
 		$export_service = new \Automattic\MSM_Sitemap\Application\Services\SitemapExportService( $repository, new \Automattic\MSM_Sitemap\Application\Services\SitemapQueryService() );
 		$sitemaps       = $export_service->get_sitemaps_for_export();
@@ -409,7 +410,7 @@ class SitemapServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 
 		// Should throw exception for null repository (correct behavior)
 		$this->expectException( \TypeError::class );
-		$service = new SitemapService( $generator, $repository );
+		$service = new SitemapService( $generator, $repository, new GenerationStateService() );
 	}
 
 	/**
@@ -421,7 +422,7 @@ class SitemapServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 
 		// Should throw exception for null generator (correct behavior)
 		$this->expectException( \TypeError::class );
-		$service = new SitemapService( $generator, $repository );
+		$service = new SitemapService( $generator, $repository, new GenerationStateService() );
 	}
 
 	/**
@@ -431,7 +432,7 @@ class SitemapServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function test_handles_extremely_large_date_queries_gracefully(): void {
 		$generator  = new SitemapGenerator();
 		$repository = new SitemapPostRepository();
-		$service    = new SitemapService( $generator, $repository );
+		$service    = new SitemapService( $generator, $repository, new GenerationStateService() );
 
 		// Create a very large array of date queries
 		$large_queries = array();
@@ -456,7 +457,7 @@ class SitemapServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function test_handles_memory_exhaustion_gracefully(): void {
 		$generator  = new SitemapGenerator();
 		$repository = new SitemapPostRepository();
-		$service    = new SitemapService( $generator, $repository );
+		$service    = new SitemapService( $generator, $repository, new GenerationStateService() );
 
 		// Create many sitemaps to potentially exhaust memory
 		for ( $i = 0; $i < 1000; $i++ ) {

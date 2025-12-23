@@ -10,6 +10,7 @@ declare( strict_types=1 );
 namespace Automattic\MSM_Sitemap\Tests\Application\Services;
 
 use Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapGeneratorFactory;
+use Automattic\MSM_Sitemap\Application\Services\GenerationStateService;
 
 /**
  * Tests for sitemap deletion functionality
@@ -29,7 +30,7 @@ class SitemapDeletionTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$content_types_service = $this->get_service( \Automattic\MSM_Sitemap\Application\Services\ContentTypesService::class );
 		$generator             = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
 		$repository            = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
-		$service               = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
+		$service               = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository, new GenerationStateService() );
 		$service->delete_for_date( $date );
 		$sitemap_id2 = $this->get_sitemap_post_id( 2018, 1, 4 );
 		$this->assertFalse( $sitemap_id2 );
@@ -118,7 +119,7 @@ class SitemapDeletionTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$content_types_service = $this->get_service( \Automattic\MSM_Sitemap\Application\Services\ContentTypesService::class );
 		$generator             = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
 		$repository            = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
-		$service               = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
+		$service               = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository, new GenerationStateService() );
 
 		// Should not throw an exception for valid dates
 		if ( null !== $invalid_date ) {
@@ -157,7 +158,7 @@ class SitemapDeletionTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$content_types_service = $this->get_service( \Automattic\MSM_Sitemap\Application\Services\ContentTypesService::class );
 		$generator             = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
 		$repository            = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
-		$service               = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
+		$service               = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository, new GenerationStateService() );
 
 		// Should not throw an exception when trying to delete non-existent sitemap
 		$result = $service->delete_for_date( $date );
@@ -173,7 +174,7 @@ class SitemapDeletionTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$content_types_service = $this->get_service( \Automattic\MSM_Sitemap\Application\Services\ContentTypesService::class );
 		$generator             = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
 		$repository            = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
-		$service               = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
+		$service               = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository, new GenerationStateService() );
 
 		// Should handle future dates gracefully
 		$result = $service->delete_for_date( $future_date );
@@ -190,7 +191,7 @@ class SitemapDeletionTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$content_types_service = $this->get_service( \Automattic\MSM_Sitemap\Application\Services\ContentTypesService::class );
 		$generator             = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
 		$repository            = new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository();
-		$service               = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository );
+		$service               = new \Automattic\MSM_Sitemap\Application\Services\SitemapService( $generator, $repository, new GenerationStateService() );
 
 		// Should handle very old dates gracefully
 		$result = $service->delete_for_date( $old_date );

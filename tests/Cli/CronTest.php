@@ -227,14 +227,14 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function test_cron_reset(): void {
 		// Remove the filter that forces cron enabled in tests
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
+
 		// Enable cron and add some processing options
 		$this->get_cron_scheduler()->enable_cron();
-		update_option( 'msm_years_to_process', array( '2024' ) );
-		update_option( 'msm_months_to_process', array( 1 ) );
-		update_option( 'msm_days_to_process', array( 1 ) );
 		update_option( 'msm_generation_in_progress', true );
-		update_option( 'msm_stop_processing', true );
+		update_option( 'msm_sitemap_stop_generation', true );
+		update_option( 'msm_background_generation_in_progress', true );
+		update_option( 'msm_background_generation_total', 10 );
+		update_option( 'msm_background_generation_remaining', 5 );
 
 		$cli = CLICommand::create();
 
@@ -245,12 +245,12 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$this->assertStringContainsString( 'Sitemap cron reset to clean state', $output );
 		$this->assertFalse( (bool) get_option( CronSchedulingService::CRON_ENABLED_OPTION ) );
 		$this->assertFalse( wp_next_scheduled( 'msm_cron_update_sitemap' ) );
-		$this->assertEmpty( get_option( 'msm_years_to_process' ) );
-		$this->assertEmpty( get_option( 'msm_months_to_process' ) );
-		$this->assertEmpty( get_option( 'msm_days_to_process' ) );
 		$this->assertFalse( (bool) get_option( 'msm_generation_in_progress' ) );
-		$this->assertFalse( (bool) get_option( 'msm_stop_processing' ) );
-		
+		$this->assertFalse( (bool) get_option( 'msm_sitemap_stop_generation' ) );
+		$this->assertFalse( (bool) get_option( 'msm_background_generation_in_progress' ) );
+		$this->assertEmpty( get_option( 'msm_background_generation_total' ) );
+		$this->assertEmpty( get_option( 'msm_background_generation_remaining' ) );
+
 		// Restore the filter for other tests
 		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 	}

@@ -9,6 +9,7 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Infrastructure\Cron;
 
+use Automattic\MSM_Sitemap\Application\Services\GenerationStateService;
 use Automattic\MSM_Sitemap\Application\Services\IncrementalGenerationService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapCleanupService;
 use Automattic\MSM_Sitemap\Domain\Contracts\CronHandlerInterface;
@@ -47,20 +48,30 @@ class AutomaticUpdateCronHandler implements CronHandlerInterface {
 	private SitemapCleanupService $cleanup_service;
 
 	/**
+	 * The generation state service.
+	 *
+	 * @var GenerationStateService
+	 */
+	private GenerationStateService $generation_state;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IncrementalGenerationService $generation_service The incremental generation service.
 	 * @param CronSchedulingService        $cron_scheduler     The cron scheduling service.
 	 * @param SitemapCleanupService        $cleanup_service    The sitemap cleanup service.
+	 * @param GenerationStateService       $generation_state   The generation state service.
 	 */
 	public function __construct(
 		IncrementalGenerationService $generation_service,
 		CronSchedulingService $cron_scheduler,
-		SitemapCleanupService $cleanup_service
+		SitemapCleanupService $cleanup_service,
+		GenerationStateService $generation_state
 	) {
 		$this->generation_service = $generation_service;
 		$this->cron_scheduler     = $cron_scheduler;
 		$this->cleanup_service    = $cleanup_service;
+		$this->generation_state   = $generation_state;
 	}
 
 	/**
@@ -81,7 +92,7 @@ class AutomaticUpdateCronHandler implements CronHandlerInterface {
 		}
 
 		// Track when we last checked for updates
-		update_option( 'msm_sitemap_last_check', time(), false );
+		$this->generation_state->update_last_check_time();
 
 		// Generate missing and stale sitemaps
 		$this->generation_service->generate();

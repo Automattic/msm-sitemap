@@ -311,21 +311,21 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function test_handle_reset_data(): void {
 		// Set some data to reset
-		update_option( 'msm_years_to_process', array( '2024' ) );
-		update_option( 'msm_months_to_process', array( 1 ) );
-		update_option( 'msm_days_to_process', array( 1 ) );
 		update_option( 'msm_generation_in_progress', true );
 		update_option( 'msm_sitemap_stop_generation', true );
+		update_option( 'msm_background_generation_in_progress', true );
+		update_option( 'msm_background_generation_total', 10 );
+		update_option( 'msm_background_generation_remaining', 5 );
 
 		ob_start();
 		$this->get_action_handlers()->handle_reset_data();
 		$output = ob_get_clean();
 
-		$this->assertEmpty( get_option( 'msm_years_to_process' ) );
-		$this->assertEmpty( get_option( 'msm_months_to_process' ) );
-		$this->assertEmpty( get_option( 'msm_days_to_process' ) );
 		$this->assertFalse( (bool) get_option( 'msm_generation_in_progress' ) );
 		$this->assertFalse( (bool) get_option( 'msm_sitemap_stop_generation' ) );
+		$this->assertFalse( (bool) get_option( 'msm_background_generation_in_progress' ) );
+		$this->assertEmpty( get_option( 'msm_background_generation_total' ) );
+		$this->assertEmpty( get_option( 'msm_background_generation_remaining' ) );
 		$this->assertStringContainsString( 'Sitemap data reset', $output );
 	}
 } 

@@ -16,9 +16,6 @@ use Automattic\MSM_Sitemap\Infrastructure\Formatters\SitemapXmlFormatter;
 use Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapIndexEntryFactory;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\PostTypeRegistration;
 
-// Additional services for dependency injection
-// Note: These will be added when updating the constructor
-
 /**
  * Service for managing sitemap operations.
  */
@@ -67,33 +64,55 @@ class SitemapService {
 	private PostTypeRegistration $post_type_registration;
 
 	/**
+	 * The stats service.
+	 *
+	 * @var SitemapStatsService|null
+	 */
+	private ?SitemapStatsService $stats_service;
+
+	/**
+	 * The generation state service.
+	 *
+	 * @var GenerationStateService
+	 */
+	private GenerationStateService $generation_state;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SitemapGenerator $generator The sitemap generator.
-	 * @param SitemapRepositoryInterface $repository The sitemap repository.
-	 * @param SitemapQueryService|null $query_service The query service (optional, will create if not provided).
-	 * @param SitemapGenerationService|null $generation_service The generation service (optional, will create if not provided).
-	 * @param PostTypeRegistration|null $post_type_registration The post type registration service (optional, will create if not provided).
+	 * @param SitemapGenerator              $generator              The sitemap generator.
+	 * @param SitemapRepositoryInterface    $repository             The sitemap repository.
+	 * @param GenerationStateService        $generation_state       The generation state service.
+	 * @param SitemapQueryService|null      $query_service          The query service (optional, will create if not provided).
+	 * @param SitemapGenerationService|null $generation_service     The generation service (optional, will create if not provided).
+	 * @param PostTypeRegistration|null     $post_type_registration The post type registration service (optional, will create if not provided).
+	 * @param SitemapStatsService|null      $stats_service          The stats service (optional).
 	 */
-	public function __construct( 
-		SitemapGenerator $generator, 
+	public function __construct(
+		SitemapGenerator $generator,
 		SitemapRepositoryInterface $repository,
+		GenerationStateService $generation_state,
 		?SitemapQueryService $query_service = null,
 		?SitemapGenerationService $generation_service = null,
-		?PostTypeRegistration $post_type_registration = null
+		?PostTypeRegistration $post_type_registration = null,
+		?SitemapStatsService $stats_service = null
 	) {
-		$this->generator  = $generator;
-		$this->formatter  = new SitemapXmlFormatter();
-		$this->repository = $repository;
-		
+		$this->generator        = $generator;
+		$this->formatter        = new SitemapXmlFormatter();
+		$this->repository       = $repository;
+		$this->generation_state = $generation_state;
+
 		// Create query service if not provided
 		$this->query_service = $query_service ?? new SitemapQueryService();
-		
+
 		// Create generation service if not provided
 		$this->generation_service = $generation_service ?? new SitemapGenerationService( $generator, $repository, $this->query_service );
-		
+
 		// Create post type registration service if not provided
 		$this->post_type_registration = $post_type_registration ?? new PostTypeRegistration();
+
+		// Optional - not injected to avoid circular dependency with repository
+		$this->stats_service = $stats_service;
 	}
 
 	/**
@@ -179,10 +198,12 @@ class SitemapService {
 	 */
 	public function delete_all(): SitemapOperationResult {
 		$deleted_count = $this->repository->delete_all();
-		
+
 		// Reset the total count
-		update_option( 'msm_sitemap_indexed_url_count', 0 );
-		
+		if ( $this->stats_service ) {
+			$this->stats_service->reset_indexed_url_count();
+		}
+
 		return SitemapOperationResult::success(
 			$deleted_count,
 			sprintf(
@@ -274,7 +295,9 @@ class SitemapService {
 		);
 
 		$total_count = (int) ( $total_count ?? 0 );
-		update_option( 'msm_sitemap_indexed_url_count', $total_count );
+		if ( $this->stats_service ) {
+			$this->stats_service->save_indexed_url_count( $total_count );
+		}
 
 		// Get sitemap count for reporting
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -361,7 +384,9 @@ class SitemapService {
 			++$sitemap_count;
 		}
 
-		update_option( 'msm_sitemap_indexed_url_count', $total_count, false );
+		if ( $this->stats_service ) {
+			$this->stats_service->save_indexed_url_count( $total_count );
+		}
 
 		$message = sprintf(
 			/* translators: %s is the total number of URLs found. */
@@ -517,14 +542,14 @@ class SitemapService {
 	 * @return bool True if stopped, false otherwise.
 	 */
 	private function is_stopped(): bool {
-		return (bool) get_option( 'msm_sitemap_stop_generation' );
+		return $this->generation_state->is_stop_requested();
 	}
 
 	/**
 	 * Reset all sitemap data and options.
-	 * 
+	 *
 	 * This removes all sitemap posts, meta data, and processing state options.
-	 * 
+	 *
 	 * @return bool True on success.
 	 */
 	public function reset_all_data(): bool {
@@ -534,15 +559,13 @@ class SitemapService {
 		// Remove the XML sitemap data
 		delete_post_meta_by_key( 'msm_sitemap_xml' );
 
-		// Delete state options
-		delete_option( 'msm_days_to_process' );
-		delete_option( 'msm_months_to_process' );
-		delete_option( 'msm_years_to_process' );
-		delete_option( 'msm_sitemap_stop_generation' );
-		delete_option( 'msm_generation_in_progress' );
+		// Clear generation state via service
+		$this->generation_state->clear_all_state();
 
-		// Delete stats options
-		delete_option( 'msm_sitemap_indexed_url_count' );
+		// Reset stats via service
+		if ( $this->stats_service ) {
+			$this->stats_service->reset_indexed_url_count();
+		}
 
 		// Delete all sitemap posts via repository
 		$this->repository->delete_all();
