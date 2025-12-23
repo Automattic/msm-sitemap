@@ -10,7 +10,7 @@ declare( strict_types=1 );
 namespace Automattic\MSM_Sitemap\Tests\Infrastructure\WordPress\Admin;
 
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\UI;
-use Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService;
+use Automattic\MSM_Sitemap\Infrastructure\Cron\CronScheduler;
 use Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapStatsService;
 use Automattic\MSM_Sitemap\Application\Services\SettingsService;
@@ -27,7 +27,7 @@ class UITest extends TestCase {
 	 * Test that the UI class correctly receives and stores the plugin file path and version.
 	 */
 	public function test_ui_constructor_accepts_plugin_file_path_and_version(): void {
-		$cron_scheduler            = $this->createMock( CronSchedulingService::class );
+		$cron_scheduler            = $this->createMock( CronScheduler::class );
 		$plugin_file_path          = '/path/to/plugin/msm-sitemap.php';
 		$plugin_version            = '1.5.2';
 		$missing_detection_service = $this->createMock( MissingSitemapDetectionService::class );
@@ -53,7 +53,7 @@ class UITest extends TestCase {
 	 * Test that the UI class can be instantiated with plugin file path and version.
 	 */
 	public function test_ui_can_be_instantiated_with_plugin_file_path_and_version(): void {
-		$cron_scheduler            = $this->createMock( CronSchedulingService::class );
+		$cron_scheduler            = $this->createMock( CronScheduler::class );
 		$plugin_file_path          = '/path/to/plugin/msm-sitemap.php';
 		$plugin_version            = '1.5.2';
 		$missing_detection_service = $this->createMock( MissingSitemapDetectionService::class );
@@ -72,7 +72,7 @@ class UITest extends TestCase {
 	 * Test that the UI class setup method can be called.
 	 */
 	public function test_ui_setup_can_be_called(): void {
-		$cron_scheduler            = $this->createMock( CronSchedulingService::class );
+		$cron_scheduler            = $this->createMock( CronScheduler::class );
 		$plugin_file_path          = '/path/to/plugin/msm-sitemap.php';
 		$plugin_version            = '1.5.2';
 		$missing_detection_service = $this->createMock( MissingSitemapDetectionService::class );

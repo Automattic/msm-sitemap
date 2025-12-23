@@ -1,6 +1,6 @@
 <?php
 /**
- * Cron Scheduling Service
+ * Cron Scheduler
  *
  * @package Automattic\MSM_Sitemap\Infrastructure\Cron
  */
@@ -14,12 +14,12 @@ use Automattic\MSM_Sitemap\Application\Services\GenerationStateService;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
 
 /**
- * Service class for managing cron scheduling.
+ * Scheduler for WordPress cron jobs.
  *
  * Handles enabling/disabling the recurring automatic update cron job
  * and provides status information about cron state.
  */
-class CronSchedulingService {
+class CronScheduler {
 
 	/**
 	 * Option name for tracking if cron is enabled.

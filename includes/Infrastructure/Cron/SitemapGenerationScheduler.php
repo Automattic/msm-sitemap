@@ -43,9 +43,9 @@ class SitemapGenerationScheduler {
 	/**
 	 * The cron scheduling service.
 	 *
-	 * @var CronSchedulingService
+	 * @var CronScheduler
 	 */
-	private CronSchedulingService $cron_scheduler;
+	private CronScheduler $cron_scheduler;
 
 	/**
 	 * The generation state service.
@@ -58,12 +58,12 @@ class SitemapGenerationScheduler {
 	 * Constructor.
 	 *
 	 * @param GenerateSitemapUseCase $generate_use_case The generate sitemap use case.
-	 * @param CronSchedulingService  $cron_scheduler    The cron scheduling service.
+	 * @param CronScheduler  $cron_scheduler    The cron scheduling service.
 	 * @param GenerationStateService $generation_state  The generation state service.
 	 */
 	public function __construct(
 		GenerateSitemapUseCase $generate_use_case,
-		CronSchedulingService $cron_scheduler,
+		CronScheduler $cron_scheduler,
 		GenerationStateService $generation_state
 	) {
 		$this->generate_use_case = $generate_use_case;

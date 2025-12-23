@@ -16,7 +16,7 @@ use Automattic\MSM_Sitemap\Domain\Contracts\WordPressIntegrationInterface;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\ActionHandlers;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\HelpTabs;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\Notifications;
-use Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService;
+use Automattic\MSM_Sitemap\Infrastructure\Cron\CronScheduler;
 
 
 /**
@@ -27,9 +27,9 @@ class UI implements WordPressIntegrationInterface {
 	/**
 	 * The cron scheduling service.
 	 *
-	 * @var CronSchedulingService
+	 * @var CronScheduler
 	 */
-	private CronSchedulingService $cron_scheduler;
+	private CronScheduler $cron_scheduler;
 
 	/**
 	 * The plugin file path.
@@ -83,7 +83,7 @@ class UI implements WordPressIntegrationInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param CronSchedulingService $cron_scheduler The cron scheduling service.
+	 * @param CronScheduler $cron_scheduler The cron scheduling service.
 	 * @param string $plugin_file_path The path to the main plugin file.
 	 * @param string $plugin_version The plugin version.
 	 * @param MissingSitemapDetectionService $missing_detection_service The missing sitemap detection service.
@@ -93,7 +93,7 @@ class UI implements WordPressIntegrationInterface {
 	 * @param ActionHandlers $action_handlers The action handlers.
 	 */
 	public function __construct( 
-		CronSchedulingService $cron_scheduler, 
+		CronScheduler $cron_scheduler, 
 		string $plugin_file_path, 
 		string $plugin_version,
 		MissingSitemapDetectionService $missing_detection_service,

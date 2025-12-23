@@ -32,7 +32,7 @@ use Automattic\MSM_Sitemap\Domain\Contracts\SitemapRepositoryInterface;
 use Automattic\MSM_Sitemap\Domain\Contracts\PostRepositoryInterface;
 use Automattic\MSM_Sitemap\Domain\Contracts\ImageRepositoryInterface;
 use Automattic\MSM_Sitemap\Infrastructure\CLI\CLICommand;
-use Automattic\MSM_Sitemap\Infrastructure\Cron\CronSchedulingService;
+use Automattic\MSM_Sitemap\Infrastructure\Cron\CronScheduler;
 use Automattic\MSM_Sitemap\Infrastructure\Formatters\SitemapXmlFormatter;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository;
@@ -351,7 +351,7 @@ class SitemapContainer {
 			SitemapGenerationScheduler::class,
 			function ( $container ) {
 				$generate_use_case = $container->get( GenerateSitemapUseCase::class );
-				$cron_scheduler    = $container->get( CronSchedulingService::class );
+				$cron_scheduler    = $container->get( CronScheduler::class );
 				$generation_state     = $container->get( GenerationStateService::class );
 
 				return new SitemapGenerationScheduler( $generate_use_case, $cron_scheduler, $generation_state );
@@ -382,7 +382,7 @@ class SitemapContainer {
 			CronManagementService::class,
 			function ( $container ) {
 				$settings_service = $container->get( SettingsService::class );
-				$cron_scheduler   = $container->get( CronSchedulingService::class );
+				$cron_scheduler   = $container->get( CronScheduler::class );
 				return new CronManagementService( $settings_service, $cron_scheduler );
 			} 
 		);
@@ -425,11 +425,11 @@ class SitemapContainer {
 		);
 
 		$this->register(
-			CronSchedulingService::class,
+			CronScheduler::class,
 			function ( $container ) {
 				$settings_service = $container->get( SettingsService::class );
 				$generation_state    = $container->get( GenerationStateService::class );
-				return new CronSchedulingService( $settings_service, $generation_state );
+				return new CronScheduler( $settings_service, $generation_state );
 			}
 		);
 
@@ -499,7 +499,7 @@ class SitemapContainer {
 			AutomaticUpdateCronHandler::class,
 			function ( $container ) {
 				$generation_service = $container->get( IncrementalGenerationService::class );
-				$cron_scheduler     = $container->get( CronSchedulingService::class );
+				$cron_scheduler     = $container->get( CronScheduler::class );
 				$cleanup_service    = $container->get( SitemapCleanupService::class );
 				$generation_state      = $container->get( GenerationStateService::class );
 
@@ -548,7 +548,7 @@ class SitemapContainer {
 		$this->register(
 			UI::class,
 			function ( $container ) {
-				$cron_scheduler            = $container->get( CronSchedulingService::class );
+				$cron_scheduler            = $container->get( CronScheduler::class );
 				$plugin_file_path          = msm_sitemap_plugin()->get_plugin_file_path();
 				$plugin_version            = msm_sitemap_plugin()->get_plugin_version();
 				$missing_detection_service = $container->get( MissingSitemapDetectionService::class );
