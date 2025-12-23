@@ -9,22 +9,22 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Application\Services;
 
-use Automattic\MSM_Sitemap\Infrastructure\Cron\SitemapGenerationScheduler;
+use Automattic\MSM_Sitemap\Infrastructure\Cron\BackgroundGenerationScheduler;
 
 /**
  * Service for full sitemap regeneration.
  *
  * Orchestrates AllDatesWithPostsService (date provider) and
- * SitemapGenerationScheduler to regenerate all sitemaps.
+ * BackgroundGenerationScheduler to regenerate all sitemaps.
  */
 class FullGenerationService {
 
 	/**
 	 * The sitemap generation scheduler.
 	 *
-	 * @var SitemapGenerationScheduler
+	 * @var BackgroundGenerationScheduler
 	 */
-	private SitemapGenerationScheduler $scheduler;
+	private BackgroundGenerationScheduler $scheduler;
 
 	/**
 	 * The all dates service.
@@ -43,12 +43,12 @@ class FullGenerationService {
 	/**
 	 * Constructor.
 	 *
-	 * @param SitemapGenerationScheduler $scheduler         The scheduler.
+	 * @param BackgroundGenerationScheduler $scheduler         The scheduler.
 	 * @param AllDatesWithPostsService   $all_dates_service The all dates service.
 	 * @param GenerationStateService     $generation_state  The generation state service.
 	 */
 	public function __construct(
-		SitemapGenerationScheduler $scheduler,
+		BackgroundGenerationScheduler $scheduler,
 		AllDatesWithPostsService $all_dates_service,
 		GenerationStateService $generation_state
 	) {

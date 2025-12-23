@@ -1,6 +1,6 @@
 <?php
 /**
- * Sitemap Endpoint Handler
+ * Sitemap XML Request Handler
  *
  * Handles direct HTTP requests for sitemap XML files. This class intercepts requests
  * to URLs like /sitemap.xml and /sitemap-2024.xml, serving the appropriate XML content
@@ -25,9 +25,9 @@ use Automattic\MSM_Sitemap\Infrastructure\WordPress\PostTypeRegistration;
 use Automattic\MSM_Sitemap\Domain\Contracts\WordPressIntegrationInterface;
 
 /**
- * Handles sitemap endpoint requests and responses.
+ * Handles sitemap XML request handling and responses.
  */
-class SitemapEndpointHandler implements WordPressIntegrationInterface {
+class SitemapXmlRequestHandler implements WordPressIntegrationInterface {
 
 	/**
 	 * The sitemap service.
@@ -51,7 +51,7 @@ class SitemapEndpointHandler implements WordPressIntegrationInterface {
 	}
 
 	/**
-	 * Register WordPress hooks and filters for sitemap endpoint handling.
+	 * Register WordPress hooks and filters for sitemap XML request handling.
 	 */
 	public function register_hooks(): void {
 		add_filter( 'template_include', array( $this, 'handle_template_include' ) );
@@ -122,18 +122,18 @@ class SitemapEndpointHandler implements WordPressIntegrationInterface {
 	 */
 	public function get_sitemap_index_xml( $year = false ) {
 		global $wpdb;
-		
+
 		// Use the same query logic as the old build_root_sitemap_xml method for consistency
 		if ( is_numeric( $year ) ) {
-			$query = $wpdb->prepare( 
-				"SELECT post_date FROM $wpdb->posts WHERE post_type = %s AND YEAR(post_date) = %s AND post_status = 'publish' ORDER BY post_date DESC LIMIT 10000", 
-				$this->post_type_registration->get_post_type(), 
-				$year 
+			$query = $wpdb->prepare(
+				"SELECT post_date FROM $wpdb->posts WHERE post_type = %s AND YEAR(post_date) = %s AND post_status = 'publish' ORDER BY post_date DESC LIMIT 10000",
+				$this->post_type_registration->get_post_type(),
+				$year
 			);
 		} else {
-			$query = $wpdb->prepare( 
-				"SELECT post_date FROM $wpdb->posts WHERE post_type = %s AND post_status = 'publish' ORDER BY post_date DESC LIMIT 10000", 
-				$this->post_type_registration->get_post_type() 
+			$query = $wpdb->prepare(
+				"SELECT post_date FROM $wpdb->posts WHERE post_type = %s AND post_status = 'publish' ORDER BY post_date DESC LIMIT 10000",
+				$this->post_type_registration->get_post_type()
 			);
 		}
 
@@ -176,7 +176,7 @@ class SitemapEndpointHandler implements WordPressIntegrationInterface {
 		// Create collection and format XML
 		$collection = SitemapIndexCollectionFactory::from_entries( $entries );
 		$formatter  = new SitemapIndexXmlFormatter();
-		
+
 		$xml_string = $formatter->format( $collection );
 
 		/**
@@ -213,10 +213,10 @@ class SitemapEndpointHandler implements WordPressIntegrationInterface {
 	 */
 	public function get_individual_sitemap_xml( int $year, int $month, int $day ) {
 		$date = sprintf( '%04d-%02d-%02d', $year, $month, $day );
-		
+
 		// Get sitemap data for this date
 		$sitemap_data = $this->sitemap_service->get_sitemap_data( $date );
-		
+
 		if ( ! $sitemap_data || ! isset( $sitemap_data['xml_content'] ) ) {
 			return false;
 		}
@@ -245,9 +245,10 @@ class SitemapEndpointHandler implements WordPressIntegrationInterface {
 	 * @param string $xml XML content.
 	 */
 	private function send_sitemap_xml_response( string $xml ): void {
+		status_header( 200 );
 		header( 'Content-Type: application/xml; charset=UTF-8' );
 		header( 'X-Robots-Tag: noindex' );
-		
+
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo StylesheetManager::get_sitemap_stylesheet_reference();
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
@@ -263,7 +264,7 @@ class SitemapEndpointHandler implements WordPressIntegrationInterface {
 	private function send_sitemap_error_response( string $message ): void {
 		header( 'Content-Type: application/xml; charset=UTF-8' );
 		header( 'X-Robots-Tag: noindex' );
-		
+
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo StylesheetManager::get_sitemap_stylesheet_reference();
 		echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";

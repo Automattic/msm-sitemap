@@ -43,7 +43,7 @@ These services implement `SitemapDateProviderInterface` and identify dates that 
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                    SitemapGenerationScheduler                     │
+│                    BackgroundGenerationScheduler                     │
 │   (Central scheduler for both direct and background generation)  │
 ├──────────────────────────────────────────────────────────────────┤
 │  schedule(dates): Schedule background cron events                 │
@@ -76,7 +76,7 @@ These orchestrate the detection and scheduling for specific workflows:
 
 - **`FullGenerationService`**: Full sitemap regeneration
   - Uses `AllDatesWithPostsService` to get all dates
-  - Schedules via `SitemapGenerationScheduler`
+  - Schedules via `BackgroundGenerationScheduler`
 
 - **`IncrementalGenerationService`**: Missing/stale sitemap generation ("incremental" = only what needs updating)
   - Uses `MissingSitemapDetectionService` (which includes stale detection)
@@ -113,7 +113,7 @@ MissingSitemapDetectionService.get_missing_sitemaps()
         └── Stale dates (sitemap older than post modifications)
         │
         ▼
-SitemapGenerationScheduler.generate_now(dates)
+BackgroundGenerationScheduler.generate_now(dates)
         │
         ▼
 SitemapCleanupService.cleanup_all_orphaned_sitemaps()
@@ -130,7 +130,7 @@ Admin UI: "Schedule Background Generation" button
 IncrementalGenerationService.schedule()
         │
         ▼
-SitemapGenerationScheduler.schedule(dates)
+BackgroundGenerationScheduler.schedule(dates)
         │
         ├── Set progress tracking options
         │
@@ -144,10 +144,10 @@ SitemapGenerationScheduler.schedule(dates)
         BackgroundGenerationCronHandler.handle_generate_for_date()
                 │
                 ▼
-        SitemapGenerationScheduler.generate_for_date()
+        BackgroundGenerationScheduler.generate_for_date()
                 │
                 ▼
-        SitemapGenerationScheduler.record_date_completion()
+        BackgroundGenerationScheduler.record_date_completion()
                 │
                 ▼
         (When last date completes):
@@ -168,7 +168,7 @@ IncrementalGenerationService.generate()
 MissingSitemapDetectionService.get_missing_sitemaps()
         │
         ▼
-SitemapGenerationScheduler.generate_now(dates)
+BackgroundGenerationScheduler.generate_now(dates)
         │
         ▼
 (Generates all sitemaps synchronously)
@@ -188,7 +188,7 @@ FullGenerationService.start_full_generation()
 AllDatesWithPostsService.get_dates()
         │
         ▼
-SitemapGenerationScheduler.schedule(dates)
+BackgroundGenerationScheduler.schedule(dates)
         │
         └── (Same background flow as section 2)
 ```
@@ -221,7 +221,7 @@ Background generation tracks progress via WordPress options:
 Progress can be retrieved:
 
 ```php
-$scheduler = $container->get( SitemapGenerationScheduler::class );
+$scheduler = $container->get( BackgroundGenerationScheduler::class );
 $progress = $scheduler->get_progress();
 
 // Returns:
@@ -251,7 +251,7 @@ Valid cron frequencies:
 Individual date generation events are scheduled 5 seconds apart to avoid server overload:
 
 ```php
-// In SitemapGenerationScheduler
+// In BackgroundGenerationScheduler
 private const INTERVAL_BETWEEN_EVENTS = 5; // seconds
 ```
 

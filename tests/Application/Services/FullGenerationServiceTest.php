@@ -10,14 +10,14 @@ declare( strict_types=1 );
 namespace Automattic\MSM_Sitemap\Tests\Application\Services;
 
 use Automattic\MSM_Sitemap\Application\Services\FullGenerationService;
-use Automattic\MSM_Sitemap\Infrastructure\Cron\SitemapGenerationScheduler;
+use Automattic\MSM_Sitemap\Infrastructure\Cron\BackgroundGenerationScheduler;
 
 /**
  * Unit Tests for FullGenerationService.
  *
  * The FullGenerationService uses a simplified architecture:
  * - AllDatesWithPostsService provides all dates that need sitemaps
- * - SitemapGenerationScheduler schedules individual cron events for each date
+ * - BackgroundGenerationScheduler schedules individual cron events for each date
  */
 class FullGenerationServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 
@@ -39,7 +39,7 @@ class FullGenerationServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		delete_option( 'msm_background_generation_total' );
 		delete_option( 'msm_background_generation_remaining' );
 		delete_option( 'msm_generation_in_progress' );
-		wp_unschedule_hook( SitemapGenerationScheduler::CRON_HOOK );
+		wp_unschedule_hook( BackgroundGenerationScheduler::CRON_HOOK );
 
 		$this->add_a_post_for_each_of_the_last_x_years( $this->num_years_data );
 		$this->add_a_post_for_today();
@@ -55,7 +55,7 @@ class FullGenerationServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		delete_option( 'msm_background_generation_total' );
 		delete_option( 'msm_background_generation_remaining' );
 		delete_option( 'msm_generation_in_progress' );
-		wp_unschedule_hook( SitemapGenerationScheduler::CRON_HOOK );
+		wp_unschedule_hook( BackgroundGenerationScheduler::CRON_HOOK );
 
 		parent::tearDown();
 	}

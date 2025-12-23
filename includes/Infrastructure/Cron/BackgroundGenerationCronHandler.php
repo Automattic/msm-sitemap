@@ -16,7 +16,7 @@ use Automattic\MSM_Sitemap\Application\Services\SitemapCleanupService;
  * Handler for scheduled background sitemap generation events.
  *
  * This handler processes individual `msm_cron_generate_sitemap_for_date` events
- * that are scheduled by the SitemapGenerationScheduler when running background
+ * that are scheduled by the BackgroundGenerationScheduler when running background
  * generation (either Full or Incremental).
  *
  * Used by:
@@ -28,9 +28,9 @@ class BackgroundGenerationCronHandler implements WordPressIntegrationInterface {
 	/**
 	 * The sitemap generation scheduler.
 	 *
-	 * @var SitemapGenerationScheduler
+	 * @var BackgroundGenerationScheduler
 	 */
-	private SitemapGenerationScheduler $scheduler;
+	private BackgroundGenerationScheduler $scheduler;
 
 	/**
 	 * The sitemap cleanup service.
@@ -42,11 +42,11 @@ class BackgroundGenerationCronHandler implements WordPressIntegrationInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param SitemapGenerationScheduler $scheduler       The scheduler.
+	 * @param BackgroundGenerationScheduler $scheduler       The scheduler.
 	 * @param SitemapCleanupService      $cleanup_service The cleanup service.
 	 */
 	public function __construct(
-		SitemapGenerationScheduler $scheduler,
+		BackgroundGenerationScheduler $scheduler,
 		SitemapCleanupService $cleanup_service
 	) {
 		$this->scheduler       = $scheduler;
@@ -57,7 +57,7 @@ class BackgroundGenerationCronHandler implements WordPressIntegrationInterface {
 	 * Register WordPress hooks for cron event handling.
 	 */
 	public function register_hooks(): void {
-		add_action( SitemapGenerationScheduler::CRON_HOOK, array( $this, 'handle_generate_for_date' ), 10, 1 );
+		add_action( BackgroundGenerationScheduler::CRON_HOOK, array( $this, 'handle_generate_for_date' ), 10, 1 );
 	}
 
 	/**

@@ -7,7 +7,7 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests;
 
-use Automattic\MSM_Sitemap\Infrastructure\REST\SitemapEndpointHandler;
+use Automattic\MSM_Sitemap\Infrastructure\REST\SitemapXmlRequestHandler;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository;
 
 /**
@@ -35,7 +35,7 @@ class SitemapIndexTest extends TestCase {
 		
 		$this->assertNotEmpty( $dates, 'Should have at least one sitemap date after build_sitemaps()' );
 
-		$sitemap_endpoint_handler = $this->get_service( SitemapEndpointHandler::class );
+		$sitemap_endpoint_handler = $this->get_service( SitemapXmlRequestHandler::class );
 		$index_xml                = $sitemap_endpoint_handler->get_sitemap_index_xml( false );
 
 		$this->assertNotFalse( $index_xml, 'Index XML should be generated successfully' );
@@ -54,7 +54,7 @@ class SitemapIndexTest extends TestCase {
 		$repository = new SitemapPostRepository();
 		$repository->delete_all();
 
-		$sitemap_endpoint_handler = $this->get_service( SitemapEndpointHandler::class );
+		$sitemap_endpoint_handler = $this->get_service( SitemapXmlRequestHandler::class );
 		$index_xml                = $sitemap_endpoint_handler->get_sitemap_index_xml( false );
 
 		$this->assertFalse( $index_xml, 'Index XML should return false when no sitemaps exist' );
@@ -71,7 +71,7 @@ class SitemapIndexTest extends TestCase {
 		// Build sitemaps from those posts
 		$this->build_sitemaps();
 
-		$sitemap_endpoint_handler = $this->get_service( SitemapEndpointHandler::class );
+		$sitemap_endpoint_handler = $this->get_service( SitemapXmlRequestHandler::class );
 
 		// Test 2024 only
 		$index_xml_2024 = $sitemap_endpoint_handler->get_sitemap_index_xml( 2024 );

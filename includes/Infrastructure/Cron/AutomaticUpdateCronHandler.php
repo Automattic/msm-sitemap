@@ -9,6 +9,7 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Infrastructure\Cron;
 
+use Automattic\MSM_Sitemap\Application\Services\CronManagementService;
 use Automattic\MSM_Sitemap\Application\Services\GenerationStateService;
 use Automattic\MSM_Sitemap\Application\Services\IncrementalGenerationService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapCleanupService;
@@ -34,11 +35,11 @@ class AutomaticUpdateCronHandler implements CronHandlerInterface {
 	private IncrementalGenerationService $generation_service;
 
 	/**
-	 * The cron scheduling service.
+	 * The cron management service.
 	 *
-	 * @var CronScheduler
+	 * @var CronManagementService
 	 */
-	private CronScheduler $cron_scheduler;
+	private CronManagementService $cron_management;
 
 	/**
 	 * The sitemap cleanup service.
@@ -58,18 +59,18 @@ class AutomaticUpdateCronHandler implements CronHandlerInterface {
 	 * Constructor.
 	 *
 	 * @param IncrementalGenerationService $generation_service The incremental generation service.
-	 * @param CronScheduler        $cron_scheduler     The cron scheduling service.
+	 * @param CronManagementService        $cron_management    The cron management service.
 	 * @param SitemapCleanupService        $cleanup_service    The sitemap cleanup service.
 	 * @param GenerationStateService       $generation_state   The generation state service.
 	 */
 	public function __construct(
 		IncrementalGenerationService $generation_service,
-		CronScheduler $cron_scheduler,
+		CronManagementService $cron_management,
 		SitemapCleanupService $cleanup_service,
 		GenerationStateService $generation_state
 	) {
 		$this->generation_service = $generation_service;
-		$this->cron_scheduler     = $cron_scheduler;
+		$this->cron_management    = $cron_management;
 		$this->cleanup_service    = $cleanup_service;
 		$this->generation_state   = $generation_state;
 	}
@@ -91,13 +92,13 @@ class AutomaticUpdateCronHandler implements CronHandlerInterface {
 			return;
 		}
 
-		// Track when we last checked for updates
+		// Track when we last checked for updates.
 		$this->generation_state->update_last_check_time();
 
-		// Generate missing and stale sitemaps
+		// Generate missing and stale sitemaps.
 		$this->generation_service->generate();
 
-		// Clean up orphaned sitemaps for dates that no longer have posts
+		// Clean up orphaned sitemaps for dates that no longer have posts.
 		$this->cleanup_service->cleanup_all_orphaned_sitemaps();
 	}
 
@@ -107,6 +108,6 @@ class AutomaticUpdateCronHandler implements CronHandlerInterface {
 	 * @return bool True if cron is enabled.
 	 */
 	public function can_execute(): bool {
-		return $this->cron_scheduler->is_cron_enabled();
+		return $this->cron_management->is_enabled();
 	}
 }
