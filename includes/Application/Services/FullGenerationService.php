@@ -34,17 +34,27 @@ class FullGenerationService {
 	private AllDatesWithPostsService $all_dates_service;
 
 	/**
+	 * The generation state service.
+	 *
+	 * @var GenerationStateService
+	 */
+	private GenerationStateService $generation_state;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SitemapGenerationScheduler $scheduler         The scheduler.
 	 * @param AllDatesWithPostsService   $all_dates_service The all dates service.
+	 * @param GenerationStateService     $generation_state  The generation state service.
 	 */
 	public function __construct(
 		SitemapGenerationScheduler $scheduler,
-		AllDatesWithPostsService $all_dates_service
+		AllDatesWithPostsService $all_dates_service,
+		GenerationStateService $generation_state
 	) {
 		$this->scheduler         = $scheduler;
 		$this->all_dates_service = $all_dates_service;
+		$this->generation_state  = $generation_state;
 	}
 
 	/**
@@ -88,7 +98,7 @@ class FullGenerationService {
 		}
 
 		// Set generation in progress flag (for UI)
-		update_option( 'msm_generation_in_progress', true );
+		$this->generation_state->mark_generation_in_progress();
 
 		// Schedule all dates via the shared scheduler
 		$result = $this->scheduler->schedule( $all_dates );
@@ -133,6 +143,6 @@ class FullGenerationService {
 	 */
 	public function cancel(): void {
 		$this->scheduler->cancel();
-		delete_option( 'msm_generation_in_progress' );
+		$this->generation_state->mark_generation_complete();
 	}
 }

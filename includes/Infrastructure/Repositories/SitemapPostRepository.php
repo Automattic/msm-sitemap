@@ -9,6 +9,7 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Infrastructure\Repositories;
 
+use Automattic\MSM_Sitemap\Application\Services\SitemapStatsService;
 use Automattic\MSM_Sitemap\Domain\Contracts\SitemapRepositoryInterface;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\PostTypeRegistration;
 
@@ -25,12 +26,21 @@ class SitemapPostRepository implements SitemapRepositoryInterface {
 	private PostTypeRegistration $post_type_registration;
 
 	/**
+	 * The stats service for URL count tracking.
+	 *
+	 * @var SitemapStatsService|null
+	 */
+	private ?SitemapStatsService $stats_service;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param PostTypeRegistration|null $post_type_registration The post type registration service (optional, will create if not provided).
+	 * @param SitemapStatsService|null  $stats_service          The stats service for URL count tracking (optional).
 	 */
-	public function __construct( ?PostTypeRegistration $post_type_registration = null ) {
+	public function __construct( ?PostTypeRegistration $post_type_registration = null, ?SitemapStatsService $stats_service = null ) {
 		$this->post_type_registration = $post_type_registration ?? new PostTypeRegistration();
+		$this->stats_service          = $stats_service;
 	}
 
 	/**
@@ -88,9 +98,16 @@ class SitemapPostRepository implements SitemapRepositoryInterface {
 		update_post_meta( $post_id, 'msm_indexed_url_count', $url_count );
 
 		// Update total indexed URL count
-		$total_count = get_option( 'msm_sitemap_indexed_url_count', 0 );
-		$new_total   = $total_count - $old_count + $url_count;
-		update_option( 'msm_sitemap_indexed_url_count', $new_total );
+		// Use false for autoload to avoid object cache thrashing on sites with persistent cache
+		$delta = $url_count - $old_count;
+		if ( 0 !== $delta ) {
+			if ( $this->stats_service ) {
+				$this->stats_service->adjust_indexed_url_count( $delta );
+			} else {
+				$total_count = (int) get_option( 'msm_sitemap_indexed_url_count', 0 );
+				update_option( 'msm_sitemap_indexed_url_count', $total_count + $delta, false );
+			}
+		}
 
 		return true;
 	}
@@ -137,11 +154,15 @@ class SitemapPostRepository implements SitemapRepositoryInterface {
 		// Delete the post
 		$result = wp_delete_post( $post_id, true );
 
-		if ( $result ) {
-			// Update total indexed URL count
-			$total_count = get_option( 'msm_sitemap_indexed_url_count', 0 );
-			$new_total   = $total_count - $url_count;
-			update_option( 'msm_sitemap_indexed_url_count', $new_total );
+		// Update total indexed URL count
+		// Use false for autoload to avoid object cache thrashing on sites with persistent cache
+		if ( $result && $url_count > 0 ) {
+			if ( $this->stats_service ) {
+				$this->stats_service->adjust_indexed_url_count( -$url_count );
+			} else {
+				$total_count = (int) get_option( 'msm_sitemap_indexed_url_count', 0 );
+				update_option( 'msm_sitemap_indexed_url_count', max( 0, $total_count - $url_count ), false );
+			}
 		}
 
 		return (bool) $result;

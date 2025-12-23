@@ -12,6 +12,7 @@ namespace Automattic\MSM_Sitemap\Infrastructure\DI;
 use Automattic\MSM_Sitemap\Application\Services\AllDatesWithPostsService;
 use Automattic\MSM_Sitemap\Application\Services\CronManagementService;
 use Automattic\MSM_Sitemap\Application\Services\FullGenerationService;
+use Automattic\MSM_Sitemap\Application\Services\GenerationStateService;
 use Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService;
 use Automattic\MSM_Sitemap\Application\Services\IncrementalGenerationService;
 use Automattic\MSM_Sitemap\Application\Services\SettingsService;
@@ -163,12 +164,15 @@ class SitemapContainer {
 	 */
 	private function register_default_services(): void {
 		// Register repositories
+		// Note: SitemapStatsService is not injected here to avoid circular dependency
+		// (SitemapStatsService depends on SitemapRepositoryInterface).
+		// The repository handles URL count updates directly using non-autoloaded options.
 		$this->register(
 			SitemapRepositoryInterface::class,
 			function ( $container ) {
 				$post_type_registration = $container->get( PostTypeRegistration::class );
 				return new SitemapPostRepository( $post_type_registration );
-			} 
+			}
 		);
 
 		$this->register(
@@ -265,12 +269,14 @@ class SitemapContainer {
 				$content_types_service  = $container->get( ContentTypesService::class );
 				$generator              = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
 				$repository             = $container->get( SitemapRepositoryInterface::class );
+				$generation_state       = $container->get( GenerationStateService::class );
 				$query_service          = $container->get( SitemapQueryService::class );
 				$generation_service     = $container->get( SitemapGenerationService::class );
 				$post_type_registration = $container->get( PostTypeRegistration::class );
-			
-				return new SitemapService( $generator, $repository, $query_service, $generation_service, $post_type_registration );
-			} 
+				$stats_service          = $container->get( SitemapStatsService::class );
+
+				return new SitemapService( $generator, $repository, $generation_state, $query_service, $generation_service, $post_type_registration, $stats_service );
+			}
 		);
 
 		$this->register(
@@ -346,8 +352,9 @@ class SitemapContainer {
 			function ( $container ) {
 				$generate_use_case = $container->get( GenerateSitemapUseCase::class );
 				$cron_scheduler    = $container->get( CronSchedulingService::class );
+				$generation_state     = $container->get( GenerationStateService::class );
 
-				return new SitemapGenerationScheduler( $generate_use_case, $cron_scheduler );
+				return new SitemapGenerationScheduler( $generate_use_case, $cron_scheduler, $generation_state );
 			}
 		);
 
@@ -385,8 +392,9 @@ class SitemapContainer {
 			function ( $container ) {
 				$scheduler         = $container->get( SitemapGenerationScheduler::class );
 				$all_dates_service = $container->get( AllDatesWithPostsService::class );
+				$generation_state     = $container->get( GenerationStateService::class );
 
-				return new FullGenerationService( $scheduler, $all_dates_service );
+				return new FullGenerationService( $scheduler, $all_dates_service, $generation_state );
 			}
 		);
 
@@ -406,16 +414,23 @@ class SitemapContainer {
 			SettingsService::class,
 			function () {
 				return new SettingsService();
-			} 
+			}
+		);
+
+		$this->register(
+			GenerationStateService::class,
+			function () {
+				return new GenerationStateService();
+			}
 		);
 
 		$this->register(
 			CronSchedulingService::class,
 			function ( $container ) {
 				$settings_service = $container->get( SettingsService::class );
-				$post_repository  = $container->get( PostRepository::class );
-				return new CronSchedulingService( $settings_service, $post_repository );
-			} 
+				$generation_state    = $container->get( GenerationStateService::class );
+				return new CronSchedulingService( $settings_service, $generation_state );
+			}
 		);
 
 		// Register Event Dispatcher
@@ -486,8 +501,9 @@ class SitemapContainer {
 				$generation_service = $container->get( IncrementalGenerationService::class );
 				$cron_scheduler     = $container->get( CronSchedulingService::class );
 				$cleanup_service    = $container->get( SitemapCleanupService::class );
+				$generation_state      = $container->get( GenerationStateService::class );
 
-				return new AutomaticUpdateCronHandler( $generation_service, $cron_scheduler, $cleanup_service );
+				return new AutomaticUpdateCronHandler( $generation_service, $cron_scheduler, $cleanup_service, $generation_state );
 			}
 		);
 
@@ -504,15 +520,15 @@ class SitemapContainer {
 		$this->register(
 			REST_API_Controller::class,
 			function ( $container ) {
-				$sitemap_service               = $container->get( SitemapService::class );
-				$stats_service                 = $container->get( SitemapStatsService::class );
-				$validation_service            = $container->get( SitemapValidationService::class );
-				$export_service                = $container->get( SitemapExportService::class );
-				$cron_management_service       = $container->get( CronManagementService::class );
-				$content_types_service         = $container->get( ContentTypesService::class );
-				$sitemap_generator             = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
-				$generate_use_case             = $container->get( GenerateSitemapUseCase::class );
-				$missing_detection_service     = $container->get( MissingSitemapDetectionService::class );
+				$sitemap_service                = $container->get( SitemapService::class );
+				$stats_service                  = $container->get( SitemapStatsService::class );
+				$validation_service             = $container->get( SitemapValidationService::class );
+				$export_service                 = $container->get( SitemapExportService::class );
+				$cron_management_service        = $container->get( CronManagementService::class );
+				$content_types_service          = $container->get( ContentTypesService::class );
+				$sitemap_generator              = SitemapGeneratorFactory::create( $content_types_service->get_content_types() );
+				$generate_use_case              = $container->get( GenerateSitemapUseCase::class );
+				$missing_detection_service      = $container->get( MissingSitemapDetectionService::class );
 				$incremental_generation_service = $container->get( IncrementalGenerationService::class );
 
 				return new REST_API_Controller(
@@ -547,10 +563,10 @@ class SitemapContainer {
 		$this->register(
 			ActionHandlers::class,
 			function ( $container ) {
-				$cron_management_service       = $container->get( CronManagementService::class );
-				$settings_service              = $container->get( SettingsService::class );
-				$sitemap_service               = $container->get( SitemapService::class );
-				$full_generation_service       = $container->get( FullGenerationService::class );
+				$cron_management_service        = $container->get( CronManagementService::class );
+				$settings_service               = $container->get( SettingsService::class );
+				$sitemap_service                = $container->get( SitemapService::class );
+				$full_generation_service        = $container->get( FullGenerationService::class );
 				$incremental_generation_service = $container->get( IncrementalGenerationService::class );
 
 				return new ActionHandlers(

@@ -232,21 +232,21 @@ class CronServiceTest extends TestCase {
 	public function test_reset_cron(): void {
 		// Enable cron and add some processing options
 		$this->get_cron_scheduler()->enable_cron();
-		update_option( 'msm_years_to_process', array( '2024' ) );
-		update_option( 'msm_months_to_process', array( 1 ) );
-		update_option( 'msm_days_to_process', array( 1 ) );
 		update_option( 'msm_generation_in_progress', true );
-		update_option( 'msm_stop_processing', true );
-		
+		update_option( 'msm_sitemap_stop_generation', true );
+		update_option( 'msm_background_generation_in_progress', true );
+		update_option( 'msm_background_generation_total', 10 );
+		update_option( 'msm_background_generation_remaining', 5 );
+
 		$this->get_cron_scheduler()->reset_cron();
-		
+
 		$this->assertFalse( (bool) get_option( CronSchedulingService::CRON_ENABLED_OPTION ) );
 		$this->assertFalse( wp_next_scheduled( 'msm_cron_update_sitemap' ) );
-		$this->assertEmpty( get_option( 'msm_years_to_process' ) );
-		$this->assertEmpty( get_option( 'msm_months_to_process' ) );
-		$this->assertEmpty( get_option( 'msm_days_to_process' ) );
 		$this->assertFalse( (bool) get_option( 'msm_generation_in_progress' ) );
-		$this->assertFalse( (bool) get_option( 'msm_stop_processing' ) );
+		$this->assertFalse( (bool) get_option( 'msm_sitemap_stop_generation' ) );
+		$this->assertFalse( (bool) get_option( 'msm_background_generation_in_progress' ) );
+		$this->assertEmpty( get_option( 'msm_background_generation_total' ) );
+		$this->assertEmpty( get_option( 'msm_background_generation_remaining' ) );
 	}
 
 
@@ -275,7 +275,8 @@ class CronServiceTest extends TestCase {
 		// Generate sitemap for August 6th
 		$service = new \Automattic\MSM_Sitemap\Application\Services\SitemapService(
 			\Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapGeneratorFactory::create( $this->get_service( \Automattic\MSM_Sitemap\Application\Services\ContentTypesService::class )->get_content_types() ),
-			new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository()
+			new \Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository(),
+			new \Automattic\MSM_Sitemap\Application\Services\GenerationStateService()
 		);
 		$service->create_for_date( '2025-08-06', true );
 		
