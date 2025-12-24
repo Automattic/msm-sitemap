@@ -39,6 +39,9 @@ class CoreIntegration implements WordPressIntegrationInterface {
 
 	/**
 	 * Register WordPress hooks and filters for core sitemap integration.
+	 *
+	 * Note: This method is called during 'init' by Plugin::setup_components(),
+	 * so we register rewrite rules directly rather than adding another init action.
 	 */
 	public function register_hooks(): void {
 		// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Using WordPress core hooks.
@@ -63,6 +66,9 @@ class CoreIntegration implements WordPressIntegrationInterface {
 
 		// Register custom cron schedule for sitemap updates
 		add_filter( 'cron_schedules', array( $this, 'sitemap_cron_intervals' ) );
+
+		// Register sitemap rewrite rules (we're already in init context)
+		$this->sitemap_rewrite_init();
 	}
 
 	/**

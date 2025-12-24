@@ -22,9 +22,13 @@ class XslRequestHandler implements WordPressIntegrationInterface {
 
 	/**
 	 * Register WordPress hooks and filters for XSL request handling.
+	 *
+	 * Note: This method is called during 'init' by Plugin::setup_components(),
+	 * so we register rewrite rules directly rather than adding another init action.
 	 */
 	public function register_hooks(): void {
-		add_action( 'init', array( $this, 'register_xsl_endpoints' ) );
+		// Register XSL endpoints directly (we're already in init context)
+		$this->register_xsl_endpoints();
 		add_action( 'template_redirect', array( $this, 'handle_xsl_requests' ) );
 	}
 
@@ -108,6 +112,7 @@ class XslRequestHandler implements WordPressIntegrationInterface {
 		$lastmod    = esc_xml( __( 'Last Modified', 'msm-sitemap' ) );
 		$changefreq = esc_xml( __( 'Change Frequency', 'msm-sitemap' ) );
 		$priority   = esc_xml( __( 'Priority', 'msm-sitemap' ) );
+		$images     = esc_xml( __( 'Images', 'msm-sitemap' ) );
 
 		$xsl_content = <<<XSL
 <?xml version="1.0" encoding="UTF-8"?>
@@ -123,12 +128,13 @@ class XslRequestHandler implements WordPressIntegrationInterface {
 	<xsl:output method="html" encoding="UTF-8" indent="yes" />
 
 	<!--
-	  Set variables for whether lastmod, changefreq or priority occur for any url in the sitemap.
+	  Set variables for whether lastmod, changefreq, priority, or images occur for any url in the sitemap.
 	  We do this up front because it can be expensive in a large sitemap.
 	  -->
 	<xsl:variable name="has-lastmod"    select="count( /sitemap:urlset/sitemap:url/sitemap:lastmod )"    />
 	<xsl:variable name="has-changefreq" select="count( /sitemap:urlset/sitemap:url/sitemap:changefreq )" />
 	<xsl:variable name="has-priority"   select="count( /sitemap:urlset/sitemap:url/sitemap:priority )"   />
+	<xsl:variable name="has-images"     select="count( /sitemap:urlset/sitemap:url/image:image )"        />
 
 	<xsl:template match="/">
 		<html {$lang}>
@@ -160,6 +166,9 @@ class XslRequestHandler implements WordPressIntegrationInterface {
 									<xsl:if test="\$has-priority">
 										<th class="priority">{$priority}</th>
 									</xsl:if>
+									<xsl:if test="\$has-images">
+										<th class="images">{$images}</th>
+									</xsl:if>
 								</tr>
 							</thead>
 							<tbody>
@@ -174,6 +183,17 @@ class XslRequestHandler implements WordPressIntegrationInterface {
 										</xsl:if>
 										<xsl:if test="\$has-priority">
 											<td class="priority"><xsl:value-of select="sitemap:priority" /></td>
+										</xsl:if>
+										<xsl:if test="\$has-images">
+											<td class="images">
+												<xsl:if test="image:image">
+													<ul class="image-list">
+														<xsl:for-each select="image:image">
+															<li><a href="{image:loc}"><xsl:value-of select="image:loc" /></a></li>
+														</xsl:for-each>
+													</ul>
+												</xsl:if>
+											</td>
 										</xsl:if>
 									</tr>
 								</xsl:for-each>
@@ -344,6 +364,18 @@ XSL;
 
 					a:hover {
 						text-decoration: none;
+					}
+
+					.image-list {
+						list-style: none;
+						margin: 0;
+						padding: 0;
+						font-size: 0.85em;
+					}
+
+					.image-list li {
+						margin: 0.25em 0;
+						word-break: break-all;
 					}
 
 EOF;

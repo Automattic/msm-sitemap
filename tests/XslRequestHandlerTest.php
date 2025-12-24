@@ -33,15 +33,20 @@ class XslRequestHandlerTest extends TestCase {
 
 	/**
 	 * Test that register_hooks adds the correct actions.
+	 *
+	 * Note: register_xsl_endpoints() is called directly rather than via init hook
+	 * because register_hooks() is called during init by Plugin::setup_components().
 	 */
 	public function test_register_hooks_adds_actions(): void {
 		$this->handler->register_hooks();
 
-		$priority1 = has_action( 'init', array( $this->handler, 'register_xsl_endpoints' ) );
-		$priority2 = has_action( 'template_redirect', array( $this->handler, 'handle_xsl_requests' ) );
+		// Verify template_redirect hook is registered
+		$priority = has_action( 'template_redirect', array( $this->handler, 'handle_xsl_requests' ) );
+		$this->assertIsInt( $priority );
 
-		$this->assertIsInt( $priority1 );
-		$this->assertIsInt( $priority2 );
+		// Verify query_vars filter is registered (added by register_xsl_endpoints)
+		$filter_priority = has_filter( 'query_vars', array( $this->handler, 'add_query_vars' ) );
+		$this->assertIsInt( $filter_priority );
 	}
 
 	/**
