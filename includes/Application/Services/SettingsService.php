@@ -173,11 +173,10 @@ class SettingsService {
 			'content_images'         => '1',
 			'max_images_per_sitemap' => self::DEFAULT_MAX_IMAGES_PER_SITEMAP,
 			'cron_frequency'         => CronManagementService::DEFAULT_FREQUENCY,
-			
-			// Future settings can be added here:
-			// 'include_users' => '0',
-			// 'include_taxonomies' => '0',
-			// 'include_custom_posts' => '0',
+
+			// Taxonomy settings
+			'include_taxonomies'     => '0',
+			'enabled_taxonomies'     => array( 'category', 'post_tag' ),
 		);
 	}
 
@@ -216,10 +215,19 @@ class SettingsService {
 		$errors             = array();
 
 		// Handle boolean settings
-		$boolean_settings = array( 'include_images', 'featured_images', 'content_images' );
+		$boolean_settings = array( 'include_images', 'featured_images', 'content_images', 'include_taxonomies' );
 		foreach ( $boolean_settings as $setting ) {
 			if ( isset( $settings[ $setting ] ) ) {
 				$sanitized_settings[ $setting ] = $settings[ $setting ] ? '1' : '0';
+			}
+		}
+
+		// Handle enabled_taxonomies array
+		if ( isset( $settings['enabled_taxonomies'] ) ) {
+			if ( is_array( $settings['enabled_taxonomies'] ) ) {
+				$sanitized_settings['enabled_taxonomies'] = array_map( 'sanitize_text_field', $settings['enabled_taxonomies'] );
+			} else {
+				$sanitized_settings['enabled_taxonomies'] = array();
 			}
 		}
 

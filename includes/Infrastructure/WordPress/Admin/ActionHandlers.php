@@ -199,22 +199,41 @@ class ActionHandlers {
 	 */
 	public function handle_save_content_provider_settings(): void {
 		check_admin_referer( 'msm-sitemap-action' );
-		
+
 		// Prepare settings from form data
 		$settings = array(
 			'include_images'  => isset( $_POST['images_provider_enabled'] ),
 			'featured_images' => isset( $_POST['include_featured_images'] ) && '1' === $_POST['include_featured_images'],
 			'content_images'  => isset( $_POST['include_content_images'] ) && '1' === $_POST['include_content_images'],
 		);
-		
+
 		// Handle max images per sitemap if provided
 		if ( isset( $_POST['max_images_per_sitemap'] ) ) {
 			$settings['max_images_per_sitemap'] = intval( $_POST['max_images_per_sitemap'] );
 		}
-		
+
+		// Handle taxonomy settings
+		$old_taxonomies_enabled = $this->settings->get_setting( 'include_taxonomies', '0' );
+		$settings['include_taxonomies'] = isset( $_POST['taxonomies_provider_enabled'] );
+
+		// Handle enabled taxonomies array
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized below via array_map.
+		if ( isset( $_POST['enabled_taxonomies'] ) && is_array( $_POST['enabled_taxonomies'] ) ) {
+			$settings['enabled_taxonomies'] = array_map( 'sanitize_text_field', wp_unslash( $_POST['enabled_taxonomies'] ) );
+		} else {
+			// If taxonomies are enabled but none are selected, default to empty array
+			$settings['enabled_taxonomies'] = array();
+		}
+
 		// Use service to update settings
 		$result = $this->settings->update_settings( $settings );
-		
+
+		// Flush rewrite rules if taxonomy settings changed
+		$new_taxonomies_enabled = $settings['include_taxonomies'] ? '1' : '0';
+		if ( $old_taxonomies_enabled !== $new_taxonomies_enabled ) {
+			flush_rewrite_rules();
+		}
+
 		if ( $result['success'] ) {
 			Notifications::show_success( $result['message'] );
 		} else {

@@ -14,6 +14,7 @@ use Automattic\MSM_Sitemap\Application\Services\CronManagementService;
 use Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapStatsService;
 use Automattic\MSM_Sitemap\Application\Services\SettingsService;
+use Automattic\MSM_Sitemap\Application\Services\TaxonomySitemapService;
 use Automattic\MSM_Sitemap\Domain\Contracts\SitemapRepositoryInterface;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\ActionHandlers;
 use Automattic\MSM_Sitemap\Tests\TestCase;
@@ -35,8 +36,9 @@ class UITest extends TestCase {
 		$settings_service          = $this->createMock( SettingsService::class );
 		$sitemap_repository        = $this->createMock( SitemapRepositoryInterface::class );
 		$action_handlers           = $this->createMock( ActionHandlers::class );
+		$taxonomy_sitemap_service  = $this->createMock( TaxonomySitemapService::class );
 
-		$ui = new UI( $cron_management, $plugin_file_path, $plugin_version, $missing_detection_service, $stats_service, $settings_service, $sitemap_repository, $action_handlers );
+		$ui = new UI( $cron_management, $plugin_file_path, $plugin_version, $missing_detection_service, $stats_service, $settings_service, $sitemap_repository, $action_handlers, $taxonomy_sitemap_service );
 
 		// Use reflection to access the private properties for testing
 		$reflection         = new \ReflectionClass( $ui );
@@ -61,9 +63,10 @@ class UITest extends TestCase {
 		$settings_service          = $this->createMock( SettingsService::class );
 		$sitemap_repository        = $this->createMock( SitemapRepositoryInterface::class );
 		$action_handlers           = $this->createMock( ActionHandlers::class );
+		$taxonomy_sitemap_service  = $this->createMock( TaxonomySitemapService::class );
 
 		// This should not throw any errors
-		$ui = new UI( $cron_management, $plugin_file_path, $plugin_version, $missing_detection_service, $stats_service, $settings_service, $sitemap_repository, $action_handlers );
+		$ui = new UI( $cron_management, $plugin_file_path, $plugin_version, $missing_detection_service, $stats_service, $settings_service, $sitemap_repository, $action_handlers, $taxonomy_sitemap_service );
 
 		$this->assertInstanceOf( UI::class, $ui );
 	}
@@ -80,8 +83,9 @@ class UITest extends TestCase {
 		$settings_service          = $this->createMock( SettingsService::class );
 		$sitemap_repository        = $this->createMock( SitemapRepositoryInterface::class );
 		$action_handlers           = $this->createMock( ActionHandlers::class );
+		$taxonomy_sitemap_service  = $this->createMock( TaxonomySitemapService::class );
 
-		$ui = new UI( $cron_management, $plugin_file_path, $plugin_version, $missing_detection_service, $stats_service, $settings_service, $sitemap_repository, $action_handlers );
+		$ui = new UI( $cron_management, $plugin_file_path, $plugin_version, $missing_detection_service, $stats_service, $settings_service, $sitemap_repository, $action_handlers, $taxonomy_sitemap_service );
 
 		// This should not throw any errors
 		$ui->register_hooks();

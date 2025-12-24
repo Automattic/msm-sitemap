@@ -11,6 +11,7 @@ use Automattic\MSM_Sitemap\Application\Services\CronManagementService;
 use Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapStatsService;
 use Automattic\MSM_Sitemap\Application\Services\SettingsService;
+use Automattic\MSM_Sitemap\Application\Services\TaxonomySitemapService;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
 use Automattic\MSM_Sitemap\Domain\Contracts\SitemapRepositoryInterface;
 use Automattic\MSM_Sitemap\Domain\Contracts\WordPressIntegrationInterface;
@@ -81,6 +82,13 @@ class UI implements WordPressIntegrationInterface {
 	private ActionHandlers $action_handlers;
 
 	/**
+	 * The taxonomy sitemap service.
+	 *
+	 * @var TaxonomySitemapService
+	 */
+	private TaxonomySitemapService $taxonomy_sitemap_service;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param CronManagementService          $cron_management           The cron management service.
@@ -91,6 +99,7 @@ class UI implements WordPressIntegrationInterface {
 	 * @param SettingsService                $settings_service          The settings service.
 	 * @param SitemapRepositoryInterface     $sitemap_repository        The sitemap repository.
 	 * @param ActionHandlers                 $action_handlers           The action handlers.
+	 * @param TaxonomySitemapService         $taxonomy_sitemap_service  The taxonomy sitemap service.
 	 */
 	public function __construct(
 		CronManagementService $cron_management,
@@ -100,7 +109,8 @@ class UI implements WordPressIntegrationInterface {
 		SitemapStatsService $stats_service,
 		SettingsService $settings_service,
 		SitemapRepositoryInterface $sitemap_repository,
-		ActionHandlers $action_handlers
+		ActionHandlers $action_handlers,
+		TaxonomySitemapService $taxonomy_sitemap_service
 	) {
 		$this->cron_management           = $cron_management;
 		$this->plugin_file_path          = $plugin_file_path;
@@ -110,6 +120,7 @@ class UI implements WordPressIntegrationInterface {
 		$this->settings_service          = $settings_service;
 		$this->sitemap_repository        = $sitemap_repository;
 		$this->action_handlers           = $action_handlers;
+		$this->taxonomy_sitemap_service  = $taxonomy_sitemap_service;
 	}
 
 	/**
@@ -1096,6 +1107,60 @@ class UI implements WordPressIntegrationInterface {
 							</td>
 						</tr>
 
+						<!-- Taxonomies Provider -->
+						<tr>
+							<th scope="row">
+								<label for="taxonomies_provider_enabled">
+									<?php esc_html_e( 'Taxonomies', 'msm-sitemap' ); ?>
+								</label>
+							</th>
+							<td>
+								<fieldset>
+									<?php
+									$taxonomies_enabled    = $this->settings_service->get_setting( 'include_taxonomies', '0' );
+									$enabled_taxonomies    = $this->settings_service->get_setting( 'enabled_taxonomies', array( 'category', 'post_tag' ) );
+									$available_taxonomies  = $this->taxonomy_sitemap_service->get_available_taxonomies();
+									?>
+									<label for="taxonomies_provider_enabled">
+										<input type="checkbox"
+												id="taxonomies_provider_enabled"
+												name="taxonomies_provider_enabled"
+												value="1"
+												<?php checked( '1' === $taxonomies_enabled ); ?>>
+										<?php esc_html_e( 'Include taxonomies in sitemaps', 'msm-sitemap' ); ?>
+									</label>
+									<p class="description">
+										<?php esc_html_e( 'Add category, tag, and custom taxonomy archive pages to your sitemaps.', 'msm-sitemap' ); ?>
+									</p>
+								</fieldset>
+
+								<div id="taxonomies_settings" style="margin-top: 15px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #0073aa; display: <?php echo '1' === $taxonomies_enabled ? 'block' : 'none'; ?>;">
+									<h4 style="margin: 0 0 10px 0;"><?php esc_html_e( 'Taxonomy Settings', 'msm-sitemap' ); ?></h4>
+
+									<fieldset>
+										<legend class="screen-reader-text"><?php esc_html_e( 'Taxonomies to include', 'msm-sitemap' ); ?></legend>
+										<?php if ( ! empty( $available_taxonomies ) ) : ?>
+											<?php foreach ( $available_taxonomies as $taxonomy ) : ?>
+												<label for="taxonomy_<?php echo esc_attr( $taxonomy->name ); ?>" style="display: block; margin-bottom: 8px;">
+													<input type="checkbox"
+															id="taxonomy_<?php echo esc_attr( $taxonomy->name ); ?>"
+															name="enabled_taxonomies[]"
+															value="<?php echo esc_attr( $taxonomy->name ); ?>"
+															<?php checked( in_array( $taxonomy->name, $enabled_taxonomies, true ) ); ?>>
+													<?php echo esc_html( $taxonomy->labels->name ); ?>
+													<span style="color: #666; font-size: 12px;">(<?php echo esc_html( $taxonomy->name ); ?>)</span>
+												</label>
+											<?php endforeach; ?>
+										<?php else : ?>
+											<p class="description">
+												<?php esc_html_e( 'No public taxonomies found.', 'msm-sitemap' ); ?>
+											</p>
+										<?php endif; ?>
+									</fieldset>
+								</div>
+							</td>
+						</tr>
+
 						<!-- Future Providers (Placeholder) -->
 						<tr>
 							<th scope="row">
@@ -1107,7 +1172,6 @@ class UI implements WordPressIntegrationInterface {
 								</p>
 								<ul style="margin: 10px 0 0 20px; color: #666;">
 									<li><?php esc_html_e( 'Users (author pages)', 'msm-sitemap' ); ?></li>
-									<li><?php esc_html_e( 'Taxonomies (categories, tags)', 'msm-sitemap' ); ?></li>
 									<li><?php esc_html_e( 'Custom post types', 'msm-sitemap' ); ?></li>
 								</ul>
 							</td>
