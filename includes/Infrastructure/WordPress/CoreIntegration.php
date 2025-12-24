@@ -221,6 +221,24 @@ class CoreIntegration implements WordPressIntegrationInterface {
 		} else {
 			add_rewrite_rule( '^sitemap.xml$', 'index.php?sitemap=true', 'top' );
 		}
+
+		// Taxonomy sitemap rewrite rules
+		add_rewrite_tag( '%taxonomy-sitemap%', '[a-z0-9_-]+' );
+		add_rewrite_tag( '%taxonomy-sitemap-page%', '[0-9]+' );
+
+		// Match /sitemap-taxonomy-{slug}.xml (page 1)
+		add_rewrite_rule(
+			'^sitemap-taxonomy-([a-z0-9_-]+)\.xml$',
+			'index.php?taxonomy-sitemap=$matches[1]&taxonomy-sitemap-page=1',
+			'top'
+		);
+
+		// Match /sitemap-taxonomy-{slug}-{page}.xml (page 2+)
+		add_rewrite_rule(
+			'^sitemap-taxonomy-([a-z0-9_-]+)-([0-9]+)\.xml$',
+			'index.php?taxonomy-sitemap=$matches[1]&taxonomy-sitemap-page=$matches[2]',
+			'top'
+		);
 	}
 
 	/**

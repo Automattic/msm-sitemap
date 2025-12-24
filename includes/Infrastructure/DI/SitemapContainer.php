@@ -72,6 +72,8 @@ use Automattic\MSM_Sitemap\Infrastructure\CLI\CLISetup;
 use Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapGeneratorFactory;
 use Automattic\MSM_Sitemap\Infrastructure\Providers\PostContentProvider;
 use Automattic\MSM_Sitemap\Infrastructure\Providers\ImageContentProvider;
+use Automattic\MSM_Sitemap\Infrastructure\Repositories\TaxonomyRepository;
+use Automattic\MSM_Sitemap\Application\Services\TaxonomySitemapService;
 
 /**
  * Simple dependency injection container for MSM Sitemap services.
@@ -220,7 +222,23 @@ class SitemapContainer {
 			ImageRepositoryInterface::class,
 			function ( $container ) {
 				return $container->get( ImageRepository::class );
-			} 
+			}
+		);
+
+		$this->register(
+			TaxonomyRepository::class,
+			function () {
+				return new TaxonomyRepository();
+			}
+		);
+
+		$this->register(
+			TaxonomySitemapService::class,
+			function ( $container ) {
+				$taxonomy_repository = $container->get( TaxonomyRepository::class );
+				$settings_service    = $container->get( SettingsService::class );
+				return new TaxonomySitemapService( $taxonomy_repository, $settings_service );
+			}
 		);
 
 		// Register content types service
@@ -580,10 +598,11 @@ class SitemapContainer {
 		$this->register(
 			SitemapXmlRequestHandler::class,
 			function ( $container ) {
-				$sitemap_service        = $container->get( SitemapService::class );
-				$post_type_registration = $container->get( PostTypeRegistration::class );
+				$sitemap_service          = $container->get( SitemapService::class );
+				$post_type_registration   = $container->get( PostTypeRegistration::class );
+				$taxonomy_sitemap_service = $container->get( TaxonomySitemapService::class );
 
-				return new SitemapXmlRequestHandler( $sitemap_service, $post_type_registration );
+				return new SitemapXmlRequestHandler( $sitemap_service, $post_type_registration, $taxonomy_sitemap_service );
 			}
 		);
 
@@ -698,7 +717,8 @@ class SitemapContainer {
 				$settings_service          = $container->get( SettingsService::class );
 				$sitemap_repository        = $container->get( SitemapRepositoryInterface::class );
 				$action_handlers           = $container->get( ActionHandlers::class );
-				return new UI( $cron_management, $plugin_file_path, $plugin_version, $missing_detection_service, $stats_service, $settings_service, $sitemap_repository, $action_handlers );
+				$taxonomy_sitemap_service  = $container->get( TaxonomySitemapService::class );
+				return new UI( $cron_management, $plugin_file_path, $plugin_version, $missing_detection_service, $stats_service, $settings_service, $sitemap_repository, $action_handlers, $taxonomy_sitemap_service );
 			}
 		);
 
