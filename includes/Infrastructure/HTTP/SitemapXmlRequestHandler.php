@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Automattic\MSM_Sitemap\Infrastructure\HTTP;
 
 use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
+use Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapDate;
 use Automattic\MSM_Sitemap\Application\Services\SitemapService;
 use Automattic\MSM_Sitemap\Infrastructure\Formatters\SitemapIndexXmlFormatter;
 use Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapIndexEntryFactory;
@@ -162,12 +163,9 @@ class SitemapXmlRequestHandler implements WordPressIntegrationInterface {
 		// Convert dates to sitemap entries
 		$entries = array();
 		foreach ( $sitemaps as $sitemap_date ) {
-			$date_parts   = explode( '-', $sitemap_date );
-			$sitemap_year = $date_parts[0];
-			$month        = $date_parts[1];
-			$day          = substr( $date_parts[2], 0, 2 );
+			$date = SitemapDate::fromString( $sitemap_date );
 
-			$loc     = $this->get_sitemap_url( $sitemap_year, $month, $day );
+			$loc     = $this->get_sitemap_url( $date );
 			$lastmod = $sitemap_date;
 
 			$entries[] = SitemapIndexEntryFactory::from_data( $loc, $lastmod );
@@ -212,10 +210,10 @@ class SitemapXmlRequestHandler implements WordPressIntegrationInterface {
 	 * @return string|false Sitemap XML or false if not found.
 	 */
 	public function get_individual_sitemap_xml( int $year, int $month, int $day ) {
-		$date = sprintf( '%04d-%02d-%02d', $year, $month, $day );
+		$date = new SitemapDate( $year, $month, $day );
 
 		// Get sitemap data for this date
-		$sitemap_data = $this->sitemap_service->get_sitemap_data( $date );
+		$sitemap_data = $this->sitemap_service->get_sitemap_data( $date->toString() );
 
 		if ( ! $sitemap_data || ! isset( $sitemap_data['xml_content'] ) ) {
 			return false;
@@ -227,12 +225,14 @@ class SitemapXmlRequestHandler implements WordPressIntegrationInterface {
 	/**
 	 * Get sitemap URL for a specific date.
 	 *
-	 * @param string $year  Year.
-	 * @param string $month Month.
-	 * @param string $day   Day.
+	 * @param SitemapDate $date The sitemap date.
 	 * @return string Sitemap URL.
 	 */
-	private function get_sitemap_url( string $year, string $month, string $day ): string {
+	private function get_sitemap_url( SitemapDate $date ): string {
+		$year  = $date->yearString();
+		$month = $date->monthString();
+		$day   = $date->dayString();
+
 		if ( Site::is_indexed_by_year() ) {
 			return Site::get_home_url( "/sitemap-{$year}.xml?yyyy={$year}&mm={$month}&dd={$day}" );
 		}

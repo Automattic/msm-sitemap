@@ -10,6 +10,7 @@ declare( strict_types=1 );
 namespace Automattic\MSM_Sitemap\Infrastructure\Repositories;
 
 use Automattic\MSM_Sitemap\Domain\Contracts\PostRepositoryInterface;
+use Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapDate;
 
 /**
  * Repository for post operations in WordPress.
@@ -230,18 +231,16 @@ class PostRepository implements PostRepositoryInterface {
 			return array();
 		}
 
-		// Validate date format and existence
-		if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $sitemap_date ) ) {
-			return array();
-		}
-		list( $year, $month, $day ) = explode( '-', $sitemap_date );
-		if ( ! checkdate( (int) $month, (int) $day, (int) $year ) ) {
+		// Validate date format and existence using SitemapDate value object
+		try {
+			$date = SitemapDate::fromString( $sitemap_date );
+		} catch ( \InvalidArgumentException $e ) {
 			return array();
 		}
 
 		$post_status   = $this->get_post_status();
-		$start_date    = $sitemap_date . ' 00:00:00';
-		$end_date      = $sitemap_date . ' 23:59:59';
+		$start_date    = $date->toMysqlDatetime( '00:00:00' );
+		$end_date      = $date->toMysqlDatetime( '23:59:59' );
 		$post_types_in = $this->get_supported_post_types_in();
 
 		$posts = $wpdb->get_results(
@@ -271,34 +270,26 @@ class PostRepository implements PostRepositoryInterface {
 	public function date_range_has_posts( string $start_date, string $end_date ): ?int {
 		global $wpdb;
 
-		// Validate date format and existence
-		if (
-			! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $start_date ) ||
-			! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $end_date )
-		) {
-			return null;
-		}
-		list( $start_year, $start_month, $start_day ) = explode( '-', $start_date );
-		list( $end_year, $end_month, $end_day )       = explode( '-', $end_date );
-		if (
-			! checkdate( (int) $start_month, (int) $start_day, (int) $start_year ) ||
-			! checkdate( (int) $end_month, (int) $end_day, (int) $end_year )
-		) {
+		// Validate date format and existence using SitemapDate value object
+		try {
+			$start = SitemapDate::fromString( $start_date );
+			$end   = SitemapDate::fromString( $end_date );
+		} catch ( \InvalidArgumentException $e ) {
 			return null;
 		}
 
-		$start_date .= ' 00:00:00';
-		$end_date   .= ' 23:59:59';
-		$post_status = $this->get_post_status();
+		$start_datetime = $start->toMysqlDatetime( '00:00:00' );
+		$end_datetime   = $end->toMysqlDatetime( '23:59:59' );
+		$post_status    = $this->get_post_status();
 
 		$post_types_in = $this->get_supported_post_types_in();
 		$result        = $wpdb->get_var(
-			$wpdb->prepare( 
-				"SELECT ID FROM $wpdb->posts WHERE post_status = %s AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT 1", 
-				$post_status, 
-				$start_date, 
-				$end_date 
-			) 
+			$wpdb->prepare(
+				"SELECT ID FROM $wpdb->posts WHERE post_status = %s AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT 1",
+				$post_status,
+				$start_datetime,
+				$end_datetime
+			)
 		);
 
 		return $result ? (int) $result : null;
