@@ -69,18 +69,26 @@ class MissingSitemapDetectionService implements SitemapDateProviderInterface {
 	public function get_dates(): array {
 		global $wpdb;
 
+		$post_types = $this->post_repository->get_supported_post_types();
+
+		// If no post types are enabled, there can be no missing sitemaps
+		if ( empty( $post_types ) ) {
+			return array();
+		}
+
+		$post_types_in = $this->post_repository->get_supported_post_types_in();
+		$post_status   = $this->post_repository->get_post_status();
+
 		// Get all unique post dates that should have sitemaps
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$post_dates = $wpdb->get_col(
 			$wpdb->prepare(
 				"SELECT DISTINCT DATE(post_date) as post_date
 				FROM {$wpdb->posts}
-				WHERE post_type IN (%s, %s)
+				WHERE post_type IN ({$post_types_in})
 				AND post_status = %s
 				ORDER BY post_date ASC",
-				'post',
-				'page',
-				'publish'
+				$post_status
 			)
 		);
 
@@ -154,18 +162,23 @@ class MissingSitemapDetectionService implements SitemapDateProviderInterface {
 
 		// Count posts for all dates that need generation
 		$total_posts_count = 0;
-		if ( ! empty( $all_dates_to_generate ) ) {
-			$placeholders = implode( ',', array_fill( 0, count( $all_dates_to_generate ), '%s' ) );
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$post_types        = $this->post_repository->get_supported_post_types();
+
+		if ( ! empty( $all_dates_to_generate ) && ! empty( $post_types ) ) {
+			$placeholders  = implode( ',', array_fill( 0, count( $all_dates_to_generate ), '%s' ) );
+			$post_types_in = $this->post_repository->get_supported_post_types_in();
+			$post_status   = $this->post_repository->get_post_status();
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$total_posts_count = $wpdb->get_var(
 				$wpdb->prepare(
-					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+					// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 					"SELECT COUNT(*)
 					FROM {$wpdb->posts}
-					WHERE post_type IN (%s, %s)
+					WHERE post_type IN ({$post_types_in})
 					AND post_status = %s
 					AND DATE(post_date) IN ($placeholders)",
-					array_merge( array( 'post', 'page', 'publish' ), $all_dates_to_generate )
+					array_merge( array( $post_status ), $all_dates_to_generate )
 				)
 			);
 		}
@@ -174,21 +187,21 @@ class MissingSitemapDetectionService implements SitemapDateProviderInterface {
 		$last_run                = get_option( 'msm_sitemap_update_last_run' );
 		$recently_modified_count = 0;
 
-		if ( $last_run ) {
+		if ( $last_run && ! empty( $post_types ) ) {
 			// Ensure $last_run is an integer timestamp
 			$last_run_timestamp = is_numeric( $last_run ) ? (int) $last_run : strtotime( $last_run );
+			$post_types_in      = $this->post_repository->get_supported_post_types_in();
+			$post_status        = $this->post_repository->get_post_status();
 
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$recently_modified_count = $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT COUNT(*)
 					FROM {$wpdb->posts}
-					WHERE post_type IN (%s, %s)
+					WHERE post_type IN ({$post_types_in})
 					AND post_status = %s
 					AND post_modified_gmt > %s",
-					'post',
-					'page',
-					'publish',
+					$post_status,
 					gmdate( 'Y-m-d H:i:s', $last_run_timestamp )
 				)
 			);

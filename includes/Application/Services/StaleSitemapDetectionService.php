@@ -10,6 +10,8 @@ declare( strict_types=1 );
 namespace Automattic\MSM_Sitemap\Application\Services;
 
 use Automattic\MSM_Sitemap\Domain\Contracts\SitemapDateProviderInterface;
+use Automattic\MSM_Sitemap\Domain\Contracts\SitemapRepositoryInterface;
+use Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository;
 
 /**
  * Service for detecting stale sitemaps that need regeneration.
@@ -18,6 +20,34 @@ use Automattic\MSM_Sitemap\Domain\Contracts\SitemapDateProviderInterface;
  * since the last sitemap update run.
  */
 class StaleSitemapDetectionService implements SitemapDateProviderInterface {
+
+	/**
+	 * The sitemap repository.
+	 *
+	 * @var SitemapRepositoryInterface
+	 */
+	private SitemapRepositoryInterface $sitemap_repository;
+
+	/**
+	 * The post repository.
+	 *
+	 * @var PostRepository
+	 */
+	private PostRepository $post_repository;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param SitemapRepositoryInterface $sitemap_repository The sitemap repository.
+	 * @param PostRepository             $post_repository    The post repository.
+	 */
+	public function __construct(
+		SitemapRepositoryInterface $sitemap_repository,
+		PostRepository $post_repository
+	) {
+		$this->sitemap_repository = $sitemap_repository;
+		$this->post_repository    = $post_repository;
+	}
 
 	/**
 	 * Get dates with stale sitemaps.
@@ -30,6 +60,13 @@ class StaleSitemapDetectionService implements SitemapDateProviderInterface {
 	 */
 	public function get_dates(): array {
 		global $wpdb;
+
+		$post_types = $this->post_repository->get_supported_post_types();
+
+		// If no post types are enabled, there can be no stale sitemaps
+		if ( empty( $post_types ) ) {
+			return array();
+		}
 
 		// Get the last sitemap update time
 		$last_update = get_option( 'msm_sitemap_update_last_run' );
@@ -57,20 +94,22 @@ class StaleSitemapDetectionService implements SitemapDateProviderInterface {
 		}
 
 		// Find dates that have posts modified since the last sitemap update
-		$placeholders = implode( ',', array_fill( 0, count( $sitemap_dates ), '%s' ) );
+		$placeholders  = implode( ',', array_fill( 0, count( $sitemap_dates ), '%s' ) );
+		$post_types_in = $this->post_repository->get_supported_post_types_in();
+		$post_status   = $this->post_repository->get_post_status();
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$stale_dates = $wpdb->get_col(
 			$wpdb->prepare(
-				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+				// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 				"SELECT DISTINCT DATE(post_date) as post_date
 				FROM {$wpdb->posts}
-				WHERE post_type IN (%s, %s)
+				WHERE post_type IN ({$post_types_in})
 				AND post_status = %s
 				AND DATE(post_date) IN ($placeholders)
 				AND post_modified_gmt > %s",
 				array_merge(
-					array( 'post', 'page', 'publish' ),
+					array( $post_status ),
 					$sitemap_dates,
 					array( gmdate( 'Y-m-d H:i:s', $last_update_timestamp ) )
 				)

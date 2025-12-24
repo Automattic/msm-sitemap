@@ -9,6 +9,7 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Infrastructure\Repositories;
 
+use Automattic\MSM_Sitemap\Application\Services\SettingsService;
 use Automattic\MSM_Sitemap\Domain\Contracts\PostRepositoryInterface;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapDate;
 
@@ -16,6 +17,22 @@ use Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapDate;
  * Repository for post operations in WordPress.
  */
 class PostRepository implements PostRepositoryInterface {
+
+	/**
+	 * The settings service.
+	 *
+	 * @var SettingsService
+	 */
+	private SettingsService $settings_service;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param SettingsService $settings_service The settings service.
+	 */
+	public function __construct( SettingsService $settings_service ) {
+		$this->settings_service = $settings_service;
+	}
 
 	/**
 	 * Find a post by its ID.
@@ -196,7 +213,14 @@ class PostRepository implements PostRepositoryInterface {
 	 * @return array<string> Array of supported post types.
 	 */
 	public function get_supported_post_types(): array {
-		return apply_filters( 'msm_sitemap_entry_post_type', array( 'post' ) );
+		$enabled_post_types = $this->settings_service->get_setting( 'enabled_post_types', array( 'post' ) );
+
+		// Ensure it's an array, but allow empty arrays (no post types enabled)
+		if ( ! is_array( $enabled_post_types ) ) {
+			$enabled_post_types = array( 'post' );
+		}
+
+		return apply_filters( 'msm_sitemap_entry_post_type', $enabled_post_types );
 	}
 
 	/**

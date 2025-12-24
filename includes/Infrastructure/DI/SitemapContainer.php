@@ -74,10 +74,13 @@ use Automattic\MSM_Sitemap\Infrastructure\Providers\PostContentProvider;
 use Automattic\MSM_Sitemap\Infrastructure\Providers\ImageContentProvider;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\TaxonomyRepository;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\AuthorRepository;
+use Automattic\MSM_Sitemap\Infrastructure\Repositories\PageRepository;
 use Automattic\MSM_Sitemap\Application\Services\TaxonomySitemapService;
 use Automattic\MSM_Sitemap\Application\Services\AuthorSitemapService;
+use Automattic\MSM_Sitemap\Application\Services\PageSitemapService;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\TaxonomySitemapCacheInvalidator;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\AuthorSitemapCacheInvalidator;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\PageSitemapCacheInvalidator;
 
 /**
  * Simple dependency injection container for MSM Sitemap services.
@@ -202,9 +205,10 @@ class SitemapContainer {
 
 		$this->register(
 			PostRepository::class,
-			function () {
-				return new PostRepository();
-			} 
+			function ( $container ) {
+				$settings_service = $container->get( SettingsService::class );
+				return new PostRepository( $settings_service );
+			}
 		);
 
 		$this->register(
@@ -274,6 +278,30 @@ class SitemapContainer {
 			function ( $container ) {
 				$author_sitemap_service = $container->get( AuthorSitemapService::class );
 				return new AuthorSitemapCacheInvalidator( $author_sitemap_service );
+			}
+		);
+
+		$this->register(
+			PageRepository::class,
+			function () {
+				return new PageRepository();
+			}
+		);
+
+		$this->register(
+			PageSitemapService::class,
+			function ( $container ) {
+				$page_repository  = $container->get( PageRepository::class );
+				$settings_service = $container->get( SettingsService::class );
+				return new PageSitemapService( $page_repository, $settings_service );
+			}
+		);
+
+		$this->register(
+			PageSitemapCacheInvalidator::class,
+			function ( $container ) {
+				$page_sitemap_service = $container->get( PageSitemapService::class );
+				return new PageSitemapCacheInvalidator( $page_sitemap_service );
 			}
 		);
 
@@ -404,8 +432,9 @@ class SitemapContainer {
 
 		$this->register(
 			AllDatesWithPostsService::class,
-			function () {
-				return new AllDatesWithPostsService();
+			function ( $container ) {
+				$post_repository = $container->get( PostRepository::class );
+				return new AllDatesWithPostsService( $post_repository );
 			}
 		);
 
@@ -638,8 +667,9 @@ class SitemapContainer {
 				$post_type_registration   = $container->get( PostTypeRegistration::class );
 				$taxonomy_sitemap_service = $container->get( TaxonomySitemapService::class );
 				$author_sitemap_service   = $container->get( AuthorSitemapService::class );
+				$page_sitemap_service     = $container->get( PageSitemapService::class );
 
-				return new SitemapXmlRequestHandler( $sitemap_service, $post_type_registration, $taxonomy_sitemap_service, $author_sitemap_service );
+				return new SitemapXmlRequestHandler( $sitemap_service, $post_type_registration, $taxonomy_sitemap_service, $author_sitemap_service, $page_sitemap_service );
 			}
 		);
 
