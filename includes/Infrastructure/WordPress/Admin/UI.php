@@ -7,8 +7,10 @@
 
 namespace Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin;
 
+use Automattic\MSM_Sitemap\Application\Services\AuthorSitemapService;
 use Automattic\MSM_Sitemap\Application\Services\CronManagementService;
 use Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService;
+use Automattic\MSM_Sitemap\Application\Services\PageSitemapService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapStatsService;
 use Automattic\MSM_Sitemap\Application\Services\SettingsService;
 use Automattic\MSM_Sitemap\Application\Services\TaxonomySitemapService;
@@ -89,6 +91,20 @@ class UI implements WordPressIntegrationInterface {
 	private TaxonomySitemapService $taxonomy_sitemap_service;
 
 	/**
+	 * The author sitemap service.
+	 *
+	 * @var AuthorSitemapService
+	 */
+	private AuthorSitemapService $author_sitemap_service;
+
+	/**
+	 * The page sitemap service.
+	 *
+	 * @var PageSitemapService
+	 */
+	private PageSitemapService $page_sitemap_service;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param CronManagementService          $cron_management           The cron management service.
@@ -100,6 +116,8 @@ class UI implements WordPressIntegrationInterface {
 	 * @param SitemapRepositoryInterface     $sitemap_repository        The sitemap repository.
 	 * @param ActionHandlers                 $action_handlers           The action handlers.
 	 * @param TaxonomySitemapService         $taxonomy_sitemap_service  The taxonomy sitemap service.
+	 * @param AuthorSitemapService           $author_sitemap_service    The author sitemap service.
+	 * @param PageSitemapService             $page_sitemap_service      The page sitemap service.
 	 */
 	public function __construct(
 		CronManagementService $cron_management,
@@ -110,7 +128,9 @@ class UI implements WordPressIntegrationInterface {
 		SettingsService $settings_service,
 		SitemapRepositoryInterface $sitemap_repository,
 		ActionHandlers $action_handlers,
-		TaxonomySitemapService $taxonomy_sitemap_service
+		TaxonomySitemapService $taxonomy_sitemap_service,
+		AuthorSitemapService $author_sitemap_service,
+		PageSitemapService $page_sitemap_service
 	) {
 		$this->cron_management           = $cron_management;
 		$this->plugin_file_path          = $plugin_file_path;
@@ -121,6 +141,8 @@ class UI implements WordPressIntegrationInterface {
 		$this->sitemap_repository        = $sitemap_repository;
 		$this->action_handlers           = $action_handlers;
 		$this->taxonomy_sitemap_service  = $taxonomy_sitemap_service;
+		$this->author_sitemap_service    = $author_sitemap_service;
+		$this->page_sitemap_service      = $page_sitemap_service;
 	}
 
 	/**
@@ -152,7 +174,7 @@ class UI implements WordPressIntegrationInterface {
 	 */
 	public function enqueue_admin_assets(): void {
 		$plugin_url = plugin_dir_url( $this->plugin_file_path );
-		
+
 		wp_enqueue_style(
 			'msm-sitemap-admin',
 			$plugin_url . 'assets/admin.css',
@@ -212,12 +234,11 @@ class UI implements WordPressIntegrationInterface {
 		<div class="wrap">
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 
-			<?php $this->render_cron_section(); ?>
 			<?php $this->render_content_providers_section(); ?>
 			<?php $this->render_generate_section(); ?>
 			<?php $this->render_stats_section(); ?>
 			<?php $this->render_dangerous_actions_section(); ?>
-			
+
 		</div>
 		<?php
 	}
@@ -231,21 +252,11 @@ class UI implements WordPressIntegrationInterface {
 		}
 
 		check_admin_referer( 'msm-sitemap-action' );
-		
+
 		$action = sanitize_text_field( $_POST['action'] );
-		
+
 		// Route to appropriate action handler
 		switch ( $action ) {
-			case 'Enable':
-				$this->action_handlers->handle_enable_cron();
-				break;
-			case 'Disable':
-				$this->action_handlers->handle_disable_cron();
-				break;
-			case 'Update Frequency':
-				$this->action_handlers->handle_update_frequency();
-				break;
-
 			case 'Generate Full Sitemap (All Content)':
 				$this->action_handlers->handle_generate_full();
 				break;
@@ -292,10 +303,13 @@ class UI implements WordPressIntegrationInterface {
 		$start_date          = isset( $_GET['start_date'] ) ? sanitize_text_field( wp_unslash( $_GET['start_date'] ) ) : '';
 		$end_date            = isset( $_GET['end_date'] ) ? sanitize_text_field( wp_unslash( $_GET['end_date'] ) ) : '';
 		$comprehensive_stats = $this->stats_service->get_comprehensive_stats( $date_range, $start_date, $end_date );
-		$sitemap_count           = $comprehensive_stats['overview']['total_sitemaps'];
+		$sitemap_count       = $comprehensive_stats['overview']['total_sitemaps'];
 		?>
 		<h2><?php esc_html_e( 'Sitemap Statistics', 'msm-sitemap' ); ?></h2>
-		
+
+		<h3><?php esc_html_e( 'Post Sitemaps', 'msm-sitemap' ); ?></h3>
+		<p class="description"><?php esc_html_e( 'Statistics for date-based post sitemaps (one sitemap per day with published content).', 'msm-sitemap' ); ?></p>
+
 		<!-- Date Range Filter -->
 		<div class="date-range-filter">
 			<form method="get" style="display: inline;">
@@ -319,7 +333,7 @@ class UI implements WordPressIntegrationInterface {
 						}
 					}
 					rsort( $years ); // Sort years in descending order (newest first)
-					
+
 					// Add year options
 					foreach ( $years as $year ) {
 						$year_option = 'year_' . $year;
@@ -345,8 +359,99 @@ class UI implements WordPressIntegrationInterface {
 		<div class="detailed-stats-section">
 			<?php $this->render_detailed_stats( $comprehensive_stats ); ?>
 		</div>
+
+		<?php $this->render_paginated_sitemaps_stats(); ?>
 		<?php
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+	}
+
+	/**
+	 * Render statistics for paginated sitemaps (taxonomies, authors, pages).
+	 */
+	private function render_paginated_sitemaps_stats(): void {
+		$taxonomy_enabled = $this->taxonomy_sitemap_service->is_enabled();
+		$author_enabled   = $this->author_sitemap_service->is_enabled();
+		$page_enabled     = $this->page_sitemap_service->is_enabled();
+
+		// If none are enabled, don't show this section.
+		if ( ! $taxonomy_enabled && ! $author_enabled && ! $page_enabled ) {
+			return;
+		}
+		?>
+		<h3><?php esc_html_e( 'Content Sitemaps', 'msm-sitemap' ); ?></h3>
+		<p class="description"><?php esc_html_e( 'Dynamically generated sitemaps for taxonomies, authors, and pages.', 'msm-sitemap' ); ?></p>
+
+		<div class="stats-insights insight-grid" style="margin-bottom: 20px;">
+			<?php if ( $taxonomy_enabled ) : ?>
+			<div class="insight-card">
+				<h3><?php esc_html_e( 'Taxonomies', 'msm-sitemap' ); ?></h3>
+				<div class="insight-content">
+					<?php
+					$taxonomy_entries = $this->taxonomy_sitemap_service->get_sitemap_index_entries();
+					$enabled_taxonomies = $this->taxonomy_sitemap_service->get_enabled_taxonomies();
+					?>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Status:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value" style="color: green;">✓ <?php esc_html_e( 'Enabled', 'msm-sitemap' ); ?></span>
+					</div>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Taxonomies:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value"><?php echo esc_html( count( $enabled_taxonomies ) ); ?></span>
+					</div>
+					<div class="insight-item stat-descriptor">
+						<?php
+						$taxonomy_names = array_map(
+							function ( $tax ) {
+								return $tax->labels->name;
+							},
+							$enabled_taxonomies
+						);
+						echo esc_html( implode( ', ', $taxonomy_names ) );
+						?>
+					</div>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Sitemap Files:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value"><?php echo esc_html( count( $taxonomy_entries ) ); ?></span>
+					</div>
+				</div>
+			</div>
+			<?php endif; ?>
+
+			<?php if ( $author_enabled ) : ?>
+			<div class="insight-card">
+				<h3><?php esc_html_e( 'Authors', 'msm-sitemap' ); ?></h3>
+				<div class="insight-content">
+					<?php $author_entries = $this->author_sitemap_service->get_sitemap_index_entries(); ?>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Status:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value" style="color: green;">✓ <?php esc_html_e( 'Enabled', 'msm-sitemap' ); ?></span>
+					</div>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Sitemap Files:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value"><?php echo esc_html( count( $author_entries ) ); ?></span>
+					</div>
+				</div>
+			</div>
+			<?php endif; ?>
+
+			<?php if ( $page_enabled ) : ?>
+			<div class="insight-card">
+				<h3><?php esc_html_e( 'Pages', 'msm-sitemap' ); ?></h3>
+				<div class="insight-content">
+					<?php $page_entries = $this->page_sitemap_service->get_sitemap_index_entries(); ?>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Status:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value" style="color: green;">✓ <?php esc_html_e( 'Enabled', 'msm-sitemap' ); ?></span>
+					</div>
+					<div class="insight-item">
+						<span class="insight-label"><?php esc_html_e( 'Sitemap Files:', 'msm-sitemap' ); ?></span>
+						<span class="insight-value"><?php echo esc_html( count( $page_entries ) ); ?></span>
+					</div>
+				</div>
+			</div>
+			<?php endif; ?>
+		</div>
+		<?php
 	}
 
 	/**
@@ -426,10 +531,10 @@ class UI implements WordPressIntegrationInterface {
 					<div class="insight-item">
 						<span class="insight-label"><?php esc_html_e( 'URL Counts per Sitemap:', 'msm-sitemap' ); ?></span>
 						<span class="insight-value">
-							<?php 
+							<?php
 							$trend_icons = array(
 								'increasing' => '↗️',
-								'decreasing' => '↘️', 
+								'decreasing' => '↘️',
 								'stable'     => '→',
 							);
 							echo esc_html( $trend_icons[ $performance['recent_trend'] ] ?? '→' );
@@ -475,7 +580,7 @@ class UI implements WordPressIntegrationInterface {
 					<div class="insight-item">
 						<span class="insight-label"><?php esc_html_e( 'URL Types Breakdown:', 'msm-sitemap' ); ?></span>
 						<span class="insight-value">
-							<?php 
+							<?php
 							$type_counts = array();
 							foreach ( $content_analysis['url_types'] as $type => $count ) {
 								$type_counts[] = $type . ': ' . number_format( $count );
@@ -492,7 +597,7 @@ class UI implements WordPressIntegrationInterface {
 					<div class="insight-item">
 						<span class="insight-label"><?php esc_html_e( 'Most Active Content:', 'msm-sitemap' ); ?></span>
 						<span class="insight-value">
-							<?php 
+							<?php
 							$post_type_counts = array();
 							$count            = 0;
 							foreach ( $content_analysis['post_type_counts'] as $post_type => $post_count ) {
@@ -532,7 +637,7 @@ class UI implements WordPressIntegrationInterface {
 					<div class="insight-item">
 						<span class="insight-label"><?php esc_html_e( 'Yearly Breakdown:', 'msm-sitemap' ); ?></span>
 						<span class="insight-value">
-							<?php 
+							<?php
 							$year_counts = array();
 							foreach ( $content_analysis['yearly_breakdown'] as $year => $count ) {
 								$year_counts[] = $year . ': ' . $count;
@@ -554,7 +659,7 @@ class UI implements WordPressIntegrationInterface {
 					<div class="insight-item">
 						<span class="insight-label"><?php esc_html_e( 'Date Range:', 'msm-sitemap' ); ?></span>
 						<span class="insight-value">
-							<?php 
+							<?php
 							$timeline = $comprehensive_stats['timeline'];
 							if ( ! empty( $timeline['date_range']['start'] ) && ! empty( $timeline['date_range']['end'] ) ) {
 								echo esc_html( $timeline['date_range']['start'] ) . ' - ' . esc_html( $timeline['date_range']['end'] );
@@ -644,7 +749,7 @@ class UI implements WordPressIntegrationInterface {
 						<div class="insight-item">
 							<span class="insight-label"><?php esc_html_e( 'Recent Sitemaps:', 'msm-sitemap' ); ?></span>
 							<span class="insight-value">
-								<?php 
+								<?php
 								$sitemap_links = array();
 								foreach ( array_reverse( $recent_dates ) as $date ) {
 									$post_id   = $this->sitemap_repository->find_by_date( $date );
@@ -672,144 +777,6 @@ class UI implements WordPressIntegrationInterface {
 				</div>
 			</div>
 		</div>
-		<?php
-	}
-
-	/**
-	 * Render the automatic sitemap updates section
-	 */
-	private function render_cron_section() {
-		$cron_status       = $this->cron_management->get_cron_status();
-		$cron_enabled      = $cron_status['enabled'];
-		$next_scheduled    = $cron_status['next_scheduled'];
-		$current_frequency = $this->settings_service->get_setting( 'cron_frequency', '15min' );
-		
-		// Calculate relative time for next check
-		$next_check_relative = $next_scheduled ? human_time_diff( time(), $next_scheduled ) : '';
-		
-		// Get last check time (when cron last ran)
-		$last_check = get_option( 'msm_sitemap_last_check' );
-		if ( ! $last_check ) {
-			// Migrate from old option name if it exists
-			$old_last_run = get_option( 'msm_sitemap_update_last_run' );
-			if ( $old_last_run ) {
-				update_option( 'msm_sitemap_last_check', $old_last_run, false );
-				$last_check = $old_last_run;
-			}
-		}
-		$last_check_timestamp = is_numeric( $last_check ) ? (int) $last_check : strtotime( $last_check );
-		$last_check_text      = $last_check ? wp_date( 'Y-m-d H:i:s T', $last_check_timestamp ) : __( 'Never', 'msm-sitemap' );
-		$last_check_relative  = $last_check ? human_time_diff( $last_check_timestamp, time() ) : '';
-
-		// Get last update time (when sitemaps were actually generated)
-		$last_update = get_option( 'msm_sitemap_last_update' );
-		// For existing installations, we don't have historical data about when sitemaps were actually generated
-		// So we'll show "Never" for now, and it will be populated on the next cron run that generates sitemaps
-		$last_update_timestamp = is_numeric( $last_update ) ? (int) $last_update : strtotime( $last_update );
-		$last_update_text      = $last_update ? wp_date( 'Y-m-d H:i:s T', $last_update_timestamp ) : __( 'Never', 'msm-sitemap' );
-		$last_update_relative  = $last_update ? human_time_diff( $last_update_timestamp, time() ) : '';
-		?>
-		<h2><?php esc_html_e( 'Automatic Sitemap Updates', 'msm-sitemap' ); ?></h2>
-		
-		<div style="display: table; width: 100%; margin-bottom: 20px;">
-			<div style="display: table-row;">
-				<div style="display: table-cell; width: 120px; padding: 8px 0; font-weight: bold; vertical-align: text-bottom;">
-					<?php esc_html_e( 'Status:', 'msm-sitemap' ); ?>
-				</div>
-				<div style="display: table-cell; padding: 8px 0; vertical-align: text-bottom;">
-					<?php echo $cron_enabled ? '<span style="color: green;">✅ Enabled</span>' : '<span style="color: red;">❌ Disabled</span>'; ?>
-					
-					<form action="<?php echo esc_url( menu_page_url( 'msm-sitemap', false ) ); ?>" method="post" style="display: inline; margin-left: 15px;vertical-align: text-bottom;">
-			<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
-			<?php if ( ! $cron_enabled ) : ?>
-							<input type="submit" name="action" class="button-primary" value="<?php esc_attr_e( 'Enable', 'msm-sitemap' ); ?>">
-			<?php else : ?>
-							<input type="submit" name="action" class="button-secondary" value="<?php esc_attr_e( 'Disable', 'msm-sitemap' ); ?>">
-						<?php endif; ?>
-					</form>
-				</div>
-			</div>
-			
-			<div style="display: table-row;">
-				<div style="display: table-cell; width: 120px; padding: 8px 0; font-weight: bold; vertical-align: middle;">
-					<?php esc_html_e( 'Last Checked:', 'msm-sitemap' ); ?>
-				</div>
-				<div style="display: table-cell; padding: 8px 0; vertical-align: middle;">
-					<?php if ( $last_check_relative ) : ?>
-						<?php
-						/* translators: %s: Time ago (e.g., "2 hours ago", "3 days ago") */
-						printf( esc_html__( '%s ago', 'msm-sitemap' ), esc_html( $last_check_relative ) );
-						?>
-						<br><small style="color: #666;">(<?php echo esc_html( $last_check_text ); ?>)</small>
-					<?php else : ?>
-						<?php echo esc_html( $last_check_text ); ?>
-					<?php endif; ?>
-				</div>
-			</div>
-			
-			<div style="display: table-row;">
-				<div style="display: table-cell; width: 120px; padding: 8px 0; font-weight: bold; vertical-align: middle;">
-					<?php esc_html_e( 'Last Updated:', 'msm-sitemap' ); ?>
-				</div>
-				<div style="display: table-cell; padding: 8px 0; vertical-align: middle;">
-					<?php if ( $last_update_relative ) : ?>
-						<?php
-						/* translators: %s: Time ago (e.g., "2 hours ago", "3 days ago") */
-						printf( esc_html__( '%s ago', 'msm-sitemap' ), esc_html( $last_update_relative ) );
-						?>
-						<br><small style="color: #666;">(<?php echo esc_html( $last_update_text ); ?>)</small>
-					<?php else : ?>
-						<?php echo esc_html( $last_update_text ); ?>
-					<?php endif; ?>
-				</div>
-			</div>
-			
-			<?php if ( $next_scheduled ) : ?>
-			<div style="display: table-row;">
-				<div style="display: table-cell; width: 120px; padding: 8px 0; font-weight: bold; vertical-align: middle;">
-					<?php esc_html_e( 'Next Check:', 'msm-sitemap' ); ?>
-				</div>
-				<div style="display: table-cell; padding: 8px 0; vertical-align: middle;">
-					<?php if ( $next_check_relative ) : ?>
-						<?php
-						/* translators: %s: Time until next check (e.g., "2 hours", "3 days") */
-						printf( esc_html__( 'in %s', 'msm-sitemap' ), esc_html( $next_check_relative ) );
-						?>
-						<br><small style="color: #666;">(<?php echo esc_html( wp_date( 'Y-m-d H:i:s T', $next_scheduled ) ); ?>)</small>
-					<?php else : ?>
-						<?php echo esc_html( wp_date( 'Y-m-d H:i:s T', $next_scheduled ) ); ?>
-					<?php endif; ?>
-				</div>
-			</div>
-			<?php endif; ?>
-		</div>
-		
-		<?php if ( $cron_enabled ) : ?>
-			<form action="<?php echo esc_url( menu_page_url( 'msm-sitemap', false ) ); ?>" method="post" style="margin-bottom: 20px;">
-				<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
-				<div style="display: table; width: 100%;">
-					<div style="display: table-row;">
-						<div style="display: table-cell; width: 120px; padding: 8px 0; font-weight: bold; vertical-align: middle;">
-							<label for="cron-frequency"><?php esc_html_e( 'Frequency:', 'msm-sitemap' ); ?></label>
-						</div>
-						<div style="display: table-cell; padding: 8px 0; vertical-align: middle;">
-							<select id="cron-frequency" name="cron_frequency" style="margin-right: 10px;">
-								<option value="5min" <?php selected( $current_frequency, '5min' ); ?>><?php esc_html_e( 'Every 5 minutes', 'msm-sitemap' ); ?></option>
-								<option value="10min" <?php selected( $current_frequency, '10min' ); ?>><?php esc_html_e( 'Every 10 minutes', 'msm-sitemap' ); ?></option>
-								<option value="15min" <?php selected( $current_frequency, '15min' ); ?>><?php esc_html_e( 'Every 15 minutes', 'msm-sitemap' ); ?></option>
-								<option value="30min" <?php selected( $current_frequency, '30min' ); ?>><?php esc_html_e( 'Every 30 minutes', 'msm-sitemap' ); ?></option>
-								<option value="hourly" <?php selected( $current_frequency, 'hourly' ); ?>><?php esc_html_e( 'Every hour', 'msm-sitemap' ); ?></option>
-								<option value="2hourly" <?php selected( $current_frequency, '2hourly' ); ?>><?php esc_html_e( 'Every 2 hours', 'msm-sitemap' ); ?></option>
-								<option value="3hourly" <?php selected( $current_frequency, '3hourly' ); ?>><?php esc_html_e( 'Every 3 hours', 'msm-sitemap' ); ?></option>
-							</select>
-							<input type="submit" name="action" class="button-secondary" value="<?php esc_attr_e( 'Update Frequency', 'msm-sitemap' ); ?>">
-						</div>
-					</div>
-				</div>
-			</form>
-			
-
-		<?php endif; ?>
 		<?php
 	}
 
@@ -884,7 +851,7 @@ class UI implements WordPressIntegrationInterface {
 	 */
 	private function render_generate_note() {
 		$cron_status = $this->cron_management->get_cron_status();
-		
+
 		if ( ! $cron_status['enabled'] ) {
 			echo '<p style="margin-top: 10px; color: #666; font-style: italic;">';
 			echo esc_html__( 'Note: Automatic updates must be enabled to use the generate functions.', 'msm-sitemap' );
@@ -899,7 +866,7 @@ class UI implements WordPressIntegrationInterface {
 		$cron_status                = $this->cron_management->get_cron_status();
 		$sitemap_create_in_progress = (bool) get_option( 'msm_generation_in_progress' );
 		$sitemap_halt_in_progress   = (bool) get_option( 'msm_sitemap_stop_generation' );
-		
+
 		// Determine if buttons should be disabled
 		$buttons_enabled = $cron_status['enabled'] && ! $sitemap_create_in_progress && ! $sitemap_halt_in_progress;
 		$reset_disabled  = $sitemap_create_in_progress || $sitemap_halt_in_progress;
@@ -984,262 +951,459 @@ class UI implements WordPressIntegrationInterface {
 	}
 
 	/**
+	 * Get public post types grouped by hierarchy
+	 *
+	 * @return array Array with 'hierarchical' and 'non_hierarchical' keys.
+	 */
+	private function get_grouped_post_types(): array {
+		$post_types = get_post_types(
+			array(
+				'public' => true,
+			),
+			'objects'
+		);
+
+		$grouped = array(
+			'hierarchical'     => array(),
+			'non_hierarchical' => array(),
+		);
+
+		foreach ( $post_types as $post_type ) {
+			// Skip attachments - not suitable for sitemaps
+			if ( 'attachment' === $post_type->name ) {
+				continue;
+			}
+
+			if ( $post_type->hierarchical ) {
+				$grouped['hierarchical'][] = $post_type;
+			} else {
+				$grouped['non_hierarchical'][] = $post_type;
+			}
+		}
+
+		return $grouped;
+	}
+
+	/**
 	 * Render the content providers settings section
 	 */
 	private function render_content_providers_section() {
+		// Get current tab from URL or default to 'posts'
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading tab parameter for display
+		$current_tab = isset( $_GET['provider_tab'] ) ? sanitize_key( $_GET['provider_tab'] ) : 'posts';
+		$valid_tabs  = array( 'posts', 'pages', 'taxonomies', 'authors' );
+		if ( ! in_array( $current_tab, $valid_tabs, true ) ) {
+			$current_tab = 'posts';
+		}
+
+		// Get settings for each provider
+		$settings               = $this->settings_service->get_image_settings();
+		$images_provider_option = $settings['include_images'];
+		$taxonomies_enabled     = $this->settings_service->get_setting( 'include_taxonomies', '0' );
+		$enabled_taxonomies     = $this->settings_service->get_setting( 'enabled_taxonomies', array( 'category', 'post_tag' ) );
+		$available_taxonomies   = $this->taxonomy_sitemap_service->get_available_taxonomies();
+		$authors_enabled        = $this->settings_service->get_setting( 'include_authors', '0' );
+		$pages_enabled          = $this->settings_service->get_setting( 'include_pages', '0' );
+
+		// Get cron status for Posts tab
+		$cron_status       = $this->cron_management->get_cron_status();
+		$cron_enabled      = $cron_status['enabled'];
+		$next_scheduled    = $cron_status['next_scheduled'];
+		$current_frequency = $this->settings_service->get_setting( 'cron_frequency', '15min' );
+
+		// Get grouped post types for display
+		$grouped_post_types = $this->get_grouped_post_types();
 		?>
-		<div class="card">
-			<h2 class="title">
-				<span class="dashicons dashicons-admin-generic"></span>
-				<?php esc_html_e( 'Content Providers', 'msm-sitemap' ); ?>
-			</h2>
-			<p class="description">
-				<?php esc_html_e( 'Configure which content types to include in your sitemaps.', 'msm-sitemap' ); ?>
-			</p>
 
-			<form action="" method="post">
-				<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
-				<input type="hidden" name="test_form_submission" value="1">
-				
-				<table class="form-table" role="presentation">
-					<tbody>
-						<!-- Posts Provider -->
-						<tr>
-							<th scope="row">
-								<label for="posts_provider_enabled">
-									<?php esc_html_e( 'Posts', 'msm-sitemap' ); ?>
-								</label>
-							</th>
-							<td>
-								<fieldset>
-									<label for="posts_provider_enabled">
-										<input type="checkbox" 
-												id="posts_provider_enabled" 
-												name="posts_provider_enabled" 
-												value="1" 
-												<?php checked( apply_filters( 'msm_sitemap_posts_provider_enabled', true ) ); ?>
-												disabled="disabled">
-										<?php esc_html_e( 'Include published posts in sitemaps', 'msm-sitemap' ); ?>
-									</label>
-									<p class="description">
-										<?php esc_html_e( 'Posts are the primary content type and cannot be disabled.', 'msm-sitemap' ); ?>
-									</p>
-								</fieldset>
-							</td>
-						</tr>
+		<style>
+			.msm-tab-panel {
+				padding: 20px;
+				background: #fff;
+				border: 1px solid #c3c4c7;
+				border-top: none;
+			}
+			.msm-provider-header {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				margin-bottom: 10px;
+			}
+			.msm-provider-header h3 {
+				margin: 0;
+			}
+			.msm-provider-settings {
+				margin-top: 20px;
+				padding: 15px;
+				background-color: #f6f7f7;
+				border-left: 4px solid #2271b1;
+			}
+		</style>
 
-						<!-- Images Provider -->
-						<tr>
-							<th scope="row">
-								<label for="images_provider_enabled">
-									<?php esc_html_e( 'Images', 'msm-sitemap' ); ?>
-								</label>
-							</th>
-							<td>
-								<fieldset>
-									<label for="images_provider_enabled">
-									<?php 
-									$settings               = $this->settings_service->get_image_settings();
-									$images_provider_option = $settings['include_images'];
-									?>
-									<input type="checkbox" 
-											id="images_provider_enabled" 
-											name="images_provider_enabled" 
-											value="1" 
-											<?php checked( '1' === $images_provider_option ); ?>>
-										<?php esc_html_e( 'Images in Sitemaps', 'msm-sitemap' ); ?>
-									</label>
-									<p class="description">
-										<?php esc_html_e( 'Include images from your posts in sitemaps to help search engines discover and index your visual content.', 'msm-sitemap' ); ?>
-									</p>
-								</fieldset>
+		<!-- Tab Navigation -->
+		<h2 class="nav-tab-wrapper" id="msm-provider-tabs">
+			<a href="<?php echo esc_url( add_query_arg( 'provider_tab', 'posts' ) ); ?>"
+				class="nav-tab <?php echo 'posts' === $current_tab ? 'nav-tab-active' : ''; ?>"
+				data-tab="posts">
+				<?php esc_html_e( 'Posts', 'msm-sitemap' ); ?>
+			</a>
+			<a href="<?php echo esc_url( add_query_arg( 'provider_tab', 'pages' ) ); ?>"
+				class="nav-tab <?php echo 'pages' === $current_tab ? 'nav-tab-active' : ''; ?>"
+				data-tab="pages">
+				<?php esc_html_e( 'Pages', 'msm-sitemap' ); ?>
+			</a>
+			<a href="<?php echo esc_url( add_query_arg( 'provider_tab', 'taxonomies' ) ); ?>"
+				class="nav-tab <?php echo 'taxonomies' === $current_tab ? 'nav-tab-active' : ''; ?>"
+				data-tab="taxonomies">
+				<?php esc_html_e( 'Taxonomies', 'msm-sitemap' ); ?>
+			</a>
+			<a href="<?php echo esc_url( add_query_arg( 'provider_tab', 'authors' ) ); ?>"
+				class="nav-tab <?php echo 'authors' === $current_tab ? 'nav-tab-active' : ''; ?>"
+				data-tab="authors">
+				<?php esc_html_e( 'Authors', 'msm-sitemap' ); ?>
+			</a>
+		</h2>
 
-								<div id="images_settings" style="margin-top: 15px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #0073aa; display: <?php echo '1' === $images_provider_option ? 'block' : 'none'; ?>;">
-									<h4 style="margin: 0 0 10px 0;"><?php esc_html_e( 'Image Settings', 'msm-sitemap' ); ?></h4>
-									
-									<fieldset>
-										<legend class="screen-reader-text"><?php esc_html_e( 'Image types to include', 'msm-sitemap' ); ?></legend>
-										<label for="include_featured_images">
-											<?php 
-											$featured_images_option = $settings['featured_images'];
-											?>
-											<input type="checkbox" 
-													id="include_featured_images" 
-													name="include_featured_images" 
-													value="1" 
-													<?php checked( '1' === $featured_images_option ); ?>>
-											<?php esc_html_e( 'Include Featured Images', 'msm-sitemap' ); ?>
-										</label>
-										<p class="description">
-											<?php esc_html_e( 'Add featured images to post URLs in sitemaps.', 'msm-sitemap' ); ?>
-										</p>
-										
-										<label for="include_content_images" style="margin-top: 15px; display: block;">
-											<?php 
-											$content_images_option = $settings['content_images'];
-											?>
-											<input type="checkbox" 
-													id="include_content_images" 
-													name="include_content_images" 
-													value="1" 
-													<?php checked( '1' === $content_images_option ); ?>>
-											<?php esc_html_e( 'Include Content Images', 'msm-sitemap' ); ?>
-										</label>
-										<p class="description">
-											<?php esc_html_e( 'Add images embedded in post content to sitemaps.', 'msm-sitemap' ); ?>
-										</p>
-									</fieldset>
+		<form action="" method="post" id="msm-provider-settings-form">
+			<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
+			<input type="hidden" name="provider_tab" value="<?php echo esc_attr( $current_tab ); ?>">
 
-									<p>
-										<label for="max_images_per_sitemap">
-											<?php esc_html_e( 'Maximum images per sitemap:', 'msm-sitemap' ); ?>
-											<input type="number" 
-													id="max_images_per_sitemap" 
-													name="max_images_per_sitemap" 
-													value="<?php echo esc_attr( $settings['max_images_per_sitemap'] ); ?>"
-													min="1" 
-													max="10000" 
-													step="1" 
-													style="width: 100px;">
-										</label>
-									</p>
-								</div>
-							</td>
-						</tr>
-
-						<!-- Taxonomies Provider -->
-						<tr>
-							<th scope="row">
-								<label for="taxonomies_provider_enabled">
-									<?php esc_html_e( 'Taxonomies', 'msm-sitemap' ); ?>
-								</label>
-							</th>
-							<td>
-								<fieldset>
-									<?php
-									$taxonomies_enabled    = $this->settings_service->get_setting( 'include_taxonomies', '0' );
-									$enabled_taxonomies    = $this->settings_service->get_setting( 'enabled_taxonomies', array( 'category', 'post_tag' ) );
-									$available_taxonomies  = $this->taxonomy_sitemap_service->get_available_taxonomies();
-									?>
-									<label for="taxonomies_provider_enabled">
-										<input type="checkbox"
-												id="taxonomies_provider_enabled"
-												name="taxonomies_provider_enabled"
-												value="1"
-												<?php checked( '1' === $taxonomies_enabled ); ?>>
-										<?php esc_html_e( 'Include taxonomies in sitemaps', 'msm-sitemap' ); ?>
-									</label>
-									<p class="description">
-										<?php esc_html_e( 'Add category, tag, and custom taxonomy archive pages to your sitemaps.', 'msm-sitemap' ); ?>
-									</p>
-								</fieldset>
-
-								<div id="taxonomies_settings" style="margin-top: 15px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #0073aa; display: <?php echo '1' === $taxonomies_enabled ? 'block' : 'none'; ?>;">
-									<h4 style="margin: 0 0 10px 0;"><?php esc_html_e( 'Taxonomy Settings', 'msm-sitemap' ); ?></h4>
-
-									<fieldset>
-										<legend class="screen-reader-text"><?php esc_html_e( 'Taxonomies to include', 'msm-sitemap' ); ?></legend>
-										<?php if ( ! empty( $available_taxonomies ) ) : ?>
-											<?php foreach ( $available_taxonomies as $taxonomy ) : ?>
-												<label for="taxonomy_<?php echo esc_attr( $taxonomy->name ); ?>" style="display: block; margin-bottom: 8px;">
-													<input type="checkbox"
-															id="taxonomy_<?php echo esc_attr( $taxonomy->name ); ?>"
-															name="enabled_taxonomies[]"
-															value="<?php echo esc_attr( $taxonomy->name ); ?>"
-															<?php checked( in_array( $taxonomy->name, $enabled_taxonomies, true ) ); ?>>
-													<?php echo esc_html( $taxonomy->labels->name ); ?>
-													<span style="color: #666; font-size: 12px;">(<?php echo esc_html( $taxonomy->name ); ?>)</span>
-												</label>
-											<?php endforeach; ?>
-										<?php else : ?>
-											<p class="description">
-												<?php esc_html_e( 'No public taxonomies found.', 'msm-sitemap' ); ?>
-											</p>
-										<?php endif; ?>
-									</fieldset>
-
-									<fieldset style="margin-top: 15px;">
-										<label for="taxonomy_cache_ttl">
-											<?php esc_html_e( 'Cache duration (minutes):', 'msm-sitemap' ); ?>
-											<?php
-											$taxonomy_cache_ttl = $this->settings_service->get_setting( 'taxonomy_cache_ttl', \Automattic\MSM_Sitemap\Application\Services\SettingsService::DEFAULT_CACHE_TTL_MINUTES );
-											?>
-											<input type="number"
-													id="taxonomy_cache_ttl"
-													name="taxonomy_cache_ttl"
-													value="<?php echo esc_attr( $taxonomy_cache_ttl ); ?>"
-													min="<?php echo esc_attr( \Automattic\MSM_Sitemap\Application\Services\SettingsService::MIN_CACHE_TTL_MINUTES ); ?>"
-													max="<?php echo esc_attr( \Automattic\MSM_Sitemap\Application\Services\SettingsService::MAX_CACHE_TTL_MINUTES ); ?>"
-													style="width: 80px;">
-										</label>
-										<p class="description">
-											<?php esc_html_e( 'How long to cache taxonomy sitemaps before regenerating. Default: 60 minutes.', 'msm-sitemap' ); ?>
-										</p>
-									</fieldset>
-								</div>
-							</td>
-						</tr>
-
-						<!-- Authors Provider -->
-						<tr>
-							<th scope="row">
-								<label for="authors_provider_enabled">
-									<?php esc_html_e( 'Authors', 'msm-sitemap' ); ?>
-								</label>
-							</th>
-							<td>
-								<fieldset>
-									<?php
-									$authors_enabled = $this->settings_service->get_setting( 'include_authors', '0' );
-									?>
-									<label for="authors_provider_enabled">
-										<input type="checkbox"
-												id="authors_provider_enabled"
-												name="authors_provider_enabled"
-												value="1"
-												<?php checked( '1' === $authors_enabled ); ?>>
-										<?php esc_html_e( 'Include authors in sitemaps', 'msm-sitemap' ); ?>
-									</label>
-									<p class="description">
-										<?php esc_html_e( 'Add author archive pages to your sitemaps. Only authors with published posts will be included.', 'msm-sitemap' ); ?>
-									</p>
-								</fieldset>
-
-								<div id="authors_settings" style="margin-top: 15px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #0073aa; display: <?php echo '1' === $authors_enabled ? 'block' : 'none'; ?>;">
-									<h4 style="margin: 0 0 10px 0;"><?php esc_html_e( 'Author Settings', 'msm-sitemap' ); ?></h4>
-
-									<fieldset>
-										<label for="author_cache_ttl">
-											<?php esc_html_e( 'Cache duration (minutes):', 'msm-sitemap' ); ?>
-											<?php
-											$author_cache_ttl = $this->settings_service->get_setting( 'author_cache_ttl', \Automattic\MSM_Sitemap\Application\Services\SettingsService::DEFAULT_CACHE_TTL_MINUTES );
-											?>
-											<input type="number"
-													id="author_cache_ttl"
-													name="author_cache_ttl"
-													value="<?php echo esc_attr( $author_cache_ttl ); ?>"
-													min="<?php echo esc_attr( \Automattic\MSM_Sitemap\Application\Services\SettingsService::MIN_CACHE_TTL_MINUTES ); ?>"
-													max="<?php echo esc_attr( \Automattic\MSM_Sitemap\Application\Services\SettingsService::MAX_CACHE_TTL_MINUTES ); ?>"
-													style="width: 80px;">
-										</label>
-										<p class="description">
-											<?php esc_html_e( 'How long to cache author sitemaps before regenerating. Default: 60 minutes.', 'msm-sitemap' ); ?>
-										</p>
-									</fieldset>
-								</div>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-
-				<p class="submit">
-					<input type="submit" name="action" class="button button-primary" value="<?php esc_attr_e( 'Save Content Provider Settings', 'msm-sitemap' ); ?>">
+			<!-- Posts Tab Panel -->
+			<div class="msm-tab-panel" data-tab-panel="posts" style="<?php echo 'posts' !== $current_tab ? 'display: none;' : ''; ?>">
+				<?php
+				$enabled_post_types = $this->settings_service->get_setting( 'enabled_post_types', array( 'post' ) );
+				?>
+				<p class="description">
+					<?php esc_html_e( 'Non-hierarchical post types are organised by publication date into daily sitemaps.', 'msm-sitemap' ); ?>
+					<?php esc_html_e( 'View sitemap:', 'msm-sitemap' ); ?>
+					<a href="<?php echo esc_url( home_url( '/sitemap.xml' ) ); ?>" target="_blank"><?php esc_html_e( 'Posts', 'msm-sitemap' ); ?></a>
 				</p>
-			</form>
-		</div>
+
+				<?php foreach ( $grouped_post_types['non_hierarchical'] as $post_type ) : ?>
+				<p>
+					<label for="post_type_<?php echo esc_attr( $post_type->name ); ?>_enabled">
+						<input type="checkbox"
+								class="msm-post-type-checkbox"
+								id="post_type_<?php echo esc_attr( $post_type->name ); ?>_enabled"
+								name="enabled_post_types[]"
+								value="<?php echo esc_attr( $post_type->name ); ?>"
+								<?php checked( in_array( $post_type->name, $enabled_post_types, true ) ); ?>>
+						<?php
+						printf(
+							/* translators: %s: Post type name */
+							esc_html__( 'Include %s in sitemaps', 'msm-sitemap' ),
+							esc_html( strtolower( $post_type->labels->name ) )
+						);
+						?>
+						<span style="color: #666; font-size: 12px;">(<?php echo esc_html( $post_type->name ); ?>)</span>
+					</label>
+				</p>
+				<?php endforeach; ?>
+
+				<div id="post_images_wrapper" style="<?php echo empty( $enabled_post_types ) ? 'display: none;' : ''; ?>">
+					<h4 style="margin-top: 20px; margin-bottom: 10px;"><?php esc_html_e( 'Images', 'msm-sitemap' ); ?></h4>
+					<p>
+						<label for="images_provider_enabled">
+							<input type="checkbox"
+									id="images_provider_enabled"
+									name="images_provider_enabled"
+									value="1"
+									<?php checked( '1' === $images_provider_option ); ?>>
+							<?php esc_html_e( 'Include images in post sitemaps', 'msm-sitemap' ); ?>
+						</label>
+					</p>
+
+					<div id="images_settings" style="margin-left: 24px; <?php echo '1' !== $images_provider_option ? 'display: none;' : ''; ?>">
+						<?php
+						// Check if any enabled post types support thumbnails
+						$any_supports_thumbnail = false;
+						foreach ( $enabled_post_types as $post_type_name ) {
+							if ( post_type_supports( $post_type_name, 'thumbnail' ) ) {
+								$any_supports_thumbnail = true;
+								break;
+							}
+						}
+						?>
+						<?php if ( $any_supports_thumbnail ) : ?>
+						<p>
+							<label for="include_featured_images">
+								<input type="checkbox"
+										id="include_featured_images"
+										name="include_featured_images"
+										value="1"
+										<?php checked( '1' === $settings['featured_images'] ); ?>>
+								<?php esc_html_e( 'Include featured images', 'msm-sitemap' ); ?>
+							</label>
+						</p>
+						<?php endif; ?>
+
+						<p>
+							<label for="include_content_images">
+								<input type="checkbox"
+										id="include_content_images"
+										name="include_content_images"
+										value="1"
+										<?php checked( '1' === $settings['content_images'] ); ?>>
+								<?php esc_html_e( 'Include content images', 'msm-sitemap' ); ?>
+							</label>
+						</p>
+
+						<p>
+							<label for="max_images_per_sitemap">
+								<?php esc_html_e( 'Maximum images per sitemap:', 'msm-sitemap' ); ?>
+								<input type="number"
+										id="max_images_per_sitemap"
+										name="max_images_per_sitemap"
+										value="<?php echo esc_attr( $settings['max_images_per_sitemap'] ); ?>"
+										min="1"
+										max="10000"
+										style="width: 100px;">
+							</label>
+						</p>
+					</div>
+				</div>
+
+				<h4 style="margin-top: 20px; margin-bottom: 10px;"><?php esc_html_e( 'Automatic Updates', 'msm-sitemap' ); ?></h4>
+				<p>
+					<label>
+						<input type="checkbox" name="automatic_updates_enabled" id="automatic_updates_enabled" value="1" <?php checked( $cron_enabled ); ?>>
+						<?php esc_html_e( 'Enable automatic updates', 'msm-sitemap' ); ?>
+					</label>
+				</p>
+
+				<div id="automatic_updates_settings" style="margin-left: 24px; <?php echo ! $cron_enabled ? 'display: none;' : ''; ?>">
+					<?php
+					// Get last check time
+					$last_check           = get_option( 'msm_sitemap_last_check' );
+					$last_check_timestamp = is_numeric( $last_check ) ? (int) $last_check : strtotime( $last_check );
+					$last_check_relative  = $last_check ? human_time_diff( $last_check_timestamp, time() ) : '';
+					$last_check_absolute  = $last_check ? wp_date( 'Y-m-d H:i:s T', $last_check_timestamp ) : '';
+
+					// Get last update time
+					$last_update           = get_option( 'msm_sitemap_last_update' );
+					$last_update_timestamp = is_numeric( $last_update ) ? (int) $last_update : strtotime( $last_update );
+					$last_update_relative  = $last_update ? human_time_diff( $last_update_timestamp, time() ) : '';
+					$last_update_absolute  = $last_update ? wp_date( 'Y-m-d H:i:s T', $last_update_timestamp ) : '';
+
+					// Next check
+					$next_check_relative = $next_scheduled ? human_time_diff( time(), $next_scheduled ) : '';
+					$next_check_absolute = $next_scheduled ? wp_date( 'Y-m-d H:i:s T', $next_scheduled ) : '';
+					?>
+					<p>
+						<?php esc_html_e( 'Last checked:', 'msm-sitemap' ); ?>
+						<?php if ( $last_check_relative ) : ?>
+							<?php
+							/* translators: %s: Time ago */
+							printf( esc_html__( '%s ago', 'msm-sitemap' ), esc_html( $last_check_relative ) );
+							?>
+							<small style="color: #666;">(<?php echo esc_html( $last_check_absolute ); ?>)</small>
+						<?php else : ?>
+							<?php esc_html_e( 'Never', 'msm-sitemap' ); ?>
+						<?php endif; ?>
+					</p>
+					<p>
+						<?php esc_html_e( 'Last updated:', 'msm-sitemap' ); ?>
+						<?php if ( $last_update_relative ) : ?>
+							<?php
+							/* translators: %s: Time ago */
+							printf( esc_html__( '%s ago', 'msm-sitemap' ), esc_html( $last_update_relative ) );
+							?>
+							<small style="color: #666;">(<?php echo esc_html( $last_update_absolute ); ?>)</small>
+						<?php else : ?>
+							<?php esc_html_e( 'Never', 'msm-sitemap' ); ?>
+						<?php endif; ?>
+					</p>
+					<?php if ( $next_scheduled ) : ?>
+					<p>
+						<?php esc_html_e( 'Next check:', 'msm-sitemap' ); ?>
+						<?php
+						/* translators: %s: Time until next check */
+						printf( esc_html__( 'in %s', 'msm-sitemap' ), esc_html( $next_check_relative ) );
+						?>
+						<small style="color: #666;">(<?php echo esc_html( $next_check_absolute ); ?>)</small>
+					</p>
+					<?php endif; ?>
+					<p>
+						<label for="cron-frequency">
+							<?php esc_html_e( 'Frequency:', 'msm-sitemap' ); ?>
+							<select id="cron-frequency" name="cron_frequency">
+								<option value="5min" <?php selected( $current_frequency, '5min' ); ?>><?php esc_html_e( 'Every 5 minutes', 'msm-sitemap' ); ?></option>
+								<option value="10min" <?php selected( $current_frequency, '10min' ); ?>><?php esc_html_e( 'Every 10 minutes', 'msm-sitemap' ); ?></option>
+								<option value="15min" <?php selected( $current_frequency, '15min' ); ?>><?php esc_html_e( 'Every 15 minutes', 'msm-sitemap' ); ?></option>
+								<option value="30min" <?php selected( $current_frequency, '30min' ); ?>><?php esc_html_e( 'Every 30 minutes', 'msm-sitemap' ); ?></option>
+								<option value="hourly" <?php selected( $current_frequency, 'hourly' ); ?>><?php esc_html_e( 'Every hour', 'msm-sitemap' ); ?></option>
+								<option value="2hourly" <?php selected( $current_frequency, '2hourly' ); ?>><?php esc_html_e( 'Every 2 hours', 'msm-sitemap' ); ?></option>
+								<option value="3hourly" <?php selected( $current_frequency, '3hourly' ); ?>><?php esc_html_e( 'Every 3 hours', 'msm-sitemap' ); ?></option>
+							</select>
+						</label>
+					</p>
+				</div>
+			</div>
+
+			<!-- Pages Tab Panel -->
+			<div class="msm-tab-panel" data-tab-panel="pages" style="<?php echo 'pages' !== $current_tab ? 'display: none;' : ''; ?>">
+				<?php
+				$enabled_page_types = $this->settings_service->get_setting( 'enabled_page_types', array( 'page' ) );
+				?>
+				<p class="description">
+					<?php esc_html_e( 'Hierarchical post types are organised into a single paginated sitemap.', 'msm-sitemap' ); ?>
+					<?php esc_html_e( 'View sitemap:', 'msm-sitemap' ); ?>
+					<a href="<?php echo esc_url( home_url( '/sitemap-page.xml' ) ); ?>" target="_blank"><?php esc_html_e( 'Pages', 'msm-sitemap' ); ?></a>
+				</p>
+
+				<?php foreach ( $grouped_post_types['hierarchical'] as $post_type ) : ?>
+				<p>
+					<label for="page_type_<?php echo esc_attr( $post_type->name ); ?>_enabled">
+						<input type="checkbox"
+								class="msm-page-type-checkbox"
+								id="page_type_<?php echo esc_attr( $post_type->name ); ?>_enabled"
+								name="enabled_page_types[]"
+								value="<?php echo esc_attr( $post_type->name ); ?>"
+								<?php checked( in_array( $post_type->name, $enabled_page_types, true ) ); ?>>
+						<?php
+						printf(
+							/* translators: %s: Post type name */
+							esc_html__( 'Include %s in sitemaps', 'msm-sitemap' ),
+							esc_html( strtolower( $post_type->labels->name ) )
+						);
+						?>
+						<span style="color: #666; font-size: 12px;">(<?php echo esc_html( $post_type->name ); ?>)</span>
+					</label>
+				</p>
+				<?php endforeach; ?>
+
+				<div id="page_cache_settings" style="margin-top: 20px; <?php echo empty( $enabled_page_types ) ? 'display: none;' : ''; ?>">
+					<p>
+						<label for="page_cache_ttl">
+							<?php esc_html_e( 'Cache duration (minutes):', 'msm-sitemap' ); ?>
+							<?php
+							$page_cache_ttl = $this->settings_service->get_setting( 'page_cache_ttl', \Automattic\MSM_Sitemap\Application\Services\SettingsService::DEFAULT_CACHE_TTL_MINUTES );
+							?>
+							<input type="number"
+									id="page_cache_ttl"
+									name="page_cache_ttl"
+									value="<?php echo esc_attr( $page_cache_ttl ); ?>"
+									min="<?php echo esc_attr( \Automattic\MSM_Sitemap\Application\Services\SettingsService::MIN_CACHE_TTL_MINUTES ); ?>"
+									max="<?php echo esc_attr( \Automattic\MSM_Sitemap\Application\Services\SettingsService::MAX_CACHE_TTL_MINUTES ); ?>"
+									style="width: 80px;">
+						</label>
+						<span class="description" style="margin-left: 10px;">
+							<?php esc_html_e( 'How long to cache page sitemaps before regenerating.', 'msm-sitemap' ); ?>
+						</span>
+					</p>
+				</div>
+			</div>
+
+			<!-- Taxonomies Tab Panel -->
+			<div class="msm-tab-panel" data-tab-panel="taxonomies" style="<?php echo 'taxonomies' !== $current_tab ? 'display: none;' : ''; ?>">
+				<p class="description">
+					<?php esc_html_e( 'Add category, tag, and custom taxonomy archive pages to your sitemaps.', 'msm-sitemap' ); ?>
+					<?php if ( ! empty( $enabled_taxonomies ) ) : ?>
+						<?php esc_html_e( 'View sitemaps:', 'msm-sitemap' ); ?>
+						<?php
+						$taxonomy_links = array();
+						foreach ( $enabled_taxonomies as $tax_name ) {
+							$tax_obj = get_taxonomy( $tax_name );
+							if ( $tax_obj ) {
+								$sitemap_url      = home_url( '/sitemap-taxonomy-' . $tax_name . '.xml' );
+								$taxonomy_links[] = '<a href="' . esc_url( $sitemap_url ) . '" target="_blank">' . esc_html( $tax_obj->labels->name ) . '</a>';
+							}
+						}
+						echo wp_kses_post( implode( ', ', $taxonomy_links ) );
+						?>
+					<?php endif; ?>
+				</p>
+
+				<?php foreach ( $available_taxonomies as $taxonomy ) : ?>
+				<p>
+					<label for="taxonomy_<?php echo esc_attr( $taxonomy->name ); ?>_enabled">
+						<input type="checkbox"
+								class="msm-taxonomy-checkbox"
+								id="taxonomy_<?php echo esc_attr( $taxonomy->name ); ?>_enabled"
+								name="enabled_taxonomies[]"
+								value="<?php echo esc_attr( $taxonomy->name ); ?>"
+								<?php checked( in_array( $taxonomy->name, $enabled_taxonomies, true ) ); ?>>
+						<?php
+						printf(
+							/* translators: %s: Taxonomy name */
+							esc_html__( 'Include %s in sitemaps', 'msm-sitemap' ),
+							esc_html( strtolower( $taxonomy->labels->name ) )
+						);
+						?>
+						<span style="color: #666; font-size: 12px;">(<?php echo esc_html( $taxonomy->name ); ?>)</span>
+					</label>
+				</p>
+				<?php endforeach; ?>
+
+				<div id="taxonomy_cache_settings" style="margin-top: 20px; <?php echo empty( $enabled_taxonomies ) ? 'display: none;' : ''; ?>">
+					<p>
+						<label for="taxonomy_cache_ttl">
+							<?php esc_html_e( 'Cache duration (minutes):', 'msm-sitemap' ); ?>
+							<?php
+							$taxonomy_cache_ttl = $this->settings_service->get_setting( 'taxonomy_cache_ttl', \Automattic\MSM_Sitemap\Application\Services\SettingsService::DEFAULT_CACHE_TTL_MINUTES );
+							?>
+							<input type="number"
+									id="taxonomy_cache_ttl"
+									name="taxonomy_cache_ttl"
+									value="<?php echo esc_attr( $taxonomy_cache_ttl ); ?>"
+									min="<?php echo esc_attr( \Automattic\MSM_Sitemap\Application\Services\SettingsService::MIN_CACHE_TTL_MINUTES ); ?>"
+									max="<?php echo esc_attr( \Automattic\MSM_Sitemap\Application\Services\SettingsService::MAX_CACHE_TTL_MINUTES ); ?>"
+									style="width: 80px;">
+						</label>
+						<span class="description" style="margin-left: 10px;">
+							<?php esc_html_e( 'How long to cache taxonomy sitemaps before regenerating.', 'msm-sitemap' ); ?>
+						</span>
+					</p>
+				</div>
+			</div>
+
+			<!-- Authors Tab Panel -->
+			<div class="msm-tab-panel" data-tab-panel="authors" style="<?php echo 'authors' !== $current_tab ? 'display: none;' : ''; ?>">
+				<p class="description">
+					<?php esc_html_e( 'Add author archive pages to your sitemaps. Only authors with published posts will be included.', 'msm-sitemap' ); ?>
+					<?php if ( '1' === $authors_enabled ) : ?>
+						<?php esc_html_e( 'View sitemap:', 'msm-sitemap' ); ?>
+						<a href="<?php echo esc_url( home_url( '/sitemap-author.xml' ) ); ?>" target="_blank"><?php esc_html_e( 'Authors', 'msm-sitemap' ); ?></a>
+					<?php endif; ?>
+				</p>
+
+				<p>
+					<label for="authors_provider_enabled">
+						<input type="checkbox"
+								id="authors_provider_enabled"
+								name="authors_provider_enabled"
+								value="1"
+								<?php checked( '1' === $authors_enabled ); ?>>
+						<?php esc_html_e( 'Include authors in sitemaps', 'msm-sitemap' ); ?>
+					</label>
+				</p>
+
+				<div id="authors_settings" style="margin-top: 20px; <?php echo '1' !== $authors_enabled ? 'display: none;' : ''; ?>">
+					<p>
+						<label for="author_cache_ttl">
+							<?php esc_html_e( 'Cache duration (minutes):', 'msm-sitemap' ); ?>
+							<?php
+							$author_cache_ttl = $this->settings_service->get_setting( 'author_cache_ttl', \Automattic\MSM_Sitemap\Application\Services\SettingsService::DEFAULT_CACHE_TTL_MINUTES );
+							?>
+							<input type="number"
+									id="author_cache_ttl"
+									name="author_cache_ttl"
+									value="<?php echo esc_attr( $author_cache_ttl ); ?>"
+									min="<?php echo esc_attr( \Automattic\MSM_Sitemap\Application\Services\SettingsService::MIN_CACHE_TTL_MINUTES ); ?>"
+									max="<?php echo esc_attr( \Automattic\MSM_Sitemap\Application\Services\SettingsService::MAX_CACHE_TTL_MINUTES ); ?>"
+									style="width: 80px;">
+						</label>
+						<span class="description" style="margin-left: 10px;">
+							<?php esc_html_e( 'How long to cache author sitemaps before regenerating.', 'msm-sitemap' ); ?>
+						</span>
+					</p>
+				</div>
+			</div>
+
+			<p class="submit" style="margin-top: 20px;">
+				<input type="submit" name="action" id="msm-save-provider-settings" class="button button-primary" value="<?php esc_attr_e( 'Save Content Provider Settings', 'msm-sitemap' ); ?>" disabled>
+			</p>
+		</form>
 		<?php
 	}
-
-	// Validation results method removed for now
-} 
+}
 
