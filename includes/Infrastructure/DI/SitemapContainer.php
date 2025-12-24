@@ -74,6 +74,7 @@ use Automattic\MSM_Sitemap\Infrastructure\Providers\PostContentProvider;
 use Automattic\MSM_Sitemap\Infrastructure\Providers\ImageContentProvider;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\TaxonomyRepository;
 use Automattic\MSM_Sitemap\Application\Services\TaxonomySitemapService;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\TaxonomySitemapCacheInvalidator;
 
 /**
  * Simple dependency injection container for MSM Sitemap services.
@@ -238,6 +239,14 @@ class SitemapContainer {
 				$taxonomy_repository = $container->get( TaxonomyRepository::class );
 				$settings_service    = $container->get( SettingsService::class );
 				return new TaxonomySitemapService( $taxonomy_repository, $settings_service );
+			}
+		);
+
+		$this->register(
+			TaxonomySitemapCacheInvalidator::class,
+			function ( $container ) {
+				$taxonomy_sitemap_service = $container->get( TaxonomySitemapService::class );
+				return new TaxonomySitemapCacheInvalidator( $taxonomy_sitemap_service );
 			}
 		);
 

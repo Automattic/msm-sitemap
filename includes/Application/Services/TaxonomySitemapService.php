@@ -24,6 +24,16 @@ use WP_Taxonomy;
 class TaxonomySitemapService {
 
 	/**
+	 * Cache group for taxonomy sitemaps.
+	 */
+	public const CACHE_GROUP = 'msm_taxonomy_sitemaps';
+
+	/**
+	 * Default cache TTL in seconds (1 hour).
+	 */
+	public const DEFAULT_CACHE_TTL = 3600;
+
+	/**
 	 * The taxonomy repository.
 	 *
 	 * @var TaxonomyRepository
@@ -129,6 +139,8 @@ class TaxonomySitemapService {
 	/**
 	 * Generate sitemap XML for a taxonomy.
 	 *
+	 * Uses object cache to avoid regenerating on every request.
+	 *
 	 * @param string $taxonomy The taxonomy slug.
 	 * @param int    $page     The page number (1-indexed).
 	 * @return string|null The sitemap XML or null if not found/empty.
@@ -139,6 +151,15 @@ class TaxonomySitemapService {
 			return null;
 		}
 
+		// Try to get from cache first
+		$cache_key = $this->get_cache_key( $taxonomy, $page );
+		$cached    = wp_cache_get( $cache_key, self::CACHE_GROUP );
+
+		if ( false !== $cached ) {
+			return $cached;
+		}
+
+		// Generate fresh XML
 		$url_set = $provider->get_urls( $page );
 		if ( $url_set->is_empty() ) {
 			return null;
@@ -148,7 +169,60 @@ class TaxonomySitemapService {
 		$sitemap_content = new SitemapContent( $url_set->get_entries() );
 
 		$formatter = new SitemapXmlFormatter();
-		return $formatter->format( $sitemap_content );
+		$xml       = $formatter->format( $sitemap_content );
+
+		// Cache the result with TTL
+		/**
+		 * Filter the cache TTL for taxonomy sitemaps.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param int    $ttl      Cache TTL in seconds. Default 3600 (1 hour).
+		 * @param string $taxonomy The taxonomy slug.
+		 */
+		$ttl = apply_filters( 'msm_sitemap_taxonomy_cache_ttl', self::DEFAULT_CACHE_TTL, $taxonomy );
+		wp_cache_set( $cache_key, $xml, self::CACHE_GROUP, $ttl );
+
+		return $xml;
+	}
+
+	/**
+	 * Get cache key for a taxonomy sitemap.
+	 *
+	 * @param string $taxonomy The taxonomy slug.
+	 * @param int    $page     The page number.
+	 * @return string The cache key.
+	 */
+	private function get_cache_key( string $taxonomy, int $page ): string {
+		return "taxonomy_sitemap_{$taxonomy}_{$page}";
+	}
+
+	/**
+	 * Invalidate cache for a specific taxonomy.
+	 *
+	 * @param string $taxonomy The taxonomy slug.
+	 */
+	public function invalidate_taxonomy_cache( string $taxonomy ): void {
+		$provider = $this->get_provider( $taxonomy );
+		if ( ! $provider ) {
+			return;
+		}
+
+		$page_count = $provider->get_page_count();
+		for ( $page = 1; $page <= max( 1, $page_count ); $page++ ) {
+			$cache_key = $this->get_cache_key( $taxonomy, $page );
+			wp_cache_delete( $cache_key, self::CACHE_GROUP );
+		}
+	}
+
+	/**
+	 * Invalidate cache for all enabled taxonomies.
+	 */
+	public function invalidate_all_cache(): void {
+		$taxonomies = $this->get_enabled_taxonomies();
+		foreach ( $taxonomies as $taxonomy ) {
+			$this->invalidate_taxonomy_cache( $taxonomy->name );
+		}
 	}
 
 	/**
