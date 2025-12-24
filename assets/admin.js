@@ -342,6 +342,20 @@ jQuery(document).ready(function($) {
     }
 
     /**
+     * Toggle authors settings visibility
+     */
+    function toggleAuthorsSettings() {
+        var authorsCheckbox = document.getElementById('authors_provider_enabled');
+        var authorsSettings = document.getElementById('authors_settings');
+
+        if (!authorsCheckbox || !authorsSettings) {
+            return;
+        }
+
+        authorsSettings.style.display = authorsCheckbox.checked ? 'block' : 'none';
+    }
+
+    /**
      * Initialize event listeners
      */
     function initializeEventListeners() {
@@ -399,6 +413,12 @@ jQuery(document).ready(function($) {
         var taxonomiesCheckbox = document.getElementById('taxonomies_provider_enabled');
         if (taxonomiesCheckbox) {
             taxonomiesCheckbox.addEventListener('change', toggleTaxonomySettings);
+        }
+
+        // Authors provider checkbox
+        var authorsCheckbox = document.getElementById('authors_provider_enabled');
+        if (authorsCheckbox) {
+            authorsCheckbox.addEventListener('change', toggleAuthorsSettings);
         }
 
         // Detailed stats toggle (if exists)

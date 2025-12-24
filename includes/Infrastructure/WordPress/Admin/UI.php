@@ -1157,6 +1157,25 @@ class UI implements WordPressIntegrationInterface {
 											</p>
 										<?php endif; ?>
 									</fieldset>
+
+									<fieldset style="margin-top: 15px;">
+										<label for="taxonomy_cache_ttl">
+											<?php esc_html_e( 'Cache duration (minutes):', 'msm-sitemap' ); ?>
+											<?php
+											$taxonomy_cache_ttl = $this->settings_service->get_setting( 'taxonomy_cache_ttl', \Automattic\MSM_Sitemap\Application\Services\SettingsService::DEFAULT_CACHE_TTL_MINUTES );
+											?>
+											<input type="number"
+													id="taxonomy_cache_ttl"
+													name="taxonomy_cache_ttl"
+													value="<?php echo esc_attr( $taxonomy_cache_ttl ); ?>"
+													min="<?php echo esc_attr( \Automattic\MSM_Sitemap\Application\Services\SettingsService::MIN_CACHE_TTL_MINUTES ); ?>"
+													max="<?php echo esc_attr( \Automattic\MSM_Sitemap\Application\Services\SettingsService::MAX_CACHE_TTL_MINUTES ); ?>"
+													style="width: 80px;">
+										</label>
+										<p class="description">
+											<?php esc_html_e( 'How long to cache taxonomy sitemaps before regenerating. Default: 60 minutes.', 'msm-sitemap' ); ?>
+										</p>
+									</fieldset>
 								</div>
 							</td>
 						</tr>
@@ -1185,6 +1204,29 @@ class UI implements WordPressIntegrationInterface {
 										<?php esc_html_e( 'Add author archive pages to your sitemaps. Only authors with published posts will be included.', 'msm-sitemap' ); ?>
 									</p>
 								</fieldset>
+
+								<div id="authors_settings" style="margin-top: 15px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #0073aa; display: <?php echo '1' === $authors_enabled ? 'block' : 'none'; ?>;">
+									<h4 style="margin: 0 0 10px 0;"><?php esc_html_e( 'Author Settings', 'msm-sitemap' ); ?></h4>
+
+									<fieldset>
+										<label for="author_cache_ttl">
+											<?php esc_html_e( 'Cache duration (minutes):', 'msm-sitemap' ); ?>
+											<?php
+											$author_cache_ttl = $this->settings_service->get_setting( 'author_cache_ttl', \Automattic\MSM_Sitemap\Application\Services\SettingsService::DEFAULT_CACHE_TTL_MINUTES );
+											?>
+											<input type="number"
+													id="author_cache_ttl"
+													name="author_cache_ttl"
+													value="<?php echo esc_attr( $author_cache_ttl ); ?>"
+													min="<?php echo esc_attr( \Automattic\MSM_Sitemap\Application\Services\SettingsService::MIN_CACHE_TTL_MINUTES ); ?>"
+													max="<?php echo esc_attr( \Automattic\MSM_Sitemap\Application\Services\SettingsService::MAX_CACHE_TTL_MINUTES ); ?>"
+													style="width: 80px;">
+										</label>
+										<p class="description">
+											<?php esc_html_e( 'How long to cache author sitemaps before regenerating. Default: 60 minutes.', 'msm-sitemap' ); ?>
+										</p>
+									</fieldset>
+								</div>
 							</td>
 						</tr>
 					</tbody>

@@ -229,6 +229,15 @@ class ActionHandlers {
 		$old_authors_enabled = $this->settings->get_setting( 'include_authors', '0' );
 		$settings['include_authors'] = isset( $_POST['authors_provider_enabled'] );
 
+		// Handle cache TTL settings
+		if ( isset( $_POST['taxonomy_cache_ttl'] ) ) {
+			$settings['taxonomy_cache_ttl'] = intval( $_POST['taxonomy_cache_ttl'] );
+		}
+
+		if ( isset( $_POST['author_cache_ttl'] ) ) {
+			$settings['author_cache_ttl'] = intval( $_POST['author_cache_ttl'] );
+		}
+
 		// Use service to update settings
 		$result = $this->settings->update_settings( $settings );
 

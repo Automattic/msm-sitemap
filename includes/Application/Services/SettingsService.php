@@ -32,6 +32,21 @@ class SettingsService {
 	const MAX_IMAGES_PER_SITEMAP = 10000;
 
 	/**
+	 * Default cache TTL in minutes (1 hour)
+	 */
+	const DEFAULT_CACHE_TTL_MINUTES = 60;
+
+	/**
+	 * Minimum cache TTL in minutes (5 minutes)
+	 */
+	const MIN_CACHE_TTL_MINUTES = 5;
+
+	/**
+	 * Maximum cache TTL in minutes (24 hours)
+	 */
+	const MAX_CACHE_TTL_MINUTES = 1440;
+
+	/**
 	 * Get all current settings
 	 *
 	 * @return array Current settings
@@ -177,9 +192,11 @@ class SettingsService {
 			// Taxonomy settings
 			'include_taxonomies'     => '0',
 			'enabled_taxonomies'     => array( 'category', 'post_tag' ),
+			'taxonomy_cache_ttl'     => self::DEFAULT_CACHE_TTL_MINUTES,
 
 			// Author settings
 			'include_authors'        => '0',
+			'author_cache_ttl'       => self::DEFAULT_CACHE_TTL_MINUTES,
 		);
 	}
 
@@ -253,7 +270,7 @@ class SettingsService {
 		// Handle cron frequency
 		if ( isset( $settings['cron_frequency'] ) ) {
 			$frequency = sanitize_text_field( $settings['cron_frequency'] );
-			
+
 			if ( ! CronManagementService::is_valid_frequency( $frequency ) ) {
 				$valid_frequencies = CronManagementService::get_valid_frequencies();
 				$errors[]          = sprintf(
@@ -263,6 +280,26 @@ class SettingsService {
 				);
 			} else {
 				$sanitized_settings['cron_frequency'] = $frequency;
+			}
+		}
+
+		// Handle cache TTL settings
+		$cache_ttl_settings = array( 'taxonomy_cache_ttl', 'author_cache_ttl' );
+		foreach ( $cache_ttl_settings as $ttl_setting ) {
+			if ( isset( $settings[ $ttl_setting ] ) ) {
+				$ttl_value = intval( $settings[ $ttl_setting ] );
+
+				if ( $ttl_value < self::MIN_CACHE_TTL_MINUTES || $ttl_value > self::MAX_CACHE_TTL_MINUTES ) {
+					$errors[] = sprintf(
+						/* translators: 1: Setting name, 2: Minimum value, 3: Maximum value */
+						__( '%1$s must be between %2$d and %3$d minutes.', 'msm-sitemap' ),
+						ucfirst( str_replace( '_', ' ', $ttl_setting ) ),
+						self::MIN_CACHE_TTL_MINUTES,
+						self::MAX_CACHE_TTL_MINUTES
+					);
+				} else {
+					$sanitized_settings[ $ttl_setting ] = $ttl_value;
+				}
 			}
 		}
 

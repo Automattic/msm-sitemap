@@ -125,15 +125,18 @@ class AuthorSitemapService {
 		$formatter = new SitemapXmlFormatter();
 		$xml       = $formatter->format( $sitemap_content );
 
-		// Cache the result with TTL
+		// Cache the result with TTL from settings (stored in minutes, converted to seconds)
+		$ttl_minutes = $this->settings_service->get_setting( 'author_cache_ttl', SettingsService::DEFAULT_CACHE_TTL_MINUTES );
+		$ttl_seconds = $ttl_minutes * 60;
+
 		/**
 		 * Filter the cache TTL for author sitemaps.
 		 *
 		 * @since 2.0.0
 		 *
-		 * @param int $ttl Cache TTL in seconds. Default 3600 (1 hour).
+		 * @param int $ttl Cache TTL in seconds.
 		 */
-		$ttl = apply_filters( 'msm_sitemap_author_cache_ttl', self::DEFAULT_CACHE_TTL );
+		$ttl = apply_filters( 'msm_sitemap_author_cache_ttl', $ttl_seconds );
 		wp_cache_set( $cache_key, $xml, self::CACHE_GROUP, $ttl );
 
 		return $xml;
