@@ -11,6 +11,7 @@ namespace Automattic\MSM_Sitemap\Application\Services;
 
 use Automattic\MSM_Sitemap\Application\DTOs\SitemapValidationResult;
 use Automattic\MSM_Sitemap\Domain\Contracts\SitemapRepositoryInterface;
+use Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapDate;
 
 /**
  * Service for validating sitemap content and structure.
@@ -239,31 +240,30 @@ class SitemapValidationService {
 	private function filter_dates_by_queries( array $dates, array $date_queries ): array {
 		$filtered_dates = array();
 
-		foreach ( $dates as $date ) {
-			$date_parts = explode( '-', $date );
-			if ( count( $date_parts ) !== 3 ) {
+		foreach ( $dates as $date_string ) {
+			try {
+				$date = SitemapDate::fromString( $date_string );
+			} catch ( \InvalidArgumentException $e ) {
 				continue;
 			}
-
-			list( $year, $month, $day ) = $date_parts;
 
 			foreach ( $date_queries as $query ) {
 				$matches = true;
 
-				if ( isset( $query['year'] ) && $query['year'] !== (int) $year ) {
+				if ( isset( $query['year'] ) && $query['year'] !== $date->year() ) {
 					$matches = false;
 				}
 
-				if ( isset( $query['month'] ) && $query['month'] !== (int) $month ) {
+				if ( isset( $query['month'] ) && $query['month'] !== $date->month() ) {
 					$matches = false;
 				}
 
-				if ( isset( $query['day'] ) && $query['day'] !== (int) $day ) {
+				if ( isset( $query['day'] ) && $query['day'] !== $date->day() ) {
 					$matches = false;
 				}
 
 				if ( $matches ) {
-					$filtered_dates[] = $date;
+					$filtered_dates[] = $date_string;
 					break;
 				}
 			}
