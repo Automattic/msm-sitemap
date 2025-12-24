@@ -73,8 +73,11 @@ use Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapGeneratorFactory;
 use Automattic\MSM_Sitemap\Infrastructure\Providers\PostContentProvider;
 use Automattic\MSM_Sitemap\Infrastructure\Providers\ImageContentProvider;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\TaxonomyRepository;
+use Automattic\MSM_Sitemap\Infrastructure\Repositories\AuthorRepository;
 use Automattic\MSM_Sitemap\Application\Services\TaxonomySitemapService;
+use Automattic\MSM_Sitemap\Application\Services\AuthorSitemapService;
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\TaxonomySitemapCacheInvalidator;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\AuthorSitemapCacheInvalidator;
 
 /**
  * Simple dependency injection container for MSM Sitemap services.
@@ -247,6 +250,30 @@ class SitemapContainer {
 			function ( $container ) {
 				$taxonomy_sitemap_service = $container->get( TaxonomySitemapService::class );
 				return new TaxonomySitemapCacheInvalidator( $taxonomy_sitemap_service );
+			}
+		);
+
+		$this->register(
+			AuthorRepository::class,
+			function () {
+				return new AuthorRepository();
+			}
+		);
+
+		$this->register(
+			AuthorSitemapService::class,
+			function ( $container ) {
+				$author_repository = $container->get( AuthorRepository::class );
+				$settings_service  = $container->get( SettingsService::class );
+				return new AuthorSitemapService( $author_repository, $settings_service );
+			}
+		);
+
+		$this->register(
+			AuthorSitemapCacheInvalidator::class,
+			function ( $container ) {
+				$author_sitemap_service = $container->get( AuthorSitemapService::class );
+				return new AuthorSitemapCacheInvalidator( $author_sitemap_service );
 			}
 		);
 
@@ -610,8 +637,9 @@ class SitemapContainer {
 				$sitemap_service          = $container->get( SitemapService::class );
 				$post_type_registration   = $container->get( PostTypeRegistration::class );
 				$taxonomy_sitemap_service = $container->get( TaxonomySitemapService::class );
+				$author_sitemap_service   = $container->get( AuthorSitemapService::class );
 
-				return new SitemapXmlRequestHandler( $sitemap_service, $post_type_registration, $taxonomy_sitemap_service );
+				return new SitemapXmlRequestHandler( $sitemap_service, $post_type_registration, $taxonomy_sitemap_service, $author_sitemap_service );
 			}
 		);
 

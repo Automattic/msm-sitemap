@@ -177,6 +177,9 @@ class SettingsService {
 			// Taxonomy settings
 			'include_taxonomies'     => '0',
 			'enabled_taxonomies'     => array( 'category', 'post_tag' ),
+
+			// Author settings
+			'include_authors'        => '0',
 		);
 	}
 
@@ -215,7 +218,7 @@ class SettingsService {
 		$errors             = array();
 
 		// Handle boolean settings
-		$boolean_settings = array( 'include_images', 'featured_images', 'content_images', 'include_taxonomies' );
+		$boolean_settings = array( 'include_images', 'featured_images', 'content_images', 'include_taxonomies', 'include_authors' );
 		foreach ( $boolean_settings as $setting ) {
 			if ( isset( $settings[ $setting ] ) ) {
 				$sanitized_settings[ $setting ] = $settings[ $setting ] ? '1' : '0';

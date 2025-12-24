@@ -1161,19 +1161,30 @@ class UI implements WordPressIntegrationInterface {
 							</td>
 						</tr>
 
-						<!-- Future Providers (Placeholder) -->
+						<!-- Authors Provider -->
 						<tr>
 							<th scope="row">
-								<?php esc_html_e( 'Future Content Types', 'msm-sitemap' ); ?>
+								<label for="authors_provider_enabled">
+									<?php esc_html_e( 'Authors', 'msm-sitemap' ); ?>
+								</label>
 							</th>
 							<td>
-								<p class="description">
-									<?php esc_html_e( 'Additional content types will be available in future updates:', 'msm-sitemap' ); ?>
-								</p>
-								<ul style="margin: 10px 0 0 20px; color: #666;">
-									<li><?php esc_html_e( 'Users (author pages)', 'msm-sitemap' ); ?></li>
-									<li><?php esc_html_e( 'Custom post types', 'msm-sitemap' ); ?></li>
-								</ul>
+								<fieldset>
+									<?php
+									$authors_enabled = $this->settings_service->get_setting( 'include_authors', '0' );
+									?>
+									<label for="authors_provider_enabled">
+										<input type="checkbox"
+												id="authors_provider_enabled"
+												name="authors_provider_enabled"
+												value="1"
+												<?php checked( '1' === $authors_enabled ); ?>>
+										<?php esc_html_e( 'Include authors in sitemaps', 'msm-sitemap' ); ?>
+									</label>
+									<p class="description">
+										<?php esc_html_e( 'Add author archive pages to your sitemaps. Only authors with published posts will be included.', 'msm-sitemap' ); ?>
+									</p>
+								</fieldset>
 							</td>
 						</tr>
 					</tbody>

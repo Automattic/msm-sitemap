@@ -16,6 +16,7 @@ namespace Automattic\MSM_Sitemap\Infrastructure\HTTP;
 
 use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapDate;
+use Automattic\MSM_Sitemap\Application\Services\AuthorSitemapService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapService;
 use Automattic\MSM_Sitemap\Application\Services\TaxonomySitemapService;
 use Automattic\MSM_Sitemap\Infrastructure\Formatters\SitemapIndexXmlFormatter;
@@ -44,23 +45,31 @@ class SitemapXmlRequestHandler implements WordPressIntegrationInterface {
 	/**
 	 * The taxonomy sitemap service.
 	 */
-	private ?TaxonomySitemapService $taxonomy_sitemap_service;
+	private TaxonomySitemapService $taxonomy_sitemap_service;
+
+	/**
+	 * The author sitemap service.
+	 */
+	private AuthorSitemapService $author_sitemap_service;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param SitemapService             $sitemap_service          The sitemap service.
-	 * @param PostTypeRegistration|null  $post_type_registration   The post type registration service (optional).
-	 * @param TaxonomySitemapService|null $taxonomy_sitemap_service The taxonomy sitemap service (optional).
+	 * @param SitemapService          $sitemap_service          The sitemap service.
+	 * @param PostTypeRegistration    $post_type_registration   The post type registration service.
+	 * @param TaxonomySitemapService  $taxonomy_sitemap_service The taxonomy sitemap service.
+	 * @param AuthorSitemapService    $author_sitemap_service   The author sitemap service.
 	 */
 	public function __construct(
 		SitemapService $sitemap_service,
-		?PostTypeRegistration $post_type_registration = null,
-		?TaxonomySitemapService $taxonomy_sitemap_service = null
+		PostTypeRegistration $post_type_registration,
+		TaxonomySitemapService $taxonomy_sitemap_service,
+		AuthorSitemapService $author_sitemap_service
 	) {
 		$this->sitemap_service          = $sitemap_service;
-		$this->post_type_registration   = $post_type_registration ?? new PostTypeRegistration();
+		$this->post_type_registration   = $post_type_registration;
 		$this->taxonomy_sitemap_service = $taxonomy_sitemap_service;
+		$this->author_sitemap_service   = $author_sitemap_service;
 	}
 
 	/**
@@ -82,6 +91,13 @@ class SitemapXmlRequestHandler implements WordPressIntegrationInterface {
 		if ( ! empty( $taxonomy_sitemap ) ) {
 			$page = (int) get_query_var( 'taxonomy-sitemap-page', 1 );
 			$this->handle_taxonomy_sitemap_request( $taxonomy_sitemap, max( 1, $page ) );
+		}
+
+		// Handle author sitemap requests
+		$author_sitemap = get_query_var( 'author-sitemap' );
+		if ( 'true' === $author_sitemap ) {
+			$page = (int) get_query_var( 'author-sitemap-page', 1 );
+			$this->handle_author_sitemap_request( max( 1, $page ) );
 		}
 
 		// Handle regular sitemap requests
@@ -150,14 +166,32 @@ class SitemapXmlRequestHandler implements WordPressIntegrationInterface {
 			return;
 		}
 
-		// Check if taxonomy sitemap service is available
-		if ( ! $this->taxonomy_sitemap_service ) {
+		// Generate sitemap XML
+		$xml = $this->taxonomy_sitemap_service->generate_sitemap_xml( $taxonomy, $page );
+
+		if ( null === $xml ) {
 			$this->send_sitemap_not_found_response();
+		} else {
+			$this->send_sitemap_xml_response( $xml );
+		}
+	}
+
+	/**
+	 * Handle author sitemap requests.
+	 *
+	 * @param int $page The page number (1-indexed).
+	 */
+	public function handle_author_sitemap_request( int $page = 1 ): void {
+		// Check if sitemaps are enabled
+		if ( ! Site::are_sitemaps_enabled() ) {
+			$this->send_sitemap_error_response(
+				__( 'Sorry, sitemaps are not available on this site.', 'msm-sitemap' )
+			);
 			return;
 		}
 
 		// Generate sitemap XML
-		$xml = $this->taxonomy_sitemap_service->generate_sitemap_xml( $taxonomy, $page );
+		$xml = $this->author_sitemap_service->generate_sitemap_xml( $page );
 
 		if ( null === $xml ) {
 			$this->send_sitemap_not_found_response();
@@ -219,14 +253,22 @@ class SitemapXmlRequestHandler implements WordPressIntegrationInterface {
 		}
 
 		// Add taxonomy sitemap entries (only for root index, not year-specific)
-		if ( false === $year && $this->taxonomy_sitemap_service ) {
+		if ( false === $year ) {
 			$taxonomy_entries = $this->taxonomy_sitemap_service->get_sitemap_index_entries();
 			foreach ( $taxonomy_entries as $entry ) {
 				$entries[] = SitemapIndexEntryFactory::from_data( $entry['url'], $entry['lastmod'] );
 			}
 		}
 
-		// Return false if no entries (neither date-based nor taxonomy sitemaps)
+		// Add author sitemap entries (only for root index, not year-specific)
+		if ( false === $year ) {
+			$author_entries = $this->author_sitemap_service->get_sitemap_index_entries();
+			foreach ( $author_entries as $entry ) {
+				$entries[] = SitemapIndexEntryFactory::from_data( $entry['url'], $entry['lastmod'] );
+			}
+		}
+
+		// Return false if no entries (neither date-based, taxonomy, nor author sitemaps)
 		if ( empty( $entries ) ) {
 			return false;
 		}
