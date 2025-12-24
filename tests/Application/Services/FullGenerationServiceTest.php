@@ -118,18 +118,18 @@ class FullGenerationServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 
 		// Before starting, should show not in progress.
 		$progress = $service->get_progress();
-		$this->assertFalse( $progress['in_progress'] );
-		$this->assertSame( 0, $progress['total'] );
+		$this->assertFalse( $progress->isInProgress() );
+		$this->assertSame( 0, $progress->total() );
 
 		// Start generation.
 		$result = $service->start_full_generation();
 
 		// After starting, should show in progress with correct total.
 		$progress = $service->get_progress();
-		$this->assertTrue( $progress['in_progress'] );
-		$this->assertSame( $result['scheduled_count'], $progress['total'] );
-		$this->assertSame( $result['scheduled_count'], $progress['remaining'] );
-		$this->assertSame( 0, $progress['completed'] );
+		$this->assertTrue( $progress->isInProgress() );
+		$this->assertSame( $result['scheduled_count'], $progress->total() );
+		$this->assertSame( $result['scheduled_count'], $progress->remaining() );
+		$this->assertSame( 0, $progress->completed() );
 	}
 
 	/**
@@ -152,7 +152,7 @@ class FullGenerationServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 
 		// Progress should show not in progress.
 		$progress = $service->get_progress();
-		$this->assertFalse( $progress['in_progress'] );
+		$this->assertFalse( $progress->isInProgress() );
 	}
 
 	/**

@@ -14,6 +14,7 @@ use Automattic\MSM_Sitemap\Application\Commands\GenerateSitemapCommand;
 use Automattic\MSM_Sitemap\Application\DTOs\SitemapOperationResult;
 use Automattic\MSM_Sitemap\Application\Services\GenerationStateService;
 use Automattic\MSM_Sitemap\Application\Services\CronManagementService;
+use Automattic\MSM_Sitemap\Domain\ValueObjects\GenerationProgress;
 
 /**
  * Scheduler for background sitemap generation tasks.
@@ -212,9 +213,9 @@ class BackgroundGenerationScheduler {
 	/**
 	 * Get background generation progress.
 	 *
-	 * @return array{in_progress: bool, total: int, remaining: int, completed: int}
+	 * @return GenerationProgress The current generation progress.
 	 */
-	public function get_progress(): array {
+	public function get_progress(): GenerationProgress {
 		return $this->generation_state->get_background_progress();
 	}
 

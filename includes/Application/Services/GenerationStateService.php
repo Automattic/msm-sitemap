@@ -9,6 +9,8 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Application\Services;
 
+use Automattic\MSM_Sitemap\Domain\ValueObjects\GenerationProgress;
+
 /**
  * Service for managing sitemap generation state.
  *
@@ -100,19 +102,14 @@ class GenerationStateService {
 	/**
 	 * Get the background generation progress.
 	 *
-	 * @return array{in_progress: bool, total: int, remaining: int, completed: int}
+	 * @return GenerationProgress The current generation progress.
 	 */
-	public function get_background_progress(): array {
+	public function get_background_progress(): GenerationProgress {
 		$in_progress = $this->is_background_generation_in_progress();
 		$total       = (int) get_option( self::OPTION_BACKGROUND_GENERATION_TOTAL, 0 );
 		$remaining   = (int) get_option( self::OPTION_BACKGROUND_GENERATION_REMAINING, 0 );
 
-		return array(
-			'in_progress' => $in_progress,
-			'total'       => $total,
-			'remaining'   => $remaining,
-			'completed'   => $total - $remaining,
-		);
+		return new GenerationProgress( $in_progress, $total, $remaining );
 	}
 
 	/**

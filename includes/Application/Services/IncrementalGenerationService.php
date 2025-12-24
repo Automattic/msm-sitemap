@@ -10,6 +10,7 @@ declare( strict_types=1 );
 namespace Automattic\MSM_Sitemap\Application\Services;
 
 use Automattic\MSM_Sitemap\Infrastructure\Cron\BackgroundGenerationScheduler;
+use Automattic\MSM_Sitemap\Domain\ValueObjects\GenerationProgress;
 
 /**
  * Service for incremental sitemap generation (missing + stale).
@@ -163,9 +164,9 @@ class IncrementalGenerationService {
 	/**
 	 * Get background generation progress.
 	 *
-	 * @return array{in_progress: bool, total: int, remaining: int, completed: int}
+	 * @return GenerationProgress The current generation progress.
 	 */
-	public function get_progress(): array {
+	public function get_progress(): GenerationProgress {
 		return $this->scheduler->get_progress();
 	}
 }
