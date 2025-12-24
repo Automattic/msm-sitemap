@@ -225,12 +225,17 @@ class ActionHandlers {
 			$settings['enabled_taxonomies'] = array();
 		}
 
+		// Handle author settings
+		$old_authors_enabled = $this->settings->get_setting( 'include_authors', '0' );
+		$settings['include_authors'] = isset( $_POST['authors_provider_enabled'] );
+
 		// Use service to update settings
 		$result = $this->settings->update_settings( $settings );
 
-		// Flush rewrite rules if taxonomy settings changed
+		// Flush rewrite rules if taxonomy or author settings changed
 		$new_taxonomies_enabled = $settings['include_taxonomies'] ? '1' : '0';
-		if ( $old_taxonomies_enabled !== $new_taxonomies_enabled ) {
+		$new_authors_enabled    = $settings['include_authors'] ? '1' : '0';
+		if ( $old_taxonomies_enabled !== $new_taxonomies_enabled || $old_authors_enabled !== $new_authors_enabled ) {
 			flush_rewrite_rules();
 		}
 
