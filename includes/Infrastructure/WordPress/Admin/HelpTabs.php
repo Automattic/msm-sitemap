@@ -53,6 +53,15 @@ class HelpTabs {
 			)
 		);
 
+		// Content Providers tab.
+		$screen->add_help_tab(
+			array(
+				'id'      => 'msm-sitemap-content-providers',
+				'title'   => __( 'Content Providers', 'msm-sitemap' ),
+				'content' => self::get_content_providers_content(),
+			)
+		);
+
 		// Generating Sitemaps tab.
 		$screen->add_help_tab(
 			array(
@@ -104,8 +113,12 @@ class HelpTabs {
 		$content .= '<p>' . esc_html__( 'Key features:', 'msm-sitemap' ) . '</p>';
 		$content .= '<ul>';
 		$content .= '<li>' . esc_html__( 'Automatic sitemap generation based on your content', 'msm-sitemap' ) . '</li>';
-		$content .= '<li>' . esc_html__( 'Daily sitemaps organized by date for efficient updates', 'msm-sitemap' ) . '</li>';
-		$content .= '<li>' . esc_html__( 'Sitemap index with all daily sitemaps', 'msm-sitemap' ) . '</li>';
+		$content .= '<li>' . esc_html__( 'Post sitemaps organized by date (one per day with content)', 'msm-sitemap' ) . '</li>';
+		$content .= '<li>' . esc_html__( 'Taxonomy sitemaps for categories, tags, and custom taxonomies', 'msm-sitemap' ) . '</li>';
+		$content .= '<li>' . esc_html__( 'Author sitemaps for user archive pages', 'msm-sitemap' ) . '</li>';
+		$content .= '<li>' . esc_html__( 'Page sitemaps for hierarchical content', 'msm-sitemap' ) . '</li>';
+		$content .= '<li>' . esc_html__( 'Image sitemaps with support for featured and content images', 'msm-sitemap' ) . '</li>';
+		$content .= '<li>' . esc_html__( 'Sitemap index combining all sitemap types', 'msm-sitemap' ) . '</li>';
 		$content .= '<li>' . esc_html__( 'Automatic updates when content changes', 'msm-sitemap' ) . '</li>';
 		$content .= '<li>' . esc_html__( 'WP-CLI commands for advanced management', 'msm-sitemap' ) . '</li>';
 		$content .= '</ul>';
@@ -138,6 +151,41 @@ class HelpTabs {
 		$content .= '<li>' . esc_html__( 'Medium-traffic sites: 30-60 minutes recommended', 'msm-sitemap' ) . '</li>';
 		$content .= '<li>' . esc_html__( 'Low-traffic sites: 1-3 hours is usually sufficient', 'msm-sitemap' ) . '</li>';
 		$content .= '</ul>';
+
+		return $content;
+	}
+
+	/**
+	 * Get the content providers help content.
+	 *
+	 * @return string
+	 */
+	private static function get_content_providers_content(): string {
+		$content  = '<h3>' . esc_html__( 'Content Providers', 'msm-sitemap' ) . '</h3>';
+		$content .= '<p>' . esc_html__( 'Content providers determine what content is included in your sitemaps. Enable or disable each type based on your needs.', 'msm-sitemap' ) . '</p>';
+
+		$content .= '<h4>' . esc_html__( 'Posts', 'msm-sitemap' ) . '</h4>';
+		$content .= '<p>' . esc_html__( 'Select which post types to include. Post sitemaps are organized by date, with one sitemap per day that has published content.', 'msm-sitemap' ) . '</p>';
+
+		$content .= '<h4>' . esc_html__( 'Images', 'msm-sitemap' ) . '</h4>';
+		$content .= '<p>' . esc_html__( 'When enabled, image URLs are included in post sitemaps. Options:', 'msm-sitemap' ) . '</p>';
+		$content .= '<ul>';
+		$content .= '<li><strong>' . esc_html__( 'Featured Images:', 'msm-sitemap' ) . '</strong> ' . esc_html__( 'Include post thumbnails (only for post types that support them)', 'msm-sitemap' ) . '</li>';
+		$content .= '<li><strong>' . esc_html__( 'Content Images:', 'msm-sitemap' ) . '</strong> ' . esc_html__( 'Include images embedded in post content', 'msm-sitemap' ) . '</li>';
+		$content .= '<li><strong>' . esc_html__( 'Max Images:', 'msm-sitemap' ) . '</strong> ' . esc_html__( 'Limit images per sitemap to control file size', 'msm-sitemap' ) . '</li>';
+		$content .= '</ul>';
+
+		$content .= '<h4>' . esc_html__( 'Taxonomies', 'msm-sitemap' ) . '</h4>';
+		$content .= '<p>' . esc_html__( 'Include taxonomy archive pages (categories, tags, custom taxonomies). These are dynamically generated and cached.', 'msm-sitemap' ) . '</p>';
+
+		$content .= '<h4>' . esc_html__( 'Authors', 'msm-sitemap' ) . '</h4>';
+		$content .= '<p>' . esc_html__( 'Include author archive pages for users who have published posts.', 'msm-sitemap' ) . '</p>';
+
+		$content .= '<h4>' . esc_html__( 'Pages', 'msm-sitemap' ) . '</h4>';
+		$content .= '<p>' . esc_html__( 'Include hierarchical page content. Unlike posts, pages are not organized by date.', 'msm-sitemap' ) . '</p>';
+
+		$content .= '<h4>' . esc_html__( 'Cache TTL', 'msm-sitemap' ) . '</h4>';
+		$content .= '<p>' . esc_html__( 'Taxonomy, author, and page sitemaps are cached for performance. The cache TTL (time to live) controls how long the cache is valid before regenerating.', 'msm-sitemap' ) . '</p>';
 
 		return $content;
 	}
@@ -176,10 +224,21 @@ class HelpTabs {
 		$content  = '<h3>' . esc_html__( 'Sitemap Statistics', 'msm-sitemap' ) . '</h3>';
 		$content .= '<p>' . esc_html__( 'The statistics section provides insights into your sitemap health and content coverage.', 'msm-sitemap' ) . '</p>';
 
-		$content .= '<h4>' . esc_html__( 'Date Range Filter', 'msm-sitemap' ) . '</h4>';
-		$content .= '<p>' . esc_html__( 'Filter statistics by time period: all time, recent days, specific year, or custom date range.', 'msm-sitemap' ) . '</p>';
+		$content .= '<h4>' . esc_html__( 'Content Sitemaps', 'msm-sitemap' ) . '</h4>';
+		$content .= '<p>' . esc_html__( 'Shows statistics for dynamically generated sitemaps:', 'msm-sitemap' ) . '</p>';
+		$content .= '<ul>';
+		$content .= '<li><strong>' . esc_html__( 'Taxonomies:', 'msm-sitemap' ) . '</strong> ' . esc_html__( 'Enabled taxonomies and number of sitemap files', 'msm-sitemap' ) . '</li>';
+		$content .= '<li><strong>' . esc_html__( 'Authors:', 'msm-sitemap' ) . '</strong> ' . esc_html__( 'Number of author sitemap files', 'msm-sitemap' ) . '</li>';
+		$content .= '<li><strong>' . esc_html__( 'Pages:', 'msm-sitemap' ) . '</strong> ' . esc_html__( 'Number of page sitemap files', 'msm-sitemap' ) . '</li>';
+		$content .= '</ul>';
 
-		$content .= '<h4>' . esc_html__( 'Key Metrics', 'msm-sitemap' ) . '</h4>';
+		$content .= '<h4>' . esc_html__( 'Post Sitemaps', 'msm-sitemap' ) . '</h4>';
+		$content .= '<p>' . esc_html__( 'Shows statistics for date-based post sitemaps (one per day with content).', 'msm-sitemap' ) . '</p>';
+
+		$content .= '<h4>' . esc_html__( 'Date Range Filter', 'msm-sitemap' ) . '</h4>';
+		$content .= '<p>' . esc_html__( 'Filter post sitemap statistics by time period: all time, recent days, specific year, or custom date range.', 'msm-sitemap' ) . '</p>';
+
+		$content .= '<h4>' . esc_html__( 'Post Sitemap Metrics', 'msm-sitemap' ) . '</h4>';
 		$content .= '<ul>';
 		$content .= '<li><strong>' . esc_html__( 'Health:', 'msm-sitemap' ) . '</strong> ' . esc_html__( 'Total sitemaps, indexed URLs, and success rate', 'msm-sitemap' ) . '</li>';
 		$content .= '<li><strong>' . esc_html__( 'Trends:', 'msm-sitemap' ) . '</strong> ' . esc_html__( 'Whether your URL counts are growing, stable, or declining', 'msm-sitemap' ) . '</li>';
@@ -244,8 +303,8 @@ class HelpTabs {
 		$content .= '<h4>' . esc_html__( 'Missing Content in Sitemaps', 'msm-sitemap' ) . '</h4>';
 		$content .= '<ul>';
 		$content .= '<li>' . esc_html__( 'Only published posts are included', 'msm-sitemap' ) . '</li>';
-		$content .= '<li>' . esc_html__( 'By default, only "post" post type is included', 'msm-sitemap' ) . '</li>';
-		$content .= '<li>' . esc_html__( 'Use the msm_sitemap_entry_post_type filter to add custom post types', 'msm-sitemap' ) . '</li>';
+		$content .= '<li>' . esc_html__( 'Check Content Providers settings to ensure the post type is enabled', 'msm-sitemap' ) . '</li>';
+		$content .= '<li>' . esc_html__( 'After changing post type settings, regenerate sitemaps to update', 'msm-sitemap' ) . '</li>';
 		$content .= '<li>' . esc_html__( 'Check if content has noindex meta tags', 'msm-sitemap' ) . '</li>';
 		$content .= '</ul>';
 

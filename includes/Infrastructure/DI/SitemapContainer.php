@@ -785,7 +785,21 @@ class SitemapContainer {
 				$sitemap_repository        = $container->get( SitemapRepositoryInterface::class );
 				$action_handlers           = $container->get( ActionHandlers::class );
 				$taxonomy_sitemap_service  = $container->get( TaxonomySitemapService::class );
-				return new UI( $cron_management, $plugin_file_path, $plugin_version, $missing_detection_service, $stats_service, $settings_service, $sitemap_repository, $action_handlers, $taxonomy_sitemap_service );
+				$author_sitemap_service    = $container->get( AuthorSitemapService::class );
+				$page_sitemap_service      = $container->get( PageSitemapService::class );
+				return new UI(
+					$cron_management,
+					$plugin_file_path,
+					$plugin_version,
+					$missing_detection_service,
+					$stats_service,
+					$settings_service,
+					$sitemap_repository,
+					$action_handlers,
+					$taxonomy_sitemap_service,
+					$author_sitemap_service,
+					$page_sitemap_service
+				);
 			}
 		);
 
