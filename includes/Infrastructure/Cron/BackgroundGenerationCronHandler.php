@@ -84,7 +84,7 @@ class BackgroundGenerationCronHandler implements WordPressIntegrationInterface {
 
 		// If this was the last one, run cleanup
 		$progress = $this->scheduler->get_progress();
-		if ( ! $progress['in_progress'] ) {
+		if ( ! $progress->isInProgress() ) {
 			$this->cleanup_service->cleanup_all_orphaned_sitemaps();
 		}
 	}

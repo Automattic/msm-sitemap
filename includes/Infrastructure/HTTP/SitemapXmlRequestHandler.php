@@ -242,6 +242,9 @@ class SitemapXmlRequestHandler implements WordPressIntegrationInterface {
 	/**
 	 * Send sitemap XML response.
 	 *
+	 * Note: The stylesheet reference is already included in the XML content
+	 * by the formatters (SitemapXmlFormatter, SitemapIndexXmlFormatter).
+	 *
 	 * @param string $xml XML content.
 	 */
 	private function send_sitemap_xml_response( string $xml ): void {
@@ -249,8 +252,6 @@ class SitemapXmlRequestHandler implements WordPressIntegrationInterface {
 		header( 'Content-Type: application/xml; charset=UTF-8' );
 		header( 'X-Robots-Tag: noindex' );
 
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		echo StylesheetManager::get_sitemap_stylesheet_reference();
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo $xml;
 		exit;

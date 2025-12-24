@@ -152,7 +152,7 @@ class ActionHandlers {
 
 		// Check if generation is actually in progress
 		$progress = $this->full_generation_service->get_progress();
-		if ( ! $progress['in_progress'] && ! (bool) get_option( 'msm_generation_in_progress' ) ) {
+		if ( ! $progress->isInProgress() && ! (bool) get_option( 'msm_generation_in_progress' ) ) {
 			Notifications::show_warning( __( 'Sitemap generation is not in progress.', 'msm-sitemap' ) );
 			return;
 		}

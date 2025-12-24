@@ -214,7 +214,11 @@ class GenerationController {
 	public function get_background_generation_progress( WP_REST_Request $request ): WP_REST_Response {
 		$progress = $this->incremental_generation_service->get_progress();
 
-		return rest_ensure_response( $progress );
+		// Include percentage complete in the response
+		$response_data                     = $progress->toArray();
+		$response_data['percent_complete'] = $progress->percentComplete();
+
+		return rest_ensure_response( $response_data );
 	}
 
 	/**
