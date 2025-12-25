@@ -167,7 +167,7 @@ class PageRepository implements PageRepositoryInterface {
 	 * @return string|null The last modified date in W3C format or null.
 	 */
 	public function get_page_lastmod( WP_Post $page ): ?string {
-		$modified = get_post_modified_time( 'c', true, $page );
+		$modified = get_post_modified_time( 'c', false, $page );
 
 		return $modified ? $modified : null;
 	}
