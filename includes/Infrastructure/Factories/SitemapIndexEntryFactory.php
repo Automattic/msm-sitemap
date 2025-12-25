@@ -28,7 +28,7 @@ class SitemapIndexEntryFactory {
 	 */
 	public static function from_post( \WP_Post $sitemap_post ): SitemapIndexEntry {
 		$loc = get_permalink( $sitemap_post );
-		$lastmod = get_post_modified_time( 'c', true, $sitemap_post );
+		$lastmod = get_post_modified_time( 'c', false, $sitemap_post );
 
 		return new SitemapIndexEntry( $loc, $lastmod );
 	}
