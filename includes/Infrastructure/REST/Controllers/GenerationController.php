@@ -12,6 +12,7 @@ namespace Automattic\MSM_Sitemap\Infrastructure\REST\Controllers;
 use Automattic\MSM_Sitemap\Application\Services\CronManagementService;
 use Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService;
 use Automattic\MSM_Sitemap\Application\Services\IncrementalGenerationService;
+use Automattic\MSM_Sitemap\Application\Services\SettingsService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapGenerator;
 use Automattic\MSM_Sitemap\Infrastructure\REST\Traits\RestControllerTrait;
 use WP_REST_Request;
@@ -53,23 +54,33 @@ class GenerationController {
 	private SitemapGenerator $sitemap_generator;
 
 	/**
+	 * The settings service.
+	 *
+	 * @var SettingsService
+	 */
+	private SettingsService $settings_service;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param CronManagementService          $cron_management_service        The cron management service.
 	 * @param MissingSitemapDetectionService $missing_detection_service      The missing sitemap detection service.
 	 * @param IncrementalGenerationService   $incremental_generation_service The incremental generation service.
 	 * @param SitemapGenerator               $sitemap_generator              The sitemap generator.
+	 * @param SettingsService                $settings_service               The settings service.
 	 */
 	public function __construct(
 		CronManagementService $cron_management_service,
 		MissingSitemapDetectionService $missing_detection_service,
 		IncrementalGenerationService $incremental_generation_service,
-		SitemapGenerator $sitemap_generator
+		SitemapGenerator $sitemap_generator,
+		SettingsService $settings_service
 	) {
 		$this->cron_management_service        = $cron_management_service;
 		$this->missing_detection_service      = $missing_detection_service;
 		$this->incremental_generation_service = $incremental_generation_service;
 		$this->sitemap_generator              = $sitemap_generator;
+		$this->settings_service               = $settings_service;
 	}
 
 	/**
@@ -151,8 +162,21 @@ class GenerationController {
 	 * @return WP_REST_Response The response object.
 	 */
 	public function get_missing_sitemaps( WP_REST_Request $request ): WP_REST_Response {
-		$missing_data = $this->missing_detection_service->get_missing_sitemaps();
-		$summary      = $this->missing_detection_service->get_missing_content_summary();
+		$missing_data     = $this->missing_detection_service->get_missing_sitemaps();
+		$settings_changed = $this->settings_service->has_content_settings_changed();
+
+		// If settings have changed, override the summary to show settings warning
+		if ( $settings_changed ) {
+			$summary = array(
+				'has_missing'      => true,
+				'settings_changed' => true,
+				'message'          => __( 'Content settings changed', 'msm-sitemap' ),
+				'counts'           => array(),
+			);
+		} else {
+			$summary                     = $this->missing_detection_service->get_missing_content_summary();
+			$summary['settings_changed'] = false;
+		}
 
 		$cron_status = $this->cron_management_service->get_cron_status();
 		$button_text = $cron_status['enabled']
@@ -164,6 +188,8 @@ class GenerationController {
 			'recently_modified_count' => $missing_data['recently_modified_count'],
 			'summary'                 => $summary,
 			'button_text'             => $button_text,
+			'settings_changed'        => $settings_changed,
+			'cron_enabled'            => $cron_status['enabled'],
 		);
 
 		return rest_ensure_response( $response_data );

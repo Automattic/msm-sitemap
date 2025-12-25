@@ -47,7 +47,7 @@ class AdminPageTest extends TestCase {
 		$plugin_page = 'msm-sitemap';
 		ob_start();
 		$ui = $this->get_service( UI::class );
-		$ui->render_options_page();
+		$ui->render_page();
 		$output = ob_get_clean();
 		$this->assertStringContainsString( 'Sitemap', $output );
 		$this->assertStringContainsString( 'Indexed URLs', $output );
@@ -65,7 +65,7 @@ class AdminPageTest extends TestCase {
 		}
 		$this->expectException( 'WPDieException' );
 		$ui = $this->get_service( UI::class );
-		$ui->render_options_page();
+		$ui->render_page();
 	}
 
 	/**
@@ -78,7 +78,7 @@ class AdminPageTest extends TestCase {
 		$plugin_page = 'msm-sitemap';
 		ob_start();
 		$ui = $this->get_service( UI::class );
-		$ui->render_options_page();
+		$ui->render_page();
 		$output = ob_get_clean();
 		$this->assertStringContainsString( 'Sitemaps are not supported on private sites', $output );
 		// Reset for other tests
@@ -94,10 +94,11 @@ class AdminPageTest extends TestCase {
 		$plugin_page = 'msm-sitemap';
 		ob_start();
 		$ui = $this->get_service( UI::class );
-		$ui->render_options_page();
+		$ui->render_page();
 		$output = ob_get_clean();
-		$this->assertStringContainsString( 'Automatic Sitemap Updates', $output );
-		$this->assertStringContainsString( 'Disable', $output );
+		// Automatic Updates section is now under the Posts tab with checkbox
+		$this->assertStringContainsString( 'Automatic Updates', $output );
+		$this->assertStringContainsString( 'automatic_updates_enabled', $output );
 	}
 
 	/**
@@ -106,15 +107,17 @@ class AdminPageTest extends TestCase {
 	public function test_generate_section_rendered() {
 		global $plugin_page;
 		wp_set_current_user( $this->admin_id );
+		// Enable the Danger Zone section visibility (hidden by default via Screen Options)
+		update_user_meta( $this->admin_id, 'msm_sitemap_show_danger_zone', '1' );
 		$plugin_page = 'msm-sitemap';
 		ob_start();
 		$ui = $this->get_service( UI::class );
-		$ui->render_options_page();
+		$ui->render_page();
 		$output = ob_get_clean();
-		$this->assertStringContainsString( 'Generate', $output );
+		// Check for danger zone content (expanded via toggle)
+		$this->assertStringContainsString( 'Danger Zone', $output );
 		$this->assertStringContainsString( 'Generate All Sitemaps (Force)', $output );
-		// Generate Missing Sitemaps is loaded via AJAX, so it's not in the initial HTML
-		$this->assertStringContainsString( 'Loading missing sitemaps', $output );
+		$this->assertStringContainsString( 'Reset Sitemap Data', $output );
 	}
 
 	/**
@@ -123,26 +126,26 @@ class AdminPageTest extends TestCase {
 	public function test_generate_buttons_disabled_when_cron_disabled() {
 		global $plugin_page;
 		wp_set_current_user( $this->admin_id );
+		// Enable the Danger Zone section visibility (hidden by default via Screen Options)
+		update_user_meta( $this->admin_id, 'msm_sitemap_show_danger_zone', '1' );
 		$plugin_page = 'msm-sitemap';
-		
+
 		// Remove the filter that forces cron enabled in tests
 		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
+
 		// Ensure cron is disabled
 		delete_option( 'msm_sitemap_cron_enabled' );
 		wp_unschedule_hook( 'msm_cron_update_sitemap' );
-		
+
 		ob_start();
 		$ui = $this->get_service( UI::class );
-		$ui->render_options_page();
+		$ui->render_page();
 		$output = ob_get_clean();
-		
-		// The UI doesn't show the disabled message in the rendered output
-		// The buttons are still rendered but would be disabled via JavaScript
-		$this->assertStringContainsString( 'Generate All Sitemaps (Force)', $output );
-		// Generate Missing Sitemaps is loaded via AJAX, so it's not in the initial HTML
-		$this->assertStringContainsString( 'Loading missing sitemaps', $output );
-		
+
+		// When cron is disabled, the generate buttons show a message instead
+		$this->assertStringContainsString( 'Enable automatic updates to use this feature', $output );
+		$this->assertStringContainsString( 'Reset Sitemap Data', $output );
+
 		// Restore the filter for other tests
 		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 	}

@@ -10,11 +10,28 @@ declare( strict_types=1 );
 namespace Automattic\MSM_Sitemap\Application\Services;
 
 use Automattic\MSM_Sitemap\Domain\Utilities\DateUtility;
+use Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository;
 
 /**
  * Service for handling sitemap date queries and matching logic.
  */
 class SitemapQueryService {
+
+	/**
+	 * The post repository.
+	 *
+	 * @var PostRepository|null
+	 */
+	private ?PostRepository $post_repository;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param PostRepository|null $post_repository The post repository (optional for backwards compatibility).
+	 */
+	public function __construct( ?PostRepository $post_repository = null ) {
+		$this->post_repository = $post_repository;
+	}
 
 	/**
 	 * Parse a date string into query format.
@@ -163,28 +180,41 @@ class SitemapQueryService {
 	public function expand_date_queries_with_posts( array $date_queries ): array {
 		// First expand to all potential dates
 		$all_potential_dates = $this->expand_date_queries( $date_queries );
-		
+
 		if ( empty( $all_potential_dates ) ) {
 			return array();
 		}
-		
+
+		// Get post types and status from repository if available, otherwise use defaults
+		if ( $this->post_repository ) {
+			$post_types_in = $this->post_repository->get_supported_post_types_in();
+			$post_status   = $this->post_repository->get_post_status();
+		} else {
+			// Fallback for backwards compatibility (when no repository injected)
+			$post_types_in = "'post', 'page'";
+			$post_status   = 'publish';
+		}
+
 		// Get all dates that actually have posts
 		global $wpdb;
-		$placeholders     = implode( ',', array_fill( 0, count( $all_potential_dates ), '%s' ) );
+		$placeholders = implode( ',', array_fill( 0, count( $all_potential_dates ), '%s' ) );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$dates_with_posts = $wpdb->get_col(
 			$wpdb->prepare(
 				"SELECT DISTINCT DATE(post_date) as post_date
 				FROM {$wpdb->posts}
-				WHERE post_type IN (%s, %s)
+				WHERE post_type IN ({$post_types_in})
 				AND post_status = %s
 				AND DATE(post_date) IN ($placeholders)
 				ORDER BY post_date ASC",
-				array_merge( array( 'post', 'page', 'publish' ), $all_potential_dates )
+				array_merge( array( $post_status ), $all_potential_dates )
 			)
 		);
-		
+		// phpcs:enable
+
 		// Return only the dates that have posts and are in our query range
-		return array_intersect( $all_potential_dates, $dates_with_posts );
+		return array_intersect( $all_potential_dates, is_array( $dates_with_posts ) ? $dates_with_posts : array() );
 	}
 
 	/**

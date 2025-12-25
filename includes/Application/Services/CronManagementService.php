@@ -160,8 +160,8 @@ class CronManagementService {
 		// Also clear any pending background generation events.
 		wp_clear_scheduled_hook( 'msm_cron_generate_sitemap_for_date' );
 
-		// Clear generation state.
-		$this->generation_state->clear_all_state();
+		// Clear background generation state only (not last_run, which is needed for stale detection).
+		$this->generation_state->clear_background_generation_state();
 
 		return array(
 			'success' => true,

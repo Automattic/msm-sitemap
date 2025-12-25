@@ -9,9 +9,12 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests;
 
+use Automattic\MSM_Sitemap\Application\Services\SettingsService;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapContentType;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\UrlSet;
 use Automattic\MSM_Sitemap\Infrastructure\Providers\PostContentProvider;
+use Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository;
+use Mockery;
 
 /**
  * Test PostContentProvider.
@@ -30,7 +33,12 @@ class PostContentProviderTest extends TestCase {
 	 */
 	public function setUp(): void {
 		parent::setUp();
-		$this->provider = new PostContentProvider();
+		$settings_service = Mockery::mock( SettingsService::class );
+		$settings_service->shouldReceive( 'get_setting' )
+			->with( 'enabled_post_types', Mockery::any() )
+			->andReturn( array( 'post' ) );
+		$post_repository  = new PostRepository( $settings_service );
+		$this->provider   = new PostContentProvider( $post_repository );
 	}
 
 	/**

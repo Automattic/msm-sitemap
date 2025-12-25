@@ -22,6 +22,7 @@ use Automattic\MSM_Sitemap\Application\Services\MissingSitemapDetectionService;
 use Automattic\MSM_Sitemap\Application\Services\IncrementalGenerationService;
 use Automattic\MSM_Sitemap\Application\Services\CronManagementService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapGenerator;
+use Automattic\MSM_Sitemap\Application\Services\SettingsService;
 use Automattic\MSM_Sitemap\Application\UseCases\GenerateSitemapUseCase;
 use WP_REST_Request;
 use WP_Test_REST_TestCase;
@@ -278,7 +279,8 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 			$cron_management_service,
 			$missing_detection_service,
 			$this->createMock( IncrementalGenerationService::class ),
-			$this->createMock( SitemapGenerator::class )
+			$this->createMock( SitemapGenerator::class ),
+			$this->createMock( SettingsService::class )
 		);
 
 		$response = $controller->get_missing_sitemaps( $request );
@@ -315,7 +317,7 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 			->willReturn(
 				array(
 					'has_missing' => false,
-					'message'     => 'No missing sitemaps detected.',
+					'message'     => 'All sitemaps up to date',
 				)
 			);
 
@@ -328,7 +330,8 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 			$cron_management_service,
 			$missing_detection_service,
 			$this->createMock( IncrementalGenerationService::class ),
-			$this->createMock( SitemapGenerator::class )
+			$this->createMock( SitemapGenerator::class ),
+			$this->createMock( SettingsService::class )
 		);
 
 		$response = $controller->get_missing_sitemaps( $request );
@@ -361,7 +364,8 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 			$this->createMock( CronManagementService::class ),
 			$this->createMock( MissingSitemapDetectionService::class ),
 			$incremental_generation_service,
-			$this->createMock( SitemapGenerator::class )
+			$this->createMock( SitemapGenerator::class ),
+			$this->createMock( SettingsService::class )
 		);
 
 		$response = $controller->generate_missing_sitemaps( $request );
@@ -396,7 +400,8 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 			$this->createMock( CronManagementService::class ),
 			$this->createMock( MissingSitemapDetectionService::class ),
 			$incremental_generation_service,
-			$this->createMock( SitemapGenerator::class )
+			$this->createMock( SitemapGenerator::class ),
+			$this->createMock( SettingsService::class )
 		);
 
 		$response = $controller->generate_missing_sitemaps( $request );

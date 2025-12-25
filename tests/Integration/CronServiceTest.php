@@ -251,6 +251,45 @@ class CronServiceTest extends TestCase {
 		$this->assertEmpty( get_option( 'msm_background_generation_remaining' ) );
 	}
 
+	/**
+	 * Test that disable_cron() preserves last_run timestamp for stale detection.
+	 *
+	 * The last_run timestamp is used by StaleSitemapDetectionService to detect
+	 * posts that were modified since the last sitemap generation. Clearing it
+	 * when disabling cron would break stale detection.
+	 */
+	public function test_disable_cron_preserves_last_run_timestamp(): void {
+		// Enable cron first
+		$this->get_cron_management()->enable_cron();
+
+		// Set a last_run timestamp (simulating a previous generation run)
+		$last_run = time() - 3600; // 1 hour ago
+		update_option( 'msm_sitemap_update_last_run', $last_run );
+
+		// Disable cron
+		$this->get_cron_management()->disable_cron();
+
+		// Verify last_run is preserved (needed for stale sitemap detection)
+		$this->assertEquals( $last_run, get_option( 'msm_sitemap_update_last_run' ) );
+	}
+
+	/**
+	 * Test that reset_cron() clears last_run timestamp (full reset behavior).
+	 */
+	public function test_reset_cron_clears_last_run_timestamp(): void {
+		// Enable cron first
+		$this->get_cron_management()->enable_cron();
+
+		// Set a last_run timestamp
+		update_option( 'msm_sitemap_update_last_run', time() - 3600 );
+
+		// Reset cron (full reset)
+		$this->get_cron_management()->reset_cron();
+
+		// Verify last_run is cleared (reset clears everything)
+		$this->assertEmpty( get_option( 'msm_sitemap_update_last_run' ) );
+	}
+
 
 
 	/**

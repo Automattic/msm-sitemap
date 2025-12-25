@@ -138,12 +138,48 @@ jQuery(document).ready(function($) {
                     clearInterval(backgroundProgressInterval);
                     backgroundProgressInterval = null;
                 }
-                // Refresh the missing sitemaps count
+                // Refresh the missing sitemaps count and summary
                 loadMissingSitemapsCount();
+                refreshSitemapSummary();
             }
         })
         .catch(function(error) {
             console.error('Error checking background progress:', error);
+        });
+    }
+
+    /**
+     * Refresh the sitemap summary counts
+     */
+    function refreshSitemapSummary() {
+        var $summary = $('#sitemap-summary-counts');
+
+        if ($summary.length === 0) {
+            return;
+        }
+
+        fetch(msmSitemapAdmin.restUrl + 'sitemap-summary', {
+            method: 'GET',
+            headers: {
+                'X-WP-Nonce': msmSitemapAdmin.nonce,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(function(response) {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(function(data) {
+            if (data.has_any) {
+                $summary.text(data.summary_text).show();
+            } else {
+                $summary.hide();
+            }
+        })
+        .catch(function(error) {
+            console.error('Error refreshing sitemap summary:', error);
         });
     }
 
@@ -175,11 +211,19 @@ jQuery(document).ready(function($) {
 
             var html = '';
 
-            if (summary.has_missing) {
+            if (summary.settings_changed) {
+                // Settings have changed - show warning with dashicon
+                html += '<span style="color: #996800; font-weight: bold;">';
+                html += '<span class="dashicons dashicons-warning"></span> ';
+                html += summary.message;
+                html += '</span>';
+            } else if (summary.has_missing) {
+                // Missing sitemaps - show red warning
                 html += '<span style="color: #dc3232; font-weight: bold;">';
                 html += '🔍 ' + summary.message;
                 html += '</span>';
             } else {
+                // All up to date - show green checkmark
                 html += '<span style="color: #46b450;">';
                 html += '✅ ' + summary.message;
                 html += '</span>';
@@ -187,19 +231,26 @@ jQuery(document).ready(function($) {
 
             $content.html(html);
 
-            // Update button states
+            // Update button states - hide generate missing buttons when settings changed
+            // (the Regenerate All Sitemaps button is shown instead)
             var $directButton = $('#generate-missing-direct-button');
             var $backgroundButton = $('#generate-missing-background-button');
 
-            if (summary.has_missing) {
-                $directButton.removeClass('button-secondary').addClass('button-primary').prop('disabled', false);
+            if (summary.settings_changed) {
+                // Settings changed - hide the generate missing buttons
+                $directButton.hide();
                 if ($backgroundButton.length) {
-                    $backgroundButton.removeClass('button-secondary').addClass('button-primary').prop('disabled', false);
+                    $backgroundButton.hide();
+                }
+            } else if (summary.has_missing) {
+                $directButton.show().removeClass('button-secondary').addClass('button-primary').prop('disabled', false);
+                if ($backgroundButton.length) {
+                    $backgroundButton.show().removeClass('button-secondary').addClass('button-primary').prop('disabled', false);
                 }
             } else {
-                $directButton.removeClass('button-primary').addClass('button-secondary').prop('disabled', true);
+                $directButton.show().removeClass('button-primary').addClass('button-secondary').prop('disabled', true);
                 if ($backgroundButton.length) {
-                    $backgroundButton.removeClass('button-primary').addClass('button-secondary').prop('disabled', true);
+                    $backgroundButton.show().removeClass('button-primary').addClass('button-secondary').prop('disabled', true);
                 }
             }
 
@@ -328,17 +379,35 @@ jQuery(document).ready(function($) {
     }
 
     /**
-     * Toggle taxonomy settings visibility
+     * Toggle automatic updates settings visibility
      */
-    function toggleTaxonomySettings() {
-        var taxonomiesCheckbox = document.getElementById('taxonomies_provider_enabled');
-        var taxonomiesSettings = document.getElementById('taxonomies_settings');
+    function toggleAutomaticUpdatesSettings() {
+        var automaticUpdatesCheckbox = document.getElementById('automatic_updates_enabled');
+        var automaticUpdatesSettings = document.getElementById('automatic_updates_settings');
 
-        if (!taxonomiesCheckbox || !taxonomiesSettings) {
+        if (!automaticUpdatesCheckbox || !automaticUpdatesSettings) {
             return;
         }
 
-        taxonomiesSettings.style.display = taxonomiesCheckbox.checked ? 'block' : 'none';
+        automaticUpdatesSettings.style.display = automaticUpdatesCheckbox.checked ? 'block' : 'none';
+    }
+
+    /**
+     * Toggle taxonomy cache settings visibility based on selected taxonomies
+     */
+    function toggleTaxonomyCacheSettings() {
+        var taxonomyCheckboxes = document.querySelectorAll('.msm-taxonomy-checkbox');
+        var cacheSettings = document.getElementById('taxonomy_cache_settings');
+
+        if (!cacheSettings) {
+            return;
+        }
+
+        var anyChecked = Array.from(taxonomyCheckboxes).some(function(cb) {
+            return cb.checked;
+        });
+
+        cacheSettings.style.display = anyChecked ? 'block' : 'none';
     }
 
     /**
@@ -356,9 +425,122 @@ jQuery(document).ready(function($) {
     }
 
     /**
+     * Toggle page cache settings visibility based on selected page types
+     */
+    function togglePageCacheSettings() {
+        var pageCheckboxes = document.querySelectorAll('.msm-page-type-checkbox');
+        var cacheSettings = document.getElementById('page_cache_settings');
+
+        if (!cacheSettings) {
+            return;
+        }
+
+        var anyChecked = Array.from(pageCheckboxes).some(function(cb) {
+            return cb.checked;
+        });
+
+        cacheSettings.style.display = anyChecked ? 'block' : 'none';
+    }
+
+    /**
+     * Toggle post images wrapper visibility based on any post type checkbox
+     */
+    function togglePostImagesWrapper() {
+        var postCheckboxes = document.querySelectorAll('.msm-post-type-checkbox');
+        var imagesWrapper = document.getElementById('post_images_wrapper');
+
+        if (!imagesWrapper) {
+            return;
+        }
+
+        var anyChecked = Array.from(postCheckboxes).some(function(cb) {
+            return cb.checked;
+        });
+
+        imagesWrapper.style.display = anyChecked ? 'block' : 'none';
+    }
+
+    /**
+     * Initialize form change detection for save button
+     */
+    function initializeFormChangeDetection() {
+        var form = document.getElementById('msm-provider-settings-form');
+        var saveButton = document.getElementById('msm-save-provider-settings');
+
+        if (!form || !saveButton) {
+            return;
+        }
+
+        // Track changes on form inputs
+        form.addEventListener('change', function() {
+            saveButton.disabled = false;
+        });
+
+        // Also track input events for text/number fields
+        form.addEventListener('input', function(e) {
+            if (e.target.matches('input[type="text"], input[type="number"], textarea')) {
+                saveButton.disabled = false;
+            }
+        });
+    }
+
+    /**
+     * Initialize provider tab switching (progressive enhancement)
+     */
+    function initializeProviderTabs() {
+        var tabWrapper = document.getElementById('msm-provider-tabs');
+        if (!tabWrapper) {
+            return;
+        }
+
+        var tabs = tabWrapper.querySelectorAll('.nav-tab[data-tab]');
+        var panels = document.querySelectorAll('.msm-tab-panel[data-tab-panel]');
+        var hiddenInput = document.querySelector('input[name="provider_tab"]');
+
+        tabs.forEach(function(tab) {
+            tab.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                var targetTab = this.getAttribute('data-tab');
+
+                // Update active tab
+                tabs.forEach(function(t) {
+                    t.classList.remove('nav-tab-active');
+                });
+                this.classList.add('nav-tab-active');
+
+                // Show/hide panels
+                panels.forEach(function(panel) {
+                    if (panel.getAttribute('data-tab-panel') === targetTab) {
+                        panel.style.display = '';
+                    } else {
+                        panel.style.display = 'none';
+                    }
+                });
+
+                // Update hidden input for form submission
+                if (hiddenInput) {
+                    hiddenInput.value = targetTab;
+                }
+
+                // Update URL without reload (for bookmarking/refresh)
+                var url = new URL(window.location.href);
+                url.searchParams.set('provider_tab', targetTab);
+                window.history.replaceState({}, '', url);
+            });
+        });
+    }
+
+    /**
      * Initialize event listeners
      */
     function initializeEventListeners() {
+        // Provider tabs (progressive enhancement)
+        initializeProviderTabs();
+
+        // Form change detection for save button
+        initializeFormChangeDetection();
+
         // Direct generate button click
         var directButton = document.getElementById('generate-missing-direct-button');
         if (directButton) {
@@ -409,17 +591,35 @@ jQuery(document).ready(function($) {
             imagesCheckbox.addEventListener('change', toggleImagesSettings);
         }
 
-        // Taxonomies provider checkbox
-        var taxonomiesCheckbox = document.getElementById('taxonomies_provider_enabled');
-        if (taxonomiesCheckbox) {
-            taxonomiesCheckbox.addEventListener('change', toggleTaxonomySettings);
+        // Automatic updates checkbox
+        var automaticUpdatesCheckbox = document.getElementById('automatic_updates_enabled');
+        if (automaticUpdatesCheckbox) {
+            automaticUpdatesCheckbox.addEventListener('change', toggleAutomaticUpdatesSettings);
         }
+
+        // Post type checkboxes - toggle images wrapper visibility
+        var postTypeCheckboxes = document.querySelectorAll('.msm-post-type-checkbox');
+        postTypeCheckboxes.forEach(function(checkbox) {
+            checkbox.addEventListener('change', togglePostImagesWrapper);
+        });
+
+        // Taxonomy checkboxes - toggle cache settings visibility
+        var taxonomyCheckboxes = document.querySelectorAll('.msm-taxonomy-checkbox');
+        taxonomyCheckboxes.forEach(function(checkbox) {
+            checkbox.addEventListener('change', toggleTaxonomyCacheSettings);
+        });
 
         // Authors provider checkbox
         var authorsCheckbox = document.getElementById('authors_provider_enabled');
         if (authorsCheckbox) {
             authorsCheckbox.addEventListener('change', toggleAuthorsSettings);
         }
+
+        // Page type checkboxes - toggle cache settings visibility
+        var pageCheckboxes = document.querySelectorAll('.msm-page-type-checkbox');
+        pageCheckboxes.forEach(function(checkbox) {
+            checkbox.addEventListener('change', togglePageCacheSettings);
+        });
 
         // Detailed stats toggle (if exists)
         var detailedStatsToggle = document.querySelector('button[onclick="toggleDetailedStats()"]');

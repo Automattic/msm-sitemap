@@ -48,13 +48,13 @@ class SitemapStatsService {
 	 * @param PostRepository|null $post_repository The post repository (optional, will create if not provided).
 	 * @param PostTypeRegistration|null $post_type_registration The post type registration service (optional, will create if not provided).
 	 */
-	public function __construct( 
+	public function __construct(
 		SitemapRepositoryInterface $repository,
-		?PostRepository $post_repository = null,
+		PostRepository $post_repository,
 		?PostTypeRegistration $post_type_registration = null
 	) {
 		$this->repository             = $repository;
-		$this->post_repository        = $post_repository ?? new PostRepository();
+		$this->post_repository        = $post_repository;
 		$this->post_type_registration = $post_type_registration ?? new PostTypeRegistration();
 	}
 

@@ -42,20 +42,40 @@ class FullGenerationService {
 	private GenerationStateService $generation_state;
 
 	/**
+	 * The settings service.
+	 *
+	 * @var SettingsService
+	 */
+	private SettingsService $settings_service;
+
+	/**
+	 * The sitemap cleanup service.
+	 *
+	 * @var SitemapCleanupService
+	 */
+	private SitemapCleanupService $cleanup_service;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param BackgroundGenerationScheduler $scheduler         The scheduler.
-	 * @param AllDatesWithPostsService   $all_dates_service The all dates service.
-	 * @param GenerationStateService     $generation_state  The generation state service.
+	 * @param AllDatesWithPostsService      $all_dates_service The all dates service.
+	 * @param GenerationStateService        $generation_state  The generation state service.
+	 * @param SettingsService               $settings_service  The settings service.
+	 * @param SitemapCleanupService         $cleanup_service   The sitemap cleanup service.
 	 */
 	public function __construct(
 		BackgroundGenerationScheduler $scheduler,
 		AllDatesWithPostsService $all_dates_service,
-		GenerationStateService $generation_state
+		GenerationStateService $generation_state,
+		SettingsService $settings_service,
+		SitemapCleanupService $cleanup_service
 	) {
 		$this->scheduler         = $scheduler;
 		$this->all_dates_service = $all_dates_service;
 		$this->generation_state  = $generation_state;
+		$this->settings_service  = $settings_service;
+		$this->cleanup_service   = $cleanup_service;
 	}
 
 	/**
@@ -90,10 +110,66 @@ class FullGenerationService {
 		$all_dates = $this->all_dates_service->get_dates();
 
 		if ( empty( $all_dates ) ) {
+			// No dates with posts found - clean up any orphaned sitemaps
+			$deleted_count = $this->cleanup_service->cleanup_all_orphaned_sitemaps();
+
+			// Save the settings hash since we've now synced with current settings
+			$this->settings_service->save_content_settings_hash();
+
+			// Check if any content types are enabled to provide appropriate message
+			$enabled_post_types = $this->settings_service->get_setting( 'enabled_post_types', array() );
+
+			if ( empty( $enabled_post_types ) ) {
+				// No content types enabled
+				if ( $deleted_count > 0 ) {
+					return array(
+						'success'         => true,
+						'method'          => 'cleanup',
+						'message'         => sprintf(
+							/* translators: %d is the number of sitemaps deleted */
+							_n(
+								'%d orphaned sitemap deleted. Enable content types to generate new sitemaps.',
+								'%d orphaned sitemaps deleted. Enable content types to generate new sitemaps.',
+								$deleted_count,
+								'msm-sitemap'
+							),
+							$deleted_count
+						),
+						'scheduled_count' => 0,
+					);
+				}
+
+				return array(
+					'success'         => true,
+					'method'          => 'none',
+					'message'         => __( 'No content types enabled. Enable at least one content type to generate sitemaps.', 'msm-sitemap' ),
+					'scheduled_count' => 0,
+				);
+			}
+
+			// Content types are enabled but no posts found
+			if ( $deleted_count > 0 ) {
+				return array(
+					'success'         => true,
+					'method'          => 'cleanup',
+					'message'         => sprintf(
+						/* translators: %d is the number of sitemaps deleted */
+						_n(
+							'%d orphaned sitemap deleted. No published content found for the selected content types.',
+							'%d orphaned sitemaps deleted. No published content found for the selected content types.',
+							$deleted_count,
+							'msm-sitemap'
+						),
+						$deleted_count
+					),
+					'scheduled_count' => 0,
+				);
+			}
+
 			return array(
 				'success'         => true,
 				'method'          => 'none',
-				'message'         => __( 'No dates with posts found.', 'msm-sitemap' ),
+				'message'         => __( 'No published content found for the selected content types.', 'msm-sitemap' ),
 				'scheduled_count' => 0,
 			);
 		}
