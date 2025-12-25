@@ -9,7 +9,10 @@ declare(strict_types=1);
 
 namespace Automattic\MSM_Sitemap\Infrastructure\REST\Controllers;
 
+use Automattic\MSM_Sitemap\Application\Services\AuthorSitemapService;
+use Automattic\MSM_Sitemap\Application\Services\PageSitemapService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapStatsService;
+use Automattic\MSM_Sitemap\Application\Services\TaxonomySitemapService;
 use Automattic\MSM_Sitemap\Infrastructure\REST\Traits\RestControllerTrait;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -29,12 +32,44 @@ class StatsController {
 	private SitemapStatsService $stats_service;
 
 	/**
+	 * The taxonomy sitemap service.
+	 *
+	 * @var TaxonomySitemapService
+	 */
+	private TaxonomySitemapService $taxonomy_sitemap_service;
+
+	/**
+	 * The author sitemap service.
+	 *
+	 * @var AuthorSitemapService
+	 */
+	private AuthorSitemapService $author_sitemap_service;
+
+	/**
+	 * The page sitemap service.
+	 *
+	 * @var PageSitemapService
+	 */
+	private PageSitemapService $page_sitemap_service;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SitemapStatsService $stats_service The stats service.
+	 * @param SitemapStatsService    $stats_service            The stats service.
+	 * @param TaxonomySitemapService $taxonomy_sitemap_service The taxonomy sitemap service.
+	 * @param AuthorSitemapService   $author_sitemap_service   The author sitemap service.
+	 * @param PageSitemapService     $page_sitemap_service     The page sitemap service.
 	 */
-	public function __construct( SitemapStatsService $stats_service ) {
-		$this->stats_service = $stats_service;
+	public function __construct(
+		SitemapStatsService $stats_service,
+		TaxonomySitemapService $taxonomy_sitemap_service,
+		AuthorSitemapService $author_sitemap_service,
+		PageSitemapService $page_sitemap_service
+	) {
+		$this->stats_service            = $stats_service;
+		$this->taxonomy_sitemap_service = $taxonomy_sitemap_service;
+		$this->author_sitemap_service   = $author_sitemap_service;
+		$this->page_sitemap_service     = $page_sitemap_service;
 	}
 
 	/**
@@ -63,6 +98,18 @@ class StatsController {
 					'callback'            => array( $this, 'get_recent_urls' ),
 					'permission_callback' => array( $this, 'check_manage_options_permission' ),
 					'args'                => $this->get_recent_urls_params(),
+				),
+			)
+		);
+
+		register_rest_route(
+			$this->namespace,
+			'/sitemap-summary',
+			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => array( $this, 'get_sitemap_summary' ),
+					'permission_callback' => array( $this, 'check_manage_options_permission' ),
 				),
 			)
 		);
@@ -147,5 +194,71 @@ class StatsController {
 		$recent_counts = $this->stats_service->get_recent_url_counts( $days );
 
 		return rest_ensure_response( $recent_counts );
+	}
+
+	/**
+	 * Get sitemap summary counts for the status display.
+	 *
+	 * @param WP_REST_Request $request The request object.
+	 * @return WP_REST_Response The response object.
+	 */
+	public function get_sitemap_summary( WP_REST_Request $request ): WP_REST_Response {
+		$comprehensive_stats = $this->stats_service->get_comprehensive_stats();
+
+		$post_sitemap_count = $comprehensive_stats['overview']['total_sitemaps'] ?? 0;
+		$taxonomy_entries   = $this->taxonomy_sitemap_service->is_enabled()
+			? count( $this->taxonomy_sitemap_service->get_sitemap_index_entries() )
+			: 0;
+		$author_entries     = $this->author_sitemap_service->is_enabled()
+			? count( $this->author_sitemap_service->get_sitemap_index_entries() )
+			: 0;
+		$page_entries       = $this->page_sitemap_service->is_enabled()
+			? count( $this->page_sitemap_service->get_sitemap_index_entries() )
+			: 0;
+
+		// Build the summary text parts
+		$parts = array();
+		if ( $post_sitemap_count > 0 ) {
+			$parts[] = sprintf(
+				/* translators: %d: number of daily sitemaps */
+				_n( '%d daily sitemap', '%d daily sitemaps', $post_sitemap_count, 'msm-sitemap' ),
+				$post_sitemap_count
+			);
+		}
+		if ( $taxonomy_entries > 0 ) {
+			$parts[] = sprintf(
+				/* translators: %d: number of taxonomy sitemaps */
+				_n( '%d taxonomy', '%d taxonomies', $taxonomy_entries, 'msm-sitemap' ),
+				$taxonomy_entries
+			);
+		}
+		if ( $author_entries > 0 ) {
+			$parts[] = sprintf(
+				/* translators: %d: number of author sitemaps */
+				_n( '%d author', '%d authors', $author_entries, 'msm-sitemap' ),
+				$author_entries
+			);
+		}
+		if ( $page_entries > 0 ) {
+			$parts[] = sprintf(
+				/* translators: %d: number of page sitemaps */
+				_n( '%d page', '%d pages', $page_entries, 'msm-sitemap' ),
+				$page_entries
+			);
+		}
+
+		$summary_text = implode( ', ', $parts );
+		$has_any      = $post_sitemap_count > 0 || $taxonomy_entries > 0 || $author_entries > 0 || $page_entries > 0;
+
+		return rest_ensure_response(
+			array(
+				'post_sitemaps'    => $post_sitemap_count,
+				'taxonomy_entries' => $taxonomy_entries,
+				'author_entries'   => $author_entries,
+				'page_entries'     => $page_entries,
+				'summary_text'     => $summary_text,
+				'has_any'          => $has_any,
+			)
+		);
 	}
 }

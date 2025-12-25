@@ -9,8 +9,10 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests;
 
+use Automattic\MSM_Sitemap\Application\Services\SettingsService;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository;
 use Automattic\MSM_Sitemap\Tests\Includes\CustomPostStatusTestTrait;
+use Mockery;
 
 /**
  * Tests for PostRepository functionality.
@@ -31,7 +33,11 @@ class PostRepositoryTest extends TestCase {
 	 */
 	public function setUp(): void {
 		parent::setUp();
-		$this->repository = new PostRepository();
+		$settings_service = Mockery::mock( SettingsService::class );
+		$settings_service->shouldReceive( 'get_setting' )
+			->with( 'enabled_post_types', Mockery::any() )
+			->andReturn( array( 'post' ) );
+		$this->repository = new PostRepository( $settings_service );
 	}
 
 	/**

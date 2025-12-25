@@ -2,6 +2,9 @@
   "plugins": [
     "."
   ],
+  "mappings": {
+    "wp-content/mu-plugins": "./mu-plugins"
+  },
   "phpVersion": "8.1",
   "config": {
     "WP_DEBUG": true,

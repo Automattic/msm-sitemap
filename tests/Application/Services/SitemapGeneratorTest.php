@@ -9,9 +9,12 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests\Application\Services;
 
+use Automattic\MSM_Sitemap\Application\Services\SettingsService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapGenerator;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapContent;
 use Automattic\MSM_Sitemap\Infrastructure\Providers\PostContentProvider;
+use Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository;
+use Mockery;
 
 /**
  * Test SitemapGenerator.
@@ -31,6 +34,20 @@ class SitemapGeneratorTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	public function setUp(): void {
 		parent::setUp();
 		$this->generator = new SitemapGenerator();
+	}
+
+	/**
+	 * Create a PostContentProvider with proper dependencies.
+	 *
+	 * @return PostContentProvider
+	 */
+	private function create_post_content_provider(): PostContentProvider {
+		$settings_service = Mockery::mock( SettingsService::class );
+		$settings_service->shouldReceive( 'get_setting' )
+			->with( 'enabled_post_types', Mockery::any() )
+			->andReturn( array( 'post' ) );
+		$post_repository = new PostRepository( $settings_service );
+		return new PostContentProvider( $post_repository );
 	}
 
 	/**
@@ -55,7 +72,7 @@ class SitemapGeneratorTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function test_generate_sitemap_for_date_with_content_returns_url_set(): void {
 		// Add a provider first
-		$this->generator->add_provider( new PostContentProvider() );
+		$this->generator->add_provider( $this->create_post_content_provider() );
 
 		// Create a test post
 		$post_id = $this->create_dummy_post( '2024-01-15' );
@@ -74,7 +91,7 @@ class SitemapGeneratorTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function test_get_provider_status_returns_provider_information(): void {
 		// Add a provider first
-		$this->generator->add_provider( new PostContentProvider() );
+		$this->generator->add_provider( $this->create_post_content_provider() );
 
 		$status = $this->generator->get_provider_status();
 
@@ -91,7 +108,7 @@ class SitemapGeneratorTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 		$initial_count = count( $this->generator->get_providers() );
 
 		// Add a post provider
-		$this->generator->add_provider( new PostContentProvider() );
+		$this->generator->add_provider( $this->create_post_content_provider() );
 
 		$new_count = count( $this->generator->get_providers() );
 		$this->assertEquals( $initial_count + 1, $new_count );
@@ -102,7 +119,7 @@ class SitemapGeneratorTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
 	 */
 	public function test_remove_provider_by_type_removes_provider(): void {
 		// Add a provider first
-		$this->generator->add_provider( new PostContentProvider() );
+		$this->generator->add_provider( $this->create_post_content_provider() );
 		$initial_count = count( $this->generator->get_providers() );
 
 		// Remove posts provider

@@ -36,10 +36,10 @@ class PostContentProvider implements ContentProviderInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param PostRepository|null $post_repository Post repository.
+	 * @param PostRepository $post_repository Post repository.
 	 */
-	public function __construct( ?PostRepository $post_repository = null ) {
-		$this->post_repository = $post_repository ?: new PostRepository();
+	public function __construct( PostRepository $post_repository ) {
+		$this->post_repository = $post_repository;
 	}
 
 	/**

@@ -100,10 +100,19 @@ class SettingsService {
 
 		// Get current settings
 		$current_settings = get_option( 'msm_sitemap', array() );
-		
+
 		// Merge with new settings
 		$updated_settings = array_merge( $current_settings, $validated_settings['settings'] );
-		
+
+		// Check if anything actually changed
+		if ( $current_settings === $updated_settings ) {
+			return array(
+				'success'  => true,
+				'message'  => __( 'Settings saved successfully.', 'msm-sitemap' ),
+				'settings' => $updated_settings,
+			);
+		}
+
 		// Save to database
 		$updated = update_option( 'msm_sitemap', $updated_settings );
 
@@ -182,6 +191,9 @@ class SettingsService {
 	 */
 	public function get_default_settings(): array {
 		return array(
+			// Post type settings
+			'enabled_post_types'     => array( 'post' ),
+
 			// Image settings
 			'include_images'         => '1',
 			'featured_images'        => '1',
@@ -197,6 +209,11 @@ class SettingsService {
 			// Author settings
 			'include_authors'        => '0',
 			'author_cache_ttl'       => self::DEFAULT_CACHE_TTL_MINUTES,
+
+			// Page settings
+			'include_pages'          => '0',
+			'enabled_page_types'     => array( 'page' ),
+			'page_cache_ttl'         => self::DEFAULT_CACHE_TTL_MINUTES,
 		);
 	}
 
@@ -235,10 +252,19 @@ class SettingsService {
 		$errors             = array();
 
 		// Handle boolean settings
-		$boolean_settings = array( 'include_images', 'featured_images', 'content_images', 'include_taxonomies', 'include_authors' );
+		$boolean_settings = array( 'include_images', 'featured_images', 'content_images', 'include_taxonomies', 'include_authors', 'include_pages' );
 		foreach ( $boolean_settings as $setting ) {
 			if ( isset( $settings[ $setting ] ) ) {
 				$sanitized_settings[ $setting ] = $settings[ $setting ] ? '1' : '0';
+			}
+		}
+
+		// Handle enabled_post_types array
+		if ( isset( $settings['enabled_post_types'] ) ) {
+			if ( is_array( $settings['enabled_post_types'] ) ) {
+				$sanitized_settings['enabled_post_types'] = array_map( 'sanitize_text_field', $settings['enabled_post_types'] );
+			} else {
+				$sanitized_settings['enabled_post_types'] = array();
 			}
 		}
 
@@ -248,6 +274,15 @@ class SettingsService {
 				$sanitized_settings['enabled_taxonomies'] = array_map( 'sanitize_text_field', $settings['enabled_taxonomies'] );
 			} else {
 				$sanitized_settings['enabled_taxonomies'] = array();
+			}
+		}
+
+		// Handle enabled_page_types array
+		if ( isset( $settings['enabled_page_types'] ) ) {
+			if ( is_array( $settings['enabled_page_types'] ) ) {
+				$sanitized_settings['enabled_page_types'] = array_map( 'sanitize_text_field', $settings['enabled_page_types'] );
+			} else {
+				$sanitized_settings['enabled_page_types'] = array();
 			}
 		}
 
@@ -284,7 +319,7 @@ class SettingsService {
 		}
 
 		// Handle cache TTL settings
-		$cache_ttl_settings = array( 'taxonomy_cache_ttl', 'author_cache_ttl' );
+		$cache_ttl_settings = array( 'taxonomy_cache_ttl', 'author_cache_ttl', 'page_cache_ttl' );
 		foreach ( $cache_ttl_settings as $ttl_setting ) {
 			if ( isset( $settings[ $ttl_setting ] ) ) {
 				$ttl_value = intval( $settings[ $ttl_setting ] );
@@ -324,12 +359,131 @@ class SettingsService {
 	 */
 	public function get_image_settings(): array {
 		$all_settings = $this->get_all_settings();
-		
+
 		return array(
 			'include_images'         => $all_settings['include_images'],
 			'featured_images'        => $all_settings['featured_images'],
 			'content_images'         => $all_settings['content_images'],
 			'max_images_per_sitemap' => $all_settings['max_images_per_sitemap'],
 		);
+	}
+
+	/**
+	 * Get a hash of content-affecting settings.
+	 *
+	 * This hash is used to detect when settings have changed and sitemaps
+	 * need to be regenerated.
+	 *
+	 * @return string MD5 hash of content settings.
+	 */
+	public function get_content_settings_hash(): string {
+		$all_settings = $this->get_all_settings();
+
+		// Settings that affect sitemap content
+		// Note: max_images_per_sitemap is excluded as it's dev-filterable
+		$content_settings = array(
+			'enabled_post_types' => $all_settings['enabled_post_types'] ?? array(),
+			'enabled_page_types' => $all_settings['enabled_page_types'] ?? array(),
+			'enabled_taxonomies' => $all_settings['enabled_taxonomies'] ?? array(),
+			'include_images'     => $all_settings['include_images'] ?? '0',
+			'featured_images'    => $all_settings['featured_images'] ?? '0',
+			'content_images'     => $all_settings['content_images'] ?? '0',
+			'include_authors'    => $all_settings['include_authors'] ?? '0',
+		);
+
+		// Sort arrays for consistent hashing
+		if ( is_array( $content_settings['enabled_post_types'] ) ) {
+			sort( $content_settings['enabled_post_types'] );
+		}
+		if ( is_array( $content_settings['enabled_page_types'] ) ) {
+			sort( $content_settings['enabled_page_types'] );
+		}
+		if ( is_array( $content_settings['enabled_taxonomies'] ) ) {
+			sort( $content_settings['enabled_taxonomies'] );
+		}
+
+		return md5( wp_json_encode( $content_settings ) );
+	}
+
+	/**
+	 * Save the current content settings hash.
+	 *
+	 * Called after sitemap regeneration to track the settings used.
+	 *
+	 * @return void
+	 */
+	public function save_content_settings_hash(): void {
+		update_option( 'msm_sitemap_content_settings_hash', $this->get_content_settings_hash(), false );
+	}
+
+	/**
+	 * Check if content settings have changed since the last sitemap update.
+	 *
+	 * @return bool True if settings have changed and sitemaps need regeneration.
+	 */
+	public function has_content_settings_changed(): bool {
+		$stored_hash  = get_option( 'msm_sitemap_content_settings_hash', '' );
+		$current_hash = $this->get_content_settings_hash();
+
+		// If no stored hash, save current hash for future change detection
+		// This handles upgrades from before the hash feature was added
+		if ( empty( $stored_hash ) ) {
+			$this->save_content_settings_hash();
+			return false;
+		}
+
+		return $stored_hash !== $current_hash;
+	}
+
+	/**
+	 * Get a human-readable summary of what content settings have changed.
+	 *
+	 * @return string Description of what has changed.
+	 */
+	public function get_settings_change_summary(): string {
+		if ( ! $this->has_content_settings_changed() ) {
+			return '';
+		}
+
+		return __( 'Content settings have changed. Sitemaps need to be regenerated to reflect the new configuration.', 'msm-sitemap' );
+	}
+
+	/**
+	 * Check if any content types are enabled for sitemap generation.
+	 *
+	 * This checks post types, page types, taxonomies, and authors.
+	 *
+	 * @return bool True if at least one content type is enabled.
+	 */
+	public function has_any_content_enabled(): bool {
+		$all_settings = $this->get_all_settings();
+
+		// Check post types (non-hierarchical content like posts)
+		$post_types = $all_settings['enabled_post_types'] ?? array();
+		if ( ! empty( $post_types ) ) {
+			return true;
+		}
+
+		// Check page types (hierarchical content like pages)
+		$page_types    = $all_settings['enabled_page_types'] ?? array();
+		$include_pages = $all_settings['include_pages'] ?? '0';
+		if ( ! empty( $page_types ) && '1' === $include_pages ) {
+			return true;
+		}
+
+		// Check taxonomies
+		$taxonomies         = $all_settings['enabled_taxonomies'] ?? array();
+		$include_taxonomies = $all_settings['include_taxonomies'] ?? '0';
+		if ( ! empty( $taxonomies ) && '1' === $include_taxonomies ) {
+			return true;
+		}
+
+		// Check authors
+		$include_authors = $all_settings['include_authors'] ?? '0';
+		if ( '1' === $include_authors ) {
+			return true;
+		}
+
+		return false;
 	}
 }

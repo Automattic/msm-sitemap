@@ -14,6 +14,7 @@ use Automattic\MSM_Sitemap\Application\Commands\GenerateSitemapCommand;
 use Automattic\MSM_Sitemap\Application\DTOs\SitemapOperationResult;
 use Automattic\MSM_Sitemap\Application\Services\GenerationStateService;
 use Automattic\MSM_Sitemap\Application\Services\CronManagementService;
+use Automattic\MSM_Sitemap\Application\Services\SettingsService;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\GenerationProgress;
 
 /**
@@ -59,20 +60,30 @@ class BackgroundGenerationScheduler {
 	private GenerationStateService $generation_state;
 
 	/**
+	 * The settings service.
+	 *
+	 * @var SettingsService
+	 */
+	private SettingsService $settings_service;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param GenerateSitemapUseCase $generate_use_case The generate sitemap use case.
 	 * @param CronManagementService  $cron_management   The cron management service.
 	 * @param GenerationStateService $generation_state  The generation state service.
+	 * @param SettingsService        $settings_service  The settings service.
 	 */
 	public function __construct(
 		GenerateSitemapUseCase $generate_use_case,
 		CronManagementService $cron_management,
-		GenerationStateService $generation_state
+		GenerationStateService $generation_state,
+		SettingsService $settings_service
 	) {
 		$this->generate_use_case = $generate_use_case;
 		$this->cron_management   = $cron_management;
 		$this->generation_state  = $generation_state;
+		$this->settings_service  = $settings_service;
 	}
 
 	/**
@@ -153,6 +164,9 @@ class BackgroundGenerationScheduler {
 		}
 		$this->generation_state->update_last_run_time();
 
+		// Save current content settings hash so we can detect future changes
+		$this->settings_service->save_content_settings_hash();
+
 		$message = sprintf(
 			/* translators: %d is the number of sitemaps generated */
 			_n( 'Generated %d sitemap successfully.', 'Generated %d sitemaps successfully.', $generated_count, 'msm-sitemap' ),
@@ -198,6 +212,9 @@ class BackgroundGenerationScheduler {
 		if ( 0 === $remaining ) {
 			$this->generation_state->clear_background_generation_state();
 			$this->generation_state->update_last_run_time();
+
+			// Save current content settings hash so we can detect future changes
+			$this->settings_service->save_content_settings_hash();
 		}
 	}
 

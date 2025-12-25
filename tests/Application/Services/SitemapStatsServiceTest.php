@@ -9,9 +9,11 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests\Application\Services;
 
+use Automattic\MSM_Sitemap\Application\Services\SettingsService;
 use Automattic\MSM_Sitemap\Application\Services\SitemapStatsService;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\SitemapPostRepository;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository;
+use Mockery;
 
 /**
  * Test class for SitemapStatsService.
@@ -39,8 +41,15 @@ final class SitemapStatsServiceTest extends \Automattic\MSM_Sitemap\Tests\TestCa
 	 */
 	public function setUp(): void {
 		parent::setUp();
-		$this->repository    = new SitemapPostRepository();
-		$this->stats_service = new SitemapStatsService( $this->repository );
+		$this->repository = new SitemapPostRepository();
+
+		$settings_service = Mockery::mock( SettingsService::class );
+		$settings_service->shouldReceive( 'get_setting' )
+			->with( 'enabled_post_types', Mockery::any() )
+			->andReturn( array( 'post' ) );
+		$post_repository = new PostRepository( $settings_service );
+
+		$this->stats_service = new SitemapStatsService( $this->repository, $post_repository );
 	}
 
 	/**

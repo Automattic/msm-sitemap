@@ -169,6 +169,8 @@ class ImageRepository implements ImageRepositoryInterface {
 	/**
 	 * Get image attachment IDs for specific post IDs.
 	 *
+	 * Finds images both attached to posts and embedded in post content.
+	 *
 	 * @param array<int> $post_ids Array of post IDs.
 	 * @param int $limit Maximum number of images to return.
 	 * @return array<int> Array of image attachment IDs.
@@ -178,27 +180,116 @@ class ImageRepository implements ImageRepositoryInterface {
 			return array();
 		}
 
-		// Use WordPress functions instead of complex SQL
 		$image_ids = array();
-		
+
 		foreach ( $post_ids as $post_id ) {
-			$attachments       = get_attached_media( 'image', $post_id );
 			$featured_image_id = get_post_thumbnail_id( $post_id );
-			
+
+			// Method 1: Get attached media (post_parent = post_id)
+			$attachments = get_attached_media( 'image', $post_id );
 			foreach ( $attachments as $attachment ) {
 				// Skip featured images - they should be handled separately
-				if ( $attachment->ID === $featured_image_id ) {
+				if ( (int) $attachment->ID === (int) $featured_image_id ) {
 					continue;
 				}
-				
-				$image_ids[] = $attachment->ID;
+				if ( ! in_array( $attachment->ID, $image_ids, true ) ) {
+					$image_ids[] = $attachment->ID;
+				}
 				if ( count( $image_ids ) >= $limit ) {
 					break 2;
 				}
 			}
+
+			// Method 2: Parse post content for images
+			$post = get_post( $post_id );
+			if ( $post && ! empty( $post->post_content ) ) {
+				$content_image_ids = $this->extract_image_ids_from_content( $post->post_content );
+				foreach ( $content_image_ids as $content_image_id ) {
+					// Skip featured images
+					if ( (int) $content_image_id === (int) $featured_image_id ) {
+						continue;
+					}
+					if ( ! in_array( $content_image_id, $image_ids, true ) ) {
+						$image_ids[] = $content_image_id;
+					}
+					if ( count( $image_ids ) >= $limit ) {
+						break 2;
+					}
+				}
+			}
 		}
-		
+
 		return array_slice( $image_ids, 0, $limit );
+	}
+
+	/**
+	 * Extract image attachment IDs from post content.
+	 *
+	 * Parses HTML content to find image URLs and resolves them to attachment IDs.
+	 *
+	 * @param string $content The post content.
+	 * @return array<int> Array of image attachment IDs found in content.
+	 */
+	private function extract_image_ids_from_content( string $content ): array {
+		$image_ids = array();
+
+		// Method 1: Look for wp-image-{ID} class (WordPress standard)
+		if ( preg_match_all( '/wp-image-(\d+)/', $content, $matches ) ) {
+			foreach ( $matches[1] as $id ) {
+				$attachment_id = (int) $id;
+				if ( $attachment_id > 0 && $this->exists( $attachment_id ) ) {
+					$image_ids[] = $attachment_id;
+				}
+			}
+		}
+
+		// Method 2: Look for data-id attribute in image blocks
+		if ( preg_match_all( '/data-id=["\'](\d+)["\']/', $content, $matches ) ) {
+			foreach ( $matches[1] as $id ) {
+				$attachment_id = (int) $id;
+				if ( $attachment_id > 0 && $this->exists( $attachment_id ) && ! in_array( $attachment_id, $image_ids, true ) ) {
+					$image_ids[] = $attachment_id;
+				}
+			}
+		}
+
+		// Method 3: Parse img tags and try to find attachment by URL
+		if ( preg_match_all( '/<img[^>]+src=["\']([^"\']+)["\'][^>]*>/i', $content, $matches ) ) {
+			foreach ( $matches[1] as $url ) {
+				$attachment_id = $this->get_attachment_id_from_url( $url );
+				if ( $attachment_id && ! in_array( $attachment_id, $image_ids, true ) ) {
+					$image_ids[] = $attachment_id;
+				}
+			}
+		}
+
+		return $image_ids;
+	}
+
+	/**
+	 * Get attachment ID from image URL.
+	 *
+	 * @param string $url The image URL.
+	 * @return int|null The attachment ID or null if not found.
+	 */
+	private function get_attachment_id_from_url( string $url ): ?int {
+		// Remove size suffix from URL (e.g., -300x200)
+		$url = preg_replace( '/-\d+x\d+(\.[a-zA-Z]+)$/', '$1', $url );
+
+		// Try WordPress attachment_url_to_postid function
+		$attachment_id = attachment_url_to_postid( $url );
+		if ( $attachment_id ) {
+			return $attachment_id;
+		}
+
+		// Try with the original URL (in case size suffix was not present)
+		$original_url  = $url;
+		$attachment_id = attachment_url_to_postid( $original_url );
+		if ( $attachment_id ) {
+			return $attachment_id;
+		}
+
+		return null;
 	}
 
 	/**

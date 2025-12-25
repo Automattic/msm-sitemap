@@ -283,8 +283,9 @@ class SitemapContainer {
 
 		$this->register(
 			PageRepository::class,
-			function () {
-				return new PageRepository();
+			function ( $container ) {
+				$settings_service = $container->get( SettingsService::class );
+				return new PageRepository( $settings_service );
 			}
 		);
 
@@ -343,8 +344,9 @@ class SitemapContainer {
 			ImageContentProvider::class,
 			function ( $container ) {
 				$image_repository = $container->get( ImageRepository::class );
-				return new ImageContentProvider( $image_repository );
-			} 
+				$settings_service = $container->get( SettingsService::class );
+				return new ImageContentProvider( $image_repository, $settings_service );
+			}
 		);
 
 		// Register formatters
@@ -358,9 +360,10 @@ class SitemapContainer {
 		// Register query service
 		$this->register(
 			SitemapQueryService::class,
-			function () {
-				return new SitemapQueryService();
-			} 
+			function ( $container ) {
+				$post_repository = $container->get( PostRepository::class );
+				return new SitemapQueryService( $post_repository );
+			}
 		);
 
 		// Register core services
@@ -455,8 +458,9 @@ class SitemapContainer {
 				$generate_use_case = $container->get( GenerateSitemapUseCase::class );
 				$cron_management   = $container->get( CronManagementService::class );
 				$generation_state  = $container->get( GenerationStateService::class );
+				$settings_service  = $container->get( SettingsService::class );
 
-				return new BackgroundGenerationScheduler( $generate_use_case, $cron_management, $generation_state );
+				return new BackgroundGenerationScheduler( $generate_use_case, $cron_management, $generation_state, $settings_service );
 			}
 		);
 
@@ -495,9 +499,11 @@ class SitemapContainer {
 			function ( $container ) {
 				$scheduler         = $container->get( BackgroundGenerationScheduler::class );
 				$all_dates_service = $container->get( AllDatesWithPostsService::class );
-				$generation_state     = $container->get( GenerationStateService::class );
+				$generation_state  = $container->get( GenerationStateService::class );
+				$settings_service  = $container->get( SettingsService::class );
+				$cleanup_service   = $container->get( SitemapCleanupService::class );
 
-				return new FullGenerationService( $scheduler, $all_dates_service, $generation_state );
+				return new FullGenerationService( $scheduler, $all_dates_service, $generation_state, $settings_service, $cleanup_service );
 			}
 		);
 
@@ -695,7 +701,10 @@ class SitemapContainer {
 			StatsController::class,
 			function ( $container ) {
 				return new StatsController(
-					$container->get( SitemapStatsService::class )
+					$container->get( SitemapStatsService::class ),
+					$container->get( TaxonomySitemapService::class ),
+					$container->get( AuthorSitemapService::class ),
+					$container->get( PageSitemapService::class )
 				);
 			}
 		);
@@ -743,7 +752,8 @@ class SitemapContainer {
 					$container->get( CronManagementService::class ),
 					$container->get( MissingSitemapDetectionService::class ),
 					$container->get( IncrementalGenerationService::class ),
-					SitemapGeneratorFactory::create( $content_types_service->get_content_types() )
+					SitemapGeneratorFactory::create( $content_types_service->get_content_types() ),
+					$container->get( SettingsService::class )
 				);
 			}
 		);
@@ -776,29 +786,18 @@ class SitemapContainer {
 		$this->register(
 			UI::class,
 			function ( $container ) {
-				$cron_management           = $container->get( CronManagementService::class );
-				$plugin_file_path          = msm_sitemap_plugin()->get_plugin_file_path();
-				$plugin_version            = msm_sitemap_plugin()->get_plugin_version();
-				$missing_detection_service = $container->get( MissingSitemapDetectionService::class );
-				$stats_service             = $container->get( SitemapStatsService::class );
-				$settings_service          = $container->get( SettingsService::class );
-				$sitemap_repository        = $container->get( SitemapRepositoryInterface::class );
-				$action_handlers           = $container->get( ActionHandlers::class );
-				$taxonomy_sitemap_service  = $container->get( TaxonomySitemapService::class );
-				$author_sitemap_service    = $container->get( AuthorSitemapService::class );
-				$page_sitemap_service      = $container->get( PageSitemapService::class );
 				return new UI(
-					$cron_management,
-					$plugin_file_path,
-					$plugin_version,
-					$missing_detection_service,
-					$stats_service,
-					$settings_service,
-					$sitemap_repository,
-					$action_handlers,
-					$taxonomy_sitemap_service,
-					$author_sitemap_service,
-					$page_sitemap_service
+					$container->get( CronManagementService::class ),
+					$container->get( MissingSitemapDetectionService::class ),
+					$container->get( SitemapStatsService::class ),
+					$container->get( SettingsService::class ),
+					$container->get( SitemapRepositoryInterface::class ),
+					$container->get( TaxonomySitemapService::class ),
+					$container->get( AuthorSitemapService::class ),
+					$container->get( PageSitemapService::class ),
+					$container->get( ActionHandlers::class ),
+					msm_sitemap_plugin()->get_plugin_file_path(),
+					msm_sitemap_plugin()->get_plugin_version()
 				);
 			}
 		);

@@ -257,6 +257,24 @@ class CoreIntegration implements WordPressIntegrationInterface {
 			'index.php?author-sitemap=true&author-sitemap-page=$matches[1]',
 			'top'
 		);
+
+		// Page sitemap rewrite rules
+		add_rewrite_tag( '%page-sitemap%', 'true' );
+		add_rewrite_tag( '%page-sitemap-page%', '[0-9]+' );
+
+		// Match /sitemap-page.xml (page 1)
+		add_rewrite_rule(
+			'^sitemap-page\.xml$',
+			'index.php?page-sitemap=true&page-sitemap-page=1',
+			'top'
+		);
+
+		// Match /sitemap-page-{page}.xml (page 2+)
+		add_rewrite_rule(
+			'^sitemap-page-([0-9]+)\.xml$',
+			'index.php?page-sitemap=true&page-sitemap-page=$matches[1]',
+			'top'
+		);
 	}
 
 	/**

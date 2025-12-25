@@ -9,8 +9,10 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests;
 
+use Automattic\MSM_Sitemap\Application\Services\SettingsService;
 use Automattic\MSM_Sitemap\Infrastructure\HTTP\SitemapXmlRequestHandler;
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository;
+use Mockery;
 use WP_Query;
 
 /**
@@ -79,10 +81,14 @@ class FiltersTest extends TestCase {
 			'msm_sitemap_pre_get_post_year_range',
 			function () {
 				return array( 2000, 2001, 2002 );
-			} 
+			}
 		);
 
-		$post_repository = new PostRepository();
+		$settings_service = Mockery::mock( SettingsService::class );
+		$settings_service->shouldReceive( 'get_setting' )
+			->with( 'enabled_post_types', Mockery::any() )
+			->andReturn( array( 'post' ) );
+		$post_repository = new PostRepository( $settings_service );
 		$years           = $post_repository->get_post_year_range();
 
 		$this->assertEquals( array( 2000, 2001, 2002 ), $years );

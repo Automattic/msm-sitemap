@@ -9,6 +9,7 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Infrastructure\Providers;
 
+use Automattic\MSM_Sitemap\Application\Services\SettingsService;
 use Automattic\MSM_Sitemap\Domain\Contracts\ContentProviderInterface;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\UrlSet;
@@ -40,12 +41,21 @@ class ImageContentProvider implements ContentProviderInterface {
 	private ImageRepository $image_repository;
 
 	/**
+	 * Settings service.
+	 *
+	 * @var SettingsService
+	 */
+	private SettingsService $settings_service;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ImageRepository $image_repository Image repository.
+	 * @param ImageRepository  $image_repository  Image repository.
+	 * @param SettingsService  $settings_service  Settings service.
 	 */
-	public function __construct( ImageRepository $image_repository ) {
+	public function __construct( ImageRepository $image_repository, SettingsService $settings_service ) {
 		$this->image_repository = $image_repository;
+		$this->settings_service = $settings_service;
 	}
 
 	/**
@@ -110,47 +120,46 @@ class ImageContentProvider implements ContentProviderInterface {
 	}
 
 	/**
+	 * Get enabled post types from settings.
+	 *
+	 * @return array<string> Array of enabled post type slugs.
+	 */
+	private function get_enabled_post_types(): array {
+		$enabled = $this->settings_service->get_setting( 'enabled_post_types', array( 'post' ) );
+
+		if ( ! is_array( $enabled ) || empty( $enabled ) ) {
+			return array( 'post' );
+		}
+
+		return $enabled;
+	}
+
+	/**
 	 * Get post ID from URL.
 	 *
 	 * @param string $url The URL to extract post ID from.
 	 * @return int|null The post ID or null if not found.
 	 */
 	private function get_post_id_from_url( string $url ): ?int {
-		// Extract the path from the URL
-		$parsed_url = parse_url( $url );
-		if ( ! isset( $parsed_url['path'] ) ) {
-			return null;
-		}
+		$enabled_post_types = $this->get_enabled_post_types();
 
-		$path = trim( $parsed_url['path'], '/' );
-
-		// Try multiple methods to find the post
-		
-		// Method 1: Try get_page_by_path
-		$post = get_page_by_path( $path );
-		if ( $post && 'post' === $post->post_type ) {
-			return $post->ID;
-		}
-
-		// Method 2: Try URL to post ID conversion
+		// Method 1: Use url_to_postid (WordPress standard method)
 		$post_id = url_to_postid( $url );
 		if ( $post_id ) {
 			$post = get_post( $post_id );
-			if ( $post && 'post' === $post->post_type ) {
+			if ( $post && in_array( $post->post_type, $enabled_post_types, true ) ) {
 				return $post_id;
 			}
 		}
 
-		// Method 3: Try database query for custom permalinks
-		global $wpdb;
-		$post_id = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT ID FROM {$wpdb->posts} WHERE post_type = 'post' AND post_status = 'publish' AND guid = %s",
-				$url
-			)
-		);
-		if ( $post_id ) {
-			return (int) $post_id;
+		// Method 2: Try get_page_by_path with enabled post types
+		$parsed_url = wp_parse_url( $url );
+		if ( isset( $parsed_url['path'] ) ) {
+			$path = trim( $parsed_url['path'], '/' );
+			$post = get_page_by_path( $path, OBJECT, $enabled_post_types );
+			if ( $post ) {
+				return $post->ID;
+			}
 		}
 
 		return null;

@@ -246,22 +246,21 @@ class MissingSitemapDetectionService implements SitemapDateProviderInterface {
 		if ( $missing_data['all_dates_count'] > 0 || $missing_data['recently_modified_count'] > 0 ) {
 			$summary['has_missing'] = true;
 
-			// Use the centralized method for message parts
-			$counts = $this->get_success_message_parts();
+			// Build a simple message focused on sitemaps needing attention
+			$total_sitemaps = $missing_data['all_dates_count'];
 
-			// Add recently modified posts count if any
-			if ( $missing_data['recently_modified_count'] > 0 ) {
-				$counts[] = sprintf(
-					/* translators: %d is the number of recently modified posts */
-					_n( '%d recently modified post', '%d recently modified posts', $missing_data['recently_modified_count'], 'msm-sitemap' ),
-					$missing_data['recently_modified_count']
-				);
-			}
-
-			$summary['counts']  = $counts;
-			$summary['message'] = implode( '; ', $counts );
+			$summary['message'] = sprintf(
+				/* translators: %d is the number of sitemaps */
+				_n(
+					'%d sitemap needs generating',
+					'%d sitemaps need generating',
+					$total_sitemaps,
+					'msm-sitemap'
+				),
+				$total_sitemaps
+			);
 		} else {
-			$summary['message'] = __( 'No missing sitemaps detected', 'msm-sitemap' );
+			$summary['message'] = __( 'All sitemaps up to date', 'msm-sitemap' );
 		}
 
 		return $summary;

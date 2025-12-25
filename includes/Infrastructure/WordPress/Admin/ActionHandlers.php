@@ -212,22 +212,40 @@ class ActionHandlers {
 			$settings['max_images_per_sitemap'] = intval( $_POST['max_images_per_sitemap'] );
 		}
 
-		// Handle taxonomy settings
-		$old_taxonomies_enabled = $this->settings->get_setting( 'include_taxonomies', '0' );
-		$settings['include_taxonomies'] = isset( $_POST['taxonomies_provider_enabled'] );
+		// Handle post type settings - enabled_post_types array
+		$old_post_types = $this->settings->get_setting( 'enabled_post_types', array( 'post' ) );
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized below via array_map.
+		if ( isset( $_POST['enabled_post_types'] ) && is_array( $_POST['enabled_post_types'] ) ) {
+			$settings['enabled_post_types'] = array_map( 'sanitize_text_field', wp_unslash( $_POST['enabled_post_types'] ) );
+		} else {
+			$settings['enabled_post_types'] = array();
+		}
 
-		// Handle enabled taxonomies array
+		// Handle taxonomy settings - enabled_taxonomies array
+		$old_taxonomies = $this->settings->get_setting( 'enabled_taxonomies', array( 'category', 'post_tag' ) );
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized below via array_map.
 		if ( isset( $_POST['enabled_taxonomies'] ) && is_array( $_POST['enabled_taxonomies'] ) ) {
 			$settings['enabled_taxonomies'] = array_map( 'sanitize_text_field', wp_unslash( $_POST['enabled_taxonomies'] ) );
 		} else {
-			// If taxonomies are enabled but none are selected, default to empty array
 			$settings['enabled_taxonomies'] = array();
 		}
+		// Set include_taxonomies based on whether any taxonomies are enabled
+		$settings['include_taxonomies'] = ! empty( $settings['enabled_taxonomies'] );
 
 		// Handle author settings
 		$old_authors_enabled = $this->settings->get_setting( 'include_authors', '0' );
 		$settings['include_authors'] = isset( $_POST['authors_provider_enabled'] );
+
+		// Handle page settings - enabled_page_types array
+		$old_page_types = $this->settings->get_setting( 'enabled_page_types', array( 'page' ) );
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized below via array_map.
+		if ( isset( $_POST['enabled_page_types'] ) && is_array( $_POST['enabled_page_types'] ) ) {
+			$settings['enabled_page_types'] = array_map( 'sanitize_text_field', wp_unslash( $_POST['enabled_page_types'] ) );
+		} else {
+			$settings['enabled_page_types'] = array();
+		}
+		// Set include_pages based on whether any page types are enabled
+		$settings['include_pages'] = ! empty( $settings['enabled_page_types'] );
 
 		// Handle cache TTL settings
 		if ( isset( $_POST['taxonomy_cache_ttl'] ) ) {
@@ -238,13 +256,68 @@ class ActionHandlers {
 			$settings['author_cache_ttl'] = intval( $_POST['author_cache_ttl'] );
 		}
 
+		if ( isset( $_POST['page_cache_ttl'] ) ) {
+			$settings['page_cache_ttl'] = intval( $_POST['page_cache_ttl'] );
+		}
+
+		// Handle cron frequency if provided
+		if ( isset( $_POST['cron_frequency'] ) ) {
+			$frequency        = sanitize_text_field( wp_unslash( $_POST['cron_frequency'] ) );
+			$frequency_result = $this->cron_management->update_frequency( $frequency );
+			// Only show error for actual failures, not "unchanged" or similar
+			if ( ! $frequency_result['success'] && isset( $frequency_result['error_code'] ) ) {
+				$error_code = $frequency_result['error_code'];
+				if ( 'invalid_frequency' === $error_code || 'reschedule_failed' === $error_code ) {
+					Notifications::show_error( $frequency_result['message'] );
+					return;
+				}
+			}
+		}
+
+		// Handle automatic updates (cron) enable/disable
+		$cron_currently_enabled = $this->cron_management->is_enabled();
+		$cron_should_be_enabled = isset( $_POST['automatic_updates_enabled'] );
+
+		if ( $cron_should_be_enabled && ! $cron_currently_enabled ) {
+			$this->cron_management->enable_cron();
+		} elseif ( ! $cron_should_be_enabled && $cron_currently_enabled ) {
+			$this->cron_management->disable_cron();
+		}
+
 		// Use service to update settings
 		$result = $this->settings->update_settings( $settings );
 
-		// Flush rewrite rules if taxonomy or author settings changed
-		$new_taxonomies_enabled = $settings['include_taxonomies'] ? '1' : '0';
-		$new_authors_enabled    = $settings['include_authors'] ? '1' : '0';
-		if ( $old_taxonomies_enabled !== $new_taxonomies_enabled || $old_authors_enabled !== $new_authors_enabled ) {
+		// Clear caches that depend on content provider settings
+		// Clear post-related caches if post types changed
+		if ( $old_post_types !== $settings['enabled_post_types'] ) {
+			wp_cache_delete( 'oldest_post_date_year', 'msm_sitemap' );
+		}
+
+		// Clear taxonomy sitemap caches if taxonomy settings changed
+		if ( $old_taxonomies !== $settings['enabled_taxonomies'] ) {
+			foreach ( array_merge( $old_taxonomies, $settings['enabled_taxonomies'] ) as $taxonomy ) {
+				wp_cache_delete( 'sitemap_' . $taxonomy . '_1', 'msm_taxonomy_sitemap' );
+			}
+		}
+
+		// Clear author sitemap cache if author settings changed
+		if ( $old_authors_enabled !== ( $settings['include_authors'] ? '1' : '0' ) ) {
+			wp_cache_delete( 'sitemap_authors_1', 'msm_author_sitemap' );
+		}
+
+		// Clear page sitemap cache if page settings changed
+		if ( $old_page_types !== $settings['enabled_page_types'] ) {
+			wp_cache_delete( 'sitemap_pages_1', 'msm_page_sitemap' );
+		}
+
+		// Clear REST API transients
+		delete_transient( 'msm_sitemap_stats' );
+
+		// Flush rewrite rules if taxonomy, author, or page settings changed
+		$new_taxonomies     = $settings['enabled_taxonomies'];
+		$new_authors_enabled = $settings['include_authors'] ? '1' : '0';
+		$new_page_types     = $settings['enabled_page_types'];
+		if ( $old_taxonomies !== $new_taxonomies || $old_authors_enabled !== $new_authors_enabled || $old_page_types !== $new_page_types ) {
 			flush_rewrite_rules();
 		}
 

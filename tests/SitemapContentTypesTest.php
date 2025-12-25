@@ -9,10 +9,13 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests;
 
+use Automattic\MSM_Sitemap\Application\Services\SettingsService;
 use Automattic\MSM_Sitemap\Domain\Services\ContentProvider;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapContentTypes;
 use Automattic\MSM_Sitemap\Infrastructure\Providers\PostContentProvider;
+use Automattic\MSM_Sitemap\Infrastructure\Repositories\PostRepository;
 use InvalidArgumentException;
+use Mockery;
 
 /**
  * Test SitemapContentTypes collection.
@@ -35,10 +38,24 @@ class SitemapContentTypesTest extends TestCase {
 	}
 
 	/**
+	 * Create a PostContentProvider with proper dependencies.
+	 *
+	 * @return PostContentProvider
+	 */
+	private function create_post_content_provider(): PostContentProvider {
+		$settings_service = Mockery::mock( SettingsService::class );
+		$settings_service->shouldReceive( 'get_setting' )
+			->with( 'enabled_post_types', Mockery::any() )
+			->andReturn( array( 'post' ) );
+		$post_repository = new PostRepository( $settings_service );
+		return new PostContentProvider( $post_repository );
+	}
+
+	/**
 	 * Test register adds content provider.
 	 */
 	public function test_register_adds_content_provider(): void {
-		$provider = new PostContentProvider();
+		$provider = $this->create_post_content_provider();
 		$this->content_types->register( $provider );
 
 		$this->assertTrue( $this->content_types->is_registered( 'posts' ) );
@@ -50,8 +67,8 @@ class SitemapContentTypesTest extends TestCase {
 	 * Test register throws exception for duplicate.
 	 */
 	public function test_register_throws_exception_for_duplicate(): void {
-		$provider1 = new PostContentProvider();
-		$provider2 = new PostContentProvider();
+		$provider1 = $this->create_post_content_provider();
+		$provider2 = $this->create_post_content_provider();
 
 		$this->content_types->register( $provider1 );
 
@@ -65,7 +82,7 @@ class SitemapContentTypesTest extends TestCase {
 	 * Test unregister removes content provider.
 	 */
 	public function test_unregister_removes_content_provider(): void {
-		$provider = new PostContentProvider();
+		$provider = $this->create_post_content_provider();
 		$this->content_types->register( $provider );
 
 		$this->assertTrue( $this->content_types->unregister( 'posts' ) );
@@ -84,7 +101,7 @@ class SitemapContentTypesTest extends TestCase {
 	 * Test get returns registered content provider.
 	 */
 	public function test_get_returns_registered_content_provider(): void {
-		$provider = new PostContentProvider();
+		$provider = $this->create_post_content_provider();
 		$this->content_types->register( $provider );
 
 		$retrieved = $this->content_types->get( 'posts' );
@@ -102,8 +119,8 @@ class SitemapContentTypesTest extends TestCase {
 	 * Test get_all returns all registered content providers.
 	 */
 	public function test_get_all_returns_all_registered_content_providers(): void {
-		$provider1 = new PostContentProvider();
-		$provider2 = new PostContentProvider(); // This will fail to register due to duplicate
+		$provider1 = $this->create_post_content_provider();
+		$provider2 = $this->create_post_content_provider(); // This will fail to register due to duplicate
 
 		$this->content_types->register( $provider1 );
 
@@ -116,7 +133,7 @@ class SitemapContentTypesTest extends TestCase {
 	 * Test get_all_types returns all registered content types.
 	 */
 	public function test_get_all_types_returns_all_registered_content_types(): void {
-		$provider = new PostContentProvider();
+		$provider = $this->create_post_content_provider();
 		$this->content_types->register( $provider );
 
 		$all_types = $this->content_types->get_all_types();
@@ -130,7 +147,7 @@ class SitemapContentTypesTest extends TestCase {
 	public function test_count_returns_correct_number(): void {
 		$this->assertEquals( 0, $this->content_types->count() );
 
-		$provider = new PostContentProvider();
+		$provider = $this->create_post_content_provider();
 		$this->content_types->register( $provider );
 		$this->assertEquals( 1, $this->content_types->count() );
 	}
@@ -141,7 +158,7 @@ class SitemapContentTypesTest extends TestCase {
 	public function test_is_empty_returns_correct_value(): void {
 		$this->assertTrue( $this->content_types->is_empty() );
 
-		$provider = new PostContentProvider();
+		$provider = $this->create_post_content_provider();
 		$this->content_types->register( $provider );
 		$this->assertFalse( $this->content_types->is_empty() );
 	}
@@ -150,7 +167,7 @@ class SitemapContentTypesTest extends TestCase {
 	 * Test clear removes all content providers.
 	 */
 	public function test_clear_removes_all_content_providers(): void {
-		$provider = new PostContentProvider();
+		$provider = $this->create_post_content_provider();
 		$this->content_types->register( $provider );
 		$this->assertFalse( $this->content_types->is_empty() );
 
@@ -163,8 +180,8 @@ class SitemapContentTypesTest extends TestCase {
 	 * Test equals compares collections correctly.
 	 */
 	public function test_equals_compares_collections_correctly(): void {
-		$provider1 = new PostContentProvider();
-		$provider2 = new PostContentProvider();
+		$provider1 = $this->create_post_content_provider();
+		$provider2 = $this->create_post_content_provider();
 
 		$this->content_types->register( $provider1 );
 
