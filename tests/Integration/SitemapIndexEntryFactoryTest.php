@@ -52,7 +52,7 @@ class SitemapIndexEntryFactoryTest extends TestCase {
 
 		$this->assertInstanceOf( SitemapIndexEntry::class, $entry );
 		$this->assertEquals( get_permalink( $sitemap_post ), $entry->loc() );
-		$this->assertEquals( get_post_modified_time( 'c', true, $sitemap_post ), $entry->lastmod() );
+		$this->assertEquals( get_post_modified_time( 'c', false, $sitemap_post ), $entry->lastmod() );
 	}
 
 	/**
