@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.5] - 2026-01-06
+
+### Fixed
+
+* fix: Use site timezone for lastmod dates in URL entries by @GaryJones in <https://github.com/Automattic/msm-sitemap/pull/261>
+
 ## [1.5.4] - 2025-12-18
 
 ### Fixed
@@ -217,6 +223,7 @@ Initial release.
 
 * Enable stable Composer installations from origin.
 
+[1.5.5]: https://github.com/automattic/msm-sitemap/compare/1.5.4...1.5.5
 [1.5.4]: https://github.com/automattic/msm-sitemap/compare/1.5.3...1.5.4
 [1.5.3]: https://github.com/automattic/msm-sitemap/compare/1.5.2...1.5.3
 [1.5.2]: https://github.com/automattic/msm-sitemap/compare/1.5.1...1.5.2
