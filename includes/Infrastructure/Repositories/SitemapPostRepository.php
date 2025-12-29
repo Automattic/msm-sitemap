@@ -64,12 +64,14 @@ class SitemapPostRepository implements SitemapRepositoryInterface {
 
 		// Check if sitemap already exists
 		$existing_id = $wpdb->get_var(
-			$wpdb->prepare( 
-				"SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", 
-				$this->post_type_registration->get_post_type(), 
-				$date 
-			) 
+			$wpdb->prepare(
+				"SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1",
+				$this->post_type_registration->get_post_type(),
+				$date
+			)
 		);
+
+		$is_update = (bool) $existing_id;
 
 		if ( $existing_id ) {
 			// Update existing sitemap
@@ -109,6 +111,36 @@ class SitemapPostRepository implements SitemapRepositoryInterface {
 			}
 		}
 
+		// Fire legacy action hooks for backwards compatibility (used by wpcom-helper.php for cache invalidation).
+		list( $year, $month, $day ) = explode( '-', $date );
+		if ( $is_update ) {
+			/**
+			 * Fires after a sitemap post is updated.
+			 *
+			 * @param int    $post_id     The sitemap post ID.
+			 * @param string $year        The year (YYYY).
+			 * @param string $month       The month (MM).
+			 * @param string $day         The day (DD).
+			 * @param string $xml_content The generated XML content.
+			 * @param int    $url_count   The number of URLs in the sitemap.
+			 */
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Legacy hook name for backwards compatibility.
+			do_action( 'msm_update_sitemap_post', $post_id, $year, $month, $day, $xml_content, $url_count );
+		} else {
+			/**
+			 * Fires after a new sitemap post is inserted.
+			 *
+			 * @param int    $post_id     The sitemap post ID.
+			 * @param string $year        The year (YYYY).
+			 * @param string $month       The month (MM).
+			 * @param string $day         The day (DD).
+			 * @param string $xml_content The generated XML content.
+			 * @param int    $url_count   The number of URLs in the sitemap.
+			 */
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Legacy hook name for backwards compatibility.
+			do_action( 'msm_insert_sitemap_post', $post_id, $year, $month, $day, $xml_content, $url_count );
+		}
+
 		return true;
 	}
 
@@ -140,7 +172,7 @@ class SitemapPostRepository implements SitemapRepositoryInterface {
 	 */
 	public function delete_by_date( string $date ): bool {
 		$post_id = $this->find_by_date( $date );
-		
+
 		if ( ! $post_id ) {
 			return false;
 		}
@@ -165,6 +197,22 @@ class SitemapPostRepository implements SitemapRepositoryInterface {
 			}
 		}
 
+		// Fire legacy action hook for backwards compatibility (used by wpcom-helper.php for cache invalidation).
+		if ( $result ) {
+			list( $year, $month, $day ) = explode( '-', $date );
+
+			/**
+			 * Fires after a sitemap post is deleted.
+			 *
+			 * @param int    $post_id The sitemap post ID.
+			 * @param string $year    The year (YYYY).
+			 * @param string $month   The month (MM).
+			 * @param string $day     The day (DD).
+			 */
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Legacy hook name for backwards compatibility.
+			do_action( 'msm_delete_sitemap_post', $post_id, $year, $month, $day );
+		}
+
 		return (bool) $result;
 	}
 
@@ -175,28 +223,34 @@ class SitemapPostRepository implements SitemapRepositoryInterface {
 	 * @return int Number of sitemaps deleted.
 	 */
 	public function delete_for_date_queries( array $date_queries ): int {
-		global $wpdb;
-		
 		$deleted_count = 0;
-		
+
 		foreach ( $date_queries as $query ) {
 			$sitemap_query = new \WP_Query(
 				array(
 					'post_type'      => $this->post_type_registration->get_post_type(),
 					'post_status'    => 'any',
-					'fields'         => 'ids',
 					'posts_per_page' => -1,
 					'date_query'     => array( $query ),
 				)
 			);
-			
-			foreach ( $sitemap_query->posts as $post_id ) {
+
+			foreach ( $sitemap_query->posts as $post ) {
+				$post_id = $post->ID;
+				$date    = $post->post_name;
+
 				if ( wp_delete_post( $post_id, true ) ) {
 					++$deleted_count;
+
+					// Fire legacy action hook for backwards compatibility.
+					if ( preg_match( '/^(\d{4})-(\d{2})-(\d{2})$/', $date, $matches ) ) {
+						// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Legacy hook name for backwards compatibility.
+						do_action( 'msm_delete_sitemap_post', $post_id, $matches[1], $matches[2], $matches[3] );
+					}
 				}
 			}
 		}
-		
+
 		return $deleted_count;
 	}
 
@@ -207,21 +261,32 @@ class SitemapPostRepository implements SitemapRepositoryInterface {
 	 */
 	public function delete_all(): int {
 		global $wpdb;
-		
-		$sitemap_ids = $wpdb->get_col(
-			$wpdb->prepare( 
-				"SELECT ID FROM $wpdb->posts WHERE post_type = %s", 
-				$this->post_type_registration->get_post_type() 
-			) 
+
+		// Get both ID and post_name so we can fire the delete action with date components.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$sitemaps = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT ID, post_name FROM $wpdb->posts WHERE post_type = %s",
+				$this->post_type_registration->get_post_type()
+			)
 		);
-		
+
 		$deleted_count = 0;
-		foreach ( $sitemap_ids as $post_id ) {
+		foreach ( $sitemaps as $sitemap ) {
+			$post_id = (int) $sitemap->ID;
+			$date    = $sitemap->post_name;
+
 			if ( wp_delete_post( $post_id, true ) ) {
 				++$deleted_count;
+
+				// Fire legacy action hook for backwards compatibility.
+				if ( preg_match( '/^(\d{4})-(\d{2})-(\d{2})$/', $date, $matches ) ) {
+					// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Legacy hook name for backwards compatibility.
+					do_action( 'msm_delete_sitemap_post', $post_id, $matches[1], $matches[2], $matches[3] );
+				}
 			}
 		}
-		
+
 		return $deleted_count;
 	}
 
