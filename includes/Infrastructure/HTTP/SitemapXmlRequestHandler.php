@@ -270,6 +270,17 @@ class SitemapXmlRequestHandler implements WordPressIntegrationInterface {
 		$sitemaps = array_unique( $sitemaps );
 
 		/**
+		 * Filter sitemap dates in the index.
+		 *
+		 * @deprecated 2.0.0 Use 'msm_sitemap_index_sitemaps' instead.
+		 *
+		 * @param array    $sitemaps Array of sitemap dates in MySQL DATETIME format.
+		 * @param int|bool $year     The year filter, or false for all years.
+		 */
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Legacy hook name for backwards compatibility.
+		$sitemaps = apply_filters( 'msm_sitemap_index', $sitemaps, $year );
+
+		/**
 		 * Filter daily sitemaps from the index by date.
 		 *
 		 * Expects an array of dates in MySQL DATETIME format [ Y-m-d H:i:s ].
