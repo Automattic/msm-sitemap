@@ -83,29 +83,17 @@ class SitemapXmlFormatter {
 	/**
 	 * Format a single image entry to XML.
 	 *
+	 * Per Google's Image Sitemap specification, only the loc element is required.
+	 * Other elements (caption, geo_location, title, license) have been deprecated by Google.
+	 *
+	 * @see https://developers.google.com/search/docs/crawling-indexing/sitemaps/image-sitemaps
+	 *
 	 * @param ImageEntry $image The image entry to format.
 	 * @return string The XML representation of the image entry.
 	 */
 	private function format_image_entry( ImageEntry $image ): string {
 		$xml  = "\t\t<image:image>\n";
 		$xml .= "\t\t\t<image:loc>" . esc_xml( $image->loc() ) . "</image:loc>\n";
-
-		if ( $image->title() ) {
-			$xml .= "\t\t\t<image:title>" . esc_xml( $image->title() ) . "</image:title>\n";
-		}
-
-		if ( $image->caption() ) {
-			$xml .= "\t\t\t<image:caption>" . esc_xml( $image->caption() ) . "</image:caption>\n";
-		}
-
-		if ( $image->geo_location() ) {
-			$xml .= "\t\t\t<image:geo_location>" . esc_xml( $image->geo_location() ) . "</image:geo_location>\n";
-		}
-
-		if ( $image->license() ) {
-			$xml .= "\t\t\t<image:license>" . esc_xml( $image->license() ) . "</image:license>\n";
-		}
-
 		$xml .= "\t\t</image:image>\n";
 
 		return $xml;
