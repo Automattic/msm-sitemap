@@ -89,6 +89,15 @@ class UrlEntry {
 	private const MAX_PRIORITY = 1.0;
 
 	/**
+	 * Maximum number of images per URL according to Google's specification.
+	 *
+	 * @see https://developers.google.com/search/docs/crawling-indexing/sitemaps/image-sitemaps
+	 *
+	 * @var int
+	 */
+	private const MAX_IMAGES_PER_URL = 1000;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                    $loc        The URL of the page (required).
@@ -345,12 +354,28 @@ class UrlEntry {
 	/**
 	 * Validate the images parameter.
 	 *
+	 * Per Google's Image Sitemap specification, a maximum of 1000 images can be
+	 * included per URL.
+	 *
+	 * @see https://developers.google.com/search/docs/crawling-indexing/sitemaps/image-sitemaps
+	 *
 	 * @param array<ImageEntry>|null $images The images array to validate.
 	 * @throws \InvalidArgumentException If the images array is invalid.
 	 */
 	private function validate_images( ?array $images ): void {
 		if ( null === $images ) {
 			return;
+		}
+
+		if ( count( $images ) > self::MAX_IMAGES_PER_URL ) {
+			throw new \InvalidArgumentException(
+				sprintf(
+					/* translators: %1$d is the number of images provided, %2$d is the maximum allowed. */
+					__( 'Too many images: %1$d provided, maximum is %2$d per URL.', 'msm-sitemap' ),
+					count( $images ),
+					self::MAX_IMAGES_PER_URL
+				)
+			);
 		}
 
 		foreach ( $images as $image ) {
