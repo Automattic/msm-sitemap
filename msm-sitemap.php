@@ -589,6 +589,10 @@ class Metro_Sitemap {
 			// Update the total post count with the difference
 			$total_url_count += $url_count - $previous_url_count;
 
+			// Touch the post to update post_modified timestamp.
+			// This ensures the sitemap index shows when sitemaps were last regenerated.
+			wp_update_post( array( 'ID' => $sitemap_id ) );
+
 			update_post_meta( $sitemap_id, 'msm_sitemap_xml', $generated_xml_string );
 			update_post_meta( $sitemap_id, 'msm_indexed_url_count', $url_count );
 			do_action( 'msm_update_sitemap_post', $sitemap_id, $year, $month, $day, $generated_xml_string, $url_count );
@@ -776,16 +780,24 @@ class Metro_Sitemap {
 		global $wpdb;
 
 		// Direct query because we just want dates of the sitemap entries and this is much faster than WP_Query
+		// We need both post_date (for URL) and post_modified (for lastmod per Google's sitemap spec)
 		if ( is_numeric( $year ) ) {
-			$query = $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s AND YEAR(post_date) = %s ORDER BY post_date DESC LIMIT 10000", self::SITEMAP_CPT, $year );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$results = $wpdb->get_results( $wpdb->prepare( "SELECT post_date, post_modified FROM $wpdb->posts WHERE post_type = %s AND YEAR(post_date) = %s AND post_status = 'publish' ORDER BY post_date DESC LIMIT 10000", self::SITEMAP_CPT, $year ) );
 		} else {
-			$query = $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s ORDER BY post_date DESC LIMIT 10000", self::SITEMAP_CPT );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$results = $wpdb->get_results( $wpdb->prepare( "SELECT post_date, post_modified FROM $wpdb->posts WHERE post_type = %s AND post_status = 'publish' ORDER BY post_date DESC LIMIT 10000", self::SITEMAP_CPT ) );
 		}
 
-		$sitemaps = $wpdb->get_col( $query );
-
-		// Sometimes duplicate sitemaps exist, lets make sure so they are not output
-		$sitemaps = array_unique( $sitemaps );
+		// Build mapping of date -> modified time, and extract unique dates for BC filter
+		$date_to_modified = array();
+		$sitemaps         = array();
+		foreach ( $results as $row ) {
+			if ( ! isset( $date_to_modified[ $row->post_date ] ) ) {
+				$date_to_modified[ $row->post_date ] = $row->post_modified;
+				$sitemaps[]                          = $row->post_date;
+			}
+		}
 
 		/**
 		 * Filter daily sitemaps from the index by date.
@@ -802,8 +814,8 @@ class Metro_Sitemap {
 		 */
 		$sitemaps = apply_filters( 'msm_sitemap_index', $sitemaps, $year );
 
-		// Create sitemap index entries using our domain objects
-		$entries = \Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapIndexEntryFactory::from_sitemap_dates( $sitemaps );
+		// Create sitemap index entries using our domain objects, passing the modification times
+		$entries = \Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapIndexEntryFactory::from_sitemap_dates( $sitemaps, $date_to_modified );
 		$collection = \Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapIndexCollectionFactory::from_entries( $entries );
 
 		$xml = new SimpleXMLElement( $xml_prefix . $stylesheet . '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
