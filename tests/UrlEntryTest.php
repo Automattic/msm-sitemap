@@ -9,6 +9,7 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests;
 
+use Automattic\MSM_Sitemap\Domain\ValueObjects\ImageEntry;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry;
 
 /**
@@ -323,5 +324,70 @@ class UrlEntryTest extends TestCase {
 		yield 'date only' => array( 'lastmod' => '2024-01-15' );
 		yield 'ISO 8601 with timezone' => array( 'lastmod' => '2024-01-15T10:30:00+00:00' );
 		yield 'ISO 8601 with negative timezone' => array( 'lastmod' => '2024-01-15T10:30:00-05:00' );
+	}
+
+	/**
+	 * Test that UrlEntry allows up to 1000 images per URL.
+	 */
+	public function test_url_entry_allows_1000_images(): void {
+		$images = array();
+		for ( $i = 1; $i <= 1000; $i++ ) {
+			$images[] = new ImageEntry( 'https://example.com/image' . $i . '.jpg' );
+		}
+
+		$url_entry = new UrlEntry(
+			'https://example.com/post/',
+			null,
+			null,
+			null,
+			$images
+		);
+
+		$this->assertEquals( 1000, $url_entry->image_count() );
+	}
+
+	/**
+	 * Test that UrlEntry throws exception when exceeding 1000 images per URL.
+	 *
+	 * Per Google's Image Sitemap specification, a maximum of 1000 images
+	 * can be included per URL.
+	 *
+	 * @see https://developers.google.com/search/docs/crawling-indexing/sitemaps/image-sitemaps
+	 */
+	public function test_url_entry_throws_exception_when_exceeding_1000_images(): void {
+		$images = array();
+		for ( $i = 1; $i <= 1001; $i++ ) {
+			$images[] = new ImageEntry( 'https://example.com/image' . $i . '.jpg' );
+		}
+
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Too many images: 1001 provided, maximum is 1000 per URL.' );
+
+		new UrlEntry(
+			'https://example.com/post/',
+			null,
+			null,
+			null,
+			$images
+		);
+	}
+
+	/**
+	 * Test creating URL entry with images.
+	 */
+	public function test_create_url_entry_with_images(): void {
+		$image = new ImageEntry( 'https://example.com/image.jpg' );
+
+		$url_entry = new UrlEntry(
+			'https://example.com/post/',
+			null,
+			null,
+			null,
+			array( $image )
+		);
+
+		$this->assertTrue( $url_entry->has_images() );
+		$this->assertEquals( 1, $url_entry->image_count() );
+		$this->assertCount( 1, $url_entry->images() );
 	}
 } 
