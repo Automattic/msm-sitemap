@@ -249,25 +249,34 @@ class SitemapXmlRequestHandler implements WordPressIntegrationInterface {
 	public function get_sitemap_index_xml( $year = false ) {
 		global $wpdb;
 
-		// Use the same query logic as the old build_root_sitemap_xml method for consistency
+		// Query both post_date (for URL) and post_modified (for lastmod per Google's sitemap spec).
+		// Per Google, lastmod should indicate when the sitemap file was modified, not the date it represents.
+		// @see https://developers.google.com/search/docs/crawling-indexing/sitemaps/large-sitemaps
 		if ( is_numeric( $year ) ) {
 			$query = $wpdb->prepare(
-				"SELECT post_date FROM $wpdb->posts WHERE post_type = %s AND YEAR(post_date) = %s AND post_status = 'publish' ORDER BY post_date DESC LIMIT 10000",
+				"SELECT post_date, post_modified FROM $wpdb->posts WHERE post_type = %s AND YEAR(post_date) = %s AND post_status = 'publish' ORDER BY post_date DESC LIMIT 10000",
 				$this->post_type_registration->get_post_type(),
 				$year
 			);
 		} else {
 			$query = $wpdb->prepare(
-				"SELECT post_date FROM $wpdb->posts WHERE post_type = %s AND post_status = 'publish' ORDER BY post_date DESC LIMIT 10000",
+				"SELECT post_date, post_modified FROM $wpdb->posts WHERE post_type = %s AND post_status = 'publish' ORDER BY post_date DESC LIMIT 10000",
 				$this->post_type_registration->get_post_type()
 			);
 		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
-		$sitemaps = $wpdb->get_col( $query );
+		$results = $wpdb->get_results( $query );
 
-		// Remove duplicates like the old method
-		$sitemaps = array_unique( $sitemaps );
+		// Build mapping of date -> modified time, and extract unique dates.
+		$date_to_modified = array();
+		$sitemaps         = array();
+		foreach ( $results as $row ) {
+			if ( ! isset( $date_to_modified[ $row->post_date ] ) ) {
+				$date_to_modified[ $row->post_date ] = $row->post_modified;
+				$sitemaps[]                          = $row->post_date;
+			}
+		}
 
 		/**
 		 * Filter sitemap dates in the index.
@@ -292,13 +301,19 @@ class SitemapXmlRequestHandler implements WordPressIntegrationInterface {
 		 */
 		$sitemaps = apply_filters( 'msm_sitemap_index_sitemaps', $sitemaps );
 
-		// Convert dates to sitemap entries
-		$entries = array();
+		// Convert dates to sitemap entries.
+		// Use post_modified for lastmod per Google's sitemap spec.
+		$entries  = array();
+		$timezone = wp_timezone();
 		foreach ( $sitemaps as $sitemap_date ) {
 			$date = SitemapDate::fromString( $sitemap_date );
 
-			$loc     = $this->get_sitemap_url( $date );
-			$lastmod = $sitemap_date;
+			$loc = $this->get_sitemap_url( $date );
+
+			// Use modification time for lastmod (when sitemap was regenerated).
+			$modified_date = $date_to_modified[ $sitemap_date ] ?? $sitemap_date;
+			$datetime      = new \DateTimeImmutable( $modified_date, $timezone );
+			$lastmod       = wp_date( 'c', $datetime->getTimestamp(), $timezone );
 
 			$entries[] = SitemapIndexEntryFactory::from_data( $loc, $lastmod );
 		}
