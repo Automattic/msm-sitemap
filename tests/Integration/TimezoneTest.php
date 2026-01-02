@@ -320,15 +320,18 @@ class TimezoneTest extends TestCase {
 		update_option( 'timezone_string', 'Australia/Sydney' );
 		wp_cache_flush();
 
-		// Create a post in current year
+		// Create a post in current year using January 1st (always in the past)
 		$current_year = wp_date( 'Y' );
-		$post_date = $current_year . '-06-15 10:00:00';
-		
+		$post_date    = $current_year . '-01-01 10:00:00';
+
 		$post_id = $this->create_dummy_post( $post_date );
+
+		// Flush cache AFTER creating the post to ensure fresh query
+		wp_cache_flush();
 
 		// Get year range
 		$year_range = Metro_Sitemap::get_post_year_range();
-		
+
 		// Should include current year
 		$this->assertContains( (int) $current_year, $year_range, 'Year range should include current year in local timezone' );
 	}
