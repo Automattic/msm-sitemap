@@ -1,13 +1,13 @@
 # Metro Sitemap
 
-Stable tag: 1.5.4  
+Stable tag: 1.5.5  
 Requires at least: 6.4  
 Tested up to: 6.9  
 Requires PHP: 7.4  
 License: GPLv2 or later  
 License URI: https://www.gnu.org/licenses/gpl-2.0.html  
 Tags: sitemap, xml, seo, performance, multisite  
-Contributors: metro, automattic, alleyinteractive, makermedia, 10up  
+Contributors: metro, automattic, alleyinteractive, makermedia, 10up, garyj  
 
 High-performance XML sitemaps for large-scale WordPress sites. Built for speed, extensibility, and reliability. Metro Sitemap generates robust, scalable XML sitemaps for WordPress sites of any size. Designed for high-traffic and enterprise environments, it ensures your content is discoverable by search engines without slowing down your site.
 
