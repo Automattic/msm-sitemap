@@ -1,7 +1,9 @@
 # Directories
+/.claude/
 /.git/
 /.github/
 /bin/
+/docs/
 /node_modules/
 /tests/
 /vendor/
@@ -11,6 +13,7 @@
 .editorconfig
 .gitattributes
 .gitignore
+.markdownlint.json
 .npmrc
 .phpcs.xml.dist
 .wp-env.json
@@ -18,6 +21,7 @@
 CHANGELOG.md
 composer.json
 composer.lock
+CONTRIBUTING.md
 package.json
 package-lock.json
 phpunit.xml.dist

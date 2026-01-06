@@ -11,7 +11,7 @@
  * Plugin Name:       MSM Sitemap
  * Plugin URI:        https://github.com/Automattic/msm-sitemap
  * Description:       Smart date-based sitemaps with automatic generation, detailed monitoring, and enterprise-ready architecture.
- * Version:           1.5.5
+ * Version:           2.0.0-dev
  * Requires at least: 6.4
  * Requires PHP:      7.4
  * Author:            Metro.co.uk, MAKE, Alley Interactive, WordPress VIP.
@@ -29,7 +29,7 @@ MSM_Sitemap_Autoloader::register( __DIR__ );
 require __DIR__ . '/includes/Infrastructure/DI/container.php';
 
 // Initialize plugin
-$GLOBALS['msm_sitemap_plugin'] = new \Automattic\MSM_Sitemap\Plugin( __FILE__, '1.5.2' );
+$GLOBALS['msm_sitemap_plugin'] = new \Automattic\MSM_Sitemap\Plugin( __FILE__, '2.0.0-dev' );
 add_action( 'after_setup_theme', array( $GLOBALS['msm_sitemap_plugin'], 'run' ) );
 
 /**

@@ -1,14 +1,29 @@
 # Exclude from release archives
-/.github/         export-ignore
-/.wordpress-org/  export-ignore
-/tests/           export-ignore
-/.distignore      export-ignore
-/.editorconfig    export-ignore
-/.gitattributes   export-ignore
-/.gitignore       export-ignore
-/.phpcs.xml.dist  export-ignore
-/CHANGELOG.md     export-ignore
-/phpunit.xml.dist export-ignore
+/.claude/              export-ignore
+/.github/              export-ignore
+/.wordpress-org/       export-ignore
+/bin/                  export-ignore
+/docs/                 export-ignore
+/node_modules/         export-ignore
+/tests/                export-ignore
+/vendor/               export-ignore
+/.distignore           export-ignore
+/.editorconfig         export-ignore
+/.gitattributes        export-ignore
+/.gitignore            export-ignore
+/.gitmodules           export-ignore
+/.markdownlint.json    export-ignore
+/.npmrc                export-ignore
+/.phpcs.xml.dist       export-ignore
+/.wp-env.json          export-ignore
+/.wp-env.override.json export-ignore
+/CHANGELOG.md          export-ignore
+/composer.json         export-ignore
+/composer.lock         export-ignore
+/CONTRIBUTING.md       export-ignore
+/package.json          export-ignore
+/package-lock.json     export-ignore
+/phpunit.xml.dist      export-ignore
 
 # Auto detect text files and perform LF normalization
 * text=auto
