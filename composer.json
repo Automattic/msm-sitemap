@@ -27,6 +27,11 @@
 		"wp-coding-standards/wpcs": "^3.0",
 		"yoast/wp-test-utils": "^1.2.0"
 	},
+	"autoload": {
+		"psr-4": {
+			"Automattic\\MSM_Sitemap\\": "includes/"
+		}
+	},
 	"autoload-dev": {
 		"psr-4": {
 			"Automattic\\MSM_Sitemap\\Tests\\": "tests/",
