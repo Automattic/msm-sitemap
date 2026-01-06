@@ -41,7 +41,7 @@ class UrlEntryFactory {
 			return null;
 		}
 
-		$lastmod = get_post_modified_time( 'c', true, $post );
+		$lastmod = get_post_modified_time( 'c', false, $post );
 		$changefreq = apply_filters( 'msm_sitemap_changefreq', 'monthly', $post );
 		$priority = apply_filters( 'msm_sitemap_priority', 0.7, $post );
 

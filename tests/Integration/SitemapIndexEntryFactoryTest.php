@@ -52,7 +52,7 @@ class SitemapIndexEntryFactoryTest extends TestCase {
 
 		$this->assertInstanceOf( SitemapIndexEntry::class, $entry );
 		$this->assertEquals( get_permalink( $sitemap_post ), $entry->loc() );
-		$this->assertEquals( get_post_modified_time( 'c', true, $sitemap_post ), $entry->lastmod() );
+		$this->assertEquals( get_post_modified_time( 'c', false, $sitemap_post ), $entry->lastmod() );
 	}
 
 	/**
@@ -264,5 +264,65 @@ class SitemapIndexEntryFactoryTest extends TestCase {
 		// Reset timezone.
 		update_option( 'timezone_string', 'UTC' );
 		wp_cache_flush();
+	}
+
+	/**
+	 * Test that lastmod uses modification time when provided.
+	 *
+	 * Per Google's sitemap spec, lastmod should indicate when the sitemap
+	 * file was modified, not the date the sitemap represents.
+	 *
+	 * @see https://developers.google.com/search/docs/crawling-indexing/sitemaps/large-sitemaps
+	 */
+	public function test_from_sitemap_dates_uses_modification_time(): void {
+		// Ensure timezone is UTC for predictable results.
+		update_option( 'timezone_string', 'UTC' );
+		wp_cache_flush();
+
+		$sitemap_dates = array(
+			'2024-01-15 00:00:00',
+			'2024-01-16 00:00:00',
+		);
+
+		// Provide modification times (when sitemaps were regenerated).
+		$date_to_modified = array(
+			'2024-01-15 00:00:00' => '2024-12-20 14:30:00', // Regenerated Dec 20.
+			'2024-01-16 00:00:00' => '2024-12-21 09:15:00', // Regenerated Dec 21.
+		);
+
+		$entries = SitemapIndexEntryFactory::from_sitemap_dates( $sitemap_dates, $date_to_modified );
+
+		$this->assertCount( 2, $entries );
+
+		// lastmod should be the modification time, not the sitemap date.
+		$this->assertEquals( '2024-12-20T14:30:00+00:00', $entries[0]->lastmod() );
+		$this->assertEquals( '2024-12-21T09:15:00+00:00', $entries[1]->lastmod() );
+
+		// But the URL should still use the sitemap date.
+		$this->assertStringContainsString( 'yyyy=2024', $entries[0]->loc() );
+		$this->assertStringContainsString( 'mm=01', $entries[0]->loc() );
+		$this->assertStringContainsString( 'dd=15', $entries[0]->loc() );
+	}
+
+	/**
+	 * Test backwards compatibility when no modification times provided.
+	 *
+	 * When date_to_modified is empty, should fall back to using the
+	 * sitemap date as lastmod (original behaviour).
+	 */
+	public function test_from_sitemap_dates_backwards_compatible(): void {
+		// Ensure timezone is UTC for predictable results.
+		update_option( 'timezone_string', 'UTC' );
+		wp_cache_flush();
+
+		$sitemap_dates = array(
+			'2024-01-15 00:00:00',
+		);
+
+		// No modification times provided - should use sitemap date.
+		$entries = SitemapIndexEntryFactory::from_sitemap_dates( $sitemap_dates );
+
+		$this->assertCount( 1, $entries );
+		$this->assertEquals( '2024-01-15T00:00:00+00:00', $entries[0]->lastmod() );
 	}
 }

@@ -28,7 +28,7 @@ class SitemapIndexEntryFactory {
 	 */
 	public static function from_post( \WP_Post $sitemap_post ): SitemapIndexEntry {
 		$loc = get_permalink( $sitemap_post );
-		$lastmod = get_post_modified_time( 'c', true, $sitemap_post );
+		$lastmod = get_post_modified_time( 'c', false, $sitemap_post );
 
 		return new SitemapIndexEntry( $loc, $lastmod );
 	}
@@ -87,21 +87,29 @@ class SitemapIndexEntryFactory {
 	 *
 	 * @see https://make.wordpress.org/core/2019/09/23/date-time-improvements-wp-5-3/
 	 *
-	 * @param array<string> $sitemap_dates Array of sitemap dates in MySQL DATETIME format.
+	 * @param array<string>        $sitemap_dates    Array of sitemap dates in MySQL DATETIME format.
+	 * @param array<string,string> $date_to_modified Optional mapping of sitemap date to modification time.
+	 *                                               If provided, lastmod will use the modification time
+	 *                                               (when the sitemap was regenerated) per Google's spec.
+	 *                                               If not provided, falls back to the sitemap date for BC.
 	 * @return array<SitemapIndexEntry> Array of sitemap index entries.
 	 */
-	public static function from_sitemap_dates( array $sitemap_dates ): array {
+	public static function from_sitemap_dates( array $sitemap_dates, array $date_to_modified = array() ): array {
 		$entries  = array();
 		$timezone = wp_timezone();
 
 		foreach ( $sitemap_dates as $sitemap_date ) {
 			$loc = self::build_sitemap_url( $sitemap_date );
 
+			// Use the modification time if available, otherwise fall back to sitemap date for BC.
+			// Per Google's sitemap spec, lastmod should be when the sitemap file was modified.
+			$lastmod_date = $date_to_modified[ $sitemap_date ] ?? $sitemap_date;
+
 			// Parse the date in the site's timezone.
-			// The sitemap date (from post_date) is stored in local time, so we
-			// need to interpret it in the site's timezone to get the correct offset.
+			// The dates (from post_date/post_modified) are stored in local time, so we
+			// need to interpret them in the site's timezone to get the correct offset.
 			// Using DateTimeImmutable per WordPress 5.3+ best practices.
-			$datetime = new \DateTimeImmutable( $sitemap_date, $timezone );
+			$datetime = new \DateTimeImmutable( $lastmod_date, $timezone );
 
 			// Format using wp_date() for consistency with WordPress conventions.
 			$lastmod = wp_date( 'c', $datetime->getTimestamp(), $timezone );
