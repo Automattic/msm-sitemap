@@ -263,7 +263,16 @@ class CronManagementService {
 	/**
 	 * Get comprehensive cron status.
 	 *
-	 * @return array{enabled: bool, next_scheduled: int|false, blog_public: bool, generating: bool, halted: bool, current_frequency: string, valid_frequencies: array<string>} Status.
+	 * @return array{
+	 *     enabled: bool,
+	 *     next_scheduled: int|false,
+	 *     blog_public: bool,
+	 *     generating: bool,
+	 *     halted: bool,
+	 *     current_frequency: string,
+	 *     valid_frequencies: array<string>,
+	 *     progress: array{in_progress: bool, total: int, remaining: int, completed: int, percentage: float}
+	 * } Status.
 	 */
 	public function get_cron_status(): array {
 		$is_enabled     = $this->is_enabled();
@@ -275,6 +284,9 @@ class CronManagementService {
 			$next_scheduled = false;
 		}
 
+		// Get detailed progress information.
+		$progress_obj = $this->generation_state->get_background_progress();
+
 		return array(
 			'enabled'           => $is_enabled,
 			'next_scheduled'    => $next_scheduled,
@@ -283,6 +295,13 @@ class CronManagementService {
 			'halted'            => $this->generation_state->is_stop_requested(),
 			'current_frequency' => $this->get_current_frequency(),
 			'valid_frequencies' => self::get_valid_frequencies(),
+			'progress'          => array(
+				'in_progress' => $progress_obj->isInProgress(),
+				'total'       => $progress_obj->total(),
+				'remaining'   => $progress_obj->remaining(),
+				'completed'   => $progress_obj->completed(),
+				'percentage'  => $progress_obj->percentComplete(),
+			),
 		);
 	}
 

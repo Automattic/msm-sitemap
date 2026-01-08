@@ -166,18 +166,50 @@ class CronCommand {
 		$status = $this->service->get_cron_status();
 
 		$format = $assoc_args['format'] ?? 'table';
-		$fields = array( 'enabled', 'next_scheduled', 'blog_public', 'generating', 'halted', 'current_frequency' );
+
+		// Build generation status string with progress if applicable.
+		$generation_status = $this->format_generation_status( $status );
+
+		$fields = array( 'enabled', 'next_scheduled', 'blog_public', 'generation', 'current_frequency' );
 		$items  = array(
 			array(
 				'enabled'           => $status['enabled'] ? 'Yes' : 'No',
 				'next_scheduled'    => $status['next_scheduled'] ? wp_date( 'Y-m-d H:i:s T', $status['next_scheduled'] ) : 'Not scheduled',
 				'blog_public'       => $status['blog_public'] ? 'Yes' : 'No',
-				'generating'        => $status['generating'] ? 'Yes' : 'No',
-				'halted'            => $status['halted'] ? 'Yes' : 'No',
+				'generation'        => $generation_status,
 				'current_frequency' => $status['current_frequency'],
 			),
 		);
 		format_items( $format, $items, $fields );
+	}
+
+	/**
+	 * Format the generation status string.
+	 *
+	 * @param array $status The full status array.
+	 * @return string Formatted generation status.
+	 */
+	private function format_generation_status( array $status ): string {
+		if ( $status['halted'] ) {
+			return 'Halted';
+		}
+
+		if ( ! $status['generating'] ) {
+			return 'Idle';
+		}
+
+		$progress = $status['progress'];
+
+		if ( ! $progress['in_progress'] || 0 === $progress['total'] ) {
+			return 'In progress';
+		}
+
+		return sprintf(
+			'%d/%d (%.0f%%)',
+			$progress['completed'],
+			$progress['total'],
+			$progress['percentage']
+		);
 	}
 
 	/**

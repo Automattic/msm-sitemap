@@ -223,9 +223,10 @@ final class CronTest extends \Automattic\MSM_Sitemap\Tests\Integration\TestCase 
 		$this->assertArrayHasKey( 'enabled', $data[0] );
 		$this->assertArrayHasKey( 'next_scheduled', $data[0] );
 		$this->assertArrayHasKey( 'blog_public', $data[0] );
-		$this->assertArrayHasKey( 'generating', $data[0] );
-		$this->assertArrayHasKey( 'halted', $data[0] );
+		$this->assertArrayHasKey( 'generation', $data[0] );
+		$this->assertArrayHasKey( 'current_frequency', $data[0] );
 		$this->assertEquals( 'Yes', $data[0]['enabled'] );
+		$this->assertEquals( 'Idle', $data[0]['generation'] );
 	}
 
 	/**
