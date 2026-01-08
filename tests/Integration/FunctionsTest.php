@@ -2,17 +2,17 @@
 /**
  * WP_Test_Sitemap_Functions
  *
- * @package Automattic\MSM_Sitemap\Tests
+ * @package Automattic\MSM_Sitemap\Tests\Integration
  */
 
 declare( strict_types=1 );
 
-namespace Automattic\MSM_Sitemap\Tests;
+namespace Automattic\MSM_Sitemap\Tests\Integration;
 
-use Automattic\MSM_Sitemap\Tests\Includes\CustomPostStatusTestTrait;
+use Automattic\MSM_Sitemap\Tests\Integration\Includes\CustomPostStatusTestTrait;
 
 /**
- * Unit Tests to confirm Sitemaps are generated.
+ * Integration Tests to confirm Sitemaps are generated.
  *
  * @author Matthew Denton (mdbitz)
  */

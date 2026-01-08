@@ -2,14 +2,13 @@
 /**
  * DeleteTest
  *
- * @package Automattic\MSM_Sitemap
+ * @package Automattic\MSM_Sitemap\Tests\Integration\Cli
  */
 declare( strict_types=1 );
 
-namespace Automattic\MSM_Sitemap\Tests\Cli;
+namespace Automattic\MSM_Sitemap\Tests\Integration\Cli;
 
 use Automattic\MSM_Sitemap\Infrastructure\CLI\Commands\DeleteCommand;
-use Automattic\MSM_Sitemap\Tests\TestCase;
 use function Automattic\MSM_Sitemap\Infrastructure\DI\msm_sitemap_container;
 
 require_once __DIR__ . '/../Includes/mock-wp-cli.php';
@@ -22,7 +21,7 @@ require_once __DIR__ . '/../Includes/mock-wp-cli.php';
  *
  * @package Automattic\MSM_Sitemap
  */
-final class DeleteTest extends TestCase {
+final class DeleteTest extends \Automattic\MSM_Sitemap\Tests\Integration\TestCase {
 
 	/**
 	 * Set up the test environment.

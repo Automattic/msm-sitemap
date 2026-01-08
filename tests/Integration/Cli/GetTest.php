@@ -6,7 +6,7 @@
  */
 declare( strict_types=1 );
 
-namespace Automattic\MSM_Sitemap\Tests\Cli;
+namespace Automattic\MSM_Sitemap\Tests\Integration\Cli;
 
 use Automattic\MSM_Sitemap\Infrastructure\CLI\Commands\GetCommand;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\Site;
@@ -19,7 +19,7 @@ require_once __DIR__ . '/../Includes/mock-wp-cli.php';
  *
  * @package Automattic\MSM_Sitemap\Tests\Cli
  */
-final class GetTest extends \Automattic\MSM_Sitemap\Tests\TestCase {
+final class GetTest extends \Automattic\MSM_Sitemap\Tests\Integration\TestCase {
 
 	/**
 	 * Test sitemap post ID.

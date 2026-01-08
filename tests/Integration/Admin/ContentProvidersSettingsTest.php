@@ -2,20 +2,20 @@
 /**
  * Content Providers Settings Test
  *
- * @package Automattic\MSM_Sitemap\Tests\Admin
+ * @package Automattic\MSM_Sitemap\Tests\Integration\Admin
  */
 
 declare(strict_types=1);
 
-namespace Automattic\MSM_Sitemap\Tests;
+namespace Automattic\MSM_Sitemap\Tests\Integration\Admin;
 
 use Automattic\MSM_Sitemap\Infrastructure\Repositories\ImageRepository;
 use Automattic\MSM_Sitemap\Application\Services\SettingsService;
 
 /**
- * Unit Tests for Content Provider Settings.
+ * Integration Tests for Content Provider Settings.
  */
-class ContentProvidersSettingsTest extends TestCase {
+class ContentProvidersSettingsTest extends \Automattic\MSM_Sitemap\Tests\Integration\TestCase {
 
 	/**
 	 * Test that image provider settings are saved and retrieved correctly.

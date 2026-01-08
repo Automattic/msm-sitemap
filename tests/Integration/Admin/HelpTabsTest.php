@@ -2,20 +2,19 @@
 /**
  * Tests for Admin HelpTabs class.
  *
- * @package Automattic\MSM_Sitemap\Tests\Admin
+ * @package Automattic\MSM_Sitemap\Tests\Integration\Admin
  */
 
 declare( strict_types=1 );
 
-namespace Automattic\MSM_Sitemap\Tests\Admin;
+namespace Automattic\MSM_Sitemap\Tests\Integration\Admin;
 
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\Admin\HelpTabs;
-use Automattic\MSM_Sitemap\Tests\TestCase;
 
 /**
  * Tests for HelpTabs class.
  */
-class HelpTabsTest extends TestCase {
+class HelpTabsTest extends \Automattic\MSM_Sitemap\Tests\Integration\TestCase {
 
 	/**
 	 * Admin user ID.

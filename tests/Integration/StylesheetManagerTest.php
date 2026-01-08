@@ -9,7 +9,7 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests\Integration;
 
-use Automattic\MSM_Sitemap\StylesheetManager;
+use Automattic\MSM_Sitemap\Infrastructure\WordPress\StylesheetManager;
 use Automattic\MSM_Sitemap\Tests\Integration\TestCase;
 
 /**
