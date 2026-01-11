@@ -33,7 +33,7 @@
     </groups>
 
     <coverage cacheDirectory=".phpunit.cache/code-coverage"
-              processUncoveredFiles="true">
+              processUncoveredFiles="false">
         <include>
 			<file>msm-sitemap.php</file>
 			<directory>templates</directory>
