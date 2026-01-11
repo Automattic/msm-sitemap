@@ -23,6 +23,7 @@
 		"ergebnis/phpunit-slow-test-detector": "^2.19",
 		"php-parallel-lint/php-parallel-lint": "^1.0",
 		"phpcompatibility/phpcompatibility-wp": "^2.1",
+		"phpunit/phpcov": "^8.2",
 		"phpunit/phpunit": "^9",
 		"wp-coding-standards/wpcs": "^3.0",
 		"yoast/wp-test-utils": "^1.2.0"
@@ -48,8 +49,13 @@
 	},
 	"scripts": {
 		"coverage": [
-			"@php ./vendor/bin/phpunit --coverage-html ./.phpunit.cache/code-coverage-html"
+			"@coverage:unit",
+			"@coverage:integration",
+			"@coverage:merge"
 		],
+		"coverage:unit": "@php ./vendor/bin/phpunit --testsuite unit --coverage-php coverage/unit.cov",
+		"coverage:integration": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/msm-sitemap ./vendor/bin/phpunit --testsuite integration --coverage-php coverage/integration.cov",
+		"coverage:merge": "@php ./vendor/bin/phpcov merge coverage/ --clover coverage/clover.xml --html coverage/html",
 		"cs": [
 			"@php ./vendor/bin/phpcs -q"
 		],
@@ -68,7 +74,10 @@
 		"test:integration-ms": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/msm-sitemap /bin/bash -c 'WP_MULTISITE=1 ./vendor/bin/phpunit --testsuite integration --no-coverage'"
 	},
 	"scripts-descriptions": {
-		"coverage": "Run tests with code coverage reporting",
+		"coverage": "Run all tests with merged code coverage (for CI)",
+		"coverage:unit": "Run unit tests with coverage output",
+		"coverage:integration": "Run integration tests with coverage output via wp-env",
+		"coverage:merge": "Merge coverage reports into combined HTML and Clover XML",
 		"cs": "Run PHP Code Sniffer",
 		"cs-fix": "Run PHP Code Sniffer and fix violations",
 		"i18n": "Generate a POT file for translation",
