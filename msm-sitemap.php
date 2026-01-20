@@ -13,7 +13,7 @@
  * Description:       Smart date-based sitemaps with automatic generation, detailed monitoring, and enterprise-ready architecture.
  * Version:           2.0.0-dev
  * Requires at least: 6.4
- * Requires PHP:      7.4
+ * Requires PHP:      8.2
  * Author:            Metro.co.uk, MAKE, Alley Interactive, WordPress VIP.
  * Text Domain:       msm-sitemap
  * License:           GPL-2.0-or-later
