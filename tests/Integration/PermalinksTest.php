@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace Automattic\MSM_Sitemap\Tests\Includes;
+namespace Automattic\MSM_Sitemap\Tests\Integration;
 
 use Automattic\MSM_Sitemap\Infrastructure\WordPress\Permalinks;
 use PHPUnit\Framework\TestCase;
