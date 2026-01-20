@@ -4,7 +4,7 @@ Thank you for your interest in contributing to MSM Sitemap! This document provid
 
 ## Requirements
 
-* **Minimum Requirements:** WordPress 5.9+, PHP 7.4+
+* **Minimum Requirements:** WordPress 6.4+, PHP 8.2+
 * **Coding Standards:** Follows [WordPress Coding Standards](https://github.com/WordPress/WordPress-Coding-Standards) and [PSR-12](https://www.php-fig.org/psr/psr-12/)
 
 ## Development Setup
