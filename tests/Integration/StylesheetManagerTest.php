@@ -44,7 +44,7 @@ class StylesheetManagerTest extends TestCase {
 		$priority2 = has_action( 'template_redirect', array( StylesheetManager::class, 'handle_xsl_requests' ) );
 		$this->assertIsInt( $priority1 );
 		$this->assertIsInt( $priority2 );
-		
+
 		// Verify actions are actually registered (priority > 0 means registered)
 		$this->assertStringContainsString( 'register_xsl_endpoints', 'register_xsl_endpoints action should be registered' );
 		$this->assertStringContainsString( 'handle_xsl_requests', 'handle_xsl_requests action should be registered' );
@@ -182,4 +182,4 @@ class StylesheetManagerTest extends TestCase {
 		$this->assertStringContainsString( '#sitemap {', $css );
 		$this->assertStringContainsString( '#sitemap__table {', $css );
 	}
-} 
+}
