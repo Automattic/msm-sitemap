@@ -52,7 +52,7 @@ class CoreIntegrationTest extends TestCase {
 	 */
 	public function test_disable_core_providers(): void {
 		// Mock WP_Sitemaps instance
-		$wp_sitemaps = $this->createMock( WP_Sitemaps::class );
+		$wp_sitemaps = $this->createStub( WP_Sitemaps::class );
 		$registry    = $this->createMock( \WP_Sitemaps_Registry::class );
 
 		// Set up expectations
@@ -74,9 +74,9 @@ class CoreIntegrationTest extends TestCase {
 	 * Test that disabled providers return empty results.
 	 */
 	public function test_disabled_providers_return_empty_results(): void {
-		// Create a mock WP_Sitemaps instance
-		$wp_sitemaps = $this->createMock( WP_Sitemaps::class );
-		$registry    = $this->createMock( \WP_Sitemaps_Registry::class );
+		// Create a stub WP_Sitemaps instance
+		$wp_sitemaps = $this->createStub( WP_Sitemaps::class );
+		$registry    = $this->createStub( \WP_Sitemaps_Registry::class );
 
 		// Capture the provider instances
 		$captured_providers = array();

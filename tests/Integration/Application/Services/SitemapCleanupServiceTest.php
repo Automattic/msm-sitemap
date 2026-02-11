@@ -35,7 +35,7 @@ class SitemapCleanupServiceTest extends TestCase {
 		update_post_meta( $post_id, 'msm_indexed_url_count', 5 );
 
 		$repository      = new SitemapPostRepository();
-		$post_repository = $this->createMock( PostRepository::class );
+		$post_repository = $this->createStub( PostRepository::class );
 		$post_repository->method( 'date_range_has_posts' )
 			->with( $date, $date )
 			->willReturn( null );
@@ -72,7 +72,7 @@ class SitemapCleanupServiceTest extends TestCase {
 		update_post_meta( $post_id, 'msm_indexed_url_count', 5 );
 
 		$repository      = new SitemapPostRepository();
-		$post_repository = $this->createMock( PostRepository::class );
+		$post_repository = $this->createStub( PostRepository::class );
 		$post_repository->method( 'date_range_has_posts' )
 			->with( $date, $date )
 			->willReturn( 123 );
@@ -120,7 +120,7 @@ class SitemapCleanupServiceTest extends TestCase {
 		update_post_meta( $post_without_posts, 'msm_indexed_url_count', 3 );
 
 		$repository      = new SitemapPostRepository();
-		$post_repository = $this->createMock( PostRepository::class );
+		$post_repository = $this->createStub( PostRepository::class );
 		$post_repository->method( 'get_post_ids_for_date' )
 			->willReturnMap(
 				array(
