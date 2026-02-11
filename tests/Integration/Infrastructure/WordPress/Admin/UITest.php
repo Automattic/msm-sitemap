@@ -30,15 +30,15 @@ class UITest extends TestCase {
 	 * Test that the UI class correctly receives and stores the plugin file path and version.
 	 */
 	public function test_ui_constructor_accepts_plugin_file_path_and_version(): void {
-		$cron_management           = $this->createMock( CronManagementService::class );
-		$missing_detection_service = $this->createMock( MissingSitemapDetectionService::class );
-		$stats_service             = $this->createMock( SitemapStatsService::class );
-		$settings_service          = $this->createMock( SettingsService::class );
-		$sitemap_repository        = $this->createMock( SitemapRepositoryInterface::class );
-		$taxonomy_sitemap_service  = $this->createMock( TaxonomySitemapService::class );
-		$author_sitemap_service    = $this->createMock( AuthorSitemapService::class );
-		$page_sitemap_service      = $this->createMock( PageSitemapService::class );
-		$action_handlers           = $this->createMock( ActionHandlers::class );
+		$cron_management           = $this->createStub( CronManagementService::class );
+		$missing_detection_service = $this->createStub( MissingSitemapDetectionService::class );
+		$stats_service             = $this->createStub( SitemapStatsService::class );
+		$settings_service          = $this->createStub( SettingsService::class );
+		$sitemap_repository        = $this->createStub( SitemapRepositoryInterface::class );
+		$taxonomy_sitemap_service  = $this->createStub( TaxonomySitemapService::class );
+		$author_sitemap_service    = $this->createStub( AuthorSitemapService::class );
+		$page_sitemap_service      = $this->createStub( PageSitemapService::class );
+		$action_handlers           = $this->createStub( ActionHandlers::class );
 		$plugin_file_path          = '/path/to/plugin/msm-sitemap.php';
 		$plugin_version            = '1.5.2';
 
@@ -71,15 +71,15 @@ class UITest extends TestCase {
 	 * Test that the UI class can be instantiated with plugin file path and version.
 	 */
 	public function test_ui_can_be_instantiated_with_plugin_file_path_and_version(): void {
-		$cron_management           = $this->createMock( CronManagementService::class );
-		$missing_detection_service = $this->createMock( MissingSitemapDetectionService::class );
-		$stats_service             = $this->createMock( SitemapStatsService::class );
-		$settings_service          = $this->createMock( SettingsService::class );
-		$sitemap_repository        = $this->createMock( SitemapRepositoryInterface::class );
-		$taxonomy_sitemap_service  = $this->createMock( TaxonomySitemapService::class );
-		$author_sitemap_service    = $this->createMock( AuthorSitemapService::class );
-		$page_sitemap_service      = $this->createMock( PageSitemapService::class );
-		$action_handlers           = $this->createMock( ActionHandlers::class );
+		$cron_management           = $this->createStub( CronManagementService::class );
+		$missing_detection_service = $this->createStub( MissingSitemapDetectionService::class );
+		$stats_service             = $this->createStub( SitemapStatsService::class );
+		$settings_service          = $this->createStub( SettingsService::class );
+		$sitemap_repository        = $this->createStub( SitemapRepositoryInterface::class );
+		$taxonomy_sitemap_service  = $this->createStub( TaxonomySitemapService::class );
+		$author_sitemap_service    = $this->createStub( AuthorSitemapService::class );
+		$page_sitemap_service      = $this->createStub( PageSitemapService::class );
+		$action_handlers           = $this->createStub( ActionHandlers::class );
 		$plugin_file_path          = '/path/to/plugin/msm-sitemap.php';
 		$plugin_version            = '1.5.2';
 
@@ -105,15 +105,15 @@ class UITest extends TestCase {
 	 * Test that the UI class setup method can be called.
 	 */
 	public function test_ui_setup_can_be_called(): void {
-		$cron_management           = $this->createMock( CronManagementService::class );
-		$missing_detection_service = $this->createMock( MissingSitemapDetectionService::class );
-		$stats_service             = $this->createMock( SitemapStatsService::class );
-		$settings_service          = $this->createMock( SettingsService::class );
-		$sitemap_repository        = $this->createMock( SitemapRepositoryInterface::class );
-		$taxonomy_sitemap_service  = $this->createMock( TaxonomySitemapService::class );
-		$author_sitemap_service    = $this->createMock( AuthorSitemapService::class );
-		$page_sitemap_service      = $this->createMock( PageSitemapService::class );
-		$action_handlers           = $this->createMock( ActionHandlers::class );
+		$cron_management           = $this->createStub( CronManagementService::class );
+		$missing_detection_service = $this->createStub( MissingSitemapDetectionService::class );
+		$stats_service             = $this->createStub( SitemapStatsService::class );
+		$settings_service          = $this->createStub( SettingsService::class );
+		$sitemap_repository        = $this->createStub( SitemapRepositoryInterface::class );
+		$taxonomy_sitemap_service  = $this->createStub( TaxonomySitemapService::class );
+		$author_sitemap_service    = $this->createStub( AuthorSitemapService::class );
+		$page_sitemap_service      = $this->createStub( PageSitemapService::class );
+		$action_handlers           = $this->createStub( ActionHandlers::class );
 		$plugin_file_path          = '/path/to/plugin/msm-sitemap.php';
 		$plugin_version            = '1.5.2';
 

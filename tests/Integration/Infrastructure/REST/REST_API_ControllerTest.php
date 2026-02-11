@@ -170,7 +170,7 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 		$request->set_param( 'date', '2024-01-15' );
 
 		// Mock the sitemap service to return data
-		$sitemap_service = $this->createMock( SitemapService::class );
+		$sitemap_service = $this->createStub( SitemapService::class );
 		$sitemap_service->method( 'get_sitemap_data' )
 			->with( '2024-01-15' )
 			->willReturn(
@@ -183,7 +183,7 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 
 		$controller = new SitemapsController(
 			$sitemap_service,
-			$this->createMock( GenerateSitemapUseCase::class )
+			$this->createStub( GenerateSitemapUseCase::class )
 		);
 
 		$response = $controller->get_sitemap( $request );
@@ -205,13 +205,13 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 		$request = new WP_REST_Request( 'GET', '/msm-sitemap/v1/sitemaps/invalid-date' );
 		$request->set_param( 'date', 'invalid-date' );
 
-		$sitemap_service = $this->createMock( SitemapService::class );
+		$sitemap_service = $this->createStub( SitemapService::class );
 		$sitemap_service->method( 'get_sitemap_data' )
 			->willReturn( null );
 
 		$controller = new SitemapsController(
 			$sitemap_service,
-			$this->createMock( GenerateSitemapUseCase::class )
+			$this->createStub( GenerateSitemapUseCase::class )
 		);
 
 		$response = $controller->get_sitemap( $request );
@@ -230,14 +230,14 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 		$request->set_param( 'date', '2024-01-15' );
 
 		// Mock the sitemap service to return null (not found)
-		$sitemap_service = $this->createMock( SitemapService::class );
+		$sitemap_service = $this->createStub( SitemapService::class );
 		$sitemap_service->method( 'get_sitemap_data' )
 			->with( '2024-01-15' )
 			->willReturn( null );
 
 		$controller = new SitemapsController(
 			$sitemap_service,
-			$this->createMock( GenerateSitemapUseCase::class )
+			$this->createStub( GenerateSitemapUseCase::class )
 		);
 
 		$response = $controller->get_sitemap( $request );
@@ -254,7 +254,7 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 		$request = new WP_REST_Request( 'GET', '/msm-sitemap/v1/missing' );
 
 		// Mock the detection service
-		$missing_detection_service = $this->createMock( MissingSitemapDetectionService::class );
+		$missing_detection_service = $this->createStub( MissingSitemapDetectionService::class );
 		$missing_detection_service->method( 'get_missing_sitemaps' )
 			->willReturn(
 				array(
@@ -271,16 +271,16 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 			);
 
 		// Mock the cron management service
-		$cron_management_service = $this->createMock( CronManagementService::class );
+		$cron_management_service = $this->createStub( CronManagementService::class );
 		$cron_management_service->method( 'get_cron_status' )
 			->willReturn( array( 'enabled' => true ) );
 
 		$controller = new GenerationController(
 			$cron_management_service,
 			$missing_detection_service,
-			$this->createMock( IncrementalGenerationService::class ),
-			$this->createMock( SitemapGenerator::class ),
-			$this->createMock( SettingsService::class )
+			$this->createStub( IncrementalGenerationService::class ),
+			$this->createStub( SitemapGenerator::class ),
+			$this->createStub( SettingsService::class )
 		);
 
 		$response = $controller->get_missing_sitemaps( $request );
@@ -305,7 +305,7 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 		$request = new WP_REST_Request( 'GET', '/msm-sitemap/v1/missing' );
 
 		// Mock the detection service with no missing sitemaps
-		$missing_detection_service = $this->createMock( MissingSitemapDetectionService::class );
+		$missing_detection_service = $this->createStub( MissingSitemapDetectionService::class );
 		$missing_detection_service->method( 'get_missing_sitemaps' )
 			->willReturn(
 				array(
@@ -322,16 +322,16 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 			);
 
 		// Mock the cron management service
-		$cron_management_service = $this->createMock( CronManagementService::class );
+		$cron_management_service = $this->createStub( CronManagementService::class );
 		$cron_management_service->method( 'get_cron_status' )
 			->willReturn( array( 'enabled' => true ) );
 
 		$controller = new GenerationController(
 			$cron_management_service,
 			$missing_detection_service,
-			$this->createMock( IncrementalGenerationService::class ),
-			$this->createMock( SitemapGenerator::class ),
-			$this->createMock( SettingsService::class )
+			$this->createStub( IncrementalGenerationService::class ),
+			$this->createStub( SitemapGenerator::class ),
+			$this->createStub( SettingsService::class )
 		);
 
 		$response = $controller->get_missing_sitemaps( $request );
@@ -349,7 +349,7 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 		$request = new WP_REST_Request( 'POST', '/msm-sitemap/v1/generate-missing' );
 
 		// Mock the generation service
-		$incremental_generation_service = $this->createMock( IncrementalGenerationService::class );
+		$incremental_generation_service = $this->createStub( IncrementalGenerationService::class );
 		$incremental_generation_service->method( 'generate' )
 			->willReturn(
 				array(
@@ -361,11 +361,11 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 			);
 
 		$controller = new GenerationController(
-			$this->createMock( CronManagementService::class ),
-			$this->createMock( MissingSitemapDetectionService::class ),
+			$this->createStub( CronManagementService::class ),
+			$this->createStub( MissingSitemapDetectionService::class ),
 			$incremental_generation_service,
-			$this->createMock( SitemapGenerator::class ),
-			$this->createMock( SettingsService::class )
+			$this->createStub( SitemapGenerator::class ),
+			$this->createStub( SettingsService::class )
 		);
 
 		$response = $controller->generate_missing_sitemaps( $request );
@@ -387,7 +387,7 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 		$request = new WP_REST_Request( 'POST', '/msm-sitemap/v1/generate-missing' );
 
 		// Mock the generation service with failure
-		$incremental_generation_service = $this->createMock( IncrementalGenerationService::class );
+		$incremental_generation_service = $this->createStub( IncrementalGenerationService::class );
 		$incremental_generation_service->method( 'generate' )
 			->willReturn(
 				array(
@@ -397,11 +397,11 @@ class REST_API_ControllerTest extends WP_Test_REST_TestCase {
 			);
 
 		$controller = new GenerationController(
-			$this->createMock( CronManagementService::class ),
-			$this->createMock( MissingSitemapDetectionService::class ),
+			$this->createStub( CronManagementService::class ),
+			$this->createStub( MissingSitemapDetectionService::class ),
 			$incremental_generation_service,
-			$this->createMock( SitemapGenerator::class ),
-			$this->createMock( SettingsService::class )
+			$this->createStub( SitemapGenerator::class ),
+			$this->createStub( SettingsService::class )
 		);
 
 		$response = $controller->generate_missing_sitemaps( $request );
