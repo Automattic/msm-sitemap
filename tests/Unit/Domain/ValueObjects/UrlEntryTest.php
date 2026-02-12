@@ -11,7 +11,10 @@ namespace Automattic\MSM_Sitemap\Tests\Unit\Domain\ValueObjects;
 
 use Automattic\MSM_Sitemap\Domain\ValueObjects\ImageEntry;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry;
+use Automattic\MSM_Sitemap\Tests\Generators\ValidUrlGenerator;
 use Automattic\MSM_Sitemap\Tests\Unit\TestCase;
+use Eris\Generators;
+use Eris\TestTrait;
 use InvalidArgumentException;
 
 /**
@@ -25,6 +28,8 @@ use InvalidArgumentException;
  * - images validation (must be ImageEntry objects, max 1000)
  */
 class UrlEntryTest extends TestCase {
+
+	use TestTrait;
 
 	/**
 	 * Test that a valid URL is accepted with minimal parameters.
@@ -497,5 +502,136 @@ class UrlEntryTest extends TestCase {
 
 		// Note: equals() does not compare images - this is by design per the implementation.
 		$this->assertTrue( $entry1->equals( $entry2 ) );
+	}
+
+	// ===========================================
+	// Property-based tests (Eris)
+	// ===========================================
+
+	/**
+	 * Property: any float in [0.0, 1.0] is a valid priority value.
+	 *
+	 * The sitemap protocol specifies priority as a value between 0.0 and 1.0.
+	 * Any float within this range should be accepted without exception.
+	 */
+	public function test_property_any_priority_in_valid_range_is_accepted(): void {
+		$this
+			->forAll(
+				Generators::choose( 0, 1000 )
+			)
+			->then( function ( int $int_value ): void {
+				// Map integer 0-1000 to float 0.0-1.0 for precise control.
+				$priority = $int_value / 1000.0;
+				$entry    = new UrlEntry( 'https://example.com/page', null, null, $priority );
+
+				$this->assertSame( $priority, $entry->priority() );
+				$this->assertTrue(
+					$entry->priority() >= 0.0 && $entry->priority() <= 1.0,
+					sprintf( 'Priority %f should be within [0.0, 1.0]', $entry->priority() )
+				);
+			} );
+	}
+
+	/**
+	 * Property: any float outside [0.0, 1.0] is rejected as a priority value.
+	 *
+	 * Floats below 0.0 or above 1.0 must always throw InvalidArgumentException.
+	 */
+	public function test_property_any_priority_outside_valid_range_is_rejected(): void {
+		$this
+			->forAll(
+				Generators::choose( 1, 10000 )
+			)
+			->then( function ( int $offset ): void {
+				// Generate a value above 1.0 (from 1.001 to 11.0).
+				$above = 1.0 + ( $offset / 1000.0 );
+				$caught_above = false;
+				try {
+					new UrlEntry( 'https://example.com/page', null, null, $above );
+				} catch ( InvalidArgumentException $e ) {
+					$caught_above = true;
+				}
+				$this->assertTrue(
+					$caught_above,
+					sprintf( 'Priority %f (above 1.0) should be rejected', $above )
+				);
+
+				// Generate a value below 0.0 (from -0.001 to -10.0).
+				$below = -1.0 * ( $offset / 1000.0 );
+				$caught_below = false;
+				try {
+					new UrlEntry( 'https://example.com/page', null, null, $below );
+				} catch ( InvalidArgumentException $e ) {
+					$caught_below = true;
+				}
+				$this->assertTrue(
+					$caught_below,
+					sprintf( 'Priority %f (below 0.0) should be rejected', $below )
+				);
+			} );
+	}
+
+	/**
+	 * Property: reflexive equality holds for any UrlEntry.
+	 *
+	 * Every UrlEntry must be equal to itself: $x->equals($x) is always true.
+	 */
+	public function test_property_reflexive_equality(): void {
+		$this
+			->forAll(
+				new ValidUrlGenerator(),
+				Generators::elements( 'always', 'hourly', 'daily', 'weekly', 'monthly', 'yearly', 'never' ),
+				Generators::choose( 0, 100 )
+			)
+			->then( function ( string $url, string $changefreq, int $priority_int ): void {
+				$priority = $priority_int / 100.0;
+				$entry    = new UrlEntry( $url, '2024-01-15', $changefreq, $priority );
+
+				$this->assertTrue(
+					$entry->equals( $entry ),
+					'UrlEntry must be equal to itself (reflexive equality)'
+				);
+			} );
+	}
+
+	/**
+	 * Property: to_array always contains the loc key.
+	 *
+	 * The 'loc' field is required by the sitemap protocol and must always
+	 * appear in the array representation, regardless of other optional fields.
+	 */
+	public function test_property_to_array_always_contains_loc(): void {
+		$this
+			->forAll(
+				new ValidUrlGenerator()
+			)
+			->then( function ( string $url ): void {
+				$entry = new UrlEntry( $url );
+				$array = $entry->to_array();
+
+				$this->assertArrayHasKey( 'loc', $array );
+				$this->assertSame( $url, $array['loc'] );
+			} );
+	}
+
+	/**
+	 * Property: to_array includes priority when set, excludes when null.
+	 *
+	 * The priority key should only appear in to_array output when a
+	 * priority value was provided during construction.
+	 */
+	public function test_property_to_array_priority_presence_matches_construction(): void {
+		$this
+			->forAll(
+				Generators::choose( 0, 100 )
+			)
+			->then( function ( int $priority_int ): void {
+				$priority = $priority_int / 100.0;
+				$entry    = new UrlEntry( 'https://example.com/page', null, null, $priority );
+				$array    = $entry->to_array();
+
+				$this->assertArrayHasKey( 'priority', $array );
+				$this->assertSame( $priority, $array['priority'] );
+			} );
 	}
 }

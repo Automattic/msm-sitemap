@@ -10,7 +10,9 @@ declare( strict_types=1 );
 namespace Automattic\MSM_Sitemap\Tests\Unit\Domain\ValueObjects;
 
 use Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapDate;
+use Automattic\MSM_Sitemap\Tests\Generators\SitemapDateGenerator;
 use Automattic\MSM_Sitemap\Tests\Unit\TestCase;
+use Eris\TestTrait;
 use InvalidArgumentException;
 
 /**
@@ -24,6 +26,8 @@ use InvalidArgumentException;
  * - Immutability
  */
 class SitemapDateTest extends TestCase {
+
+	use TestTrait;
 
 	// ===========================================
 	// Constructor validation tests
@@ -459,5 +463,183 @@ class SitemapDateTest extends TestCase {
 			'November 30'  => array( 11, 30 ),
 			'December 31'  => array( 12, 31 ),
 		);
+	}
+
+	// ===========================================
+	// Property-based tests (Eris)
+	// ===========================================
+
+	/**
+	 * Property: trichotomy holds for any two SitemapDates.
+	 *
+	 * For any two dates A and B, exactly one of these is true:
+	 * - A->isBefore(B)
+	 * - A->equals(B)
+	 * - A->isAfter(B)
+	 *
+	 * This is a fundamental ordering property that ensures the comparison
+	 * methods form a total order over the date domain.
+	 */
+	public function test_property_trichotomy_exactly_one_comparison_holds(): void {
+		$this
+			->forAll(
+				new SitemapDateGenerator(),
+				new SitemapDateGenerator()
+			)
+			->then( function ( SitemapDate $a, SitemapDate $b ): void {
+				$is_before = $a->isBefore( $b );
+				$is_equal  = $a->equals( $b );
+				$is_after  = $a->isAfter( $b );
+
+				$true_count = (int) $is_before + (int) $is_equal + (int) $is_after;
+
+				$this->assertSame(
+					1,
+					$true_count,
+					sprintf(
+						'Exactly one of isBefore/equals/isAfter should hold for %s vs %s. Got: before=%s, equal=%s, after=%s',
+						$a->toString(),
+						$b->toString(),
+						$is_before ? 'true' : 'false',
+						$is_equal ? 'true' : 'false',
+						$is_after ? 'true' : 'false'
+					)
+				);
+			} );
+	}
+
+	/**
+	 * Property: isBefore implies isAfter in reverse (anti-symmetry).
+	 *
+	 * If A->isBefore(B), then B->isAfter(A) must also hold.
+	 * This ensures the ordering is consistent in both directions.
+	 */
+	public function test_property_is_before_implies_is_after_in_reverse(): void {
+		$this
+			->forAll(
+				new SitemapDateGenerator(),
+				new SitemapDateGenerator()
+			)
+			->then( function ( SitemapDate $a, SitemapDate $b ): void {
+				if ( $a->isBefore( $b ) ) {
+					$this->assertTrue(
+						$b->isAfter( $a ),
+						sprintf(
+							'If %s isBefore %s, then %s should be isAfter %s',
+							$a->toString(),
+							$b->toString(),
+							$b->toString(),
+							$a->toString()
+						)
+					);
+				}
+
+				if ( $a->isAfter( $b ) ) {
+					$this->assertTrue(
+						$b->isBefore( $a ),
+						sprintf(
+							'If %s isAfter %s, then %s should be isBefore %s',
+							$a->toString(),
+							$b->toString(),
+							$b->toString(),
+							$a->toString()
+						)
+					);
+				}
+			} );
+	}
+
+	/**
+	 * Property: toString roundtrip preserves the date.
+	 *
+	 * For any valid SitemapDate, converting to string and back via
+	 * fromString should produce an equal date. This guarantees that
+	 * the serialisation format is lossless.
+	 */
+	public function test_property_to_string_roundtrip(): void {
+		$this
+			->forAll(
+				new SitemapDateGenerator()
+			)
+			->then( function ( SitemapDate $date ): void {
+				$roundtripped = SitemapDate::fromString( $date->toString() );
+
+				$this->assertTrue(
+					$date->equals( $roundtripped ),
+					sprintf(
+						'SitemapDate::fromString(%s)->equals(original) should be true, got %s',
+						$date->toString(),
+						$roundtripped->toString()
+					)
+				);
+			} );
+	}
+
+	/**
+	 * Property: reflexive equality holds for any SitemapDate.
+	 *
+	 * Every date must be equal to itself.
+	 */
+	public function test_property_reflexive_equality(): void {
+		$this
+			->forAll(
+				new SitemapDateGenerator()
+			)
+			->then( function ( SitemapDate $date ): void {
+				$this->assertTrue(
+					$date->equals( $date ),
+					sprintf(
+						'SitemapDate %s must be equal to itself',
+						$date->toString()
+					)
+				);
+			} );
+	}
+
+	/**
+	 * Property: equal dates are never before or after each other.
+	 *
+	 * If A->equals(B), then both isBefore and isAfter must be false.
+	 */
+	public function test_property_equal_dates_are_not_before_or_after(): void {
+		$this
+			->forAll(
+				new SitemapDateGenerator()
+			)
+			->then( function ( SitemapDate $date ): void {
+				$same = SitemapDate::fromString( $date->toString() );
+
+				$this->assertTrue( $date->equals( $same ) );
+				$this->assertFalse(
+					$date->isBefore( $same ),
+					sprintf( 'Equal date %s should not be isBefore itself', $date->toString() )
+				);
+				$this->assertFalse(
+					$date->isAfter( $same ),
+					sprintf( 'Equal date %s should not be isAfter itself', $date->toString() )
+				);
+			} );
+	}
+
+	/**
+	 * Property: toString always produces YYYY-MM-DD format with zero-padding.
+	 *
+	 * The output format must match the pattern with 4-digit year, 2-digit
+	 * month, and 2-digit day separated by hyphens.
+	 */
+	public function test_property_to_string_format_is_consistent(): void {
+		$this
+			->forAll(
+				new SitemapDateGenerator()
+			)
+			->then( function ( SitemapDate $date ): void {
+				$string = $date->toString();
+
+				$this->assertMatchesRegularExpression(
+					'/^\d{4}-\d{2}-\d{2}$/',
+					$string,
+					sprintf( 'toString() output "%s" should match YYYY-MM-DD format', $string )
+				);
+			} );
 	}
 }

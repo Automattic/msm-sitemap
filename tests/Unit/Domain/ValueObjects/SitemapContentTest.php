@@ -11,7 +11,10 @@ namespace Automattic\MSM_Sitemap\Tests\Unit\Domain\ValueObjects;
 
 use Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapContent;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry;
+use Automattic\MSM_Sitemap\Tests\Generators\ValidUrlGenerator;
 use Automattic\MSM_Sitemap\Tests\Unit\TestCase;
+use Eris\Generators;
+use Eris\TestTrait;
 use InvalidArgumentException;
 
 /**
@@ -24,6 +27,8 @@ use InvalidArgumentException;
  * - contains() uses equality comparison (not strict identity)
  */
 class SitemapContentTest extends TestCase {
+
+	use TestTrait;
 
 	/**
 	 * Test that empty content can be created.
@@ -357,5 +362,125 @@ class SitemapContentTest extends TestCase {
 
 		$this->assertCount( 3, $content );
 		$this->assertSame( 3, $content->count() );
+	}
+
+	// ===========================================
+	// Property-based tests (Eris)
+	// ===========================================
+
+	/**
+	 * Property: add() returns a new instance (immutability).
+	 *
+	 * Adding an entry to SitemapContent must always return a different
+	 * object, leaving the original unchanged. This guarantees immutability.
+	 */
+	public function test_property_add_returns_new_instance(): void {
+		$this
+			->forAll(
+				new ValidUrlGenerator()
+			)
+			->then( function ( string $url ): void {
+				$content    = new SitemapContent();
+				$entry      = new UrlEntry( $url );
+				$newContent = $content->add( $entry );
+
+				$this->assertNotSame(
+					$content,
+					$newContent,
+					'add() must return a new SitemapContent instance'
+				);
+				$this->assertCount( 0, $content, 'Original must remain empty' );
+				$this->assertCount( 1, $newContent, 'New instance must have 1 entry' );
+			} );
+	}
+
+	/**
+	 * Property: add() increments count by exactly 1 (when not full).
+	 *
+	 * For any non-full SitemapContent, adding one entry should increase
+	 * the count by exactly one.
+	 */
+	public function test_property_add_increments_count_by_one(): void {
+		$this
+			->forAll(
+				Generators::choose( 0, 9 ),
+				new ValidUrlGenerator()
+			)
+			->then( function ( int $initial_count, string $new_url ): void {
+				// Build initial content with $initial_count entries.
+				$entries = array();
+				for ( $i = 0; $i < $initial_count; $i++ ) {
+					$entries[] = new UrlEntry( "https://example.com/page{$i}" );
+				}
+				$content = new SitemapContent( $entries );
+				$this->assertCount( $initial_count, $content );
+
+				$entry      = new UrlEntry( $new_url );
+				$newContent = $content->add( $entry );
+
+				$this->assertSame(
+					$initial_count + 1,
+					$newContent->count(),
+					sprintf(
+						'Count should increment from %d to %d after add()',
+						$initial_count,
+						$initial_count + 1
+					)
+				);
+			} );
+	}
+
+	/**
+	 * Property: the original SitemapContent is unchanged after add().
+	 *
+	 * Since SitemapContent is immutable, the count of the original
+	 * instance must remain the same after calling add().
+	 */
+	public function test_property_original_unchanged_after_add(): void {
+		$this
+			->forAll(
+				Generators::choose( 0, 5 ),
+				new ValidUrlGenerator()
+			)
+			->then( function ( int $initial_count, string $new_url ): void {
+				$entries = array();
+				for ( $i = 0; $i < $initial_count; $i++ ) {
+					$entries[] = new UrlEntry( "https://example.com/page{$i}" );
+				}
+				$content       = new SitemapContent( $entries );
+				$original_count = $content->count();
+
+				$content->add( new UrlEntry( $new_url ) );
+
+				$this->assertSame(
+					$original_count,
+					$content->count(),
+					'Original SitemapContent must not be modified by add()'
+				);
+			} );
+	}
+
+	/**
+	 * Property: reflexive equality holds for any SitemapContent.
+	 *
+	 * Every SitemapContent must be equal to itself.
+	 */
+	public function test_property_reflexive_equality(): void {
+		$this
+			->forAll(
+				Generators::choose( 0, 5 )
+			)
+			->then( function ( int $count ): void {
+				$entries = array();
+				for ( $i = 0; $i < $count; $i++ ) {
+					$entries[] = new UrlEntry( "https://example.com/page{$i}" );
+				}
+				$content = new SitemapContent( $entries );
+
+				$this->assertTrue(
+					$content->equals( $content ),
+					'SitemapContent must be equal to itself'
+				);
+			} );
 	}
 }
