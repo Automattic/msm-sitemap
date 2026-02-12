@@ -12,6 +12,8 @@ namespace Automattic\MSM_Sitemap\Tests\Unit\Domain\ValueObjects;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\GenerationProgress;
 use Automattic\MSM_Sitemap\Domain\ValueObjects\SitemapDate;
 use Automattic\MSM_Sitemap\Tests\Unit\TestCase;
+use Eris\Generators;
+use Eris\TestTrait;
 
 /**
  * GenerationProgress Value Object test case.
@@ -23,6 +25,8 @@ use Automattic\MSM_Sitemap\Tests\Unit\TestCase;
  * - Immutability (withDateCompleted, withCancelled return new instances)
  */
 class GenerationProgressTest extends TestCase {
+
+	use TestTrait;
 
 	// ===========================================
 	// Factory method tests
@@ -433,5 +437,202 @@ class GenerationProgressTest extends TestCase {
 
 		// Equals doesn't compare current_date.
 		$this->assertTrue( $progress1->equals( $progress2 ) );
+	}
+
+	// ===========================================
+	// Property-based tests (Eris)
+	// ===========================================
+
+	/**
+	 * Property: completed equals total minus remaining.
+	 *
+	 * For any valid GenerationProgress, the completed() value must
+	 * always equal total() - remaining(). This is the fundamental
+	 * invariant of the progress calculation.
+	 */
+	public function test_property_completed_equals_total_minus_remaining(): void {
+		$this
+			->forAll(
+				Generators::choose( 0, 10000 ),
+				Generators::choose( 0, 10000 )
+			)
+			->then( function ( int $total, int $remaining ): void {
+				$progress = new GenerationProgress( true, $total, $remaining );
+
+				$this->assertSame(
+					$progress->total() - $progress->remaining(),
+					$progress->completed(),
+					sprintf(
+						'completed (%d) must equal total (%d) - remaining (%d)',
+						$progress->completed(),
+						$progress->total(),
+						$progress->remaining()
+					)
+				);
+			} );
+	}
+
+	/**
+	 * Property: percentComplete is always in [0.0, 100.0].
+	 *
+	 * Regardless of the total and remaining values provided,
+	 * the percentage must be a valid percentage value.
+	 */
+	public function test_property_percent_complete_in_valid_range(): void {
+		$this
+			->forAll(
+				Generators::choose( 0, 10000 ),
+				Generators::choose( 0, 10000 )
+			)
+			->then( function ( int $total, int $remaining ): void {
+				$progress = new GenerationProgress( true, $total, $remaining );
+				$percent  = $progress->percentComplete();
+
+				$this->assertGreaterThanOrEqual(
+					0.0,
+					$percent,
+					'percentComplete must be >= 0.0'
+				);
+				$this->assertLessThanOrEqual(
+					100.0,
+					$percent,
+					'percentComplete must be <= 100.0'
+				);
+			} );
+	}
+
+	/**
+	 * Property: remaining is always clamped to [0, total] after normalisation.
+	 *
+	 * The constructor normalises negative values to 0 and caps remaining
+	 * at total. This property verifies the invariant holds for any inputs.
+	 */
+	public function test_property_remaining_always_in_zero_to_total_range(): void {
+		$this
+			->forAll(
+				Generators::choose( -100, 10000 ),
+				Generators::choose( -100, 10000 )
+			)
+			->then( function ( int $total, int $remaining ): void {
+				$progress = new GenerationProgress( true, $total, $remaining );
+
+				$this->assertGreaterThanOrEqual(
+					0,
+					$progress->remaining(),
+					'remaining must be >= 0 after normalisation'
+				);
+				$this->assertLessThanOrEqual(
+					$progress->total(),
+					$progress->remaining(),
+					'remaining must be <= total after normalisation'
+				);
+			} );
+	}
+
+	/**
+	 * Property: total is always non-negative after normalisation.
+	 *
+	 * Negative total values are normalised to 0 by the constructor.
+	 */
+	public function test_property_total_always_non_negative(): void {
+		$this
+			->forAll(
+				Generators::choose( -1000, 10000 )
+			)
+			->then( function ( int $total ): void {
+				$progress = new GenerationProgress( true, $total, 0 );
+
+				$this->assertGreaterThanOrEqual(
+					0,
+					$progress->total(),
+					sprintf( 'total must be >= 0 after normalisation, got %d for input %d', $progress->total(), $total )
+				);
+			} );
+	}
+
+	/**
+	 * Property: reflexive equality holds for any GenerationProgress.
+	 *
+	 * Every progress instance must be equal to itself.
+	 */
+	public function test_property_reflexive_equality(): void {
+		$this
+			->forAll(
+				Generators::bool(),
+				Generators::choose( 0, 10000 ),
+				Generators::choose( 0, 10000 )
+			)
+			->then( function ( bool $in_progress, int $total, int $remaining ): void {
+				$progress = new GenerationProgress( $in_progress, $total, $remaining );
+
+				$this->assertTrue(
+					$progress->equals( $progress ),
+					'GenerationProgress must be equal to itself'
+				);
+			} );
+	}
+
+	/**
+	 * Property: toArray completed value is consistent with completed().
+	 *
+	 * The 'completed' key in toArray() must always match the value
+	 * returned by the completed() method.
+	 */
+	public function test_property_to_array_completed_matches_method(): void {
+		$this
+			->forAll(
+				Generators::bool(),
+				Generators::choose( 0, 10000 ),
+				Generators::choose( 0, 10000 )
+			)
+			->then( function ( bool $in_progress, int $total, int $remaining ): void {
+				$progress = new GenerationProgress( $in_progress, $total, $remaining );
+				$array    = $progress->toArray();
+
+				$this->assertSame(
+					$progress->completed(),
+					$array['completed'],
+					'toArray completed must match completed() method'
+				);
+				$this->assertSame(
+					$progress->total(),
+					$array['total'],
+					'toArray total must match total() method'
+				);
+				$this->assertSame(
+					$progress->remaining(),
+					$array['remaining'],
+					'toArray remaining must match remaining() method'
+				);
+				$this->assertSame(
+					$progress->isInProgress(),
+					$array['in_progress'],
+					'toArray in_progress must match isInProgress() method'
+				);
+			} );
+	}
+
+	/**
+	 * Property: percentComplete is 0.0 when total is 0.
+	 *
+	 * A zero total should always produce 0.0% to avoid division by zero.
+	 */
+	public function test_property_percent_complete_zero_when_total_zero(): void {
+		$this
+			->forAll(
+				Generators::choose( -100, 0 )
+			)
+			->then( function ( int $total ): void {
+				$progress = new GenerationProgress( false, $total, 0 );
+
+				// After normalisation, total will be 0 for non-positive inputs.
+				if ( 0 === $progress->total() ) {
+					$this->assertSame(
+						0.0,
+						$progress->percentComplete(),
+						'percentComplete must be 0.0 when total is 0'
+					);
+				}
+			} );
 	}
 }
