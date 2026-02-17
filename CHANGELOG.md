@@ -1,8 +1,85 @@
-# Changelog for MSM Sitemap
+# Changelog for Metro Sitemap
 
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased] - 2.0.0
+
+**Breaking:** This is a major release with significant architectural changes. See the migration guide for details.
+
+Requires:
+
+* WordPress: 5.9 or later
+* PHP 8.2 or later
+
+### Added
+
+* Add taxonomy sitemaps for categories, tags, and custom taxonomies by @GaryJones
+* Add author sitemaps for user archive pages by @GaryJones
+* Add Pages sitemap support by @GaryJones
+* Add image support in sitemap generation by @GaryJones
+* Add background sitemap generation with clean architecture by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/257
+* Add filter to enable sitemaps on non-public sites by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/256
+* Add contextual help tabs to admin page by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/254
+* Add Content Sitemaps stats section and update Help tabs by @GaryJones
+* Add configurable cache TTL for taxonomy and author sitemaps by @GaryJones
+* Add object cache for taxonomy sitemaps by @GaryJones
+* Add REST API for sitemap management by @GaryJones
+* Add cron frequency management command by @GaryJones
+* Add centralized services for cron and sitemap generation by @GaryJones
+* Add content provider settings management by @GaryJones
+* Introduce SettingsService for centralized settings management by @GaryJones
+* Add GenerationProgress value object for type-safe progress tracking by @GaryJones
+* Add SitemapDate value object for consistent date handling by @GaryJones
+* Show generation progress in cron status command by @GaryJones
+* Use custom XSL stylesheets instead of WordPress core by @GaryJones
+* Add admin styles and scripts by @GaryJones
+* Add unit test infrastructure by @GaryJones
+
+### Fixed
+
+* Use post_modified for sitemap index lastmod values by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/264
+* Align image sitemap implementation with Google specification by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/263
+* Explicitly set 200 status for sitemap output by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/252
+* Use site timezone for all lastmod dates by @GaryJones
+* Restore legacy action hooks for WordPress.com compatibility by @GaryJones
+* Detection services now respect enabled post types settings by @GaryJones
+* Register rewrite rules directly during init hook by @GaryJones
+* Improve WordPress Coding Standards compliance and timestamp handling by @GaryJones
+* Add fallback for cal_days_in_month when calendar extension unavailable by @GaryJones
+* Sitemap generation logic and notifications by @GaryJones
+
+### Changed
+
+* Migrate core plugin logic to DDD service layer by @GaryJones
+* Migrate admin AJAX endpoints to REST API by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/255
+* Extract REST API into focused controller classes by @GaryJones
+* Extract CLI into one-class-per-command pattern by @GaryJones
+* Move SitemapXmlRequestHandler to Infrastructure/HTTP by @GaryJones
+* Rename scheduler and handler classes for clarity by @GaryJones
+* Cleanup CLI commands to use central services by @GaryJones
+* Use non-autoloaded options for generation state by @GaryJones
+* Move admin JS to external JS file by @GaryJones
+* Modernize admin UI by @GaryJones
+* Limit insight cards to 3 per line on wider screens by @GaryJones
+
+### Maintenance
+
+* Raise minimum PHP version to 8.2 by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/272
+* Update project configuration and development tooling by @GaryJones
+* Enable merged coverage reporting for unit and integration tests by @GaryJones
+* Consolidate test directory structure by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/273
+* Add property-based tests using Eris by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/278
+* Add comprehensive unit tests for Domain Value Objects by @GaryJones
+* Add unit and integration tests for services and integrations by @GaryJones
+* Use createStub() for test doubles without expectations by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/277
+
+### Documentation
+
+* Add contributing guidelines and documentation updates by @GaryJones
+* Update developer guide for new architecture by @GaryJones
+* Add msm_sitemap_is_enabled filter documentation by @GaryJones
 
 ## [1.5.5] - 2026-01-02
 
@@ -76,7 +153,7 @@ Requires:
 * Add `msm_pre_get_last_modified_posts` filter by @rbcorrales in <https://github.com/Automattic/msm-sitemap/pull/178>
 * Allow the post year range to be short-circuited and also cached by @srtfisher in <https://github.com/Automattic/msm-sitemap/pull/195>
 * feat: Add filters for sitemap index XML customization by @GaryJones in <https://github.com/Automattic/msm-sitemap/pull/197>
-* feat: Enhance WP-CLI commands for MSM Sitemap by @GaryJones in <https://github.com/Automattic/msm-sitemap/pull/202>
+* feat: Enhance WP-CLI commands for Metro Sitemap by @GaryJones in <https://github.com/Automattic/msm-sitemap/pull/202>
 
 ### Changed
 
@@ -225,6 +302,7 @@ Initial release.
 
 * Enable stable Composer installations from origin.
 
+[Unreleased]: https://github.com/automattic/msm-sitemap/compare/1.5.5...2.x
 [1.5.5]: https://github.com/automattic/msm-sitemap/compare/1.5.4...1.5.5
 [1.5.4]: https://github.com/automattic/msm-sitemap/compare/1.5.3...1.5.4
 [1.5.3]: https://github.com/automattic/msm-sitemap/compare/1.5.2...1.5.3
