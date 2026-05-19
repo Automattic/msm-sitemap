@@ -1,0 +1,110 @@
+name: Code Coverage
+
+on:
+  pull_request:
+    paths:
+      - '**.php'
+      - 'composer.json'
+      - 'phpunit.xml.dist'
+      - '.github/workflows/coverage.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-coverage:
+    name: Unit Test Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP with PCOV
+        uses: shivammathur/setup-php@cf4cade2721270509d5b1c766ab3549210a39a2a # 2.32.0
+        with:
+          php-version: '8.3'
+          coverage: pcov
+
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@57532f8be5bda426838819c5ee9afb8af389d51a # 3.0.0
+
+      - name: Run unit tests with coverage
+        run: composer coverage:unit
+
+      - name: Generate text coverage report
+        run: |
+          ./vendor/bin/phpcov merge coverage/ --text coverage/unit-summary.txt || true
+          echo "## Unit Test Coverage" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat coverage/unit-summary.txt >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "Coverage summary not available" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: unit-coverage
+          path: coverage/
+          retention-days: 7
+
+  integration-coverage:
+    name: Integration Test Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Node.js dependencies
+        run: npm ci
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@cf4cade2721270509d5b1c766ab3549210a39a2a # 2.32.0
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@57532f8be5bda426838819c5ee9afb8af389d51a # 3.0.0
+
+      - name: Start wp-env with Xdebug coverage
+        run: npm run wp-env start -- --xdebug=coverage
+
+      - name: Run integration tests with coverage
+        run: composer coverage:integration
+
+      - name: Generate coverage summary
+        run: |
+          echo "## Integration Test Coverage" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          if [ -f coverage/integration.cov ]; then
+            echo "Integration coverage generated successfully" >> $GITHUB_STEP_SUMMARY
+            ls -lh coverage/integration.cov >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Integration coverage file not found" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: integration-coverage
+          path: coverage/
+          retention-days: 7
