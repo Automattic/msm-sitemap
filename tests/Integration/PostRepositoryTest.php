@@ -522,4 +522,58 @@ class PostRepositoryTest extends TestCase {
 		$modified_post_ids = array_map( 'intval', wp_list_pluck( $modified_posts, 'ID' ) );
 		$this->assertContains( (int) $post_id, $modified_post_ids );
 	}
+
+	/**
+	 * Regression guard for the 1.5.4 cron bug (#296) when ported into 2.x's
+	 * PostRepository: ensure get_modified_posts_since finds recently modified
+	 * posts on a site configured for a negative-offset timezone.
+	 *
+	 * The original bug formatted the cutoff in server-local time and then
+	 * passed it through get_gmt_from_date(), re-applying the site offset.
+	 * On negative-offset sites this pushed the cutoff into the future and
+	 * the query against post_modified_gmt found no posts.
+	 *
+	 * 2.x rewrote the function to use gmdate() directly, which sidesteps
+	 * the bug. This test locks that in so a future refactor cannot silently
+	 * reintroduce the local-time round trip.
+	 */
+	public function test_get_modified_posts_since_finds_posts_in_negative_offset_timezone(): void {
+		$original_timezone = get_option( 'timezone_string' );
+		update_option( 'timezone_string', 'America/New_York' );
+		wp_cache_flush();
+
+		try {
+			$post_id = $this->create_dummy_post( '2020-01-01 00:00:00' );
+
+			wp_update_post(
+				array(
+					'ID'         => $post_id,
+					'post_title' => 'Updated Title',
+				)
+			);
+
+			global $wpdb;
+			$wpdb->update(
+				$wpdb->posts,
+				array(
+					'post_modified_gmt' => gmdate( 'Y-m-d H:i:s' ),
+					'post_modified'     => date( 'Y-m-d H:i:s' ),
+				),
+				array( 'ID' => $post_id )
+			);
+			clean_post_cache( $post_id );
+
+			$modified_posts    = $this->repository->get_modified_posts_since( time() - 3600 );
+			$modified_post_ids = array_map( 'intval', wp_list_pluck( $modified_posts, 'ID' ) );
+
+			$this->assertContains(
+				(int) $post_id,
+				$modified_post_ids,
+				'Should find post modified within last hour on a negative-offset site (regression guard for #296).'
+			);
+		} finally {
+			update_option( 'timezone_string', $original_timezone ?: '' );
+			wp_cache_flush();
+		}
+	}
 }
