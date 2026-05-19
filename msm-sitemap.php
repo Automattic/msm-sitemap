@@ -677,7 +677,7 @@ class Metro_Sitemap {
 
 		$post_types_in = self::get_supported_post_types_in();
 
-		$query = $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_status = %s AND post_modified_gmt >= %s LIMIT 1000", self::get_post_status(), $date_gmt );
+		$query = $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_status = %s AND post_modified_gmt >= %s LIMIT 1000", self::get_post_status(), $date );
 
 		/**
 		 * Filter the query used to get the last modified posts.
@@ -685,7 +685,7 @@ class Metro_Sitemap {
 		 *
 		 * @param string $query         The query to use to get the last modified posts.
 		 * @param string $post_types_in A comma-separated list of post types to include in the query.
-		 * @param string $date          The date to use as the cutoff for the query.
+		 * @param string $date          The cutoff date in MySQL DATETIME format (UTC), for comparison against post_modified_gmt.
 		 */
 		$query = apply_filters( 'msm_pre_get_last_modified_posts', $query, $post_types_in, $date );
 
