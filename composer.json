@@ -49,7 +49,7 @@
 		"cs-fix": [
 			"@php ./vendor/bin/phpcbf -q"
 		],
-		"i18n": "@php wp i18n make-pot . ./languages/msm-sitemap.pot",
+		"i18n": "@php wp i18n make-pot . ./languages/msm-sitemap.pot --slug=msm-sitemap",
 		"lint": [
 			"@php ./vendor/php-parallel-lint/php-parallel-lint/parallel-lint . -e php --exclude vendor --exclude .git"
 		],

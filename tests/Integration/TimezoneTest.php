@@ -227,6 +227,47 @@ class TimezoneTest extends TestCase {
 	}
 
 	/**
+	 * Regression test for #296: ensure get_last_modified_posts finds recently
+	 * modified posts on a site configured for a negative-offset timezone.
+	 *
+	 * Before the fix, the cutoff was formatted in server-local time and then
+	 * passed through get_gmt_from_date(), which re-applied the site offset.
+	 * On negative-offset sites this pushed the cutoff into the future, so the
+	 * query against post_modified_gmt found no posts and incremental sitemap
+	 * updates silently stopped.
+	 */
+	public function test_get_last_modified_posts_finds_posts_in_negative_offset_timezone(): void {
+		// Set timezone to New York (UTC-4 or UTC-5 depending on DST).
+		update_option( 'timezone_string', 'America/New_York' );
+		wp_cache_flush();
+
+		$current_time = current_datetime()->getTimestamp();
+		$post_date    = wp_date( 'Y-m-d H:i:s', $current_time );
+
+		$post_id = $this->create_dummy_post( $post_date );
+
+		// Trigger post_modified update.
+		wp_update_post(
+			array(
+				'ID'         => $post_id,
+				'post_title' => 'Updated Title',
+			)
+		);
+
+		$modified_posts = Metro_Sitemap::get_last_modified_posts();
+
+		$found = false;
+		foreach ( $modified_posts as $post ) {
+			if ( (int) $post->ID === $post_id ) {
+				$found = true;
+				break;
+			}
+		}
+
+		$this->assertTrue( $found, 'Should find post modified within last hour on a negative-offset site (regression test for #296).' );
+	}
+
+	/**
 	 * Test that update_sitemap_from_modified_posts uses local timezone
 	 */
 	public function test_update_sitemap_from_modified_posts_uses_local_timezone(): void {
