@@ -86,7 +86,7 @@ class Metro_Sitemap {
 
 		\Automattic\MSM_Sitemap\Permalinks::setup();
 		\Automattic\MSM_Sitemap\StylesheetManager::setup();
-		
+
 		// Disable WordPress core sitemaps to prevent conflicts
 		add_filter( 'wp_sitemaps_enabled', '__return_false' );
 	}
@@ -281,7 +281,7 @@ class Metro_Sitemap {
 
 	/**
 	 * Add cron jobs required to generate these sitemaps
-	 * 
+	 *
 	 * Note: Cron is NOT auto-enabled on fresh installs to prevent resource issues
 	 * on large sites. Users must explicitly enable via CLI or admin interface.
 	 */
@@ -553,15 +553,15 @@ class Metro_Sitemap {
 		foreach ( $url_entries as $url_entry ) {
 			$url = $xml->addChild( 'url' );
 			$url->addChild( 'loc', esc_url( $url_entry->loc() ) );
-			
+
 			if ( $url_entry->lastmod() ) {
 				$url->addChild( 'lastmod', $url_entry->lastmod() );
 			}
-			
+
 			if ( $url_entry->changefreq() ) {
 				$url->addChild( 'changefreq', $url_entry->changefreq() );
 			}
-			
+
 			if ( $url_entry->priority() ) {
 				$url->addChild( 'priority', (string) $url_entry->priority() );
 			}
@@ -672,19 +672,12 @@ class Metro_Sitemap {
 
 		$sitemap_last_run = get_option( 'msm_sitemap_update_last_run', false );
 
-		// Use current time minus 1 hour for posts changed within the last hour
-		$date = date( 'Y-m-d H:i:s', time() - 3600 );
-
-		if ( $sitemap_last_run ) {
-			$date = date( 'Y-m-d H:i:s', $sitemap_last_run );
-		}
-
-		// Convert local time to GMT for database query since post_modified_gmt is in GMT
-		$date_gmt = get_gmt_from_date( $date );
+		// Use the last run time if set, otherwise current time minus 1 hour for posts changed within the last hour.
+		$date = gmdate( 'Y-m-d H:i:s', $sitemap_last_run ?: time() - 3600 );
 
 		$post_types_in = self::get_supported_post_types_in();
 
-		$query = $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_status = %s AND post_modified_gmt >= %s LIMIT 1000", self::get_post_status(), $date_gmt );
+		$query = $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_status = %s AND post_modified_gmt >= %s LIMIT 1000", self::get_post_status(), $date );
 
 		/**
 		 * Filter the query used to get the last modified posts.
@@ -692,7 +685,7 @@ class Metro_Sitemap {
 		 *
 		 * @param string $query         The query to use to get the last modified posts.
 		 * @param string $post_types_in A comma-separated list of post types to include in the query.
-		 * @param string $date          The date to use as the cutoff for the query.
+		 * @param string $date          The cutoff date in MySQL DATETIME format (UTC), for comparison against post_modified_gmt.
 		 */
 		$query = apply_filters( 'msm_pre_get_last_modified_posts', $query, $post_types_in, $date );
 
@@ -977,7 +970,7 @@ class Metro_Sitemap {
 				return;
 			}
 		}
-		
+
 		// Only process supported post types
 		$supported_post_types = self::get_supported_post_types();
 		if ( ! in_array( $post->post_type, $supported_post_types ) ) {
