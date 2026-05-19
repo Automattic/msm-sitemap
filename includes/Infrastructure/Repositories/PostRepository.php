@@ -181,7 +181,7 @@ class PostRepository implements PostRepositoryInterface {
 		 *
 		 * @param string $query         The query to use to get the last modified posts.
 		 * @param string $post_types_in A comma-separated list of post types to include in the query.
-		 * @param string $date          The date to use as the cutoff for the query.
+		 * @param string $date          The cutoff date in MySQL DATETIME format (UTC), for comparison against post_modified_gmt.
 		 */
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Legacy hook name for backwards compatibility.
 		$query = apply_filters( 'msm_pre_get_last_modified_posts', $query, $post_types_in, $date );
