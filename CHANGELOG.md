@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.6] - 2026-05-19
+
+### Fixed
+
+* fix: Date handling in `get_last_modified_posts()` for negative-offset timezones by @kevinfodness in https://github.com/Automattic/msm-sitemap/pull/297
+
+### Maintenance
+
+* chore: Add export-ignore for dev files in release archives by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/267
+* chore: Pin i18n script to plugin slug so it works from any working directory by @GaryJones
+
 ## [1.5.5] - 2026-01-02
 
 ### Fixed
@@ -225,6 +236,7 @@ Initial release.
 
 * Enable stable Composer installations from origin.
 
+[1.5.6]: https://github.com/automattic/msm-sitemap/compare/1.5.5...1.5.6
 [1.5.5]: https://github.com/automattic/msm-sitemap/compare/1.5.4...1.5.5
 [1.5.4]: https://github.com/automattic/msm-sitemap/compare/1.5.3...1.5.4
 [1.5.3]: https://github.com/automattic/msm-sitemap/compare/1.5.2...1.5.3
