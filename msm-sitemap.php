@@ -1,18 +1,51 @@
 <?php
-/*
-Plugin Name: Metro Sitemap
-Description: Comprehensive sitemaps for your WordPress site. Joint collaboration between Metro.co.uk, MAKE, Alley Interactive, and WordPress.com VIP.
-Author: Artur Synowiec, Paul Kevan, and others
-Version: 1.4.1
-Stable tag: 1.4.1
-License: GPLv2
-Requires PHP: 7.4
-*/
+/**
+ * Metro Sitemap - joint collaboration between Metro.co.uk, MAKE, Alley Interactive, and WordPress VIP.
+ *
+ * @package           automattic/msm-sitemap
+ * @author            Automattic
+ * @copyright         2015-onwards Artur Synowiec, Paul Kevan, and contributors.
+ * @license           GPL-2.0-or-later
+ *
+ * @wordpress-plugin
+ * Plugin Name:       Metro Sitemap
+ * Plugin URI:        https://github.com/Automattic/msm-sitemap
+ * Description:       Comprehensive sitemaps for your WordPress site.
+ * Version:           1.5.6
+ * Requires at least: 6.4
+ * Requires PHP:      7.4
+ * Author:            Metro.co.uk, MAKE, Alley Interactive, WordPress VIP.
+ * Text Domain:       msm-sitemap
+ * License:           GPL-2.0-or-later
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.txt
+ */
+
+use Automattic\MSM_Sitemap\Site;
+use Automattic\MSM_Sitemap\Admin\UI;
+use Automattic\MSM_Sitemap\Infrastructure\Factories\UrlEntryFactory;
+
+// Include the Site class early to ensure it's available
+require __DIR__ . '/includes/Site.php';
+require __DIR__ . '/includes/Admin/ActionHandlers.php';
+require __DIR__ . '/includes/Admin/Notifications.php';
+require __DIR__ . '/includes/Admin/UI.php';
+require __DIR__ . '/includes/StylesheetManager.php';
+require __DIR__ . '/includes/Permalinks.php';
+require __DIR__ . '/includes/CronService.php';
+require __DIR__ . '/includes/msm-sitemap-builder-cron.php';
+require __DIR__ . '/includes/Domain/ValueObjects/UrlEntry.php';
+require __DIR__ . '/includes/Domain/ValueObjects/UrlSet.php';
+require __DIR__ . '/includes/Domain/ValueObjects/SitemapIndexEntry.php';
+require __DIR__ . '/includes/Domain/ValueObjects/SitemapIndexCollection.php';
+require __DIR__ . '/includes/Infrastructure/Factories/UrlEntryFactory.php';
+require __DIR__ . '/includes/Infrastructure/Factories/UrlSetFactory.php';
+require __DIR__ . '/includes/Infrastructure/Factories/SitemapIndexEntryFactory.php';
+require __DIR__ . '/includes/Infrastructure/Factories/SitemapIndexCollectionFactory.php';
 
 if ( defined( 'WP_CLI' ) && true === WP_CLI ) {
-	require dirname( __FILE__ ) . '/includes/wp-cli.php';
+	require __DIR__ . '/includes/wp-cli.php';
+	WP_CLI::add_command( 'msm-sitemap', 'Metro_Sitemap_CLI' );
 }
-require dirname( __FILE__ ) . '/includes/class-msm-sitemap-admin-renderer.php';
 
 class Metro_Sitemap {
 
@@ -41,43 +74,34 @@ class Metro_Sitemap {
 		add_filter( 'posts_pre_query', array( __CLASS__, 'disable_main_query_for_sitemap_xml' ), 10, 2 );
 		add_filter( 'template_include', array( __CLASS__, 'load_sitemap_template' ) );
 
-		// Disable WordPress 5.5-era sitemaps.
-		add_filter( 'wp_sitemaps_enabled', '__return_false' );
+		// Hook into post deletion/trashing to trigger sitemap updates
+		add_action( 'deleted_post', array( __CLASS__, 'handle_post_deletion' ), 10, 2 );
+		add_action( 'trashed_post', array( __CLASS__, 'handle_post_deletion' ), 10, 1 );
 
 		// By default, we use wp-cron to help generate the full sitemap.
 		// However, this will let us override it, if necessary, like on WP.com
 		if ( true === apply_filters( 'msm_sitemap_use_cron_builder', true ) ) {
-			require dirname( __FILE__ ) . '/includes/msm-sitemap-builder-cron.php';
 			MSM_Sitemap_Builder_Cron::setup();
 		}
-	}
 
-	public static function use_custom_queries(): bool {
-		return ! apply_filters( 'msm_sitemap_avoid_custom_queries', false );
-	}
+		\Automattic\MSM_Sitemap\Permalinks::setup();
+		\Automattic\MSM_Sitemap\StylesheetManager::setup();
 
-	public static function get_partition_suffix(): string {
-		$partition = apply_filters( 'msm_sitemap_partition', '' );
-		return ( empty( $partition ) ? '' : "-$partition" );
-	}
-
-	public static function max_sitemap_length(): int {
-		return filter_var(
-			apply_filters( 'msm_sitemap_max_sitemap_length', get_option( 'msm_sitemap_max_sitemap_length', 10000 ) ),
-			FILTER_VALIDATE_INT
-		);
+		// Disable WordPress core sitemaps to prevent conflicts
+		add_filter( 'wp_sitemaps_enabled', '__return_false' );
 	}
 
 	/**
 	 * Register 15 minute cron interval for latest articles
+	 *
 	 * @param array[] $schedules
 	 * @return array[] modified schedules
 	 */
 	public static function sitemap_15_min_cron_interval( $schedules ) {
-		$schedules[ 'ms-sitemap-15-min-cron-interval' ] = array(
+		$schedules['ms-sitemap-15-min-cron-interval'] = array(
 			'interval' => 900,
-			'display' => __( 'Every 15 minutes', 'metro-sitemaps' ),
-			);
+			'display'  => __( 'Every 15 minutes', 'msm-sitemap' ),
+		);
 		return $schedules;
 	}
 
@@ -107,9 +131,9 @@ class Metro_Sitemap {
 		// Define rewrite rules for the index based on the setup
 		if ( self::$index_by_year ) {
 			add_rewrite_tag( '%sitemap-year%', '[0-9]{4}' );
-			add_rewrite_rule( '^sitemap-([0-9]{4}).xml$','index.php?sitemap=true&sitemap-year=$matches[1]','top' );
+			add_rewrite_rule( '^sitemap-([0-9]{4}).xml$', 'index.php?sitemap=true&sitemap-year=$matches[1]', 'top' );
 		} else {
-			add_rewrite_rule( '^sitemap.xml$','index.php?sitemap=true','top' );
+			add_rewrite_rule( '^sitemap.xml$', 'index.php?sitemap=true', 'top' );
 		}
 	}
 
@@ -117,85 +141,62 @@ class Metro_Sitemap {
 	 * Register admin menu for sitemap
 	 */
 	public static function metro_sitemap_menu() {
-		$partitions = apply_filters( 'msm_sitemap_partitions', ['default'] );
-		if ( 0 === count( $partitions ) ) {
-			return;
-		} elseif ( 1 < count( $partitions ) ) {
-			$page_hooks = array_map(
-				function ( string $name ) {
-					$polite_name = empty( $name ) ? __( 'Sitemap', 'metro-sitemaps' ) : implode( ' ', [ ucfirst( $name ), __( 'Sitemap', 'metro-sitemaps' ) ] );
-					$parts = [ 0 => 'metro', 2 => 'sitemap' ];
-					if ( ! empty( $name ) ) {
-						$parts[1] = $name;
-					}
-					ksort( $parts );
-					return add_management_page(
-						$polite_name,
-						$polite_name,
-						'manage_options',
-						implode( '-', $parts ),
-						[ new Metro_Sitemap_Admin_Renderer( $name, $polite_name ), 'render_sitemap_options_page' ]
-					);
-				},
-				$partitions
-			);
-			array_walk(
-				$page_hooks,
-				function( string $hook ) {
-					add_action( 'admin_print_scripts-' . $hook, array( __CLASS__, 'add_admin_scripts' ) );
-				}
-			);
-			return;
-		}
-
-		$page_hook = add_management_page( __( 'Sitemap', 'metro-sitemaps' ), __( 'Sitemap', 'metro-sitemaps' ), 'manage_options', 'metro-sitemap', array( new Metro_Sitemap_Admin_Renderer(), 'render_sitemap_options_page' ) );
+		$page_hook = add_management_page( __( 'Sitemap', 'msm-sitemap' ), __( 'Sitemap', 'msm-sitemap' ), 'manage_options', 'metro-sitemap', array( UI::class, 'render_options_page' ) );
 		add_action( 'admin_print_scripts-' . $page_hook, array( __CLASS__, 'add_admin_scripts' ) );
 	}
 
 	public static function add_admin_scripts() {
-		wp_enqueue_script( 'flot', plugins_url( '/js/jquery.flot.js', __FILE__ ), array( 'jquery' ) );
+		wp_enqueue_script( 'flot', plugins_url( '/js/flot/jquery.flot.js', __FILE__ ), array( 'jquery' ) );
 		wp_enqueue_script( 'msm-sitemap-admin', plugins_url( '/js/msm-sitemap-admin.js', __FILE__ ), array( 'jquery', 'flot' ) );
-		wp_enqueue_script( 'flot-time', plugins_url( '/js/jquery.flot.time.js', __FILE__ ), array( 'jquery', 'flot' ) );
+		wp_enqueue_script( 'flot-time', plugins_url( '/js/flot/jquery.flot.time.js', __FILE__ ), array( 'jquery', 'flot' ) );
 
 		wp_enqueue_style( 'msm-sitemap-css', plugins_url( 'css/style.css', __FILE__ ) );
 		wp_enqueue_style( 'noticons', '//s0.wordpress.com/i/noticons/noticons.css' );
+	}
+
+	/**
+	 * Retrieve sitemap counts and stats for AJAX/REST endpoints.
+	 *
+	 * @param int $num_days Number of days of stats to retrieve.
+	 * @return array
+	 */
+	public static function get_sitemap_counts_data( $num_days = 10 ) {
+		return array(
+			'total_indexed_urls'   => number_format( self::get_total_indexed_url_count() ),
+			'total_sitemaps'       => number_format( self::count_sitemaps() ),
+			'sitemap_indexed_urls' => self::get_recent_sitemap_url_counts( $num_days ),
+		);
 	}
 
 	public static function ajax_get_sitemap_counts() {
 		check_admin_referer( 'msm-sitemap-action' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( __( 'You do not have sufficient permissions to access this page.', 'metro-sitemaps' ) );
+			wp_die( __( 'You do not have sufficient permissions to access this page.', 'msm-sitemap' ) );
 		}
 
 		$n = 10;
 		if ( isset( $_REQUEST['num_days'] ) ) {
 			$n = intval( $_REQUEST['num_days'] );
 		}
-		if ( isset( $_REQUEST['partition'] ) ) {
-			$name = sanitize_key( $_REQUEST['partition'] );
-			do_action( 'msm_sitemap_select_partition', $name );
-		}
 
-		$data = array(
-			'total_indexed_urls'   => number_format( Metro_Sitemap::get_total_indexed_url_count() ),
-			'total_sitemaps'       => number_format( Metro_Sitemap::count_sitemaps() ),
-			'sitemap_indexed_urls' => self::get_recent_sitemap_url_counts( $n ),
-		);
+		$data = self::get_sitemap_counts_data( $n );
 
 		wp_send_json( $data );
 	}
 
 	/**
 	 * Displays a notice, error or warning to the user
+	 *
 	 * @param str $message The message to show to the user
 	 */
 	public static function show_action_message( $message, $level = 'notice' ) {
 		$class = 'updated';
-		if ( $level === 'warning' )
+		if ( $level === 'warning' ) {
 			$class = 'update-nag';
-		elseif ( $level === 'error' )
+		} elseif ( $level === 'error' ) {
 			$class = 'error';
+		}
 
 		echo '<div class="' . esc_attr( $class ) . ' msm-sitemap-message"><p>' . wp_kses( $message, wp_kses_allowed_html( 'post' ) ) . '</p></div>';
 	}
@@ -206,16 +207,8 @@ class Metro_Sitemap {
 	 * @return int The number of sitemaps that have been generated
 	 */
 	public static function count_sitemaps() {
-		if ( self::use_custom_queries() ) {
-			$count = wp_count_posts( Metro_Sitemap::SITEMAP_CPT );
-			return (int) $count->publish;
-		}
-		$args = [
-			'post_type'      => Metro_Sitemap::SITEMAP_CPT,
-			'post_status'    => 'publish',
-		];
-		$query = new \WP_Query( $args );
-		return (int) $query->found_posts;
+		$count = wp_count_posts( self::SITEMAP_CPT );
+		return (int) $count->publish;
 	}
 
 	/**
@@ -224,7 +217,7 @@ class Metro_Sitemap {
 	 * @return int The number of total number URLs indexed
 	 */
 	public static function get_total_indexed_url_count() {
-		return intval( get_option( 'msm_sitemap_indexed_url_count' . self::get_partition_suffix(), 0 ) );
+		return intval( get_option( 'msm_sitemap_indexed_url_count', 0 ) );
 	}
 
 	/**
@@ -237,7 +230,8 @@ class Metro_Sitemap {
 		$stats = array();
 
 		for ( $i = 0; $i < $n; $i++ ) {
-			$date = date( 'Y-m-d', strtotime( "-$i days" ) );
+			$date = wp_date( 'Y-m-d' );
+			$date = date( 'Y-m-d', strtotime( "-$i days", strtotime( $date ) ) );
 
 			list( $year, $month, $day ) = explode( '-', $date );
 
@@ -245,11 +239,6 @@ class Metro_Sitemap {
 		}
 
 		return $stats;
-	}
-
-	public static function is_blog_public() {
-		return ( 1 == get_option( 'blog_public' ) )
-			|| apply_filters( 'msm_sitemap_blog_public', false );
 	}
 
 	/**
@@ -276,48 +265,45 @@ class Metro_Sitemap {
 		if ( '1' == $public ) {
 			$output .= '# Sitemap archive' . PHP_EOL;
 
-			if ( self::$index_by_year ) {
+			if ( Site::is_indexed_by_year() ) {
 				$years = self::check_year_has_posts();
 				foreach ( $years as $year ) {
-					$output .= 'Sitemap: ' . home_url( '/sitemap-' . absint( $year ) . '.xml' ) . PHP_EOL;
+					$output .= 'Sitemap: ' . Site::get_sitemap_index_url( (int) $year ) . PHP_EOL;
 				}
 
 				$output .= PHP_EOL;
 			} else {
-				$output .= 'Sitemap: ' . home_url( '/sitemap.xml' ) . PHP_EOL . PHP_EOL;
+				$output .= 'Sitemap: ' . Site::get_sitemap_index_url() . PHP_EOL . PHP_EOL;
 			}
 		}
 		return $output;
-
 	}
 
 	/**
 	 * Add cron jobs required to generate these sitemaps
+	 *
+	 * Note: Cron is NOT auto-enabled on fresh installs to prevent resource issues
+	 * on large sites. Users must explicitly enable via CLI or admin interface.
 	 */
 	public static function sitemap_init_cron() {
-		if ( self::is_blog_public() ) {
-			$partitions = apply_filters( 'msm_sitemap_partitions', [''] );
-			array_walk(
-				$partitions,
-				function ( string $partition_name ) {
-					$args = [ $partition_name ];
-					if ( ! wp_next_scheduled( 'msm_cron_update_sitemap', $args ) ) {
-						wp_schedule_event( time(), 'ms-sitemap-15-min-cron-interval', 'msm_cron_update_sitemap', $args );
-					}
-				}
-			);
+		// Cron is NOT auto-enabled - users must explicitly enable it
+		// This prevents resource issues on sites with millions of articles
+		// Use the service to check if auto-enable should happen
+		if ( \Automattic\MSM_Sitemap\Cron_Service::should_auto_enable_cron() ) {
+			\Automattic\MSM_Sitemap\Cron_Service::enable_cron();
 		}
 	}
 
 	/**
 	 * Disable canonical redirects for the sitemap files
+	 *
 	 * @see http://codex.wordpress.org/Function_Reference/redirect_canonical
 	 * @param string $redirect_url
 	 * @param string $requested_url
 	 * @return string URL to redirect
 	 */
 	public static function disable_canonical_redirects_for_sitemap_xml( $redirect_url, $requested_url ) {
-		if ( self::$index_by_year ) {
+		if ( Site::is_indexed_by_year() ) {
 			$pattern = '|sitemap-([0-9]{4})\.xml|';
 		} else {
 			$pattern = '|sitemap\.xml|';
@@ -335,15 +321,14 @@ class Metro_Sitemap {
 	 * Rather than having to modify the plugin code, developers can use this filter to add their custom post statuses.
 	 *
 	 * @since 1.4.3
-	 *
 	 */
 	public static function get_post_status(): string {
 		$default_status = 'publish';
-		$post_status = apply_filters('msm_sitemap_post_status', $default_status);
+		$post_status    = apply_filters( 'msm_sitemap_post_status', $default_status );
 
 		$allowed_statuses = get_post_stati();
 
-		if (!in_array($post_status, $allowed_statuses)) {
+		if ( ! in_array( $post_status, $allowed_statuses ) ) {
 			$post_status = $default_status;
 		}
 
@@ -352,29 +337,48 @@ class Metro_Sitemap {
 
 	/**
 	 * Return range of years for posts in the database
+	 *
 	 * @return int[] valid years
 	 */
 	public static function get_post_year_range() {
-		global $wpdb;
-		$post_status = self::get_post_status();
+		/**
+		 * Allow the post year range to be short-circuited.
+		 *
+		 * @param array|false $pre The pre-filtered value. If false, the default value will be used.
+		 */
+		$pre = apply_filters( 'msm_sitemap_pre_get_post_year_range', false );
 
-		$oldest_post_date_year = $wpdb->get_var( $wpdb->prepare( "SELECT DISTINCT YEAR(post_date) as year FROM $wpdb->posts WHERE post_status = %s AND post_date > 0 ORDER BY year ASC LIMIT 1", $post_status ) );
+		// Return the pre-filtered value if it's an array.
+		if ( is_array( $pre ) ) {
+			return $pre;
+		}
+
+		$oldest_post_date_year = wp_cache_get( 'oldest_post_date_year', 'msm_sitemap' );
+
+		if ( false === $oldest_post_date_year ) {
+			global $wpdb;
+
+			$post_types_in = self::get_supported_post_types_in();
+
+			$oldest_post_date_year = $wpdb->get_var( $wpdb->prepare( "SELECT DISTINCT YEAR(post_date) as year FROM $wpdb->posts WHERE post_status = %s AND post_type IN ( {$post_types_in} ) AND post_date > 0 ORDER BY year ASC LIMIT 1", self::get_post_status() ) );
+
+			wp_cache_set( 'oldest_post_date_year', $oldest_post_date_year, 'msm_sitemap', WEEK_IN_SECONDS );
+		}
 
 		if ( null !== $oldest_post_date_year ) {
-			$current_year = date( 'Y' );
+			$current_year = wp_date( 'Y' );
 			return range( (int) $oldest_post_date_year, $current_year );
 		}
 
 		return array();
-
 	}
 
 	/**
 	 * Get every year that has valid posts in a range
+	 *
 	 * @return int[] years with posts
 	 */
 	public static function check_year_has_posts() {
-
 		$all_years = self::get_post_year_range();
 
 		$years_with_posts = array();
@@ -384,11 +388,11 @@ class Metro_Sitemap {
 			}
 		}
 		return $years_with_posts;
-
 	}
 
 	/**
 	 * Get properly formatted data stamp from year, month, and day
+	 *
 	 * @param int $year
 	 * @param int $month
 	 * @param int $day
@@ -400,6 +404,7 @@ class Metro_Sitemap {
 
 	/**
 	 * Does a current date range have posts?
+	 *
 	 * @param string $start_date
 	 * @param string $end_date
 	 * @return int|false
@@ -407,8 +412,24 @@ class Metro_Sitemap {
 	public static function date_range_has_posts( $start_date, $end_date ) {
 		global $wpdb;
 
+		// Validate date format and existence
+		if (
+			! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $start_date ) ||
+			! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $end_date )
+		) {
+			return null;
+		}
+		list( $start_year, $start_month, $start_day ) = explode( '-', $start_date );
+		list( $end_year, $end_month, $end_day )       = explode( '-', $end_date );
+		if (
+			! checkdate( (int) $start_month, (int) $start_day, (int) $start_year ) ||
+			! checkdate( (int) $end_month, (int) $end_day, (int) $end_year )
+		) {
+			return null;
+		}
+
 		$start_date .= ' 00:00:00';
-		$end_date .= ' 23:59:59';
+		$end_date   .= ' 23:59:59';
 		$post_status = self::get_post_status();
 
 		$post_types_in = self::get_supported_post_types_in();
@@ -419,20 +440,33 @@ class Metro_Sitemap {
 	 * Get a list of support post_type IDs for a given date
 	 *
 	 * @param string $sitemap_date Date in Y-m-d
-	 * @param int Number of post IDs to return
+	 * @param int    $limit        Number of post IDs to return
 	 * @return array IDs of posts
 	 */
-	public static function get_post_ids_for_date( $sitemap_date, $limit = 500 ) {
+	public static function get_post_ids_for_date( $sitemap_date, int $limit = 500 ) {
 		global $wpdb;
 
-		$post_status = self::get_post_status();
-		$start_date = $sitemap_date . ' 00:00:00';
-		$end_date = $sitemap_date . ' 23:59:59';
+		if ( $limit < 1 ) {
+			return array();
+		}
+
+		// Validate date format and existence
+		if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $sitemap_date ) ) {
+			return array();
+		}
+		list( $year, $month, $day ) = explode( '-', $sitemap_date );
+		if ( ! checkdate( (int) $month, (int) $day, (int) $year ) ) {
+			return array();
+		}
+
+		$post_status   = self::get_post_status();
+		$start_date    = $sitemap_date . ' 00:00:00';
+		$end_date      = $sitemap_date . ' 23:59:59';
 		$post_types_in = self::get_supported_post_types_in();
 
 		$posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_status = %s AND post_date >= %s AND post_date <= %s AND post_type IN ( {$post_types_in} ) LIMIT %d", $post_status, $start_date, $end_date, $limit ) );
 
-		usort( $posts, array( __CLASS__ , 'order_by_post_date' ) );
+		usort( $posts, array( __CLASS__, 'order_by_post_date' ) );
 
 		$post_ids = wp_list_pluck( $posts, 'ID' );
 
@@ -441,34 +475,31 @@ class Metro_Sitemap {
 
 	/**
 	 * Generate sitemap for a date; this is where XML is rendered.
+	 *
 	 * @param string $sitemap_date
 	 */
 	public static function generate_sitemap_for_date( $sitemap_date ) {
+		global $wpdb;
 
 		list( $year, $month, $day ) = explode( '-', $sitemap_date );
 
-		$sitemap_name = $sitemap_date;
+		$sitemap_name   = $sitemap_date;
 		$sitemap_exists = false;
 
 		$sitemap_data = array(
-			'post_name' => $sitemap_name,
-			'post_title' => $sitemap_name,
-			'post_type' => self::SITEMAP_CPT,
+			'post_name'   => $sitemap_name,
+			'post_title'  => $sitemap_name,
+			'post_type'   => self::SITEMAP_CPT,
 			'post_status' => self::get_post_status(),
-			'post_date' => $sitemap_date,
-			);
+			'post_date'   => $sitemap_date,
+		);
 
-		if ( self::use_custom_queries() ) {
-			global $wpdb;
-			$sitemap_id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", self::SITEMAP_CPT, $sitemap_name ) );
-		} else {
-			$sitemap_id = self::get_sitemap_post_id( $year, $month, $day );
-		}
+		$sitemap_id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", self::SITEMAP_CPT, $sitemap_name ) );
 
 		if ( $sitemap_id ) {
 			$sitemap_exists = true;
 		} else {
-			$sitemap_id = wp_insert_post( $sitemap_data );
+			$sitemap_id     = wp_insert_post( $sitemap_data );
 			$sitemap_exists = true;
 		}
 
@@ -488,19 +519,25 @@ class Metro_Sitemap {
 		// For migration: in case the previous version used an array for this option
 		if ( is_array( $total_url_count ) ) {
 			$total_url_count = array_sum( $total_url_count );
-			update_option( 'msm_sitemap_indexed_url_count' . self::get_partition_suffix(), $total_url_count, false );
+			update_option( 'msm_sitemap_indexed_url_count', $total_url_count, false );
 		}
 
+		// Get XSL stylesheet reference
+		$stylesheet = \Automattic\MSM_Sitemap\StylesheetManager::get_sitemap_stylesheet_reference();
+		// $stylesheet = '';
 		// SimpleXML doesn't allow us to define namespaces using addAttribute, so we need to specify them in the construction instead.
-		$namespaces = apply_filters( 'msm_sitemap_namespace', array(
-			'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
-			'xmlns' => 'http://www.sitemaps.org/schemas/sitemap/0.9',
-			'xmlns:n' => 'http://www.google.com/schemas/sitemap-news/0.9',
-			'xmlns:image' => 'http://www.google.com/schemas/sitemap-image/1.1',
-			'xsi:schemaLocation' => 'http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd',
-		) );
+		$namespaces = apply_filters(
+			'msm_sitemap_namespace',
+			array(
+				'xmlns:xsi'          => 'http://www.w3.org/2001/XMLSchema-instance',
+				'xmlns'              => 'http://www.sitemaps.org/schemas/sitemap/0.9',
+				'xmlns:n'            => 'http://www.google.com/schemas/sitemap-news/0.9',
+				'xmlns:image'        => 'http://www.google.com/schemas/sitemap-image/1.1',
+				'xsi:schemaLocation' => 'http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd',
+			)
+		);
 
-		$namespace_str = '<?xml version="1.0" encoding="utf-8"?><urlset';
+		$namespace_str = '<?xml version="1.0" encoding="utf-8"?>' . $stylesheet . '<urlset';
 		foreach ( $namespaces as $ns => $value ) {
 			$namespace_str .= sprintf( ' %s="%s"', esc_attr( $ns ), esc_attr( $value ) );
 		}
@@ -510,23 +547,36 @@ class Metro_Sitemap {
 		$xml = new SimpleXMLElement( $namespace_str );
 
 		$url_count = 0;
-		foreach ( $post_ids as $post_id ) {
-			$GLOBALS['post'] = get_post( $post_id );
-			setup_postdata( $GLOBALS['post'] );
+		$url_entries = \Automattic\MSM_Sitemap\Infrastructure\Factories\UrlEntryFactory::from_posts( $post_ids );
 
-			if ( apply_filters( 'msm_sitemap_skip_post', false ) )
-				continue;
-
+		// Add URL entries to XML
+		foreach ( $url_entries as $url_entry ) {
 			$url = $xml->addChild( 'url' );
-			$url->addChild( 'loc', esc_url( get_permalink() ) );
-			$url->addChild( 'lastmod', get_post_modified_time( 'c', true ) );
-			$url->addChild( 'changefreq', 'monthly' );
-			$url->addChild( 'priority', '0.7' );
+			$url->addChild( 'loc', esc_url( $url_entry->loc() ) );
+
+			if ( $url_entry->lastmod() ) {
+				$url->addChild( 'lastmod', $url_entry->lastmod() );
+			}
+
+			if ( $url_entry->changefreq() ) {
+				$url->addChild( 'changefreq', $url_entry->changefreq() );
+			}
+
+			if ( $url_entry->priority() ) {
+				$url->addChild( 'priority', (string) $url_entry->priority() );
+			}
 
 			apply_filters( 'msm_sitemap_entry', $url );
 
 			++$url_count;
 			// TODO: add images to sitemap via <image:image> tag
+		}
+
+		// If all posts were skipped, remove the sitemap post.
+		if ( 0 === $url_count ) {
+			self::delete_sitemap_by_id( $sitemap_id );
+			wp_reset_postdata();
+			return;
 		}
 
 		$generated_xml_string = $xml->asXML();
@@ -538,6 +588,10 @@ class Metro_Sitemap {
 
 			// Update the total post count with the difference
 			$total_url_count += $url_count - $previous_url_count;
+
+			// Touch the post to update post_modified timestamp.
+			// This ensures the sitemap index shows when sitemaps were last regenerated.
+			wp_update_post( array( 'ID' => $sitemap_id ) );
 
 			update_post_meta( $sitemap_id, 'msm_sitemap_xml', $generated_xml_string );
 			update_post_meta( $sitemap_id, 'msm_indexed_url_count', $url_count );
@@ -554,14 +608,14 @@ class Metro_Sitemap {
 		}
 
 		// Update indexed url counts
-		update_option( 'msm_sitemap_indexed_url_count' . self::get_partition_suffix(), $total_url_count, false );
+		update_option( 'msm_sitemap_indexed_url_count', $total_url_count, false );
 
 		wp_reset_postdata();
 	}
 
 	public static function delete_sitemap_for_date( $sitemap_date ) {
 		list( $year, $month, $day ) = explode( '-', $sitemap_date );
-		$sitemap_id = self::get_sitemap_post_id( $year, $month, $day );
+		$sitemap_id                 = self::get_sitemap_post_id( $year, $month, $day );
 		if ( ! $sitemap_id ) {
 			return false;
 		}
@@ -574,12 +628,12 @@ class Metro_Sitemap {
 			return false;
 		}
 
-		$sitemap_date = date( 'Y-m-d', strtotime( $sitemap->post_date ) );
+		$sitemap_date               = date( 'Y-m-d', strtotime( $sitemap->post_date ) );
 		list( $year, $month, $day ) = explode( '-', $sitemap_date );
 
-		$total_url_count = self::get_total_indexed_url_count();
+		$total_url_count  = self::get_total_indexed_url_count();
 		$total_url_count -= intval( get_post_meta( $sitemap_id, 'msm_indexed_url_count', true ) );
-		update_option( 'msm_sitemap_indexed_url_count' . self::get_partition_suffix(), $total_url_count, false );
+		update_option( 'msm_sitemap_indexed_url_count', $total_url_count, false );
 
 		wp_delete_post( $sitemap_id, true );
 		do_action( 'msm_delete_sitemap_post', $sitemap_id, $year, $month, $day );
@@ -593,9 +647,9 @@ class Metro_Sitemap {
 			self::SITEMAP_CPT,
 			array(
 				'labels'       => array(
-					'name'          => __( 'Sitemaps' ),
-					'singular_name' => __( 'Sitemap' ),
-					),
+					'name'          => __( 'Sitemaps', 'msm-sitemap' ),
+					'singular_name' => __( 'Sitemap', 'msm-sitemap' ),
+				),
 				'public'       => false,
 				'has_archive'  => false,
 				'rewrite'      => false,
@@ -603,29 +657,27 @@ class Metro_Sitemap {
 				'show_in_menu' => false, // Since we're manually adding a Sitemaps menu, no need to auto-add one through the CPT.
 				'supports'     => array(
 					'title',
-					),
-				)
-			);
+				),
+			)
+		);
 	}
 
 	/**
 	 * Get posts modified within the last hour
+	 *
 	 * @return object[] modified posts
 	 */
 	public static function get_last_modified_posts() {
 		global $wpdb;
 
-		$sitemap_last_run = get_option( 'msm_sitemap_update_last_run' . self::get_partition_suffix() , false );
+		$sitemap_last_run = get_option( 'msm_sitemap_update_last_run', false );
 
-		$date = date( 'Y-m-d H:i:s', ( current_time( 'timestamp', 1 ) - 3600 ) ); // posts changed within the last hour
-
-		if ( $sitemap_last_run ) {
-			$date = date( 'Y-m-d H:i:s', $sitemap_last_run );
-		}
+		// Use the last run time if set, otherwise current time minus 1 hour for posts changed within the last hour.
+		$date = gmdate( 'Y-m-d H:i:s', $sitemap_last_run ?: time() - 3600 );
 
 		$post_types_in = self::get_supported_post_types_in();
 
-		$query = $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_modified_gmt >= %s LIMIT 1000", $date );
+		$query = $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_status = %s AND post_modified_gmt >= %s LIMIT 1000", self::get_post_status(), $date );
 
 		/**
 		 * Filter the query used to get the last modified posts.
@@ -633,7 +685,7 @@ class Metro_Sitemap {
 		 *
 		 * @param string $query         The query to use to get the last modified posts.
 		 * @param string $post_types_in A comma-separated list of post types to include in the query.
-		 * @param string $date          The date to use as the cutoff for the query.
+		 * @param string $date          The cutoff date in MySQL DATETIME format (UTC), for comparison against post_modified_gmt.
 		 */
 		$query = apply_filters( 'msm_pre_get_last_modified_posts', $query, $post_types_in, $date );
 
@@ -644,6 +696,7 @@ class Metro_Sitemap {
 
 	/**
 	 * Get dates for an array of posts
+	 *
 	 * @param object[] $posts
 	 * @return string[] unique dates of each post.
 	 */
@@ -660,14 +713,15 @@ class Metro_Sitemap {
 	/**
 	 * Update the sitemap with changes from recently modified posts
 	 */
-	public static function update_sitemap_from_modified_posts( $partition_name = '' ) {
-		if ( ! empty( $partition_name ) ) {
-			do_action( 'msm_sitemap_select_partition', $partition_name );
+	public static function update_sitemap_from_modified_posts() {
+		// Check if cron is enabled before processing
+		if ( ! \Automattic\MSM_Sitemap\Cron_Service::is_cron_enabled() ) {
+			return;
 		}
 
-		$time = current_time( 'timestamp', 1 );
+		$time                = time();
 		$last_modified_posts = self::get_last_modified_posts();
-		$dates = self::get_post_dates( $last_modified_posts );
+		$dates               = self::get_post_dates( $last_modified_posts );
 
 		foreach ( $dates as $date ) {
 			list( $year, $month, $day ) = explode( '-', $date );
@@ -681,7 +735,7 @@ class Metro_Sitemap {
 
 			do_action( 'msm_update_sitemap_for_year_month_date', array( $year, $month, $day ), $time );
 		}
-		update_option( 'msm_sitemap_update_last_run' . self::get_partition_suffix(), current_time( 'timestamp', 1 ), false );
+		update_option( 'msm_sitemap_update_last_run', time(), false );
 	}
 
 	/**
@@ -689,7 +743,7 @@ class Metro_Sitemap {
 	 */
 	public static function load_sitemap_template( $template ) {
 		if ( get_query_var( 'sitemap' ) === 'true' ) {
-			$template = dirname( __FILE__ ) . '/templates/full-sitemaps.php';
+			$template = __DIR__ . '/templates/full-sitemaps.php';
 		}
 		return $template;
 	}
@@ -698,10 +752,10 @@ class Metro_Sitemap {
 	 * Disable Main Query when rendering sitemaps
 	 *
 	 * @param array|null $posts array of post data or null
-	 * @param WP_Query $query The WP_Query instance.
+	 * @param WP_Query   $query The WP_Query instance.
 	 */
 	public static function disable_main_query_for_sitemap_xml( $posts, $query ) {
-		if ( $query->is_main_query() && isset($query->query_vars['sitemap']) && 'true' === $query->query_vars['sitemap'] ) {
+		if ( $query->is_main_query() && isset( $query->query_vars['sitemap'] ) && 'true' === $query->query_vars['sitemap'] ) {
 			$posts = array();
 		}
 		return $posts;
@@ -710,26 +764,33 @@ class Metro_Sitemap {
 	/**
 	 * Build Root sitemap XML
 	 * Can be all days (default) or a specific year.
+	 *
 	 * @param int|boolean $year
 	 */
 	public static function build_root_sitemap_xml( $year = false ) {
-
 		$xml_prefix = '<?xml version="1.0" encoding="utf-8"?>';
+		$stylesheet = \Automattic\MSM_Sitemap\StylesheetManager::get_index_stylesheet_reference();
+		global $wpdb;
 
-		if ( self::use_custom_queries() ) {
-			global $wpdb;
-			// Direct query because we just want dates of the sitemap entries and this is much faster than WP_Query
-			if ( is_numeric( $year ) ) {
-				$query = $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s AND YEAR(post_date) = %s ORDER BY post_date DESC LIMIT %d", Metro_Sitemap::SITEMAP_CPT, $year, self::max_sitemap_length() );
-			} else {
-				$query = $wpdb->prepare( "SELECT post_date FROM $wpdb->posts WHERE post_type = %s ORDER BY post_date DESC LIMIT %d", Metro_Sitemap::SITEMAP_CPT, self::max_sitemap_length() );
-			}
-			$sitemaps = $wpdb->get_col( $query );
+		// Direct query because we just want dates of the sitemap entries and this is much faster than WP_Query
+		// We need both post_date (for URL) and post_modified (for lastmod per Google's sitemap spec)
+		if ( is_numeric( $year ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$results = $wpdb->get_results( $wpdb->prepare( "SELECT post_date, post_modified FROM $wpdb->posts WHERE post_type = %s AND YEAR(post_date) = %s AND post_status = 'publish' ORDER BY post_date DESC LIMIT 10000", self::SITEMAP_CPT, $year ) );
 		} else {
-			$sitemaps = self::get_sitemap_dates( $year );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$results = $wpdb->get_results( $wpdb->prepare( "SELECT post_date, post_modified FROM $wpdb->posts WHERE post_type = %s AND post_status = 'publish' ORDER BY post_date DESC LIMIT 10000", self::SITEMAP_CPT ) );
 		}
-		// Sometimes duplicate sitemaps exist, lets make sure so they are not output
-		$sitemaps = array_unique( $sitemaps );
+
+		// Build mapping of date -> modified time, and extract unique dates for BC filter
+		$date_to_modified = array();
+		$sitemaps         = array();
+		foreach ( $results as $row ) {
+			if ( ! isset( $date_to_modified[ $row->post_date ] ) ) {
+				$date_to_modified[ $row->post_date ] = $row->post_modified;
+				$sitemaps[]                          = $row->post_date;
+			}
+		}
 
 		/**
 		 * Filter daily sitemaps from the index by date.
@@ -746,94 +807,65 @@ class Metro_Sitemap {
 		 */
 		$sitemaps = apply_filters( 'msm_sitemap_index', $sitemaps, $year );
 
-		$xml = new SimpleXMLElement( $xml_prefix . '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
-		foreach ( $sitemaps as $sitemap_date ) {
-			$sitemap = $xml->addChild( 'sitemap' );
-			$sitemap->loc = self::build_sitemap_url( $sitemap_date ); // manually set the child instead of addChild to prevent "unterminated entity reference" warnings due to encoded ampersands http://stackoverflow.com/a/555039/169478
+		// Create sitemap index entries using our domain objects, passing the modification times
+		$entries = \Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapIndexEntryFactory::from_sitemap_dates( $sitemaps, $date_to_modified );
+		$collection = \Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapIndexCollectionFactory::from_entries( $entries );
+
+		$xml = new SimpleXMLElement( $xml_prefix . $stylesheet . '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>' );
+		foreach ( $collection->get_entries() as $entry ) {
+			$sitemap      = $xml->addChild( 'sitemap' );
+			$sitemap->loc = $entry->loc(); // manually set the child instead of addChild to prevent "unterminated entity reference" warnings due to encoded ampersands http://stackoverflow.com/a/555039/169478
+			if ( $entry->lastmod() ) {
+				$sitemap->lastmod = $entry->lastmod();
+			}
 		}
-		return $xml->asXML();
+		$xml_string = $xml->asXML();
+
+		/**
+		 * Filter the XML to append to the sitemap index before the closing tag.
+		 *
+		 * Useful for adding in extra sitemaps to the index.
+		 *
+		 * @param string   $appended_xml The XML to append. Default empty string.
+		 * @param int|bool $year         The year for which the sitemap index is being generated, or false for all years.
+		 * @param array    $sitemaps     The sitemaps to be included in the index.
+		 */
+		$appended   = apply_filters( 'msm_sitemap_index_appended_xml', '', $year, $sitemaps );
+		$xml_string = str_replace( '</sitemapindex>', $appended . '</sitemapindex>', $xml_string );
+
+		/**
+		 * Filter the whole generated sitemap index XML before output.
+		 *
+		 * @param string   $xml_string The sitemap index XML.
+		 * @param int|bool $year       The year for which the sitemap index is being generated, or false for all years.
+		 * @param array    $sitemaps   The sitemaps to be included in the index.
+		 */
+		$xml_string = apply_filters( 'msm_sitemap_index_xml', $xml_string, $year, $sitemaps );
+
+		return $xml_string;
 	}
 
-	/**
-	 * Return sitemap post_dates.
-	 *
-	 * @param ?int $year year to list.
-	 *
-	 * @return string[] dates of sitemap posts.
-	 */
-	public static function get_sitemap_dates( $year = false ): array {
-		global $wpdb;
 
-		$args = [
-			'post_type'   => Metro_Sitemap::SITEMAP_CPT,
-			'orderby'     => 'post_date',
-			'order'       => 'DESC',
-			'fields'      => 'ids',
-			'numberposts' => self::max_sitemap_length(),
-		];
-		if ( is_numeric( $year ) ) {
-			$args['m'] = $year;
-		}
-
-		return $wpdb->get_col(
-			sprintf(
-				"SELECT post_date FROM $wpdb->posts WHERE ID IN (%s) ORDER BY post_date DESC",
-				implode( ',', get_posts( $args ) )
-			)
-		);
-
-		return $sitemaps;
-	}
-
-	/**
-	 * Build the sitemap URL for a given date
-	 * @param string $sitemap_date
-	 * @return string
-	 */
-	public static function build_sitemap_url( $sitemap_date ) {
-		$sitemap_time = strtotime( $sitemap_date );
-
-		if ( self::$index_by_year ) {
-			$sitemap_url = add_query_arg(
-				array(
-					'mm' => date( 'm', $sitemap_time ),
-					'dd' => date( 'd', $sitemap_time ),
-				),
-				home_url( '/sitemap-' . date( 'Y', $sitemap_time ) . '.xml' )
-			);
-		} else {
-			$sitemap_url = add_query_arg(
-				array(
-					'yyyy' => date( 'Y', $sitemap_time ),
-					'mm' => date( 'm', $sitemap_time ),
-					'dd' => date( 'd', $sitemap_time ),
-				),
-				home_url( '/sitemap.xml' )
-			);
-		}
-
-		return apply_filters( 'msm_sitemap_url', $sitemap_url );
-	}
 
 	public static function get_sitemap_post_id( $year, $month, $day ) {
 		$ymd = self::get_date_stamp( $year, $month, $day );
 
 		$sitemap_args = array(
-			'date_query' => array(
+			'date_query'        => array(
 				array(
-					'before' => sprintf( '%s 00:00:00', $ymd ),
-					'after' => sprintf( '%s 00:00:00', $ymd ),
+					'before'    => sprintf( '%s 00:00:00', $ymd ),
+					'after'     => sprintf( '%s 00:00:00', $ymd ),
 					'inclusive' => true,
 				),
 			),
-			'orderby' => 'ID',
-			'order' => 'ASC',
-			'posts_per_page' => 1,
-			'fields' => 'ids',
-			'post_type' => self::SITEMAP_CPT,
-			'no_found_rows' => true,
+			'orderby'           => 'ID',
+			'order'             => 'ASC',
+			'posts_per_page'    => 1,
+			'fields'            => 'ids',
+			'post_type'         => self::SITEMAP_CPT,
+			'no_found_rows'     => true,
 			'update_term_cache' => false,
-			'suppress_filters' => false,
+			'suppress_filters'  => false,
 		);
 
 		$sitemap_query = get_posts( $sitemap_args );
@@ -866,14 +898,13 @@ class Metro_Sitemap {
 	 * Build XML for output to clean up the template file
 	 */
 	public static function build_xml( $request = array() ) {
-
-		$year = $request['year'];
+		$year  = $request['year'];
 		$month = $request['month'];
-		$day = $request['day'];
+		$day   = $request['day'];
 
 		if ( ( false === $year || is_numeric( $year ) ) && false === $month && false === $day ) {
 			$xml = self::build_root_sitemap_xml( $year );
-		} else if ( $year > 0 && $month > 0 && $day > 0 ) {
+		} elseif ( $year > 0 && $month > 0 && $day > 0 ) {
 			$xml = self::build_individual_sitemap_xml( $year, $month, $day );
 		} else {
 			/* Invalid options sent */
@@ -886,10 +917,15 @@ class Metro_Sitemap {
 		return apply_filters( 'msm_sitemap_entry_post_type', array( 'post' ) );
 	}
 
+	/**
+	 * Retrieve supported post types for inclusion in sitemap.
+	 *
+	 * @return string[]
+	 */
 	private static function get_supported_post_types_in() {
 		global $wpdb;
 
-		$post_types = self::get_supported_post_types();
+		$post_types          = self::get_supported_post_types();
 		$post_types_prepared = array();
 
 		foreach ( $post_types as $post_type ) {
@@ -915,6 +951,48 @@ class Metro_Sitemap {
 		}
 		return ( $a_date < $b_date ) ? -1 : 1;
 	}
-}
 
+	/**
+	 * Handle post deletion/trashing to trigger sitemap updates.
+	 *
+	 * This method is called when a post is deleted or trashed. It queues
+	 * sitemap updates to be processed by the existing 15-minute cron job,
+	 * avoiding performance issues when many posts are deleted at once.
+	 *
+	 * @param int     $post_id The ID of the post being deleted/trashed.
+	 * @param WP_Post $post    The post object (optional, only passed by deleted_post hook).
+	 */
+	public static function handle_post_deletion( $post_id, $post = null ) {
+		// If post object is not provided, try to get it from the database
+		if ( ! $post || ! is_a( $post, 'WP_Post' ) ) {
+			$post = get_post( $post_id );
+			if ( ! $post ) {
+				return;
+			}
+		}
+
+		// Only process supported post types
+		$supported_post_types = self::get_supported_post_types();
+		if ( ! in_array( $post->post_type, $supported_post_types ) ) {
+			return;
+		}
+
+		// Get the post date to determine the sitemap date
+		$post_date                  = date( 'Y-m-d', strtotime( $post->post_date ) );
+		list( $year, $month, $day ) = explode( '-', $post_date );
+
+		// Validate the date
+		if ( ! checkdate( (int) $month, (int) $day, (int) $year ) ) {
+			return;
+		}
+
+		// We can either generate the sitemap immediately or queue it for processing by the existing cron job.
+
+		// Immediately regenerate the sitemap for this date to ensure the deleted/trashed post is removed
+		// self::generate_sitemap_for_date( $post_date );
+
+		// Queue the sitemap update to be processed by the existing cron job
+		do_action( 'msm_update_sitemap_for_year_month_date', array( $year, $month, $day ), current_time( 'timestamp' ) );
+	}
+}
 add_action( 'after_setup_theme', array( 'Metro_Sitemap', 'setup' ) );

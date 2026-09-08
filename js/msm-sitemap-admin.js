@@ -7,7 +7,7 @@ jQuery( document ).ready( function() {
 
 	// Move the tooltip to body
 	jQuery( '#tooltip' ).appendTo( 'body' );
-
+	
 	var plot_options = {
 		xaxis: {
 			mode: 'time',
@@ -34,7 +34,7 @@ jQuery( document ).ready( function() {
 
 	};
 
-	var data = [
+	var data = [ 
 		{
 			data: [],
 			bars: {
@@ -57,7 +57,6 @@ jQuery( document ).ready( function() {
 	function msm_query_sitemap_counts() {
 		var data = {
 			action: 'msm-sitemap-get-sitemap-counts',
-			partition: jQuery( '#sitemap-partition' ).val() || '',
 			_wpnonce: jQuery( '#_wpnonce' ).val(),
 		};
 
@@ -95,7 +94,7 @@ jQuery( document ).ready( function() {
 		// Update the plot
 		data[0].data = formatted_data;
 		jQuery.plot( placeholder, data, plot_options );
-
+		
 		// Update the maxima information
 		update_stats_maximum();
 	}
@@ -125,9 +124,16 @@ jQuery( document ).ready( function() {
 
 				// Get and format the data values
 				var x = item.series.xaxis.tickFormatter( item.datapoint[0], item.series.xaxis );
-				var y = item.series.yaxis.tickFormatter( item.datapoint[1], item.series.yaxis );
+				var count = item.datapoint[1];
+				var y = item.series.yaxis.tickFormatter( count, item.series.yaxis );
 
 				show_tooltip( item.pageX, item.pageY, x + ': ' + y );
+
+				// Pluralize the label using data attributes for i18n
+				var label = count === 1
+					? jQuery('#tooltip .url-label').data('singular')
+					: jQuery('#tooltip .url-label').data('plural');
+				jQuery('#tooltip .url-label').text(label);
 			}
 		} else {
 			jQuery( '#tooltip' ).stop();
