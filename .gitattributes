@@ -17,6 +17,7 @@
 /CHANGELOG.md          export-ignore
 /composer.json         export-ignore
 /composer.lock         export-ignore
+/CONTRIBUTING.md       export-ignore
 /DEVELOPERS.md         export-ignore
 /package.json          export-ignore
 /package-lock.json     export-ignore
