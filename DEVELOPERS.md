@@ -649,13 +649,16 @@ wp msm-sitemap generate --date=2024
 
 ## Testing & Contributing
 
-* **Minimum Requirements:** WordPress 5.9+, PHP 7.4+
+* **Minimum Requirements:** WordPress 6.4+, PHP 7.4+
 * **Coding Standards:** Follows [WordPress Coding Standards](https://github.com/WordPress/WordPress-Coding-Standards) and [PSR-12](https://www.php-fig.org/psr/psr-12/)
-* **Tests:** PHPUnit integration tests are included. To run:
+* **Tests:** PHPUnit unit and integration tests are included. The integration tests run inside wp-env. To run:
 
 ~~~shell
 composer install
-composer test
+composer test:unit
+npx wp-env start
+composer test:integration
+composer test:integration-ms
 ~~~
 
 * **Code Quality:** Lint and code style checks:
@@ -665,7 +668,7 @@ composer lint
 composer cs
 ~~~
 
-* **Contributions:** Please open issues or pull requests on [GitHub](https://github.com/Automattic/msm-sitemap).
+* **Contributions:** Please open issues or pull requests on [GitHub](https://github.com/Automattic/msm-sitemap). See [CONTRIBUTING.md](./CONTRIBUTING.md) for the workflow, including the requirement to sign your commits.
 
 ### Testing Architecture
 
