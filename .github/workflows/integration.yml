@@ -7,6 +7,8 @@ on:
       - 'composer.json'
       - 'phpunit.xml.dist'
       - '.wp-env.json'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/integration.yml'
   pull_request:
     branches: [develop, main]
@@ -15,6 +17,8 @@ on:
       - 'composer.json'
       - 'phpunit.xml.dist'
       - '.wp-env.json'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/integration.yml'
   workflow_dispatch:
 
