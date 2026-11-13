@@ -115,6 +115,7 @@ class Cron_Service {
 		$is_enabled     = self::is_cron_enabled();
 		$next_scheduled = wp_next_scheduled( 'msm_cron_update_sitemap' );
 		$is_blog_public = Site::is_public();
+		$are_enabled    = Site::are_sitemaps_enabled();
 		$is_generating  = (bool) get_option( 'msm_sitemap_create_in_progress' );
 		$is_halted      = (bool) get_option( 'msm_stop_processing' );
 
@@ -125,13 +126,14 @@ class Cron_Service {
 		}
 
 		return array(
-			'enabled'        => $is_enabled,
-			'next_scheduled' => $next_scheduled,
-			'blog_public'    => $is_blog_public,
-			'generating'     => $is_generating,
-			'halted'         => $is_halted,
-			'can_enable'     => $is_blog_public && ! $is_enabled,
-			'can_disable'    => $is_enabled,
+			'enabled'          => $is_enabled,
+			'next_scheduled'   => $next_scheduled,
+			'blog_public'      => $is_blog_public,
+			'sitemaps_enabled' => $are_enabled,
+			'generating'       => $is_generating,
+			'halted'           => $is_halted,
+			'can_enable'       => $are_enabled && ! $is_enabled,
+			'can_disable'      => $is_enabled,
 		);
 	}
 

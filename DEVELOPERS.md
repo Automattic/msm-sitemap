@@ -120,6 +120,30 @@ function my_override_cron_status( bool $enabled ): bool {
 }
 ~~~
 
+### Enable Sitemaps on Non-Public Sites
+
+**Business case:**
+By default, sitemaps are only generated and served when `blog_public` is `1`. Some sites need sitemaps without being marked as public, such as staging environments, or WordPress VIP sites that set `VIP_JETPACK_IS_PRIVATE` (which forces `blog_public` to `-1`). Overriding `blog_public` itself would change every other feature that reads it, so use this filter instead.
+
+~~~php
+add_filter( 'msm_sitemap_is_enabled', 'my_enable_sitemaps' );
+/**
+ * Enable sitemaps regardless of the blog_public setting.
+ *
+ * @param bool $is_enabled Whether sitemaps are enabled. Defaults to whether blog_public is 1.
+ * @return bool Whether sitemaps should be enabled.
+ */
+function my_enable_sitemaps( bool $is_enabled ): bool {
+    if ( 'staging' === wp_get_environment_type() ) {
+        return true;
+    }
+
+    return $is_enabled;
+}
+~~~
+
+The filter controls the admin page, cron, sitemap generation and serving. The `Sitemap:` lines in robots.txt still only appear when `blog_public` is `1`, so submit the sitemap index to search engines directly if the site is not public.
+
 ### Customize the Last Modified Posts Query
 
 **Business case:**
