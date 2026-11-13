@@ -550,11 +550,21 @@ class Metro_Sitemap {
 		// Create XML
 		$xml = new SimpleXMLElement( $namespace_str );
 
-		$url_count = 0;
-		$url_entries = \Automattic\MSM_Sitemap\Infrastructure\Factories\UrlEntryFactory::from_posts( $post_ids );
+		$url_count     = 0;
+		$original_post = $GLOBALS['post'] ?? null;
 
 		// Add URL entries to XML
-		foreach ( $url_entries as $url_entry ) {
+		foreach ( $post_ids as $post_id ) {
+			// Set up the global post, so msm_sitemap_skip_post and msm_sitemap_entry
+			// callbacks can use get_post(), get_the_ID() and other template tags.
+			$GLOBALS['post'] = get_post( $post_id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+			setup_postdata( $GLOBALS['post'] );
+
+			$url_entry = \Automattic\MSM_Sitemap\Infrastructure\Factories\UrlEntryFactory::from_post( (int) $post_id );
+			if ( ! $url_entry ) {
+				continue;
+			}
+
 			$url = $xml->addChild( 'url' );
 			$url->addChild( 'loc', esc_url( $url_entry->loc() ) );
 
@@ -574,6 +584,11 @@ class Metro_Sitemap {
 
 			++$url_count;
 			// TODO: add images to sitemap via <image:image> tag
+		}
+
+		$GLOBALS['post'] = $original_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		if ( $original_post instanceof WP_Post ) {
+			setup_postdata( $original_post );
 		}
 
 		// If all posts were skipped, remove the sitemap post.
