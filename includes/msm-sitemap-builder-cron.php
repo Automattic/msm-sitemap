@@ -95,6 +95,7 @@ class MSM_Sitemap_Builder_Cron {
 
 		// Remove the XML sitemap data
 		delete_post_meta_by_key( 'msm_sitemap_xml' );
+		delete_post_meta_by_key( 'msm_sitemap_data' );
 
 		// Delete state options
 		delete_option( 'msm_days_to_process' );

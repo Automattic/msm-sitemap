@@ -470,7 +470,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		$valid_count   = 0;
 		$invalid_count = 0;
 		foreach ( $posts as $post_id ) {
-			$xml = get_post_meta( $post_id, 'msm_sitemap_xml', true );
+			$xml = Metro_Sitemap::get_sitemap_xml_by_id( $post_id );
 			if ( ! $xml ) {
 				/* translators: %d is the sitemap ID. */
 				WP_CLI::warning( sprintf( __( 'Sitemap %d has no XML.', 'msm-sitemap' ), $post_id ) );
@@ -557,7 +557,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		}
 		$count = 0;
 		foreach ( $posts as $post_id ) {
-			$xml = get_post_meta( $post_id, 'msm_sitemap_xml', true );
+			$xml = Metro_Sitemap::get_sitemap_xml_by_id( $post_id );
 			if ( ! $xml ) {
 				continue;
 			}
@@ -629,7 +629,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		$sitemap_count = 0;
 
 		foreach ( $all_sitemaps as $sitemap_id ) {
-			$xml_data = get_post_meta( $sitemap_id, 'msm_sitemap_xml', true );
+			$xml_data = Metro_Sitemap::get_sitemap_xml_by_id( $sitemap_id );
 			$xml      = simplexml_load_string( $xml_data );
 			$count    = is_object( $xml ) && isset( $xml->url ) ? count( $xml->url ) : 0;
 			update_post_meta( $sitemap_id, 'msm_indexed_url_count', $count );

@@ -26,7 +26,7 @@ class GenerateSitemapTest extends TestCase {
 		Metro_Sitemap::generate_sitemap_for_date( $date );
 		$sitemap_id = Metro_Sitemap::get_sitemap_post_id( 2018, 1, 1 );
 		$this->assertNotFalse( $sitemap_id );
-		$xml = get_post_meta( $sitemap_id, 'msm_sitemap_xml', true );
+		$xml = Metro_Sitemap::get_sitemap_xml_by_id( $sitemap_id );
 		$this->assertIsString( $xml );
 		$this->assertStringContainsString( '<urlset', $xml );
 		$count = get_post_meta( $sitemap_id, 'msm_indexed_url_count', true );
@@ -138,7 +138,7 @@ class GenerateSitemapTest extends TestCase {
 		);
 
 		foreach ( $sitemaps as $i => $map_id ) {
-			$xml = get_post_meta( $map_id, 'msm_sitemap_xml', true );
+			$xml = Metro_Sitemap::get_sitemap_xml_by_id( $map_id );
 			// Get the corresponding created post ID (assuming same order)
 			$post_id = $created_posts_ids[ $i ];
 			$this->assertStringContainsString( 'p=' . $post_id, $xml );

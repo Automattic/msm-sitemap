@@ -522,55 +522,11 @@ class Metro_Sitemap {
 			update_option( 'msm_sitemap_indexed_url_count', $total_url_count, false );
 		}
 
-		// Get XSL stylesheet reference
-		$stylesheet = \Automattic\MSM_Sitemap\StylesheetManager::get_sitemap_stylesheet_reference();
-		// $stylesheet = '';
-		// SimpleXML doesn't allow us to define namespaces using addAttribute, so we need to specify them in the construction instead.
-		$namespaces = apply_filters(
-			'msm_sitemap_namespace',
-			array(
-				'xmlns:xsi'          => 'http://www.w3.org/2001/XMLSchema-instance',
-				'xmlns'              => 'http://www.sitemaps.org/schemas/sitemap/0.9',
-				'xmlns:n'            => 'http://www.google.com/schemas/sitemap-news/0.9',
-				'xmlns:image'        => 'http://www.google.com/schemas/sitemap-image/1.1',
-				'xsi:schemaLocation' => 'http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd',
-			)
-		);
-
-		$namespace_str = '<?xml version="1.0" encoding="utf-8"?>' . $stylesheet . '<urlset';
-		foreach ( $namespaces as $ns => $value ) {
-			$namespace_str .= sprintf( ' %s="%s"', esc_attr( $ns ), esc_attr( $value ) );
+		$entries = array();
+		foreach ( \Automattic\MSM_Sitemap\Infrastructure\Factories\UrlEntryFactory::from_posts( $post_ids ) as $url_entry ) {
+			$entries[] = $url_entry->to_array();
 		}
-		$namespace_str .= '></urlset>';
-
-		// Create XML
-		$xml = new SimpleXMLElement( $namespace_str );
-
-		$url_count = 0;
-		$url_entries = \Automattic\MSM_Sitemap\Infrastructure\Factories\UrlEntryFactory::from_posts( $post_ids );
-
-		// Add URL entries to XML
-		foreach ( $url_entries as $url_entry ) {
-			$url = $xml->addChild( 'url' );
-			$url->addChild( 'loc', esc_url( $url_entry->loc() ) );
-
-			if ( $url_entry->lastmod() ) {
-				$url->addChild( 'lastmod', $url_entry->lastmod() );
-			}
-
-			if ( $url_entry->changefreq() ) {
-				$url->addChild( 'changefreq', $url_entry->changefreq() );
-			}
-
-			if ( $url_entry->priority() ) {
-				$url->addChild( 'priority', (string) $url_entry->priority() );
-			}
-
-			apply_filters( 'msm_sitemap_entry', $url );
-
-			++$url_count;
-			// TODO: add images to sitemap via <image:image> tag
-		}
+		$url_count = count( $entries );
 
 		// If all posts were skipped, remove the sitemap post.
 		if ( 0 === $url_count ) {
@@ -579,7 +535,9 @@ class Metro_Sitemap {
 			return;
 		}
 
-		$generated_xml_string = $xml->asXML();
+		// Only the entry data is stored. The XML is built when the sitemap is served.
+		$entries_json         = wp_slash( wp_json_encode( $entries ) );
+		$generated_xml_string = self::render_sitemap_xml( $entries );
 
 		// Save the sitemap
 		if ( $sitemap_exists ) {
@@ -593,13 +551,14 @@ class Metro_Sitemap {
 			// This ensures the sitemap index shows when sitemaps were last regenerated.
 			wp_update_post( array( 'ID' => $sitemap_id ) );
 
-			update_post_meta( $sitemap_id, 'msm_sitemap_xml', $generated_xml_string );
+			update_post_meta( $sitemap_id, 'msm_sitemap_data', $entries_json );
+			delete_post_meta( $sitemap_id, 'msm_sitemap_xml' );
 			update_post_meta( $sitemap_id, 'msm_indexed_url_count', $url_count );
 			do_action( 'msm_update_sitemap_post', $sitemap_id, $year, $month, $day, $generated_xml_string, $url_count );
 		} else {
 			/* Should no longer hit this */
 			$sitemap_id = wp_insert_post( $sitemap_data );
-			add_post_meta( $sitemap_id, 'msm_sitemap_xml', $generated_xml_string );
+			add_post_meta( $sitemap_id, 'msm_sitemap_data', $entries_json );
 			add_post_meta( $sitemap_id, 'msm_indexed_url_count', $url_count );
 			do_action( 'msm_insert_sitemap_post', $sitemap_id, $year, $month, $day, $generated_xml_string, $url_count );
 
@@ -878,17 +837,83 @@ class Metro_Sitemap {
 	}
 
 	/**
+	 * Render the urlset XML for a list of URL entries.
+	 *
+	 * @param array<int, array<string, mixed>> $entries URL entries, as returned by UrlEntry::to_array().
+	 * @return string The sitemap XML.
+	 */
+	public static function render_sitemap_xml( array $entries ) {
+		// Get XSL stylesheet reference
+		$stylesheet = \Automattic\MSM_Sitemap\StylesheetManager::get_sitemap_stylesheet_reference();
+		// SimpleXML doesn't allow us to define namespaces using addAttribute, so we need to specify them in the construction instead.
+		$namespaces = apply_filters(
+			'msm_sitemap_namespace',
+			array(
+				'xmlns:xsi'          => 'http://www.w3.org/2001/XMLSchema-instance',
+				'xmlns'              => 'http://www.sitemaps.org/schemas/sitemap/0.9',
+				'xmlns:n'            => 'http://www.google.com/schemas/sitemap-news/0.9',
+				'xmlns:image'        => 'http://www.google.com/schemas/sitemap-image/1.1',
+				'xsi:schemaLocation' => 'http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd',
+			)
+		);
+
+		$namespace_str = '<?xml version="1.0" encoding="utf-8"?>' . $stylesheet . '<urlset';
+		foreach ( $namespaces as $ns => $value ) {
+			$namespace_str .= sprintf( ' %s="%s"', esc_attr( $ns ), esc_attr( $value ) );
+		}
+		$namespace_str .= '></urlset>';
+
+		// Create XML
+		$xml = new SimpleXMLElement( $namespace_str );
+
+		// Add URL entries to XML
+		foreach ( $entries as $entry ) {
+			$url = $xml->addChild( 'url' );
+			$url->addChild( 'loc', esc_url( $entry['loc'] ) );
+
+			if ( ! empty( $entry['lastmod'] ) ) {
+				$url->addChild( 'lastmod', $entry['lastmod'] );
+			}
+
+			if ( ! empty( $entry['changefreq'] ) ) {
+				$url->addChild( 'changefreq', $entry['changefreq'] );
+			}
+
+			if ( ! empty( $entry['priority'] ) ) {
+				$url->addChild( 'priority', (string) $entry['priority'] );
+			}
+
+			apply_filters( 'msm_sitemap_entry', $url );
+			// TODO: add images to sitemap via <image:image> tag
+		}
+
+		return $xml->asXML();
+	}
+
+	/**
+	 * Get the XML for a sitemap post.
+	 *
+	 * @param int $sitemap_id Sitemap post ID.
+	 * @return string The sitemap XML, or an empty string if there is none.
+	 */
+	public static function get_sitemap_xml_by_id( $sitemap_id ) {
+		$entries = json_decode( (string) get_post_meta( $sitemap_id, 'msm_sitemap_data', true ), true );
+		if ( is_array( $entries ) ) {
+			return self::render_sitemap_xml( $entries );
+		}
+
+		// Sitemaps generated by older versions only have the stored XML.
+		return (string) get_post_meta( $sitemap_id, 'msm_sitemap_xml', true );
+	}
+
+	/**
 	 * Get XML for individual day
 	 */
 	public static function build_individual_sitemap_xml( $year, $month, $day ) {
-
-		// Get XML for an individual day. Stored as full xml
 		$sitemap_id = self::get_sitemap_post_id( $year, $month, $day );
 
 		if ( $sitemap_id ) {
-			$sitemap_content = get_post_meta( $sitemap_id, 'msm_sitemap_xml', true );
-			// Return is now as it should be valid xml!
-			return $sitemap_content;
+			return self::get_sitemap_xml_by_id( $sitemap_id );
 		}
 		/* There are no posts for this day */
 		return false;

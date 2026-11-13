@@ -65,7 +65,7 @@ class TimezoneTest extends TestCase {
 		$this->assertNotFalse( $sitemap_id, 'Sitemap should be created for today in Sydney timezone' );
 		
 		// Verify the sitemap contains our post
-		$sitemap_content = get_post_meta( $sitemap_id, 'msm_sitemap_xml', true );
+		$sitemap_content = Metro_Sitemap::get_sitemap_xml_by_id( $sitemap_id );
 		$this->assertStringContainsString( get_permalink( $post_id ), $sitemap_content );
 	}
 
@@ -102,7 +102,7 @@ class TimezoneTest extends TestCase {
 		$this->assertNotFalse( $sitemap_id, 'Sitemap should be created for today' );
 		
 		// Verify the sitemap contains today's post but NOT yesterday's post
-		$sitemap_content = get_post_meta( $sitemap_id, 'msm_sitemap_xml', true );
+		$sitemap_content = Metro_Sitemap::get_sitemap_xml_by_id( $sitemap_id );
 		$this->assertStringContainsString( get_permalink( $today_post_id ), $sitemap_content, 'Sitemap should contain today\'s post' );
 		$this->assertStringNotContainsString( get_permalink( $yesterday_post_id ), $sitemap_content, 'Sitemap should NOT contain yesterday\'s post' );
 	}
@@ -134,7 +134,7 @@ class TimezoneTest extends TestCase {
 		$this->assertNotFalse( $sitemap_id, 'Sitemap should be created for today even at 11pm UTC' );
 		
 		// Verify the sitemap contains our post
-		$sitemap_content = get_post_meta( $sitemap_id, 'msm_sitemap_xml', true );
+		$sitemap_content = Metro_Sitemap::get_sitemap_xml_by_id( $sitemap_id );
 		$this->assertStringContainsString( get_permalink( $post_id ), $sitemap_content );
 	}
 
@@ -165,7 +165,7 @@ class TimezoneTest extends TestCase {
 		$this->assertNotFalse( $sitemap_id, 'Sitemap should be created for today in NY timezone' );
 		
 		// Verify the sitemap contains our post
-		$sitemap_content = get_post_meta( $sitemap_id, 'msm_sitemap_xml', true );
+		$sitemap_content = Metro_Sitemap::get_sitemap_xml_by_id( $sitemap_id );
 		$this->assertStringContainsString( get_permalink( $post_id ), $sitemap_content );
 	}
 
@@ -303,7 +303,7 @@ class TimezoneTest extends TestCase {
 		$this->assertNotFalse( $sitemap_id, 'Sitemap should be created for today in Sydney timezone' );
 		
 		// Verify the sitemap contains our post
-		$sitemap_content = get_post_meta( $sitemap_id, 'msm_sitemap_xml', true );
+		$sitemap_content = Metro_Sitemap::get_sitemap_xml_by_id( $sitemap_id );
 		$this->assertStringContainsString( get_permalink( $post_id ), $sitemap_content );
 	}
 
