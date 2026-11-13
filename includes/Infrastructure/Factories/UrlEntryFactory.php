@@ -31,6 +31,31 @@ class UrlEntryFactory {
 			return null;
 		}
 
+		// Set up the global post while the filters run, so callbacks can use get_post(),
+		// get_the_ID() and other template tags, as they could in 1.x.
+		$original_post   = $GLOBALS['post'] ?? null;
+		$GLOBALS['post'] = $post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		setup_postdata( $post );
+
+		try {
+			return self::build_from_post( $post );
+		} finally {
+			$GLOBALS['post'] = $original_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+			if ( $original_post instanceof \WP_Post ) {
+				setup_postdata( $original_post );
+			}
+		}
+	}
+
+	/**
+	 * Build a UrlEntry for a post, applying the sitemap filters.
+	 *
+	 * @param \WP_Post $post The post.
+	 * @return \Automattic\MSM_Sitemap\Domain\ValueObjects\UrlEntry|null The URL entry or null if post should be skipped.
+	 */
+	private static function build_from_post( \WP_Post $post ): ?UrlEntry {
+		$post_id = $post->ID;
+
 		// Check if post should be skipped
 		if ( apply_filters( 'msm_sitemap_skip_post', false, $post_id ) ) {
 			return null;
