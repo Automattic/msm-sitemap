@@ -755,7 +755,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 	private function cron_enable( $args, $assoc_args ) {
 		$status = Cron_Service::get_cron_status();
 		
-		if ( ! $status['blog_public'] ) {
+		if ( ! $status['sitemaps_enabled'] ) {
 			WP_CLI::error( __( '❌ Cannot enable cron: blog is not public.', 'msm-sitemap' ) );
 		}
 		
