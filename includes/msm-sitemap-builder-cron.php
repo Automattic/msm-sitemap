@@ -303,9 +303,9 @@ class MSM_Sitemap_Builder_Cron {
 	 */
 	public static function find_next_day_to_process( $year, $month, $day ) {
 		$halt = (bool) get_option( 'msm_stop_processing' ) === true;
-		if ( $halt || ! Site::is_public() ) {
+		if ( $halt || ! Site::are_sitemaps_enabled() ) {
 			// Allow user to bail out of the current process, doesn't remove where the job got up to
-			// or If the blog became private while sitemaps were enabled, stop here.
+			// or if sitemaps were disabled (e.g. the blog became private), stop here.
 			delete_option( 'msm_stop_processing' );
 			delete_option( 'msm_sitemap_create_in_progress' );
 			return;
