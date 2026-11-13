@@ -78,6 +78,10 @@ class Metro_Sitemap {
 		add_action( 'deleted_post', array( __CLASS__, 'handle_post_deletion' ), 10, 2 );
 		add_action( 'trashed_post', array( __CLASS__, 'handle_post_deletion' ), 10, 1 );
 
+		// Hook into status and date changes, which the modified posts cron does not catch
+		add_action( 'transition_post_status', array( __CLASS__, 'handle_post_status_transition' ), 10, 3 );
+		add_action( 'post_updated', array( __CLASS__, 'handle_post_date_change' ), 10, 3 );
+
 		// By default, we use wp-cron to help generate the full sitemap.
 		// However, this will let us override it, if necessary, like on WP.com
 		if ( true === apply_filters( 'msm_sitemap_use_cron_builder', true ) ) {
@@ -971,6 +975,69 @@ class Metro_Sitemap {
 			}
 		}
 
+		self::queue_sitemap_update_for_post( $post );
+	}
+
+	/**
+	 * Handle post status changes to trigger sitemap updates.
+	 *
+	 * The modified posts cron only finds posts that currently have the sitemap
+	 * status, so a post that is unpublished is never removed from its sitemap.
+	 * A scheduled post going live does not change post_modified either, so it
+	 * is never picked up. Queue the post's day whenever it enters or leaves
+	 * the sitemap status.
+	 *
+	 * @param string  $new_status The new post status.
+	 * @param string  $old_status The old post status.
+	 * @param WP_Post $post       The post object.
+	 */
+	public static function handle_post_status_transition( $new_status, $old_status, $post ) {
+		if ( $new_status === $old_status ) {
+			return;
+		}
+
+		$sitemap_status = self::get_post_status();
+		if ( $sitemap_status !== $new_status && $sitemap_status !== $old_status ) {
+			return;
+		}
+
+		self::queue_sitemap_update_for_post( $post );
+	}
+
+	/**
+	 * Handle post date changes to trigger sitemap updates.
+	 *
+	 * When a post in the sitemap is moved to another day, the old day still
+	 * lists it until that day is rebuilt. Queue the old day, and the new day
+	 * if the post is still in the sitemap.
+	 *
+	 * @param int     $post_id     The post ID.
+	 * @param WP_Post $post_after  The post object after the update.
+	 * @param WP_Post $post_before The post object before the update.
+	 */
+	public static function handle_post_date_change( $post_id, $post_after, $post_before ) {
+		$sitemap_status = self::get_post_status();
+		if ( $sitemap_status !== $post_before->post_status ) {
+			return;
+		}
+
+		if ( substr( $post_before->post_date, 0, 10 ) === substr( $post_after->post_date, 0, 10 ) ) {
+			return;
+		}
+
+		self::queue_sitemap_update_for_post( $post_before );
+
+		if ( $sitemap_status === $post_after->post_status ) {
+			self::queue_sitemap_update_for_post( $post_after );
+		}
+	}
+
+	/**
+	 * Queue a sitemap update for the day a post belongs to.
+	 *
+	 * @param WP_Post $post The post object.
+	 */
+	private static function queue_sitemap_update_for_post( $post ) {
 		// Only process supported post types
 		$supported_post_types = self::get_supported_post_types();
 		if ( ! in_array( $post->post_type, $supported_post_types ) ) {
@@ -992,7 +1059,7 @@ class Metro_Sitemap {
 		// self::generate_sitemap_for_date( $post_date );
 
 		// Queue the sitemap update to be processed by the existing cron job
-		do_action( 'msm_update_sitemap_for_year_month_date', array( $year, $month, $day ), current_time( 'timestamp' ) );
+		do_action( 'msm_update_sitemap_for_year_month_date', array( $year, $month, $day ), time() );
 	}
 }
 add_action( 'after_setup_theme', array( 'Metro_Sitemap', 'setup' ) );
