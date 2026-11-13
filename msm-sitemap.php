@@ -23,6 +23,7 @@
 use Automattic\MSM_Sitemap\Site;
 use Automattic\MSM_Sitemap\Admin\UI;
 use Automattic\MSM_Sitemap\Infrastructure\Factories\UrlEntryFactory;
+use Automattic\MSM_Sitemap\Domain\ValueObjects\UrlSet;
 
 // Include the Site class early to ensure it's available
 require __DIR__ . '/includes/Site.php';
@@ -826,6 +827,20 @@ class Metro_Sitemap {
 		 */
 		$sitemaps = apply_filters( 'msm_sitemap_index', $sitemaps, $year );
 
+		// Group the daily sitemaps into one entry per month, using the newest modified time of each month
+		if ( Site::is_indexed_by_month() ) {
+			$month_to_modified = array();
+			foreach ( $sitemaps as $sitemap_date ) {
+				$month_date = substr( $sitemap_date, 0, 7 ) . '-01 00:00:00';
+				$modified   = $date_to_modified[ $sitemap_date ] ?? $sitemap_date;
+				if ( ! isset( $month_to_modified[ $month_date ] ) || $modified > $month_to_modified[ $month_date ] ) {
+					$month_to_modified[ $month_date ] = $modified;
+				}
+			}
+			$sitemaps         = array_keys( $month_to_modified );
+			$date_to_modified = $month_to_modified;
+		}
+
 		// Create sitemap index entries using our domain objects, passing the modification times
 		$entries = \Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapIndexEntryFactory::from_sitemap_dates( $sitemaps, $date_to_modified );
 		$collection = \Automattic\MSM_Sitemap\Infrastructure\Factories\SitemapIndexCollectionFactory::from_entries( $entries );
@@ -914,6 +929,110 @@ class Metro_Sitemap {
 	}
 
 	/**
+	 * Get XML for a whole month by joining the stored daily sitemaps.
+	 *
+	 * @since 1.6.0
+	 *
+	 * @param int $year  The year.
+	 * @param int $month The month.
+	 * @return string|false The sitemap XML, or false if the month has no sitemaps.
+	 */
+	public static function build_monthly_sitemap_xml( $year, $month ) {
+		// An invalid month would make WP_Date_Query throw a notice.
+		if ( (int) $month < 1 || (int) $month > 12 ) {
+			return false;
+		}
+
+		$sitemap_posts = get_posts(
+			array(
+				'post_type'              => self::SITEMAP_CPT,
+				'date_query'             => array(
+					array(
+						'year'  => (int) $year,
+						'month' => (int) $month,
+					),
+				),
+				'orderby'                => array(
+					'date' => 'ASC',
+					'ID'   => 'ASC',
+				),
+				// One sitemap per day, with room for the odd duplicate.
+				'posts_per_page'         => 100,
+				'no_found_rows'          => true,
+				'update_post_term_cache' => false,
+				'suppress_filters'       => false,
+			)
+		);
+
+		// Use the first sitemap of each day, the same one the daily URL serves.
+		$daily_posts = array();
+		foreach ( $sitemap_posts as $sitemap_post ) {
+			if ( ! isset( $daily_posts[ $sitemap_post->post_date ] ) ) {
+				$daily_posts[ $sitemap_post->post_date ] = $sitemap_post;
+			}
+		}
+
+		// Leave out the days that are removed from the index, so their URLs do not come back here.
+		/** This filter is documented in msm-sitemap.php */
+		$allowed_dates = apply_filters( 'msm_sitemap_index', array_keys( $daily_posts ), Site::is_indexed_by_year() ? $year : false );
+		$daily_posts   = array_intersect_key( $daily_posts, array_flip( (array) $allowed_dates ) );
+
+		$merged    = null;
+		$urlset    = null;
+		$url_count = 0;
+
+		$use_errors = libxml_use_internal_errors( true );
+
+		foreach ( $daily_posts as $sitemap_post ) {
+			$sitemap_content = get_post_meta( $sitemap_post->ID, 'msm_sitemap_xml', true );
+			if ( empty( $sitemap_content ) ) {
+				continue;
+			}
+
+			$doc = new DOMDocument();
+			if ( ! $doc->loadXML( $sitemap_content ) ) {
+				continue;
+			}
+
+			// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOMDocument property names.
+			$url_nodes = array();
+			foreach ( $doc->documentElement->childNodes as $node ) {
+				if ( XML_ELEMENT_NODE === $node->nodeType && 'url' === $node->localName ) {
+					$url_nodes[] = $node;
+				}
+			}
+
+			// The first day gives us the XML declaration, stylesheet and namespaces.
+			if ( null === $merged ) {
+				$merged = $doc;
+				$urlset = $doc->documentElement;
+				foreach ( $url_nodes as $node ) {
+					$urlset->removeChild( $node );
+				}
+			}
+			// phpcs:enable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+
+			foreach ( $url_nodes as $node ) {
+				// A single sitemap can not hold more than 50,000 URLs.
+				if ( $url_count >= UrlSet::DEFAULT_MAX_ENTRIES ) {
+					break 2;
+				}
+				$urlset->appendChild( $merged->importNode( $node, true ) );
+				++$url_count;
+			}
+		}
+
+		libxml_clear_errors();
+		libxml_use_internal_errors( $use_errors );
+
+		if ( null === $merged ) {
+			return false;
+		}
+
+		return $merged->saveXML();
+	}
+
+	/**
 	 * Build XML for output to clean up the template file
 	 */
 	public static function build_xml( $request = array() ) {
@@ -925,6 +1044,8 @@ class Metro_Sitemap {
 			$xml = self::build_root_sitemap_xml( $year );
 		} elseif ( $year > 0 && $month > 0 && $day > 0 ) {
 			$xml = self::build_individual_sitemap_xml( $year, $month, $day );
+		} elseif ( $year > 0 && $month > 0 && false === $day && Site::is_indexed_by_month() ) {
+			$xml = self::build_monthly_sitemap_xml( $year, $month );
 		} else {
 			/* Invalid options sent */
 			return false;
