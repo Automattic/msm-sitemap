@@ -668,6 +668,17 @@ composer lint
 composer cs
 ~~~
 
+* **Code Coverage:** Both test suites run inside the wp-env tests container, so their results can be merged into one report. Start wp-env with Xdebug in coverage mode first:
+
+~~~shell
+npx wp-env start --xdebug=coverage
+composer coverage
+~~~
+
+The merged report is written to `coverage/`. Open `coverage/html/index.html` in a browser, or read the plain text summary in `coverage/coverage.txt`. `coverage/clover.xml` is also available, but its file paths are container paths (`/var/www/html/wp-content/plugins/msm-sitemap/...`), so tools that read it may need a path mapping. Each step can also be run on its own with `composer coverage:unit`, `composer coverage:integration` and `composer coverage:merge`. The Code Coverage workflow on GitHub Actions runs the same steps and attaches the report to each run.
+
+If the tests print "No code coverage driver available", wp-env was started without Xdebug. Run `npx wp-env start --xdebug=coverage` again.
+
 * **Contributions:** Please open issues or pull requests on [GitHub](https://github.com/Automattic/msm-sitemap). See [CONTRIBUTING.md](./CONTRIBUTING.md) for the workflow, including the requirement to sign your commits.
 
 ### Testing Architecture
