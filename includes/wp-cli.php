@@ -287,7 +287,8 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		}
 
 		foreach ( $to_delete as $post_id ) {
-			wp_delete_post( $post_id, true );
+			// Keeps the indexed URL count in step and fires msm_delete_sitemap_post.
+			\Metro_Sitemap::delete_sitemap_by_id( $post_id );
 			++$deleted;
 		}
 
