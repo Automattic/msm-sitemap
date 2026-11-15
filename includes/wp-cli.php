@@ -79,7 +79,6 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 			$all_years_with_posts = \Metro_Sitemap::check_year_has_posts();
 			foreach ( $all_years_with_posts as $year ) {
 				if ( $this->halt_execution() ) {
-					delete_option( 'msm_stop_processing' );
 					break;
 				}
 				$max_month = ( $year == wp_date( 'Y' ) ) ? wp_date( 'n' ) : 12;
@@ -87,7 +86,6 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 					$max_day = ( $year == wp_date( 'Y' ) && $month == wp_date( 'n' ) ) ? wp_date( 'j' ) : $this->cal_days_in_month( $month, $year );
 					for ( $day = 1; $day <= $max_day; $day++ ) {
 						if ( $this->halt_execution() ) {
-							delete_option( 'msm_stop_processing' );
 							break 3;
 						}
 						$sitemap_id_before = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
@@ -131,7 +129,6 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 					$max_day = ( $year == wp_date( 'Y' ) && $month == wp_date( 'n' ) ) ? wp_date( 'j' ) : $this->cal_days_in_month( $month, $year );
 					for ( $day = 1; $day <= $max_day; $day++ ) {
 						if ( $this->halt_execution() ) {
-							delete_option( 'msm_stop_processing' );
 							break 2;
 						}
 						$sitemap_id_before = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
@@ -155,7 +152,6 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 						$max_day = ( $year == wp_date( 'Y' ) && $month == wp_date( 'n' ) ) ? wp_date( 'j' ) : $this->cal_days_in_month( $month, $year );
 						for ( $day = 1; $day <= $max_day; $day++ ) {
 							if ( $this->halt_execution() ) {
-								delete_option( 'msm_stop_processing' );
 								break 3;
 							}
 							$sitemap_id_before = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
@@ -173,6 +169,11 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 				}
 			}
 		}
+		// Clear the halt request however the run was scoped, so it doesn't stop the next run too.
+		if ( $this->halt ) {
+			delete_option( 'msm_stop_processing' );
+		}
+
 		if ( ! $quiet ) {
 			/* translators: %d is the number of sitemaps generated. */
 			\WP_CLI::success( sprintf( _n( 'Generated %d sitemap.', 'Generated %d sitemaps.', $total_generated, 'msm-sitemap' ), $total_generated ) );
