@@ -179,6 +179,29 @@ final class GenerateTest extends TestCase {
 	}
 
 	/**
+	 * Test that a halt request stops generate, and is cleared so the next run isn't stopped too.
+	 *
+	 * @dataProvider data_scopes
+	 *
+	 * @param array<string, mixed> $assoc_args The command's options.
+	 * @param string[]             $days       The days that should get a sitemap once the halt is cleared.
+	 */
+	public function test_halt_stops_generate_and_is_cleared( array $assoc_args, array $days ): void {
+		update_option( 'msm_stop_processing', true );
+		update_option( 'msm_sitemap_create_in_progress', true );
+
+		$output = $this->run_command( 'generate', $assoc_args );
+
+		$this->assertSame( "Generated 0 sitemaps.\n", $output );
+		$this->assertSame( array(), $this->get_sitemap_days() );
+		$this->assertFalse( get_option( 'msm_stop_processing' ), 'The halt request should be cleared.' );
+		$this->assertFalse( get_option( 'msm_sitemap_create_in_progress' ) );
+
+		$this->run_command( 'generate', $assoc_args );
+		$this->assertSame( $days, $this->get_sitemap_days(), 'The next run should not be halted.' );
+	}
+
+	/**
 	 * Test that each older generate command runs generate for the matching dates.
 	 *
 	 * @dataProvider data_legacy_commands
