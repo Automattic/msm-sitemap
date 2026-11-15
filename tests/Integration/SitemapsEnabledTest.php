@@ -109,7 +109,7 @@ class SitemapsEnabledTest extends TestCase {
 	 * Cron status reports whether sitemaps are enabled separately from blog_public.
 	 */
 	public function test_cron_status_can_enable_follows_filter(): void {
-		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
+		delete_option( Cron_Service::CRON_ENABLED_OPTION );
 		update_option( 'blog_public', '-1' );
 
 		$status = Cron_Service::get_cron_status();
@@ -127,7 +127,7 @@ class SitemapsEnabledTest extends TestCase {
 	 * WP-CLI can enable cron on a non-public site when the filter enables sitemaps.
 	 */
 	public function test_cli_cron_enable_on_non_public_site(): void {
-		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
+		delete_option( Cron_Service::CRON_ENABLED_OPTION );
 		update_option( 'blog_public', '-1' );
 		$cli = new Metro_Sitemap_CLI();
 

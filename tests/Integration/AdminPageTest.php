@@ -9,8 +9,11 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests\Integration;
 
-use Metro_Sitemap;
 use Automattic\MSM_Sitemap\Admin\UI;
+use Automattic\MSM_Sitemap\Cron_Service;
+use Metro_Sitemap;
+use WPDieException;
+
 /**
  * Admin page UI and permissions tests for MSM Sitemap
  */
@@ -135,10 +138,7 @@ class AdminPageTest extends TestCase {
 		global $plugin_page;
 		wp_set_current_user( $this->admin_id );
 		$plugin_page = 'metro-sitemap';
-		
-		// Remove the filter that forces cron enabled in tests
-		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
+
 		// Ensure cron is disabled
 		delete_option( 'msm_sitemap_cron_enabled' );
 		wp_unschedule_hook( 'msm_cron_update_sitemap' );
@@ -147,13 +147,8 @@ class AdminPageTest extends TestCase {
 		UI::render_options_page();
 		$output = ob_get_clean();
 		
-		// The UI doesn't show the disabled message in the rendered output
-		// The buttons are still rendered but would be disabled via JavaScript
-		$this->assertStringContainsString( 'Generate from all articles', $output );
-		$this->assertStringContainsString( 'Generate from recently modified posts', $output );
-		
-		// Restore the filter for other tests
-		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
+		$this->assertMatchesRegularExpression( '/<button[^>]*value="generate-full"[^>]*\sdisabled[\s>]/', $output );
+		$this->assertMatchesRegularExpression( '/<button[^>]*value="generate-latest"[^>]*\sdisabled[\s>]/', $output );
 	}
 
 	/**
@@ -186,7 +181,7 @@ class AdminPageTest extends TestCase {
 		$plugin_page = 'metro-sitemap';
 
 		// Simulate a translation: prefix every plugin string.
-		$this->add_test_filter(
+		add_filter(
 			'gettext',
 			static function ( $translation, $text, $domain ) {
 				return 'msm-sitemap' === $domain ? '[xx] ' . $translation : $translation;
@@ -218,7 +213,7 @@ class AdminPageTest extends TestCase {
 		wp_set_current_user( $this->admin_id );
 		$plugin_page = 'metro-sitemap';
 
-		$this->add_test_filter(
+		add_filter(
 			'gettext',
 			static function ( $translation, $text, $domain ) {
 				return 'msm-sitemap' === $domain ? '[xx] ' . $translation : $translation;
@@ -235,5 +230,95 @@ class AdminPageTest extends TestCase {
 		$this->assertStringContainsString( 'value="generate-full"', $output );
 		$this->assertStringContainsString( 'value="generate-latest"', $output );
 		$this->assertStringContainsString( 'value="reset-data"', $output );
+	}
+
+	/**
+	 * Post an admin action as the current user and render the page.
+	 *
+	 * @param string      $action The action value the button submits.
+	 * @param string|null $nonce  The nonce to send, or null to send none.
+	 */
+	private function post_admin_action( string $action, ?string $nonce ): void {
+		global $plugin_page;
+		$plugin_page     = 'metro-sitemap'; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$_POST['action'] = $action;
+		if ( null !== $nonce ) {
+			$_POST['_wpnonce']    = $nonce;
+			$_REQUEST['_wpnonce'] = $nonce;
+		}
+
+		ob_start();
+		try {
+			UI::render_options_page();
+		} finally {
+			ob_end_clean();
+		}
+	}
+
+	/**
+	 * Test that an admin action without a valid nonce is refused before it runs.
+	 *
+	 * @dataProvider data_bad_nonces
+	 *
+	 * @param string|null $nonce The nonce to send, or null to send none.
+	 */
+	public function test_admin_action_without_valid_nonce_is_refused( ?string $nonce ): void {
+		wp_set_current_user( $this->admin_id );
+		delete_option( Cron_Service::CRON_ENABLED_OPTION );
+
+		try {
+			$this->post_admin_action( 'enable-cron', $nonce );
+			$this->fail( 'Expected the action to be refused.' );
+		} catch ( WPDieException $e ) {
+			$this->assertSame( 403, $e->getCode() );
+		}
+
+		$this->assertFalse( Cron_Service::is_cron_enabled(), 'The action should not have run.' );
+	}
+
+	/**
+	 * Data provider for test_admin_action_without_valid_nonce_is_refused().
+	 *
+	 * @return array<string, array{string|null}>
+	 */
+	public function data_bad_nonces(): array {
+		return array(
+			'no nonce'      => array( null ),
+			'invalid nonce' => array( 'not-a-nonce' ),
+		);
+	}
+
+	/**
+	 * Test that users who cannot manage options cannot run admin actions, even with their own valid nonce.
+	 *
+	 * @dataProvider data_unprivileged_roles
+	 *
+	 * @param string $role The user's role, or an empty string for a logged-out visitor.
+	 */
+	public function test_admin_action_refused_for_unprivileged_user( string $role ): void {
+		wp_set_current_user( '' === $role ? 0 : $this->factory->user->create( array( 'role' => $role ) ) );
+		delete_option( Cron_Service::CRON_ENABLED_OPTION );
+
+		try {
+			$this->post_admin_action( 'enable-cron', wp_create_nonce( 'msm-sitemap-action' ) );
+			$this->fail( 'Expected the action to be refused.' );
+		} catch ( WPDieException $e ) {
+			$this->assertStringContainsString( 'You do not have sufficient permissions', $e->getMessage() );
+		}
+
+		$this->assertFalse( Cron_Service::is_cron_enabled(), 'The action should not have run.' );
+	}
+
+	/**
+	 * Data provider for test_admin_action_refused_for_unprivileged_user().
+	 *
+	 * @return array<string, array{string}>
+	 */
+	public function data_unprivileged_roles(): array {
+		return array(
+			'editor'     => array( 'editor' ),
+			'subscriber' => array( 'subscriber' ),
+			'logged out' => array( '' ),
+		);
 	}
 }

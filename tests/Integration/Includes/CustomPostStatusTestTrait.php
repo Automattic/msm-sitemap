@@ -23,7 +23,7 @@ trait CustomPostStatusTestTrait {
 				'public' => true,
 			)
 		);
-		$this->add_test_filter( 'msm_sitemap_post_status', array( $this, 'custom_post_status' ) );
+		add_filter( 'msm_sitemap_post_status', array( $this, 'custom_post_status' ) );
 	}
 
 	/**

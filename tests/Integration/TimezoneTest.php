@@ -315,12 +315,10 @@ class TimezoneTest extends TestCase {
 		update_option( 'timezone_string', 'Australia/Sydney' );
 		wp_cache_flush();
 
-		// Clear any existing cron jobs
+		// Start with cron disabled and nothing scheduled.
+		delete_option( Cron_Service::CRON_ENABLED_OPTION );
 		wp_clear_scheduled_hook( 'msm_cron_update_sitemap' );
-		
-		// Remove the filter that forces cron enabled so we can actually enable it
-		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
+
 		// Initialize cron
 		Cron_Service::enable_cron();
 		

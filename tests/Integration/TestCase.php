@@ -9,8 +9,8 @@ declare( strict_types=1 );
 
 namespace Automattic\MSM_Sitemap\Tests\Integration;
 
+use Automattic\MSM_Sitemap\Cron_Service;
 use DateTime;
-use Exception;
 use Metro_Sitemap;
 use MSM_Sitemap_Builder_Cron;
 use WP_Post;
@@ -28,55 +28,16 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 	public $posts = array();
 
 	/**
-	 * Array of Created Post IDs
+	 * Start each test with sitemap cron enabled, as a site that generates sitemaps would have it.
 	 *
-	 * @var array $posts_created
-	 */
-	public $posts_created = array();
-
-	/**
-	 * Array of filters added for the test.
-	 *
-	 * @var array $added_filters
-	 */
-	protected $added_filters = array();
-
-	/**
-	 * Remove the sample posts, sitemap posts, and filters before each test.
+	 * WordPress rolls back the database and restores hooks after each test, so posts,
+	 * sitemaps, options and filters added by a test do not leak into the next one.
 	 */
 	public function setUp(): void {
-		// Remove all posts (from WordPress Test Library)
-		_delete_all_posts();
-
-		// Remove all posts created for the test.
-		$this->posts = array();
-
-		// Remove all sitemaps created for the test.
-		$sitemaps = get_posts(
-			array(
-				'post_type'      => Metro_Sitemap::SITEMAP_CPT,
-				'fields'         => 'ids',
-				'posts_per_page' => -1,
-			) 
-		);
-
-		// Reset the indexed URL count.
-		// update_option( 'msm_sitemap_indexed_url_count' , 0 );
-
-		// Remove all sitemaps created for the test.
-		array_map( 'wp_delete_post', array_merge( $this->posts_created, $sitemaps ) );
-
-		// Remove all filters added for the test.
-		foreach ( $this->added_filters as $filter ) {
-			remove_filter( $filter[0], $filter[1], $filter[2] );
-		}
-
-		$this->added_filters = array();
-
-		// Force cron to be enabled during tests
-		$this->add_test_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-
 		parent::setUp();
+
+		// Set the option rather than filtering it, so tests can still enable and disable cron.
+		update_option( Cron_Service::CRON_ENABLED_OPTION, true );
 	}
 
 	/**
@@ -104,11 +65,10 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 		$post_data['ID']            = wp_insert_post( $post_data, true );
 
 		if ( is_wp_error( $post_data['ID'] ) || 0 === $post_data['ID'] ) {
-			$this->fail( "Error: WP Error encountered inserting post. {$post_data['ID']->errors}, {$post_data['ID']->error_data}" );
+			$this->fail( 'Error inserting post: ' . ( is_wp_error( $post_data['ID'] ) ? $post_data['ID']->get_error_message() : 'no post ID returned' ) );
 		}
 
-		$this->posts_created[] = $post_data['ID'];
-		$this->posts[]         = $post_data;
+		$this->posts[] = $post_data;
 
 		return $post_data['ID'];
 	}
@@ -205,7 +165,7 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 
 			$indexed_url_count = Metro_Sitemap::get_indexed_url_count( $year, $month, $day );
 			if ( $indexed_url_count !== $count ) {
-				$this->fail( "Expected url count of $indexed_url_count but had count of $count on $year-$month-$day" );
+				$this->fail( "Expected url count of $count but had count of $indexed_url_count on $year-$month-$day" );
 				return false;
 			}
 		}
@@ -273,34 +233,25 @@ abstract class TestCase extends \Yoast\WPTestUtils\WPIntegration\TestCase {
 	}
 
 	/**
-	 * Add a filter for a test.
+	 * Fakes a cron run of every event scheduled on our hooks.
 	 *
-	 * @param string   $tag The filter tag.
-	 * @param callable $callback The callback function.
-	 * @param int      $priority The priority of the filter.
-	 */
-	protected function add_test_filter( $tag, $callback, $priority = 10, $accepted_args = 1 ) {
-		add_filter( $tag, $callback, $priority, $accepted_args );
-		$this->added_filters[] = array( $tag, $callback, $priority );
-	}
-
-	/**
-	 * Fakes a cron job
+	 * Events scheduled while the run is in progress are left for the next call,
+	 * as they would be on a real site.
 	 *
-	 * @param string $execute Execute the hook.
+	 * @param string $execute 'run' to run the events, anything else to only unschedule them.
 	 */
 	public function fake_cron( string $execute = 'run' ): void {
 		foreach ( _get_cron_array() as $timestamp => $cron ) {
-			foreach ( $cron as $hook => $arg_wrapper ) {
+			foreach ( $cron as $hook => $events ) {
 				if ( strpos( $hook, 'msm' ) !== 0 ) {
 					continue; // only run our own jobs.
 				}
-				$arg_struct = array_pop( $arg_wrapper );
-				$args       = $arg_struct['args'][0];
-				wp_unschedule_event( $timestamp, $hook, $arg_struct['args'] );
-				if ( 'run' === $execute ) {
-					// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
-					do_action( $hook, $args );
+				foreach ( $events as $event ) {
+					wp_unschedule_event( $timestamp, $hook, $event['args'] );
+					if ( 'run' === $execute ) {
+						// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
+						do_action_ref_array( $hook, $event['args'] );
+					}
 				}
 			}
 		}

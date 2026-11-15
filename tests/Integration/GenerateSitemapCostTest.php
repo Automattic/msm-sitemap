@@ -56,7 +56,7 @@ class GenerateSitemapCostTest extends TestCase {
 	 */
 	public function test_empty_date_does_not_create_sitemap_post(): void {
 		$inserted = 0;
-		$this->add_test_filter(
+		add_filter(
 			'wp_insert_post',
 			static function ( $post_id, $post ) use ( &$inserted ) {
 				if ( Metro_Sitemap::SITEMAP_CPT === $post->post_type ) {

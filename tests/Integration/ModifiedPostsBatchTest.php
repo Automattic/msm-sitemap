@@ -38,7 +38,7 @@ class ModifiedPostsBatchTest extends TestCase {
 		$this->base = time() - 2000;
 		update_option( 'msm_sitemap_update_last_run', $this->base, false );
 
-		$this->add_test_filter(
+		add_filter(
 			'msm_update_sitemap_for_year_month_date',
 			function ( $date ) {
 				$this->queued_days[] = vsprintf( '%04d-%02d-%02d', $date );
