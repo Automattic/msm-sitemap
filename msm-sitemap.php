@@ -500,6 +500,17 @@ class Metro_Sitemap {
 
 		$sitemap_id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", self::SITEMAP_CPT, $sitemap_name ) );
 
+		$per_page = apply_filters( 'msm_sitemap_entry_posts_per_page', self::DEFAULT_POSTS_PER_SITEMAP_PAGE );
+		$post_ids = self::get_post_ids_for_date( $sitemap_date, $per_page );
+
+		if ( empty( $post_ids ) ) {
+			// If no entries - delete the whole sitemap post
+			if ( $sitemap_id ) {
+				self::delete_sitemap_by_id( $sitemap_id );
+			}
+			return;
+		}
+
 		if ( $sitemap_id ) {
 			$sitemap_exists = true;
 		} else {
@@ -507,16 +518,8 @@ class Metro_Sitemap {
 			$sitemap_exists = true;
 		}
 
-		$per_page = apply_filters( 'msm_sitemap_entry_posts_per_page', self::DEFAULT_POSTS_PER_SITEMAP_PAGE );
-		$post_ids = self::get_post_ids_for_date( $sitemap_date, $per_page );
-
-		if ( empty( $post_ids ) ) {
-			// If no entries - delete the whole sitemap post
-			if ( $sitemap_exists ) {
-				self::delete_sitemap_by_id( $sitemap_id );
-			}
-			return;
-		}
+		// Load the posts and their terms (for permalinks) in one go, rather than per post in the loop.
+		_prime_post_caches( $post_ids, true, false );
 
 		$total_url_count = self::get_total_indexed_url_count();
 
