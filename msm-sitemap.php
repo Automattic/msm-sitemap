@@ -329,7 +329,7 @@ class Metro_Sitemap {
 	 *
 	 * Rather than having to modify the plugin code, developers can use this filter to add their custom post statuses.
 	 *
-	 * @since 1.4.3
+	 * @since 1.5.0
 	 */
 	public static function get_post_status(): string {
 		$default_status = 'publish';
