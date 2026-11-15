@@ -145,7 +145,7 @@ Filters whether WP-Cron rebuilds sitemaps. Return `false` to rebuild them some o
 
 ### msm_pre_get_last_modified_posts
 
-Filters the SQL query the 15-minute check uses to find modified posts. If you write a new query, prepare it with `$wpdb->prepare()`, and select the `ID` and `post_date` columns.
+Filters the SQL query the 15-minute check uses to find modified posts. If you write a new query, prepare it with `$wpdb->prepare()`, and select the `ID`, `post_date` and `post_modified_gmt` columns, ordered by `post_modified_gmt` oldest first, with `LIMIT 1000`. When a run finds 1,000 posts, the next run carries on from the newest `post_modified_gmt` it saw. A query without that column or order skips any changes beyond the first 1,000.
 
 - `string $query` The prepared query.
 - `string $post_types_in` The included post types, quoted and comma-separated, for an `IN ()` clause.

@@ -72,7 +72,7 @@ With automatic updates on, a day's sitemap is rebuilt when:
 - **A post is published, unpublished, or goes live on schedule.** The day is queued as soon as the status changes.
 - **A published post's date changes.** Both the old day and the new day are queued.
 - **A post is trashed or deleted.**
-- **A published post is edited.** The 15-minute check finds posts modified since it last ran, up to 1,000 at a time, and queues each day they belong to. Its first run looks back one hour.
+- **A published post is edited.** The 15-minute check finds posts modified since it last ran, oldest first and up to 1,000 at a time, and queues each day they belong to. If it finds 1,000, the next run carries on from the last one it picked up. Its first run looks back one hour.
 
 Queued days are rebuilt by WP-Cron on its next run. The 15-minute check spaces the days it queues a minute apart, so a burst of edits doesn't rebuild everything at once.
 

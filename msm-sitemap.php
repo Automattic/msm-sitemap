@@ -53,6 +53,11 @@ class Metro_Sitemap {
 
 	const SITEMAP_CPT = 'msm_sitemap';
 
+	/**
+	 * Most modified posts the cron picks up in one run.
+	 */
+	const MODIFIED_POSTS_PER_RUN = 1000;
+
 	public static $index_by_year = false;
 
 	/**
@@ -711,11 +716,15 @@ class Metro_Sitemap {
 
 		$post_types_in = self::get_supported_post_types_in();
 
-		$query = $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_status = %s AND post_modified_gmt >= %s LIMIT 1000", self::get_post_status(), $date );
+		// Oldest first, so a run that hits the limit can record where it got up to (see get_next_last_run()).
+		$query = $wpdb->prepare( "SELECT ID, post_date, post_modified_gmt FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_status = %s AND post_modified_gmt >= %s ORDER BY post_modified_gmt ASC LIMIT %d", self::get_post_status(), $date, self::MODIFIED_POSTS_PER_RUN );
 
 		/**
 		 * Filter the query used to get the last modified posts.
 		 * $wpdb->prepare() should be used for security if a new replacement query is created in the callback.
+		 *
+		 * To let the cron carry on from where a run with 1,000 results stopped, select post_modified_gmt
+		 * and order by it, oldest first. Without it, changes beyond the first 1,000 are skipped.
 		 *
 		 * @param string $query         The query to use to get the last modified posts.
 		 * @param string $post_types_in A comma-separated list of post types to include in the query.
@@ -754,6 +763,7 @@ class Metro_Sitemap {
 		}
 
 		$time                = time();
+		$run_started         = $time;
 		$last_modified_posts = self::get_last_modified_posts();
 		$dates               = self::get_post_dates( $last_modified_posts );
 
@@ -769,7 +779,38 @@ class Metro_Sitemap {
 
 			do_action( 'msm_update_sitemap_for_year_month_date', array( $year, $month, $day ), $time );
 		}
-		update_option( 'msm_sitemap_update_last_run', time(), false );
+		update_option( 'msm_sitemap_update_last_run', self::get_next_last_run( $last_modified_posts, $run_started ), false );
+	}
+
+	/**
+	 * Work out the last run time to record, so the next run starts where this one stopped.
+	 *
+	 * @param object[] $posts       The modified posts this run picked up.
+	 * @param int      $run_started When this run started.
+	 * @return int Timestamp.
+	 */
+	private static function get_next_last_run( array $posts, int $run_started ): int {
+		if ( count( $posts ) < self::MODIFIED_POSTS_PER_RUN ) {
+			return $run_started;
+		}
+
+		// Hit the limit, so carry on from the newest change picked up.
+		$latest = 0;
+		foreach ( $posts as $post ) {
+			if ( isset( $post->post_modified_gmt ) ) {
+				$latest = max( $latest, (int) strtotime( $post->post_modified_gmt . ' UTC' ) );
+			}
+		}
+
+		// A filtered query without post_modified_gmt can't be resumed.
+		if ( ! $latest ) {
+			return $run_started;
+		}
+
+		// A full batch modified in a single second would otherwise be picked up again forever.
+		$previous = (int) get_option( 'msm_sitemap_update_last_run' );
+
+		return max( $latest, $previous + 1 );
 	}
 
 	/**
