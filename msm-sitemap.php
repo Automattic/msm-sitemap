@@ -329,7 +329,7 @@ class Metro_Sitemap {
 	 *
 	 * Rather than having to modify the plugin code, developers can use this filter to add their custom post statuses.
 	 *
-	 * @since 1.4.3
+	 * @since 1.5.0
 	 */
 	public static function get_post_status(): string {
 		$default_status = 'publish';
@@ -499,11 +499,13 @@ class Metro_Sitemap {
 			'post_name'   => $sitemap_name,
 			'post_title'  => $sitemap_name,
 			'post_type'   => self::SITEMAP_CPT,
-			'post_status' => self::get_post_status(),
+			// Sitemap posts are always published, whatever status the sitemap's posts have,
+			// as the index and daily sitemap lookups only find published sitemap posts.
+			'post_status' => 'publish',
 			'post_date'   => $sitemap_date,
 		);
 
-		$sitemap_id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", self::SITEMAP_CPT, $sitemap_name ) );
+		$sitemap_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", self::SITEMAP_CPT, $sitemap_name ) );
 
 		$per_page = apply_filters( 'msm_sitemap_entry_posts_per_page', self::DEFAULT_POSTS_PER_SITEMAP_PAGE );
 		$post_ids = self::get_post_ids_for_date( $sitemap_date, $per_page );
@@ -618,7 +620,13 @@ class Metro_Sitemap {
 
 			// Touch the post to update post_modified timestamp.
 			// This ensures the sitemap index shows when sitemaps were last regenerated.
-			wp_update_post( array( 'ID' => $sitemap_id ) );
+			// Also publish sitemap posts saved with a custom status by earlier versions.
+			wp_update_post(
+				array(
+					'ID'          => $sitemap_id,
+					'post_status' => 'publish',
+				)
+			);
 
 			update_post_meta( $sitemap_id, 'msm_sitemap_xml', $generated_xml_string );
 			update_post_meta( $sitemap_id, 'msm_indexed_url_count', $url_count );

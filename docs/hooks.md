@@ -47,7 +47,7 @@ Filters the post status included in the sitemaps. Only one status is supported.
 
 - `string $status` Default `publish`. A status that isn't registered falls back to `publish`.
 
-Since 1.4.3. Before 1.6.0, any status other than `publish` broke the sitemaps; rebuild them after upgrading.
+Since 1.5.0. Before 1.6.0, any status other than `publish` broke the sitemaps. After upgrading, run `wp msm-sitemap generate --all`, then `wp msm-sitemap recount`.
 
 ### msm_sitemap_skip_post
 

@@ -36,7 +36,7 @@ add_filter( 'msm_sitemap_post_status', function (): string {
 } );
 ```
 
-The status must be registered with `register_post_status()`, or the plugin falls back to `publish`. Only one status can be used. From 1.4.3 to 1.5.6, using any status other than `publish` broke the daily sitemaps, and from 1.5.5 left the index empty too. If you used this filter before 1.6.0, rebuild your sitemaps after upgrading to fix them.
+The status must be registered with `register_post_status()`, or the plugin falls back to `publish`. Only one status can be used. From 1.5.0 to 1.5.6, using any status other than `publish` broke the daily sitemaps, and from 1.5.5 left the index empty too. If you used this filter before 1.6.0, run `wp msm-sitemap generate --all` after upgrading to rebuild them, then `wp msm-sitemap recount` to correct the URL total.
 
 ## Leave posts out
 
