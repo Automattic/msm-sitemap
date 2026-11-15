@@ -141,7 +141,7 @@ class StylesheetManagerTest extends TestCase {
 		$this->assertStringContainsString( '</xsl:stylesheet>', $stylesheet );
 
 		// Check MSM branding
-		$this->assertStringContainsString( 'Metro Sitemap', $stylesheet );
+		$this->assertStringContainsString( 'MSM Sitemap', $stylesheet );
 		$this->assertStringNotContainsString( 'WordPress', $stylesheet );
 
 		// Check MSM namespaces
@@ -162,7 +162,7 @@ class StylesheetManagerTest extends TestCase {
 		$this->assertStringContainsString( '</xsl:stylesheet>', $stylesheet );
 
 		// Check MSM branding
-		$this->assertStringContainsString( 'Metro Sitemap', $stylesheet );
+		$this->assertStringContainsString( 'MSM Sitemap', $stylesheet );
 		$this->assertStringContainsString( 'Sitemap Index', $stylesheet );
 		$this->assertStringNotContainsString( 'WordPress', $stylesheet );
 

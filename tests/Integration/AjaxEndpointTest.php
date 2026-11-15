@@ -1,6 +1,6 @@
 <?php
 /**
- * Tests for the Metro Sitemap AJAX endpoint and data retrieval logic.
+ * Tests for the MSM Sitemap AJAX endpoint and data retrieval logic.
  *
  * @package Metro_Sitemap/unit_tests
  */
@@ -12,7 +12,7 @@ namespace Automattic\MSM_Sitemap\Tests\Integration;
 use Metro_Sitemap;
 
 /**
- * Tests for the Metro Sitemap AJAX endpoint and data retrieval logic.
+ * Tests for the MSM Sitemap AJAX endpoint and data retrieval logic.
  */
 class AjaxEndpointTest extends TestCase {
 	/**

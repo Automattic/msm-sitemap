@@ -1,6 +1,6 @@
 <?php
 /**
- * Robots.txt integration tests for Metro Sitemap
+ * Robots.txt integration tests for MSM Sitemap
  *
  * @package Metro_Sitemap/unit_tests
  */
@@ -12,7 +12,7 @@ namespace Automattic\MSM_Sitemap\Tests\Integration;
 use Metro_Sitemap;
 
 /**
- * Robots.txt integration tests for Metro Sitemap.
+ * Robots.txt integration tests for MSM Sitemap.
  */
 class RobotsTest extends TestCase {
 

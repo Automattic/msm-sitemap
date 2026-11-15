@@ -1,6 +1,6 @@
 <?php
 /**
- * Metro Sitemap - joint collaboration between Metro.co.uk, MAKE, Alley Interactive, and WordPress VIP.
+ * MSM Sitemap - joint collaboration between Metro.co.uk, MAKE, Alley Interactive, and WordPress VIP.
  *
  * @package           automattic/msm-sitemap
  * @author            Automattic
@@ -8,7 +8,7 @@
  * @license           GPL-2.0-or-later
  *
  * @wordpress-plugin
- * Plugin Name:       Metro Sitemap
+ * Plugin Name:       MSM Sitemap
  * Plugin URI:        https://github.com/Automattic/msm-sitemap
  * Description:       Comprehensive sitemaps for your WordPress site.
  * Version:           1.5.6
