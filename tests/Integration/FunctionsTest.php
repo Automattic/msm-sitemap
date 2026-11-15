@@ -249,7 +249,7 @@ class FunctionsTest extends TestCase {
 
 		$this->assertEquals( 'live', Metro_Sitemap::get_post_status() );
 
-		$this->add_test_filter(
+		add_filter(
 			'msm_sitemap_post_status',
 			function () {
 				return 'bad_status';

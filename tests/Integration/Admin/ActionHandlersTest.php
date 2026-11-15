@@ -47,9 +47,6 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\Integration\TestC
 	 * Test that handle_enable_cron() enables cron and shows success message.
 	 */
 	public function test_handle_enable_cron(): void {
-		// Remove the filter that forces cron enabled in tests
-		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
 		ob_start();
 		Action_Handlers::handle_enable_cron();
 		$output = ob_get_clean();
@@ -57,18 +54,12 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\Integration\TestC
 		$this->assertTrue( (bool) get_option( Cron_Service::CRON_ENABLED_OPTION ) );
 		$this->assertNotFalse( wp_next_scheduled( 'msm_cron_update_sitemap' ) );
 		$this->assertStringContainsString( 'Automatic sitemap updates enabled successfully', $output );
-		
-		// Restore the filter for other tests
-		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 	}
 
 	/**
 	 * Test that handle_enable_cron() shows warning when already enabled.
 	 */
 	public function test_handle_enable_cron_when_already_enabled(): void {
-		// Remove the filter that forces cron enabled in tests
-		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
 		// Enable cron first
 		Cron_Service::enable_cron();
 
@@ -77,18 +68,12 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\Integration\TestC
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'Automatic updates are already enabled', $output );
-		
-		// Restore the filter for other tests
-		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 	}
 
 	/**
 	 * Test that handle_disable_cron() disables cron and shows success message.
 	 */
 	public function test_handle_disable_cron(): void {
-		// Remove the filter that forces cron enabled in tests
-		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
 		// Enable cron first
 		Cron_Service::enable_cron();
 
@@ -99,26 +84,17 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\Integration\TestC
 		$this->assertFalse( (bool) get_option( Cron_Service::CRON_ENABLED_OPTION ) );
 		$this->assertFalse( wp_next_scheduled( 'msm_cron_update_sitemap' ) );
 		$this->assertStringContainsString( 'Automatic sitemap updates disabled successfully', $output );
-		
-		// Restore the filter for other tests
-		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 	}
 
 	/**
 	 * Test that handle_disable_cron() shows warning when already disabled.
 	 */
 	public function test_handle_disable_cron_when_already_disabled(): void {
-		// Remove the filter that forces cron enabled in tests
-		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
 		ob_start();
 		Action_Handlers::handle_disable_cron();
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'Automatic updates are already disabled', $output );
-		
-		// Restore the filter for other tests
-		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 	}
 
 	/**
@@ -140,18 +116,12 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\Integration\TestC
 	 * Test that handle_generate_full() shows error when cron is disabled.
 	 */
 	public function test_handle_generate_full_when_cron_disabled(): void {
-		// Remove the filter that forces cron enabled in tests
-		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
 		ob_start();
 		Action_Handlers::handle_generate_full();
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'Cannot generate sitemap: automatic updates must be enabled', $output );
 		$this->assertFalse( (bool) get_option( 'msm_sitemap_create_in_progress' ) );
-		
-		// Restore the filter for other tests
-		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 	}
 
 	/**
@@ -182,17 +152,11 @@ class ActionHandlersTest extends \Automattic\MSM_Sitemap\Tests\Integration\TestC
 	 * Test that handle_generate_from_latest() shows error when cron is disabled.
 	 */
 	public function test_handle_generate_from_latest_when_cron_disabled(): void {
-		// Remove the filter that forces cron enabled in tests
-		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
 		ob_start();
 		Action_Handlers::handle_generate_from_latest();
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'Cannot generate sitemap: Automatic updates must be enabled', $output );
-		
-		// Restore the filter for other tests
-		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 	}
 
 	/**

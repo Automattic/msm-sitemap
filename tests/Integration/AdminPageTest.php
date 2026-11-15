@@ -135,10 +135,7 @@ class AdminPageTest extends TestCase {
 		global $plugin_page;
 		wp_set_current_user( $this->admin_id );
 		$plugin_page = 'metro-sitemap';
-		
-		// Remove the filter that forces cron enabled in tests
-		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
+
 		// Ensure cron is disabled
 		delete_option( 'msm_sitemap_cron_enabled' );
 		wp_unschedule_hook( 'msm_cron_update_sitemap' );
@@ -147,13 +144,8 @@ class AdminPageTest extends TestCase {
 		UI::render_options_page();
 		$output = ob_get_clean();
 		
-		// The UI doesn't show the disabled message in the rendered output
-		// The buttons are still rendered but would be disabled via JavaScript
-		$this->assertStringContainsString( 'Generate from all articles', $output );
-		$this->assertStringContainsString( 'Generate from recently modified posts', $output );
-		
-		// Restore the filter for other tests
-		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
+		$this->assertMatchesRegularExpression( '/<button[^>]*value="generate-full"[^>]*\sdisabled[\s>]/', $output );
+		$this->assertMatchesRegularExpression( '/<button[^>]*value="generate-latest"[^>]*\sdisabled[\s>]/', $output );
 	}
 
 	/**
@@ -186,7 +178,7 @@ class AdminPageTest extends TestCase {
 		$plugin_page = 'metro-sitemap';
 
 		// Simulate a translation: prefix every plugin string.
-		$this->add_test_filter(
+		add_filter(
 			'gettext',
 			static function ( $translation, $text, $domain ) {
 				return 'msm-sitemap' === $domain ? '[xx] ' . $translation : $translation;
@@ -218,7 +210,7 @@ class AdminPageTest extends TestCase {
 		wp_set_current_user( $this->admin_id );
 		$plugin_page = 'metro-sitemap';
 
-		$this->add_test_filter(
+		add_filter(
 			'gettext',
 			static function ( $translation, $text, $domain ) {
 				return 'msm-sitemap' === $domain ? '[xx] ' . $translation : $translation;

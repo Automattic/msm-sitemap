@@ -28,7 +28,7 @@ class PostStatusChangeTest extends TestCase {
 	 */
 	private function record_queued_days(): void {
 		$this->queued_days = array();
-		$this->add_test_filter(
+		add_filter(
 			'msm_update_sitemap_for_year_month_date',
 			function ( $date ) {
 				$this->queued_days[] = vsprintf( '%04d-%02d-%02d', $date );
@@ -207,7 +207,7 @@ class PostStatusChangeTest extends TestCase {
 	 * Test that the msm_sitemap_post_status filter is respected.
 	 */
 	public function test_respects_custom_sitemap_status(): void {
-		$this->add_test_filter(
+		add_filter(
 			'msm_sitemap_post_status',
 			function () {
 				return 'private';
