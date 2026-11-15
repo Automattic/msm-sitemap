@@ -50,13 +50,14 @@
 	},
 	"scripts": {
 		"coverage": [
+			"@php -r \"array_map( 'unlink', glob( 'coverage/*.cov' ) ?: [] );\"",
 			"@coverage:unit",
 			"@coverage:integration",
 			"@coverage:merge"
 		],
-		"coverage:unit": "@php ./vendor/bin/phpunit --testsuite unit --coverage-php coverage/unit.cov",
+		"coverage:unit": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/msm-sitemap ./vendor/bin/phpunit --testsuite unit --coverage-php coverage/unit.cov",
 		"coverage:integration": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/msm-sitemap ./vendor/bin/phpunit --testsuite integration --coverage-php coverage/integration.cov",
-		"coverage:merge": "@php ./vendor/bin/phpcov merge coverage/ --clover coverage/clover.xml --html coverage/html",
+		"coverage:merge": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/msm-sitemap ./vendor/bin/phpcov merge coverage --clover coverage/clover.xml --html coverage/html --text coverage/coverage.txt",
 		"cs": [
 			"@php ./vendor/bin/phpcs -q"
 		],
@@ -76,9 +77,9 @@
 	},
 	"scripts-descriptions": {
 		"coverage": "Run all tests with merged code coverage (for CI)",
-		"coverage:unit": "Run unit tests with coverage output",
+		"coverage:unit": "Run unit tests with coverage output via wp-env",
 		"coverage:integration": "Run integration tests with coverage output via wp-env",
-		"coverage:merge": "Merge coverage reports into combined HTML and Clover XML",
+		"coverage:merge": "Merge coverage reports into combined HTML, Clover XML and text via wp-env",
 		"cs": "Run PHP Code Sniffer",
 		"cs-fix": "Run PHP Code Sniffer and fix violations",
 		"i18n": "Generate a POT file for translation",

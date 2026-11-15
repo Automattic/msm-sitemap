@@ -3,6 +3,7 @@
 /.git/
 /.github/
 /bin/
+/coverage/
 /docs/
 /node_modules/
 /tests/

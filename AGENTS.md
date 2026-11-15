@@ -51,6 +51,7 @@ composer lint                  # PHP syntax lint
 composer test:unit             # Run unit tests
 composer test:integration      # Run integration tests (requires wp-env)
 composer test:integration-ms   # Run multisite integration tests
+composer coverage              # Merged unit + integration coverage (requires wp-env with --xdebug=coverage)
 composer coverage:unit         # Unit test coverage
 composer coverage:integration  # Integration test coverage
 composer coverage:merge        # Merge coverage reports
