@@ -67,7 +67,7 @@ add_filter( 'msm_sitemap_priority', function ( float $priority, WP_Post $post ):
 }, 10, 2 );
 ```
 
-`changefreq` must be one of `always`, `hourly`, `daily`, `weekly`, `monthly`, `yearly` or `never`, and `priority` must be between `0.0` and `1.0`. If either is invalid, that post is left out of the sitemap and a message is written to the PHP error log.
+`changefreq` must be one of `always`, `hourly`, `daily`, `weekly`, `monthly`, `yearly` or `never`, and `priority` must be a number (or numeric string) between `0.0` and `1.0`. If either is invalid, that post is left out of the sitemap and a message is written to the PHP error log.
 
 ## Change or add to each URL entry
 

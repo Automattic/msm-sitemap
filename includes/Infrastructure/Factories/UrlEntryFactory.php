@@ -45,6 +45,11 @@ class UrlEntryFactory {
 		$changefreq = apply_filters( 'msm_sitemap_changefreq', 'monthly', $post );
 		$priority = apply_filters( 'msm_sitemap_priority', 0.7, $post );
 
+		// A priority stored as an option comes back as a string.
+		if ( is_string( $priority ) && is_numeric( $priority ) ) {
+			$priority = (float) $priority;
+		}
+
 		try {
 			return new UrlEntry(
 				$permalink,
@@ -52,8 +57,8 @@ class UrlEntryFactory {
 				$changefreq,
 				$priority
 			);
-		} catch ( \InvalidArgumentException $e ) {
-			// Log the error but don't break sitemap generation
+		} catch ( \InvalidArgumentException | \TypeError $e ) {
+			// Log and skip the post rather than stop generation. A TypeError means a filter returned the wrong type.
 			error_log( 'MSM Sitemap: Invalid URL entry for post ' . $post_id . ': ' . $e->getMessage() );
 			return null;
 		}
