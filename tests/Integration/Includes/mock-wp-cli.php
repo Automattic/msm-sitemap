@@ -19,7 +19,7 @@ namespace {
 		class WP_CLI {
 			public function __call( $method, $params ) {
 				if ( 'error' === $method ) {
-					throw new \WP_CLI\ExitException( 'WP_CLI error' );
+					throw new \WP_CLI\ExitException( (string) ( $params[0] ?? 'WP_CLI error' ) );
 				}
 				if ( in_array( $method, array( 'log', 'success', 'warning' ) ) ) {
 					echo $params[0] . "\n";
@@ -30,7 +30,7 @@ namespace {
 
 			public static function __callStatic( $method, $params ) {
 				if ( 'error' === $method ) {
-					throw new \WP_CLI\ExitException( 'WP_CLI error' );
+					throw new \WP_CLI\ExitException( (string) ( $params[0] ?? 'WP_CLI error' ) );
 				}
 				if ( in_array( $method, array( 'log', 'success', 'warning' ) ) ) {
 					echo $params[0] . "\n";
