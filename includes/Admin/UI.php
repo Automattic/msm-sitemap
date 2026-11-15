@@ -39,7 +39,8 @@ class UI {
 			<p>
 				<a href="<?php echo esc_url( Site::get_sitemap_index_url() ); ?>" target="_blank" class="button button-secondary">
 					<?php esc_html_e( 'View XML Sitemap Index', 'msm-sitemap' ); ?>
-					<span class="dashicons dashicons-external" style="vertical-align: middle;"></span>
+					<span class="dashicons dashicons-external" style="vertical-align: middle;" aria-hidden="true"></span>
+					<span class="screen-reader-text"><?php esc_html_e( '(opens in a new tab)', 'msm-sitemap' ); ?></span>
 				</a>
 			</p>
 
@@ -101,7 +102,7 @@ class UI {
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
-			<?php Notifications::show_error( __( 'Oops! Sitemaps are not supported on private sites. Please make your site is public and try again.', 'msm-sitemap' ) ); ?>
+			<?php Notifications::show_error( __( 'Oops! Sitemaps are not supported on private sites. Please make your site public and try again.', 'msm-sitemap' ) ); ?>
 		</div>
 		<?php
 	}
@@ -115,7 +116,7 @@ class UI {
 		<div class="stats-container">
 			<div class="stats-box"><strong id="sitemap-count"><?php echo number_format( \Metro_Sitemap::count_sitemaps() ); ?></strong><?php esc_html_e( 'Sitemaps', 'msm-sitemap' ); ?></div>
 			<div class="stats-box"><strong id="sitemap-indexed-url-count"><?php echo number_format( \Metro_Sitemap::get_total_indexed_url_count() ); ?></strong><?php esc_html_e( 'Indexed URLs', 'msm-sitemap' ); ?></div>
-			<div class="stats-footer"><span><span class="noticon noticon-time"></span><?php esc_html_e( 'Updated', 'msm-sitemap' ); ?> <strong><?php echo human_time_diff( $sitemap_update_last_run ); ?> <?php esc_html_e( 'ago', 'msm-sitemap' ); ?></strong></span></div>
+			<div class="stats-footer"><span><span class="noticon noticon-time" aria-hidden="true"></span><?php esc_html_e( 'Updated', 'msm-sitemap' ); ?> <strong><?php echo human_time_diff( $sitemap_update_last_run ); ?> <?php esc_html_e( 'ago', 'msm-sitemap' ); ?></strong></span></div>
 		</div>
 		<?php
 	}
@@ -151,7 +152,11 @@ class UI {
 		?>
 		<h2><?php esc_html_e( 'Cron Management', 'msm-sitemap' ); ?></h2>
 		<p><strong><?php esc_html_e( 'Automatic Sitemap Updates:', 'msm-sitemap' ); ?></strong> 
-			<?php echo $cron_enabled ? '<span style="color: green;">✅ Enabled</span>' : '<span style="color: red;">❌ Disabled</span>'; ?>
+			<?php if ( $cron_enabled ) : ?>
+				<span style="color: #007017;"><span aria-hidden="true">✅</span> <?php esc_html_e( 'Enabled', 'msm-sitemap' ); ?></span>
+			<?php else : ?>
+				<span style="color: #b32d2e;"><span aria-hidden="true">❌</span> <?php esc_html_e( 'Disabled', 'msm-sitemap' ); ?></span>
+			<?php endif; ?>
 		</p>
 		<?php if ( $next_scheduled ) : ?>
 			<p><strong><?php esc_html_e( 'Next Update:', 'msm-sitemap' ); ?></strong> <?php echo esc_html( date( 'Y-m-d H:i:s T', $next_scheduled ) ); ?></p>
