@@ -155,4 +155,85 @@ class AdminPageTest extends TestCase {
 		// Restore the filter for other tests
 		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
 	}
-} 
+
+	/**
+	 * Data provider: each admin action value and the notices its handler can show.
+	 *
+	 * @return array<string, array{0: string, 1: string[]}>
+	 */
+	public function data_admin_actions(): array {
+		return array(
+			'enable cron'     => array( 'enable-cron', array( 'Automatic updates are already enabled.' ) ),
+			'disable cron'    => array( 'disable-cron', array( 'Automatic sitemap updates disabled successfully.' ) ),
+			'generate full'   => array( 'generate-full', array( 'Starting sitemap generation...' ) ),
+			'generate latest' => array( 'generate-latest', array( 'Updating sitemap from recently modified posts...', 'Cannot generate from recently modified posts: no posts updated lately.' ) ),
+			'halt'            => array( 'halt-generation', array( 'Cannot stop sitemap generation: sitemap generation not in progress.' ) ),
+			'reset'           => array( 'reset-data', array( 'Sitemap data reset.' ) ),
+		);
+	}
+
+	/**
+	 * Test that admin actions run when the button labels are translated.
+	 *
+	 * @dataProvider data_admin_actions
+	 *
+	 * @param string   $action         The fixed value the button submits.
+	 * @param string[] $notices        The notices the handler can show; one must appear.
+	 */
+	public function test_admin_actions_run_with_translated_labels( string $action, array $notices ) {
+		global $plugin_page;
+		wp_set_current_user( $this->admin_id );
+		$plugin_page = 'metro-sitemap';
+
+		// Simulate a translation: prefix every plugin string.
+		$this->add_test_filter(
+			'gettext',
+			static function ( $translation, $text, $domain ) {
+				return 'msm-sitemap' === $domain ? '[xx] ' . $translation : $translation;
+			},
+			10,
+			3
+		);
+
+		$nonce                = wp_create_nonce( 'msm-sitemap-action' );
+		$_POST['action']      = $action;
+		$_POST['_wpnonce']    = $nonce;
+		$_REQUEST['_wpnonce'] = $nonce;
+
+		ob_start();
+		UI::render_options_page();
+		$output = ob_get_clean();
+
+		unset( $_POST['action'], $_POST['_wpnonce'], $_REQUEST['_wpnonce'] );
+
+		$pattern = '/<p>\\[xx\\] (' . implode( '|', array_map( 'preg_quote', $notices ) ) . ')/';
+		$this->assertMatchesRegularExpression( $pattern, $output );
+	}
+
+	/**
+	 * Test that buttons submit fixed values and show translated labels.
+	 */
+	public function test_buttons_submit_fixed_values() {
+		global $plugin_page;
+		wp_set_current_user( $this->admin_id );
+		$plugin_page = 'metro-sitemap';
+
+		$this->add_test_filter(
+			'gettext',
+			static function ( $translation, $text, $domain ) {
+				return 'msm-sitemap' === $domain ? '[xx] ' . $translation : $translation;
+			},
+			10,
+			3
+		);
+
+		ob_start();
+		UI::render_options_page();
+		$output = ob_get_clean();
+
+		$this->assertMatchesRegularExpression( '/<button type="submit" name="action" value="disable-cron"[^>]*>\s*\[xx\] Disable Automatic Updates\s*<\/button>/', $output );
+		$this->assertStringContainsString( 'value="generate-full"', $output );
+		$this->assertStringContainsString( 'value="generate-latest"', $output );
+		$this->assertStringContainsString( 'value="reset-data"', $output );
+	}
+}
