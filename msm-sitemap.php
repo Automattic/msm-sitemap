@@ -500,22 +500,22 @@ class Metro_Sitemap {
 
 		$sitemap_id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", self::SITEMAP_CPT, $sitemap_name ) );
 
-		if ( $sitemap_id ) {
-			$sitemap_exists = true;
-		} else {
-			$sitemap_id     = wp_insert_post( $sitemap_data );
-			$sitemap_exists = true;
-		}
-
 		$per_page = apply_filters( 'msm_sitemap_entry_posts_per_page', self::DEFAULT_POSTS_PER_SITEMAP_PAGE );
 		$post_ids = self::get_post_ids_for_date( $sitemap_date, $per_page );
 
 		if ( empty( $post_ids ) ) {
 			// If no entries - delete the whole sitemap post
-			if ( $sitemap_exists ) {
+			if ( $sitemap_id ) {
 				self::delete_sitemap_by_id( $sitemap_id );
 			}
 			return;
+		}
+
+		if ( $sitemap_id ) {
+			$sitemap_exists = true;
+		} else {
+			$sitemap_id     = wp_insert_post( $sitemap_data );
+			$sitemap_exists = true;
 		}
 
 		$total_url_count = self::get_total_indexed_url_count();
