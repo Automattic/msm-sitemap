@@ -57,7 +57,7 @@ class GlobalPostTest extends TestCase {
 
 		Metro_Sitemap::generate_sitemap_for_date( '2023-05-06' );
 
-		$this->assertEquals(
+		$this->assertSame(
 			array(
 				get_permalink( $first )  => $first,
 				get_permalink( $second ) => $second,
@@ -76,6 +76,33 @@ class GlobalPostTest extends TestCase {
 
 		Metro_Sitemap::generate_sitemap_for_date( '2023-05-07' );
 
+		$this->assertSame( $original, $GLOBALS['post'] );
+	}
+
+	/**
+	 * Generation leaves the global post unset when there was none before.
+	 */
+	public function test_global_post_stays_unset(): void {
+		$this->create_dummy_post( '2023-05-08 10:00:00' );
+		$GLOBALS['post'] = null; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		Metro_Sitemap::generate_sitemap_for_date( '2023-05-08' );
+
+		$this->assertNull( $GLOBALS['post'] );
+	}
+
+	/**
+	 * Generation restores the global post when every post on the day is skipped.
+	 */
+	public function test_global_post_is_restored_when_every_post_is_skipped(): void {
+		$this->create_dummy_post( '2023-05-09 10:00:00' );
+		$original        = get_post( $this->create_dummy_post( '2020-01-01 10:00:00' ) );
+		$GLOBALS['post'] = $original; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		add_filter( 'msm_sitemap_skip_post', '__return_true' );
+
+		Metro_Sitemap::generate_sitemap_for_date( '2023-05-09' );
+
+		$this->assertFalse( Metro_Sitemap::get_sitemap_post_id( 2023, 5, 9 ), 'A day with every post skipped should have no sitemap.' );
 		$this->assertSame( $original, $GLOBALS['post'] );
 	}
 }
