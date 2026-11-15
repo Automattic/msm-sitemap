@@ -98,6 +98,22 @@ class AdminPageTest extends TestCase {
 	}
 
 	/**
+	 * Test that decorative icons are hidden from assistive technology and the new-tab link is announced.
+	 */
+	public function test_admin_page_accessibility_markup() {
+		global $plugin_page;
+		wp_set_current_user( $this->admin_id );
+		$plugin_page = 'metro-sitemap';
+		ob_start();
+		UI::render_options_page();
+		$output = ob_get_clean();
+		$this->assertStringContainsString( '<span class="screen-reader-text">(opens in a new tab)</span>', $output );
+		$this->assertStringContainsString( 'dashicons-external" style="vertical-align: middle;" aria-hidden="true"', $output );
+		$this->assertStringContainsString( 'noticon-time" aria-hidden="true"', $output );
+		$this->assertMatchesRegularExpression( '/<span aria-hidden="true">(✅|❌)<\/span> (Enabled|Disabled)/', $output );
+	}
+
+	/**
 	 * Test that the generate section is rendered.
 	 */
 	public function test_generate_section_rendered() {

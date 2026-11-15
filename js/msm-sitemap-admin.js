@@ -30,7 +30,7 @@ jQuery( document ).ready( function() {
 			hoverable: true,
 			autoHighlight: true,
 		},
-		colors: [ '#ececec' ],
+		colors: [ '#2271b1' ],
 
 	};
 
@@ -40,12 +40,12 @@ jQuery( document ).ready( function() {
 			bars: {
 				align: "center",
 				barWidth: 12 * 60 * 60 * 1000,
-				borderColor: '#ececec',
+				borderColor: '#2271b1',
 				fill: true,
-				fillColor: '#ececec',
+				fillColor: '#2271b1',
 				show: true,
 			},
-			highlightColor: '#2EA2CC',
+			highlightColor: '#135e96',
 		}
 	];
 
