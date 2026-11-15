@@ -74,22 +74,22 @@ class UI {
 		
 		// Route to appropriate action handler
 		switch ( $action ) {
-			case 'Enable Automatic Updates':
+			case 'enable-cron':
 				Action_Handlers::handle_enable_cron();
 				break;
-			case 'Disable Automatic Updates':
+			case 'disable-cron':
 				Action_Handlers::handle_disable_cron();
 				break;
-			case 'Generate from all articles':
+			case 'generate-full':
 				Action_Handlers::handle_generate_full();
 				break;
-			case 'Generate from recently modified posts':
+			case 'generate-latest':
 				Action_Handlers::handle_generate_from_latest();
 				break;
-			case 'Halt Sitemap Generation':
+			case 'halt-generation':
 				Action_Handlers::handle_halt_generation();
 				break;
-			case 'Reset Sitemap Data':
+			case 'reset-data':
 				Action_Handlers::handle_reset_data();
 				break;
 		}
@@ -165,9 +165,9 @@ class UI {
 		<form action="<?php echo menu_page_url( 'metro-sitemap', false ); ?>" method="post" style="margin-bottom: 20px;">
 			<?php wp_nonce_field( 'msm-sitemap-action' ); ?>
 			<?php if ( ! $cron_enabled ) : ?>
-				<input type="submit" name="action" class="button-primary" value="<?php esc_attr_e( 'Enable Automatic Updates', 'msm-sitemap' ); ?>">
+				<button type="submit" name="action" value="enable-cron" class="button-primary"><?php esc_html_e( 'Enable Automatic Updates', 'msm-sitemap' ); ?></button>
 			<?php else : ?>
-				<input type="submit" name="action" class="button-secondary" value="<?php esc_attr_e( 'Disable Automatic Updates', 'msm-sitemap' ); ?>">
+				<button type="submit" name="action" value="disable-cron" class="button-secondary"><?php esc_html_e( 'Disable Automatic Updates', 'msm-sitemap' ); ?></button>
 			<?php endif; ?>
 		</form>
 		<?php
@@ -198,19 +198,19 @@ class UI {
 			<p><strong><?php esc_html_e( 'Sitemap Creation Status:', 'msm-sitemap' ); ?></strong> <?php echo esc_html( $sitemap_create_status ); ?></p>
 			
 			<?php if ( $buttons_enabled ) : ?>
-				<input type="submit" name="action" class="button-secondary" value="<?php esc_attr_e( 'Generate from all articles', 'msm-sitemap' ); ?>">
-				<input type="submit" name="action" class="button-secondary" value="<?php esc_attr_e( 'Generate from recently modified posts', 'msm-sitemap' ); ?>">
+				<button type="submit" name="action" value="generate-full" class="button-secondary"><?php esc_html_e( 'Generate from all articles', 'msm-sitemap' ); ?></button>
+				<button type="submit" name="action" value="generate-latest" class="button-secondary"><?php esc_html_e( 'Generate from recently modified posts', 'msm-sitemap' ); ?></button>
 			<?php else : ?>
-				<input type="submit" name="action" class="button-secondary button-disabled" value="<?php esc_attr_e( 'Generate from all articles', 'msm-sitemap' ); ?>" disabled="disabled">
-				<input type="submit" name="action" class="button-secondary button-disabled" value="<?php esc_attr_e( 'Generate from recently modified posts', 'msm-sitemap' ); ?>" disabled="disabled">
+				<button type="submit" name="action" value="generate-full" class="button-secondary button-disabled" disabled><?php esc_html_e( 'Generate from all articles', 'msm-sitemap' ); ?></button>
+				<button type="submit" name="action" value="generate-latest" class="button-secondary button-disabled" disabled><?php esc_html_e( 'Generate from recently modified posts', 'msm-sitemap' ); ?></button>
 			<?php endif; ?>
 			
 			<?php if ( $sitemap_create_in_progress && ! $sitemap_halt_in_progress ) : ?>
-				<input type="submit" name="action" class="button-secondary" value="<?php esc_attr_e( 'Halt Sitemap Generation', 'msm-sitemap' ); ?>">
+				<button type="submit" name="action" value="halt-generation" class="button-secondary"><?php esc_html_e( 'Halt Sitemap Generation', 'msm-sitemap' ); ?></button>
 			<?php endif; ?>
 			
 			<?php if ( ! $sitemap_create_in_progress && ! $sitemap_halt_in_progress ) : ?>
-				<input type="submit" name="action" class="button-secondary" value="<?php esc_attr_e( 'Reset Sitemap Data', 'msm-sitemap' ); ?>">
+				<button type="submit" name="action" value="reset-data" class="button-secondary"><?php esc_html_e( 'Reset Sitemap Data', 'msm-sitemap' ); ?></button>
 			<?php endif; ?>
 			
 			<?php self::render_generate_note(); ?>
