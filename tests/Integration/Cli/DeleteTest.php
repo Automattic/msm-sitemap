@@ -107,6 +107,22 @@ final class DeleteTest extends TestCase {
 	}
 
 	/**
+	 * Deleting a sitemap removes its URLs from the indexed URL count and fires msm_delete_sitemap_post.
+	 */
+	public function test_delete_updates_indexed_url_count_and_fires_action(): void {
+		$sitemap_id = \Metro_Sitemap::get_sitemap_post_id( 2024, 7, 10 );
+		update_post_meta( $sitemap_id, 'msm_indexed_url_count', 5 );
+		update_option( 'msm_sitemap_indexed_url_count', 5, false );
+
+		$cli = new Metro_Sitemap_CLI();
+		$cli->delete( array(), array( 'date' => '2024-07-10' ) );
+
+		$this->expectOutputRegex( '/Deleted 1 sitemap/' );
+		$this->assertSame( 0, \Metro_Sitemap::get_total_indexed_url_count() );
+		$this->assertSame( 1, did_action( 'msm_delete_sitemap_post' ) );
+	}
+
+	/**
 	 * Test deleting all sitemaps for a given year.
 	 */
 	public function test_delete_by_year(): void {
