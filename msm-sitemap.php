@@ -772,14 +772,15 @@ class Metro_Sitemap {
 
 		$time                = time();
 		$run_started         = $time;
+		$today               = wp_date( 'Y-m-d' );
 		$last_modified_posts = self::get_last_modified_posts();
 		$dates               = self::get_post_dates( $last_modified_posts );
 
 		foreach ( $dates as $date ) {
 			list( $year, $month, $day ) = explode( '-', $date );
 
-			// Do not allow non-existant or future dates to be queued
-			if ( false === checkdate( $month, $day, $year ) || $time <= mktime( 0, 0, 0, $month, $day, $year ) ) {
+			// Do not queue dates that don't exist or are in the future. Post dates are in the site's timezone, so compare with today there.
+			if ( false === checkdate( $month, $day, $year ) || $date > $today ) {
 				continue;
 			}
 
