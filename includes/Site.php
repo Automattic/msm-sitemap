@@ -80,6 +80,17 @@ class Site {
 	}
 
 	/**
+	 * Check if the sitemap index lists one sitemap per month instead of one per day.
+	 *
+	 * @since 1.6.0
+	 *
+	 * @return bool True if indexed by month, false otherwise.
+	 */
+	public static function is_indexed_by_month(): bool {
+		return (bool) apply_filters( 'msm_sitemap_index_by_month', false );
+	}
+
+	/**
 	 * Get the sitemap index URL based on configuration.
 	 *
 	 * @param int|null $year Optional year for year-based indexing.

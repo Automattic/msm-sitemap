@@ -178,6 +178,19 @@ For very large sites, you may want to break up the sitemap index by year to redu
 add_filter( 'msm_sitemap_index_by_year', '__return_true' );
 ~~~
 
+### Index Sitemaps by Month
+
+**Business case:**
+Sites with many years of content can end up with thousands of daily sitemaps in the index. Some tools, such as Google Search Console, only show the first 1,000. This filter makes the index list one sitemap per month instead, for example `/sitemap.xml?yyyy=2019&mm=08`. Each monthly sitemap joins the URLs of that month's daily sitemaps, up to the 50,000 URL limit. Daily sitemap URLs keep working. Monthly URLs return a 404 when this filter is off.
+
+A monthly sitemap holds at most 50,000 URLs, and any URLs past that are left out. With the default of 500 URLs per day a month holds at most 15,500, so this only matters if you raise `msm_sitemap_entry_posts_per_page` above about 1,600.
+
+~~~php
+add_filter( 'msm_sitemap_index_by_month', '__return_true' );
+~~~
+
+This can be used together with `msm_sitemap_index_by_year`, in which case the monthly URLs look like `/sitemap-2019.xml?mm=08`.
+
 ### Add or Modify XML Namespaces
 
 **Business case:**

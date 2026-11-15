@@ -150,6 +150,11 @@ class SitemapIndexEntryFactory {
 			$base_url   = Site::get_sitemap_index_url();
 		}
 
+		// Monthly sitemaps have no day in the URL.
+		if ( Site::is_indexed_by_month() ) {
+			unset( $query_args['dd'] );
+		}
+
 		return add_query_arg( $query_args, $base_url );
 	}
 }
