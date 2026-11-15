@@ -290,7 +290,29 @@ class MSM_Sitemap_Builder_Cron {
 			Metro_Sitemap::delete_sitemap_for_date( $date_stamp );
 		}
 
-		self::find_next_day_to_process( $year, $month, $day );
+		// Days queued by post changes share this hook; only the full generation's own day moves its queue on.
+		if ( self::is_next_day_to_process( $year, $month, $day ) ) {
+			self::find_next_day_to_process( $year, $month, $day );
+		}
+	}
+
+	/**
+	 * Whether a day is the one the full generation is waiting on.
+	 *
+	 * @param int $year
+	 * @param int $month
+	 * @param int $day
+	 * @return bool
+	 */
+	private static function is_next_day_to_process( $year, $month, $day ) {
+		$years  = (array) get_option( 'msm_years_to_process', array() );
+		$months = (array) get_option( 'msm_months_to_process', array() );
+		$days   = (array) get_option( 'msm_days_to_process', array() );
+
+		return $years && $months && $days
+			&& (int) end( $years ) === (int) $year
+			&& (int) end( $months ) === (int) $month
+			&& (int) end( $days ) === (int) $day;
 	}
 
 	/**
