@@ -662,6 +662,18 @@ class Metro_Sitemap {
 	}
 
 	/**
+	 * Clear the stored rewrite rules on activation and deactivation.
+	 *
+	 * WordPress rebuilds them on the next request, with or without the
+	 * sitemap rules, so /sitemap.xml works straight away.
+	 *
+	 * @since 1.6.0
+	 */
+	public static function clear_rewrite_rules(): void {
+		delete_option( 'rewrite_rules' );
+	}
+
+	/**
 	 * Register our CPT
 	 */
 	public static function create_post_type() {
@@ -1081,3 +1093,6 @@ class Metro_Sitemap {
 	}
 }
 add_action( 'after_setup_theme', array( 'Metro_Sitemap', 'setup' ) );
+
+register_activation_hook( __FILE__, array( 'Metro_Sitemap', 'clear_rewrite_rules' ) );
+register_deactivation_hook( __FILE__, array( 'Metro_Sitemap', 'clear_rewrite_rules' ) );
