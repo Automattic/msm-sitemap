@@ -764,9 +764,8 @@ class Metro_Sitemap {
 		 */
 		$query = apply_filters( 'msm_pre_get_last_modified_posts', $query, $post_types_in, $date );
 
-		$modified_posts = $wpdb->get_results( $query );
-
-		return $modified_posts;
+		// An empty query, such as a filter switching this pass off, makes get_results() return null.
+		return $wpdb->get_results( $query ) ?: array();
 	}
 
 	/**
