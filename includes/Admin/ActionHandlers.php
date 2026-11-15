@@ -109,7 +109,7 @@ class Action_Handlers {
 		Notifications::show_success(
 			sprintf(
 				/* translators: 1: post type, 2: WP-CLI command */
-				__( 'Sitemap data reset. If you want to completely remove the data you must do so manually by deleting all posts with post type <code>%1$s</code>. The WP-CLI command to do this is: <code>%2$s</code>.', 'msm-sitemap' ),
+				__( 'Sitemap data reset. To also delete the sitemap posts (post type <code>%1$s</code>), run this WP-CLI command: <code>%2$s</code>.', 'msm-sitemap' ),
 				Metro_Sitemap::SITEMAP_CPT,
 				'wp msm-sitemap delete --all'
 			) 

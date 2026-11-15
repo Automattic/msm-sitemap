@@ -687,26 +687,50 @@ class Metro_Sitemap {
 	}
 
 	/**
-	 * Register our CPT
+	 * Register our CPT and its meta.
+	 *
+	 * Sitemap posts and their XML are written only by the plugin (cron and
+	 * WP-CLI, through wp_insert_post() and update_post_meta(), which do not
+	 * check capabilities). The stored XML is served as the site's sitemap, so
+	 * no user may create or edit these posts or their meta: the post type
+	 * gets its own capabilities that no role is granted, and the meta denies
+	 * every write.
 	 */
 	public static function create_post_type() {
 		register_post_type(
 			self::SITEMAP_CPT,
 			array(
-				'labels'       => array(
+				'labels'          => array(
 					'name'          => __( 'Sitemaps', 'msm-sitemap' ),
 					'singular_name' => __( 'Sitemap', 'msm-sitemap' ),
 				),
-				'public'       => false,
-				'has_archive'  => false,
-				'rewrite'      => false,
-				'show_ui'      => true,  // TODO: should probably have some sort of custom UI
-				'show_in_menu' => false, // Since we're manually adding a Sitemaps menu, no need to auto-add one through the CPT.
-				'supports'     => array(
+				'public'          => false,
+				'has_archive'     => false,
+				'rewrite'         => false,
+				'show_ui'         => false,
+				'capability_type' => self::SITEMAP_CPT,
+				'map_meta_cap'    => true,
+				'supports'        => array(
 					'title',
 				),
 			)
 		);
+
+		$meta_types = array(
+			'msm_sitemap_xml'       => 'string',
+			'msm_indexed_url_count' => 'integer',
+		);
+		foreach ( $meta_types as $meta_key => $type ) {
+			register_post_meta(
+				self::SITEMAP_CPT,
+				$meta_key,
+				array(
+					'type'          => $type,
+					'single'        => true,
+					'auth_callback' => '__return_false',
+				)
+			);
+		}
 	}
 
 	/**
