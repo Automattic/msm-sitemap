@@ -58,14 +58,14 @@ Filters whether to leave a post out of its sitemap. The global `$post` is set to
 
 ### msm_sitemap_changefreq
 
-Filters a URL's `changefreq`. A value the sitemap protocol doesn't allow leaves the post out of the sitemap, and is logged.
+Filters a URL's `changefreq`. A value the sitemap protocol doesn't allow, or a value that isn't a string, leaves the post out of the sitemap, and is logged.
 
 - `string $changefreq` Default `monthly`. One of `always`, `hourly`, `daily`, `weekly`, `monthly`, `yearly`, `never`.
 - `WP_Post $post` The post.
 
 ### msm_sitemap_priority
 
-Filters a URL's `priority`. A value outside `0.0` to `1.0` leaves the post out of the sitemap, and is logged.
+Filters a URL's `priority`. A numeric string, such as `'0.8'` from an option, is accepted. A value outside `0.0` to `1.0`, or a value that isn't a number, leaves the post out of the sitemap, and is logged.
 
 - `float $priority` Default `0.7`.
 - `WP_Post $post` The post.
