@@ -30,6 +30,22 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 	private $halt = false;
 
 	/**
+	 * @var int Loop iterations since the in-memory object cache was last flushed.
+	 */
+	private $iterations = 0;
+
+	/**
+	 * Flush the in-memory object cache every few loop iterations.
+	 *
+	 * Long runs otherwise keep every post, term and sitemap XML they touch in memory until PHP runs out.
+	 */
+	private function free_memory() {
+		if ( 0 === ++$this->iterations % 10 && wp_cache_supports( 'flush_runtime' ) ) {
+			wp_cache_flush_runtime();
+		}
+	}
+
+	/**
 	 * Generate sitemaps for the specified date or all dates.
 	 *
 	 * ## OPTIONS
@@ -76,6 +92,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 						}
 						$sitemap_id_before = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
 						$date_stamp        = \Metro_Sitemap::get_date_stamp( $year, $month, $day );
+						$this->free_memory();
 						\Metro_Sitemap::generate_sitemap_for_date( $date_stamp, $force );
 						$sitemap_id_after = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
 						if ( ( $force && $sitemap_id_after ) || ( ! $sitemap_id_before && $sitemap_id_after ) ) {
@@ -97,6 +114,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 					$day               = $query['day'];
 					$sitemap_id_before = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
 					$date_stamp        = \Metro_Sitemap::get_date_stamp( $year, $month, $day );
+					$this->free_memory();
 					\Metro_Sitemap::generate_sitemap_for_date( $date_stamp, $force );
 					$sitemap_id_after = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
 					if ( ( $force && $sitemap_id_after ) || ( ! $sitemap_id_before && $sitemap_id_after ) ) {
@@ -118,6 +136,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 						}
 						$sitemap_id_before = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
 						$date_stamp        = \Metro_Sitemap::get_date_stamp( $year, $month, $day );
+						$this->free_memory();
 						\Metro_Sitemap::generate_sitemap_for_date( $date_stamp, $force );
 						$sitemap_id_after = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
 						if ( ( $force && $sitemap_id_after ) || ( ! $sitemap_id_before && $sitemap_id_after ) ) {
@@ -141,6 +160,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 							}
 							$sitemap_id_before = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
 							$date_stamp        = \Metro_Sitemap::get_date_stamp( $year, $month, $day );
+							$this->free_memory();
 							\Metro_Sitemap::generate_sitemap_for_date( $date_stamp, $force );
 							$sitemap_id_after = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
 							if ( ( $force && $sitemap_id_after ) || ( ! $sitemap_id_before && $sitemap_id_after ) ) {
@@ -324,6 +344,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		}
 		$items = array();
 		foreach ( $posts as $post_id ) {
+			$this->free_memory();
 			$post = get_post( $post_id );
 			$row  = array();
 			foreach ( $fields as $field ) {
@@ -415,6 +436,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 				WP_CLI::warning( __( 'Multiple sitemaps found for that date. Showing all.', 'msm-sitemap' ) );
 			}
 			foreach ( $posts as $post_id ) {
+				$this->free_memory();
 				$post    = get_post( $post_id );
 				$items[] = array(
 					'id'            => $post->ID,
@@ -470,6 +492,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		$valid_count   = 0;
 		$invalid_count = 0;
 		foreach ( $posts as $post_id ) {
+			$this->free_memory();
 			$xml = get_post_meta( $post_id, 'msm_sitemap_xml', true );
 			if ( ! $xml ) {
 				/* translators: %d is the sitemap ID. */
@@ -557,6 +580,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		}
 		$count = 0;
 		foreach ( $posts as $post_id ) {
+			$this->free_memory();
 			$xml = get_post_meta( $post_id, 'msm_sitemap_xml', true );
 			if ( ! $xml ) {
 				continue;
@@ -629,6 +653,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		$sitemap_count = 0;
 
 		foreach ( $all_sitemaps as $sitemap_id ) {
+			$this->free_memory();
 			$xml_data = get_post_meta( $sitemap_id, 'msm_sitemap_xml', true );
 			$xml      = simplexml_load_string( $xml_data );
 			$count    = is_object( $xml ) && isset( $xml->url ) ? count( $xml->url ) : 0;
@@ -670,6 +695,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		$total       = count( $posts );
 		$most_recent = null;
 		$max_date    = '';
+		_prime_post_caches( $posts, false, false );
 		foreach ( $posts as $post_id ) {
 			$post = get_post( $post_id );
 			if ( $post && ( $max_date === '' || $post->post_date_gmt > $max_date ) ) {
