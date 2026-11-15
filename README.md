@@ -1,4 +1,4 @@
-# Metro Sitemap
+# MSM Sitemap
 
 Stable tag: 1.5.6  
 Requires at least: 6.4  
@@ -9,168 +9,98 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Tags: sitemap, xml, seo, performance, multisite  
 Contributors: metro, automattic, alleyinteractive, makermedia, 10up, garyj  
 
-High-performance XML sitemaps for large-scale WordPress sites. Built for speed, extensibility, and reliability. Metro Sitemap generates robust, scalable XML sitemaps for WordPress sites of any size. Designed for high-traffic and enterprise environments, it ensures your content is discoverable by search engines without slowing down your site.
+XML sitemaps for large WordPress sites, built in the background one day at a time and served from storage.
 
-## At a Glance
+## Description
 
-* **Fast, reliable XML sitemaps** for large and small sites
-* **Asynchronous generation** avoids timeouts and memory issues
-* **Supports custom post types** (see FAQ)
-* **Multisite compatible**
-* **WP-CLI support** for advanced management
-* **Extensible** via hooks and filters ([see developer docs](./DEVELOPERS.md))
-* **Admin UI** for stats, manual actions, and cron management
-* **Browser-friendly XSL styling** with independent stylesheet endpoints
+MSM Sitemap is built for news sites and other publishers with a lot of content. Instead of generating a sitemap on every request, it builds one sitemap for each day that has content, stores it, and serves the stored copy. The sitemap index at `/sitemap.xml` lists every day.
+
+- **Fast to serve.** Daily sitemaps are stored as finished XML, so a request does no sitemap work.
+- **Built in the background.** Sitemaps are built a day at a time through WP-Cron or WP-CLI, so even sites with millions of posts don't time out.
+- **Kept up to date.** Once automatic updates are on, a day's sitemap is rebuilt when a post on that day is published, edited, unpublished, re-dated, trashed or deleted.
+- **In your control.** Nothing runs until you start it, and you can build sitemaps for a year, month or day at a time from the shell.
+- **Readable in a browser**, with stylesheets you can change or turn off.
+- **Multisite compatible.** Each site has its own sitemaps.
+
+The **Tools → Sitemap** screen shows how many sitemaps and URLs there are, charts recent days, and lets you turn automatic updates on and off and start a full build. The `wp msm-sitemap` commands do all that and more from the shell.
+
+MSM Sitemap replaces WordPress core's sitemaps at `/wp-sitemap.xml` while it's active.
+
+### Documentation
+
+Guides for site owners and developers live in the [`docs/` directory on GitHub](https://github.com/Automattic/msm-sitemap/blob/main/docs/README.md):
+
+- [Generating sitemaps](https://github.com/Automattic/msm-sitemap/blob/main/docs/generating-sitemaps.md): the first build, automatic updates, large sites and multisite
+- [Serving sitemaps](https://github.com/Automattic/msm-sitemap/blob/main/docs/serving-sitemaps.md): URLs, robots.txt, sites that aren't public, caching and limits
+- [WP-CLI commands](https://github.com/Automattic/msm-sitemap/blob/main/docs/wp-cli.md)
+- [Customizing MSM Sitemap](https://github.com/Automattic/msm-sitemap/blob/main/docs/customizing.md) and the full list of [filters and actions](https://github.com/Automattic/msm-sitemap/blob/main/docs/hooks.md)
 
 ## Installation
 
-1. Upload the plugin folder to `/wp-content/plugins/` or install via the WordPress admin.
-2. Activate the plugin through the 'Plugins' menu in WordPress.
-3. (Optional) Visit **Tools > Sitemap** in the admin for stats and manual actions.
-4. Sitemaps will be generated automatically in the background.
+1. Install and activate MSM Sitemap. On a multisite network, you can network-activate it.
+2. Build sitemaps for your existing content. On a large site, use WP-CLI: `wp msm-sitemap generate --all`. Otherwise, go to **Tools → Sitemap**, choose **Enable Automatic Updates**, then **Generate from all articles**.
+3. Turn on automatic updates, if you haven't already, so sitemaps follow your content: **Tools → Sitemap → Enable Automatic Updates**, or `wp msm-sitemap cron enable`.
+4. Submit `https://example.com/sitemap.xml` to search engines. It's also added to your site's robots.txt.
 
-## Usage
+Nothing is built or scheduled until you do steps 2 and 3. Building every sitemap at once can put a heavy load on the database of a large site, so the plugin leaves the timing to you. See [generating sitemaps](https://github.com/Automattic/msm-sitemap/blob/main/docs/generating-sitemaps.md) for the details.
 
-* Your sitemap index will be available at `/sitemap.xml` (e.g., `https://example.com/sitemap.xml`).
-* Sitemaps are generated in the background and updated as you publish new content.
-* The admin UI (Tools > Sitemap) provides stats and lets you manually trigger generation if needed.
-
-### Automatic Updates
-
-By default, automatic sitemap updates are **disabled** to prevent resource issues on large sites. To enable automatic updates:
-
-**Via Admin UI:**
-1. Go to **Tools > Sitemap** in your WordPress admin
-2. In the "Cron Management" section, click "Enable Automatic Updates"
-3. Once enabled, you can use the "Generate" section to manually trigger sitemap generation
-
-**Via WP-CLI:**
-```shell
-wp msm-sitemap cron enable
-```
-
-**Important:** Automatic updates can use significant resources on sites with many posts. For large sites, consider using date-targeted WP-CLI commands instead (see below).
+Sitemaps are only available on public sites, unless you [enable them on a site that isn't public](https://github.com/Automattic/msm-sitemap/blob/main/docs/customizing.md#use-sitemaps-on-a-site-that-isnt-public).
 
 ## Frequently Asked Questions
 
-### Why isn’t my custom post type included in the sitemap?
+### Why is my sitemap empty, or why does /sitemap.xml return a 404?
 
-By default, only the `post` post type is included. To add custom post types (like `page`, `news`, or others), see the [Developer Guide](./DEVELOPERS.md).
+An empty index means no sitemaps have been built yet: see the installation steps. A 404 usually means the rewrite rules haven't been rebuilt, which happens when the plugin is loaded from code rather than activated, or network-activated. Save **Settings → Permalinks** without changes, or run `wp rewrite flush`. If that doesn't help, check that the site is public. [More on sitemap URLs](https://github.com/Automattic/msm-sitemap/blob/main/docs/serving-sitemaps.md#if-sitemapxml-returns-a-404).
 
-### How do I include posts with a custom status?
+### Which content is included?
 
-By default, only published posts are included. You can change this via a filter. See the [Developer Guide](./DEVELOPERS.md).
+Published posts of the `post` post type, grouped by the day they were published. You can [add pages and custom post types](https://github.com/Automattic/msm-sitemap/blob/main/docs/customizing.md#include-other-post-types), [use a different post status](https://github.com/Automattic/msm-sitemap/blob/main/docs/customizing.md#include-posts-with-a-different-status), and [leave particular posts out](https://github.com/Automattic/msm-sitemap/blob/main/docs/customizing.md#leave-posts-out).
 
-### How do I regenerate the sitemap?
+### Can I use it on a staging site, or a site that isn't public?
 
-Sitemaps are generated automatically, but you can:
+Yes, with [a filter](https://github.com/Automattic/msm-sitemap/blob/main/docs/customizing.md#use-sitemaps-on-a-site-that-isnt-public). By default, sitemaps are only built and served on sites that allow search engines to index them.
 
-* Use the admin UI (**Tools > Sitemap**) to trigger a manual rebuild
-* Use WP-CLI commands (see below)
+### I publish more than 500 posts a day. Are they all included?
+
+Not by default. Each daily sitemap holds up to 500 URLs, and posts beyond that are left out. You can [raise the limit](https://github.com/Automattic/msm-sitemap/blob/main/docs/customizing.md#raise-the-number-of-urls-per-day).
+
+### Does it replace WordPress core sitemaps?
+
+Yes. WordPress's own sitemaps at `/wp-sitemap.xml` are turned off while MSM Sitemap is active. If another plugin also generates sitemaps, submit only one set to search engines.
 
 ### Does it work on multisite?
 
-Yes! Each site in your network will have its own sitemaps. The plugin can be network-activated.
+Yes. Each site has its own sitemaps, and its own automatic updates setting, so turn updates on for each site, even when the plugin is network-activated.
 
-### How do I exclude specific posts or dates?
+### How do I rebuild the sitemaps?
 
-You can filter which posts or dates appear in the sitemap using hooks—see the [Developer Guide](./DEVELOPERS.md).
+Run `wp msm-sitemap generate --all`, or choose **Generate from all articles** on **Tools → Sitemap** (automatic updates must be on). Rebuild after changing any filter that affects what goes into a sitemap.
 
-### Where is the sitemap stored?
+### How do I turn off the styling in the browser?
 
-Sitemap XML is stored in a custom post type (`msm_sitemap`) and served on-demand for fast performance.
+Add `add_filter( 'msm_sitemap_include_xsl_reference', '__return_false' );` to a plugin or your theme's `functions.php`. Sitemaps are then served as plain XML. You can also [restyle them](https://github.com/Automattic/msm-sitemap/blob/main/docs/customizing.md#change-how-sitemaps-look-in-a-browser).
 
-### Can I customize the number of posts per sitemap?
+### Where are sitemaps stored?
 
-Yes, this is filterable. See the [Developer Guide](./DEVELOPERS.md).
+Each daily sitemap is a post of the private `msm_sitemap` post type, with its XML in post meta. See [how MSM Sitemap works](https://github.com/Automattic/msm-sitemap/blob/main/docs/architecture.md).
 
-### How do I disable the XSL styling for sitemaps?
+## Contributing
 
-If you want to serve plain XML without browser styling, you can disable the XSL stylesheet references:
-
-```php
-add_filter( 'msm_sitemap_include_xsl_reference', '__return_false' );
-```
-
-For more XSL customization options, see the [Developer Guide](./DEVELOPERS.md).
-
-## WP-CLI Commands
-
-Metro Sitemap supports advanced management via WP-CLI. Here are the most common commands:
-
-### Core Commands
-
-- **generate**: Generate sitemaps for all or specific dates.
-  ```shell
-  wp msm-sitemap generate --all
-  ```
-- **delete**: Delete sitemaps for all or specific dates.
-  ```shell
-  wp msm-sitemap delete --date=2024-07
-  ```
-- **list**: List sitemaps.
-  ```shell
-  wp msm-sitemap list --format=json
-  ```
-- **get**: Get details for a sitemap by ID or date.
-  ```shell
-  wp msm-sitemap get 579
-  ```
-- **validate**: Validate sitemaps for all or specific dates.
-  ```shell
-  wp msm-sitemap validate --all
-  ```
-- **export**: Export sitemaps to a directory.
-  ```shell
-  wp msm-sitemap export --all --output=/tmp
-  ```
-- **recount**: Recalculate and update the indexed URL count for all sitemap posts.
-  ```shell
-  wp msm-sitemap recount
-  ```
-- **stats**: Show sitemap statistics (total, most recent, etc).
-  ```shell
-  wp msm-sitemap stats --format=table
-  ```
-
-### Cron Management Commands
-
-- **cron enable**: Enable automatic sitemap updates.
-  ```shell
-  wp msm-sitemap cron enable
-  ```
-- **cron disable**: Disable automatic sitemap updates.
-  ```shell
-  wp msm-sitemap cron disable
-  ```
-- **cron status**: Check the status of automatic updates.
-  ```shell
-  wp msm-sitemap cron status
-  ```
-- **cron reset**: Reset cron to clean state (for testing).
-  ```shell
-  wp msm-sitemap cron reset
-  ```
-
-For the full list of commands, options, and legacy command mapping, see [DEVELOPERS.md](./DEVELOPERS.md).
+Bug reports and pull requests are welcome on [GitHub](https://github.com/Automattic/msm-sitemap). See the [contributing guide](https://github.com/Automattic/msm-sitemap/blob/main/CONTRIBUTING.md) to get started.
 
 ## Support
 
-* [GitHub Issues](https://github.com/Automattic/msm-sitemap/issues) (for bug reports and feature requests)
-* [WordPress VIP Support](https://wpvip.com/wordpress-vip-enterprise-support/) (for WPVIP customers)
+- [GitHub issues](https://github.com/Automattic/msm-sitemap/issues), for bug reports and feature requests.
+- [WordPress VIP Support](https://wpvip.com/wordpress-vip-enterprise-support/), for WordPress VIP customers.
 
 ## Credits
 
-Metro Sitemap is a joint collaboration between Metro.co.uk, WordPress VIP, Alley Interactive, Maker Media, 10up, and others. Special thanks to all contributors.
+MSM Sitemap is a joint collaboration between Metro.co.uk, WordPress VIP, Alley Interactive, Maker Media, 10up, and others. Special thanks to all contributors.
 
 ## Changelog
 
-See [CHANGELOG.md](./CHANGELOG.md) for a full history of changes.
+Every change is listed in [CHANGELOG.md](https://github.com/Automattic/msm-sitemap/blob/main/CHANGELOG.md).
 
 ## License
 
-GPLv2 or later. See [LICENSE](./LICENSE) for details.
-
-## Developer Documentation
-
-For advanced customization, see [DEVELOPERS.md](./DEVELOPERS.md).
+GPLv2 or later. See [LICENSE](https://github.com/Automattic/msm-sitemap/blob/main/LICENSE) for details.
