@@ -1,6 +1,6 @@
 <?php
 /**
- * Admin page UI and permissions tests for Metro Sitemap
+ * Admin page UI and permissions tests for MSM Sitemap
  *
  * @package Metro_Sitemap/unit_tests
  */
@@ -12,7 +12,7 @@ namespace Automattic\MSM_Sitemap\Tests\Integration;
 use Metro_Sitemap;
 use Automattic\MSM_Sitemap\Admin\UI;
 /**
- * Admin page UI and permissions tests for Metro Sitemap
+ * Admin page UI and permissions tests for MSM Sitemap
  */
 class AdminPageTest extends TestCase {
 	/**

@@ -1,6 +1,6 @@
 <?php
 /**
- * Metro Sitemap CLI
+ * MSM Sitemap CLI
  *
  * @package Automattic\MSM_Sitemap
  */
