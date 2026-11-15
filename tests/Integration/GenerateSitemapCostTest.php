@@ -17,6 +17,41 @@ use Metro_Sitemap;
 class GenerateSitemapCostTest extends TestCase {
 
 	/**
+	 * Count the queries run while generating the sitemap for a date, from a cold cache.
+	 *
+	 * @param string $date Date in Y-m-d.
+	 * @return int
+	 */
+	private function count_generation_queries( string $date ): int {
+		global $wpdb;
+
+		wp_cache_flush();
+		$before = $wpdb->num_queries;
+		Metro_Sitemap::generate_sitemap_for_date( $date );
+
+		return $wpdb->num_queries - $before;
+	}
+
+	/**
+	 * Query count does not grow with the number of posts in the sitemap.
+	 */
+	public function test_queries_do_not_grow_per_post(): void {
+		$this->set_permalink_structure( '/%category%/%postname%/' );
+
+		for ( $i = 0; $i < 2; $i++ ) {
+			$this->create_dummy_post( '2023-04-01 10:00:00' );
+		}
+		for ( $i = 0; $i < 12; $i++ ) {
+			$this->create_dummy_post( '2023-04-02 10:00:00' );
+		}
+
+		$small = $this->count_generation_queries( '2023-04-01' );
+		$large = $this->count_generation_queries( '2023-04-02' );
+
+		$this->assertLessThan( 5, $large - $small, 'Ten more posts should not mean ten more queries.' );
+	}
+
+	/**
 	 * A date with no posts does not create and then delete a sitemap post.
 	 */
 	public function test_empty_date_does_not_create_sitemap_post(): void {

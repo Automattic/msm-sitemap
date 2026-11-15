@@ -518,6 +518,9 @@ class Metro_Sitemap {
 			$sitemap_exists = true;
 		}
 
+		// Load the posts and their terms (for permalinks) in one go, rather than per post in the loop.
+		_prime_post_caches( $post_ids, true, false );
+
 		$total_url_count = self::get_total_indexed_url_count();
 
 		// For migration: in case the previous version used an array for this option
