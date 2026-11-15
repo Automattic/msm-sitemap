@@ -110,6 +110,11 @@ class MSM_Sitemap_Builder_Cron {
 
 
 	public static function schedule_sitemap_update_for_year_month_date( $date, $time ) {
+		// The event would do nothing when it runs, so don't add it to the cron queue.
+		if ( ! Cron_Service::is_cron_enabled() ) {
+			return;
+		}
+
 		list( $year, $month, $day ) = $date;
 
 		wp_schedule_single_event(

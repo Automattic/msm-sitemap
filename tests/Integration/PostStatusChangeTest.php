@@ -64,6 +64,62 @@ class PostStatusChangeTest extends TestCase {
 	}
 
 	/**
+	 * Test that no rebuild event is added to the cron queue while the plugin's cron is off.
+	 *
+	 * The event would return without doing anything when it ran.
+	 */
+	public function test_unpublish_schedules_no_event_when_cron_disabled(): void {
+		add_filter( 'msm_sitemap_cron_enabled', '__return_false' );
+		$post_id = $this->create_dummy_post( '2018-02-02 10:00:00' );
+
+		wp_update_post(
+			array(
+				'ID'          => $post_id,
+				'post_status' => 'draft',
+			)
+		);
+
+		$this->assertFalse( wp_next_scheduled( 'msm_cron_generate_sitemap_for_year_month_day', $this->day_event_args( 2018, 2, 2 ) ) );
+	}
+
+	/**
+	 * Test that a rebuild event is scheduled when the plugin's cron is on.
+	 */
+	public function test_unpublish_schedules_event_when_cron_enabled(): void {
+		add_filter( 'msm_sitemap_cron_enabled', '__return_false' );
+		$post_id = $this->create_dummy_post( '2018-02-03 10:00:00' );
+		remove_filter( 'msm_sitemap_cron_enabled', '__return_false' );
+		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
+
+		wp_update_post(
+			array(
+				'ID'          => $post_id,
+				'post_status' => 'draft',
+			)
+		);
+
+		$this->assertNotFalse( wp_next_scheduled( 'msm_cron_generate_sitemap_for_year_month_day', $this->day_event_args( 2018, 2, 3 ) ) );
+	}
+
+	/**
+	 * Cron event arguments for a day's rebuild.
+	 *
+	 * @param int $year  Year.
+	 * @param int $month Month.
+	 * @param int $day   Day.
+	 * @return array<int, array<string, int>>
+	 */
+	private function day_event_args( int $year, int $month, int $day ): array {
+		return array(
+			array(
+				'year'  => $year,
+				'month' => $month,
+				'day'   => $day,
+			),
+		);
+	}
+
+	/**
 	 * Test that setting the status to trash directly queues its day.
 	 *
 	 * This path does not fire trashed_post.
