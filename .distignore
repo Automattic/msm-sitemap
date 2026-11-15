@@ -5,6 +5,7 @@
 /node_modules/
 /tests/
 /vendor/
+/docs/
 
 # Files
 .distignore

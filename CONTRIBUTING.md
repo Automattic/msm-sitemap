@@ -1,6 +1,6 @@
-# Contributing to Metro Sitemap
+# Contributing to MSM Sitemap
 
-Thank you for your interest in contributing. This document covers setting up a local environment, running the checks, and proposing a change. For the plugin's architecture, hooks and WP-CLI commands, see [DEVELOPERS.md](./DEVELOPERS.md).
+Thank you for your interest in contributing. This document covers setting up a local environment, running the checks, and proposing a change. For how the plugin works, its hooks and its WP-CLI commands, see the [documentation](./docs/README.md).
 
 ## Code of Conduct
 
