@@ -52,27 +52,30 @@ class FunctionsTest extends TestCase {
 	 */
 	public function test_get_recent_sitemap_url_counts( int $days, int $expected ): void {
 
-		// Create Multiple Posts across various Dates.
+		// Put the site's local time near midday, so the test can't cross midnight between
+		// creating the posts and the plugin working out which days are recent.
+		update_option( 'timezone_string', '' );
+		update_option( 'gmt_offset', 12 - (int) gmdate( 'G' ) );
+
+		// Create Multiple Posts across various Dates, in the site's timezone as the plugin does.
 		$date = time();
-		
+
 		// 3 for Today, 1 in "draft" status
-		$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
+		$cur_day = wp_date( 'Y-m-d 00:00:00', $date );
 		$this->create_dummy_post( $cur_day );
 		$this->create_dummy_post( $cur_day );
 		$this->create_dummy_post( $cur_day, 'draft' );
 
 		// 1  for each day in last week
 		for ( $i = 0; $i < 6; $i++ ) {
-			$date    = strtotime( '-1 day', $date );
-			$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
-			$this->create_dummy_post( $cur_day );
+			$date -= DAY_IN_SECONDS;
+			$this->create_dummy_post( wp_date( 'Y-m-d 00:00:00', $date ) );
 		}
 
 		// 1 per week for previous 3 weeks
 		for ( $i = 0; $i < 3; $i++ ) {
-			$date    = strtotime( '-7 day', $date );
-			$cur_day = date( 'Y', $date ) . '-' . date( 'm', $date ) . '-' . date( 'd', $date ) . ' 00:00:00';
-			$this->create_dummy_post( $cur_day );
+			$date -= WEEK_IN_SECONDS;
+			$this->create_dummy_post( wp_date( 'Y-m-d 00:00:00', $date ) );
 		}
 		$this->assertPostCount( 12 );
 		$this->build_sitemaps();
