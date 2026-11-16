@@ -73,6 +73,7 @@ class Cron_Service {
 		delete_option( 'msm_years_to_process' );
 		delete_option( 'msm_months_to_process' );
 		delete_option( 'msm_days_to_process' );
+		delete_option( 'msm_generation_stall_check' );
 
 		return true;
 	}
@@ -156,6 +157,7 @@ class Cron_Service {
 		delete_option( 'msm_years_to_process' );
 		delete_option( 'msm_months_to_process' );
 		delete_option( 'msm_days_to_process' );
+		delete_option( 'msm_generation_stall_check' );
 
 		return true;
 	}
