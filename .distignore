@@ -1,5 +1,5 @@
 # Directories
-/.git/
+/.git
 /.github/
 /bin/
 /node_modules/
@@ -7,11 +7,25 @@
 /vendor/
 /docs/
 
+# Flot submodule: only jquery.flot.js, jquery.flot.time.js and the licence are used
+/js/flot/.git
+/js/flot/.gitignore
+/js/flot/.travis.yml
+/js/flot/examples/
+/js/flot/*.md
+/js/flot/Makefile
+/js/flot/component.json
+/js/flot/flot.jquery.json
+/js/flot/package.json
+/js/flot/jquery.js
+/js/flot/excanvas*.js
+
 # Files
 .distignore
 .editorconfig
 .gitattributes
 .gitignore
+.gitmodules
 .phpcs.xml.dist
 .wp-env.json
 .wp-env.override.json
