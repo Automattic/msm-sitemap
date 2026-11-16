@@ -1,6 +1,6 @@
 <?php
 /**
- * Metro Sitemap CLI
+ * MSM Sitemap CLI
  *
  * @package Automattic\MSM_Sitemap
  */
@@ -28,6 +28,22 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 	 * @var bool Flag whether or not execution should be stopped.
 	 */
 	private $halt = false;
+
+	/**
+	 * @var int Loop iterations since the in-memory object cache was last flushed.
+	 */
+	private $iterations = 0;
+
+	/**
+	 * Flush the in-memory object cache every few loop iterations.
+	 *
+	 * Long runs otherwise keep every post, term and sitemap XML they touch in memory until PHP runs out.
+	 */
+	private function free_memory() {
+		if ( 0 === ++$this->iterations % 10 && wp_cache_supports( 'flush_runtime' ) ) {
+			wp_cache_flush_runtime();
+		}
+	}
 
 	/**
 	 * Generate sitemaps for the specified date or all dates.
@@ -63,7 +79,6 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 			$all_years_with_posts = \Metro_Sitemap::check_year_has_posts();
 			foreach ( $all_years_with_posts as $year ) {
 				if ( $this->halt_execution() ) {
-					delete_option( 'msm_stop_processing' );
 					break;
 				}
 				$max_month = ( $year == wp_date( 'Y' ) ) ? wp_date( 'n' ) : 12;
@@ -71,11 +86,11 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 					$max_day = ( $year == wp_date( 'Y' ) && $month == wp_date( 'n' ) ) ? wp_date( 'j' ) : $this->cal_days_in_month( $month, $year );
 					for ( $day = 1; $day <= $max_day; $day++ ) {
 						if ( $this->halt_execution() ) {
-							delete_option( 'msm_stop_processing' );
 							break 3;
 						}
 						$sitemap_id_before = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
 						$date_stamp        = \Metro_Sitemap::get_date_stamp( $year, $month, $day );
+						$this->free_memory();
 						\Metro_Sitemap::generate_sitemap_for_date( $date_stamp, $force );
 						$sitemap_id_after = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
 						if ( ( $force && $sitemap_id_after ) || ( ! $sitemap_id_before && $sitemap_id_after ) ) {
@@ -97,6 +112,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 					$day               = $query['day'];
 					$sitemap_id_before = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
 					$date_stamp        = \Metro_Sitemap::get_date_stamp( $year, $month, $day );
+					$this->free_memory();
 					\Metro_Sitemap::generate_sitemap_for_date( $date_stamp, $force );
 					$sitemap_id_after = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
 					if ( ( $force && $sitemap_id_after ) || ( ! $sitemap_id_before && $sitemap_id_after ) ) {
@@ -113,11 +129,11 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 					$max_day = ( $year == wp_date( 'Y' ) && $month == wp_date( 'n' ) ) ? wp_date( 'j' ) : $this->cal_days_in_month( $month, $year );
 					for ( $day = 1; $day <= $max_day; $day++ ) {
 						if ( $this->halt_execution() ) {
-							delete_option( 'msm_stop_processing' );
 							break 2;
 						}
 						$sitemap_id_before = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
 						$date_stamp        = \Metro_Sitemap::get_date_stamp( $year, $month, $day );
+						$this->free_memory();
 						\Metro_Sitemap::generate_sitemap_for_date( $date_stamp, $force );
 						$sitemap_id_after = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
 						if ( ( $force && $sitemap_id_after ) || ( ! $sitemap_id_before && $sitemap_id_after ) ) {
@@ -136,11 +152,11 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 						$max_day = ( $year == wp_date( 'Y' ) && $month == wp_date( 'n' ) ) ? wp_date( 'j' ) : $this->cal_days_in_month( $month, $year );
 						for ( $day = 1; $day <= $max_day; $day++ ) {
 							if ( $this->halt_execution() ) {
-								delete_option( 'msm_stop_processing' );
 								break 3;
 							}
 							$sitemap_id_before = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
 							$date_stamp        = \Metro_Sitemap::get_date_stamp( $year, $month, $day );
+							$this->free_memory();
 							\Metro_Sitemap::generate_sitemap_for_date( $date_stamp, $force );
 							$sitemap_id_after = \Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
 							if ( ( $force && $sitemap_id_after ) || ( ! $sitemap_id_before && $sitemap_id_after ) ) {
@@ -153,6 +169,11 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 				}
 			}
 		}
+		// Clear the halt request however the run was scoped, so it doesn't stop the next run too.
+		if ( $this->halt ) {
+			delete_option( 'msm_stop_processing' );
+		}
+
 		if ( ! $quiet ) {
 			/* translators: %d is the number of sitemaps generated. */
 			\WP_CLI::success( sprintf( _n( 'Generated %d sitemap.', 'Generated %d sitemaps.', $total_generated, 'msm-sitemap' ), $total_generated ) );
@@ -237,7 +258,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 
 		if ( $all ) {
 			// Confirm bulk delete
-			WP_CLI::confirm( 'Are you sure you want to delete ALL sitemaps?', $assoc_args );
+			WP_CLI::confirm( __( 'Are you sure you want to delete ALL sitemaps?', 'msm-sitemap' ), $assoc_args );
 			$sitemap_query = new \WP_Query(
 				array(
 					'post_type'      => 'msm_sitemap',
@@ -262,12 +283,21 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 				$to_delete     = array_merge( $to_delete, $sitemap_query->posts );
 			}
 			if ( count( $to_delete ) > 1 ) {
-				WP_CLI::confirm( sprintf( 'Are you sure you want to delete %d sitemaps for the specified date?', count( $to_delete ) ), $assoc_args );
+				$count = count( $to_delete );
+				WP_CLI::confirm(
+					sprintf(
+						/* translators: %d: Number of sitemaps to delete. */
+						_n( 'Are you sure you want to delete %d sitemap for the specified date?', 'Are you sure you want to delete %d sitemaps for the specified date?', $count, 'msm-sitemap' ),
+						$count
+					),
+					$assoc_args
+				);
 			}
 		}
 
 		foreach ( $to_delete as $post_id ) {
-			wp_delete_post( $post_id, true );
+			// Keeps the indexed URL count in step and fires msm_delete_sitemap_post.
+			\Metro_Sitemap::delete_sitemap_by_id( $post_id );
 			++$deleted;
 		}
 
@@ -324,6 +354,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		}
 		$items = array();
 		foreach ( $posts as $post_id ) {
+			$this->free_memory();
 			$post = get_post( $post_id );
 			$row  = array();
 			foreach ( $fields as $field ) {
@@ -415,6 +446,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 				WP_CLI::warning( __( 'Multiple sitemaps found for that date. Showing all.', 'msm-sitemap' ) );
 			}
 			foreach ( $posts as $post_id ) {
+				$this->free_memory();
 				$post    = get_post( $post_id );
 				$items[] = array(
 					'id'            => $post->ID,
@@ -470,6 +502,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		$valid_count   = 0;
 		$invalid_count = 0;
 		foreach ( $posts as $post_id ) {
+			$this->free_memory();
 			$xml = get_post_meta( $post_id, 'msm_sitemap_xml', true );
 			if ( ! $xml ) {
 				/* translators: %d is the sitemap ID. */
@@ -557,6 +590,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		}
 		$count = 0;
 		foreach ( $posts as $post_id ) {
+			$this->free_memory();
 			$xml = get_post_meta( $post_id, 'msm_sitemap_xml', true );
 			if ( ! $xml ) {
 				continue;
@@ -629,6 +663,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		$sitemap_count = 0;
 
 		foreach ( $all_sitemaps as $sitemap_id ) {
+			$this->free_memory();
 			$xml_data = get_post_meta( $sitemap_id, 'msm_sitemap_xml', true );
 			$xml      = simplexml_load_string( $xml_data );
 			$count    = is_object( $xml ) && isset( $xml->url ) ? count( $xml->url ) : 0;
@@ -670,6 +705,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 		$total       = count( $posts );
 		$most_recent = null;
 		$max_date    = '';
+		_prime_post_caches( $posts, false, false );
 		foreach ( $posts as $post_id ) {
 			$post = get_post( $post_id );
 			if ( $post && ( $max_date === '' || $post->post_date_gmt > $max_date ) ) {
@@ -755,7 +791,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 	private function cron_enable( $args, $assoc_args ) {
 		$status = Cron_Service::get_cron_status();
 		
-		if ( ! $status['blog_public'] ) {
+		if ( ! $status['sitemaps_enabled'] ) {
 			WP_CLI::error( __( '❌ Cannot enable cron: blog is not public.', 'msm-sitemap' ) );
 		}
 		

@@ -26,7 +26,35 @@ class Site {
 	 * @return bool True if the site is public, false otherwise.
 	 */
 	public static function is_public(): bool {
-		return ( '1' === get_option( 'blog_public' ) );
+		return ( '1' === (string) get_option( 'blog_public' ) );
+	}
+
+	/**
+	 * Check if sitemaps are enabled for the site.
+	 *
+	 * Defaults to whether the site is public, but can be overridden so that
+	 * sitemaps work on sites where 'blog_public' is not 1, without changing
+	 * the 'blog_public' option itself.
+	 *
+	 * @since 1.6.0
+	 *
+	 * @return bool True if sitemaps are enabled, false otherwise.
+	 */
+	public static function are_sitemaps_enabled(): bool {
+		/**
+		 * Filters whether sitemaps are enabled.
+		 *
+		 * Allows sitemaps to be generated and served on sites that are not
+		 * public (for example, staging environments), or disabled on sites
+		 * that are, without affecting other features that read 'blog_public'.
+		 *
+		 * The robots.txt sitemap lines still depend on 'blog_public'.
+		 *
+		 * @since 1.6.0
+		 *
+		 * @param bool $is_enabled Whether sitemaps are enabled. Default is whether the site is public.
+		 */
+		return (bool) apply_filters( 'msm_sitemap_is_enabled', self::is_public() );
 	}
 
 	/**

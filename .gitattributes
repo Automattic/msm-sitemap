@@ -17,7 +17,8 @@
 /CHANGELOG.md          export-ignore
 /composer.json         export-ignore
 /composer.lock         export-ignore
-/DEVELOPERS.md         export-ignore
+/CONTRIBUTING.md       export-ignore
+/docs/                 export-ignore
 /package.json          export-ignore
 /package-lock.json     export-ignore
 /phpunit.xml.dist      export-ignore

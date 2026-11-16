@@ -1,6 +1,6 @@
 <?php
 /**
- * Metro Sitemap - joint collaboration between Metro.co.uk, MAKE, Alley Interactive, and WordPress VIP.
+ * MSM Sitemap - joint collaboration between Metro.co.uk, MAKE, Alley Interactive, and WordPress VIP.
  *
  * @package           automattic/msm-sitemap
  * @author            Automattic
@@ -8,10 +8,10 @@
  * @license           GPL-2.0-or-later
  *
  * @wordpress-plugin
- * Plugin Name:       Metro Sitemap
+ * Plugin Name:       MSM Sitemap
  * Plugin URI:        https://github.com/Automattic/msm-sitemap
  * Description:       Comprehensive sitemaps for your WordPress site.
- * Version:           1.5.6
+ * Version:           1.6.0
  * Requires at least: 6.4
  * Requires PHP:      7.4
  * Author:            Metro.co.uk, MAKE, Alley Interactive, WordPress VIP.
@@ -53,6 +53,16 @@ class Metro_Sitemap {
 
 	const SITEMAP_CPT = 'msm_sitemap';
 
+	/**
+	 * Most modified posts the cron picks up in one run.
+	 */
+	const MODIFIED_POSTS_PER_RUN = 1000;
+
+	/**
+	 * Days of indexed URL counts shown in the admin stats graph.
+	 */
+	const STATS_NUM_DAYS = 10;
+
 	public static $index_by_year = false;
 
 	/**
@@ -77,6 +87,10 @@ class Metro_Sitemap {
 		// Hook into post deletion/trashing to trigger sitemap updates
 		add_action( 'deleted_post', array( __CLASS__, 'handle_post_deletion' ), 10, 2 );
 		add_action( 'trashed_post', array( __CLASS__, 'handle_post_deletion' ), 10, 1 );
+
+		// Hook into status and date changes, which the modified posts cron does not catch
+		add_action( 'transition_post_status', array( __CLASS__, 'handle_post_status_transition' ), 10, 3 );
+		add_action( 'post_updated', array( __CLASS__, 'handle_post_date_change' ), 10, 3 );
 
 		// By default, we use wp-cron to help generate the full sitemap.
 		// However, this will let us override it, if necessary, like on WP.com
@@ -160,10 +174,10 @@ class Metro_Sitemap {
 	 * @param int $num_days Number of days of stats to retrieve.
 	 * @return array
 	 */
-	public static function get_sitemap_counts_data( $num_days = 10 ) {
+	public static function get_sitemap_counts_data( $num_days = self::STATS_NUM_DAYS ) {
 		return array(
-			'total_indexed_urls'   => number_format( self::get_total_indexed_url_count() ),
-			'total_sitemaps'       => number_format( self::count_sitemaps() ),
+			'total_indexed_urls'   => number_format_i18n( self::get_total_indexed_url_count() ),
+			'total_sitemaps'       => number_format_i18n( self::count_sitemaps() ),
 			'sitemap_indexed_urls' => self::get_recent_sitemap_url_counts( $num_days ),
 		);
 	}
@@ -175,7 +189,7 @@ class Metro_Sitemap {
 			wp_die( __( 'You do not have sufficient permissions to access this page.', 'msm-sitemap' ) );
 		}
 
-		$n = 10;
+		$n = self::STATS_NUM_DAYS;
 		if ( isset( $_REQUEST['num_days'] ) ) {
 			$n = intval( $_REQUEST['num_days'] );
 		}
@@ -320,7 +334,7 @@ class Metro_Sitemap {
 	 *
 	 * Rather than having to modify the plugin code, developers can use this filter to add their custom post statuses.
 	 *
-	 * @since 1.4.3
+	 * @since 1.5.0
 	 */
 	public static function get_post_status(): string {
 		$default_status = 'publish';
@@ -490,11 +504,24 @@ class Metro_Sitemap {
 			'post_name'   => $sitemap_name,
 			'post_title'  => $sitemap_name,
 			'post_type'   => self::SITEMAP_CPT,
-			'post_status' => self::get_post_status(),
+			// Sitemap posts are always published, whatever status the sitemap's posts have,
+			// as the index and daily sitemap lookups only find published sitemap posts.
+			'post_status' => 'publish',
 			'post_date'   => $sitemap_date,
 		);
 
-		$sitemap_id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", self::SITEMAP_CPT, $sitemap_name ) );
+		$sitemap_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", self::SITEMAP_CPT, $sitemap_name ) );
+
+		$per_page = apply_filters( 'msm_sitemap_entry_posts_per_page', self::DEFAULT_POSTS_PER_SITEMAP_PAGE );
+		$post_ids = self::get_post_ids_for_date( $sitemap_date, $per_page );
+
+		if ( empty( $post_ids ) ) {
+			// If no entries - delete the whole sitemap post
+			if ( $sitemap_id ) {
+				self::delete_sitemap_by_id( $sitemap_id );
+			}
+			return;
+		}
 
 		if ( $sitemap_id ) {
 			$sitemap_exists = true;
@@ -503,16 +530,8 @@ class Metro_Sitemap {
 			$sitemap_exists = true;
 		}
 
-		$per_page = apply_filters( 'msm_sitemap_entry_posts_per_page', self::DEFAULT_POSTS_PER_SITEMAP_PAGE );
-		$post_ids = self::get_post_ids_for_date( $sitemap_date, $per_page );
-
-		if ( empty( $post_ids ) ) {
-			// If no entries - delete the whole sitemap post
-			if ( $sitemap_exists ) {
-				self::delete_sitemap_by_id( $sitemap_id );
-			}
-			return;
-		}
+		// Load the posts and their terms (for permalinks) in one go, rather than per post in the loop.
+		_prime_post_caches( $post_ids, true, false );
 
 		$total_url_count = self::get_total_indexed_url_count();
 
@@ -546,11 +565,21 @@ class Metro_Sitemap {
 		// Create XML
 		$xml = new SimpleXMLElement( $namespace_str );
 
-		$url_count = 0;
-		$url_entries = \Automattic\MSM_Sitemap\Infrastructure\Factories\UrlEntryFactory::from_posts( $post_ids );
+		$url_count     = 0;
+		$original_post = $GLOBALS['post'] ?? null;
 
 		// Add URL entries to XML
-		foreach ( $url_entries as $url_entry ) {
+		foreach ( $post_ids as $post_id ) {
+			// Set up the global post, so msm_sitemap_skip_post and msm_sitemap_entry
+			// callbacks can use get_post(), get_the_ID() and other template tags.
+			$GLOBALS['post'] = get_post( $post_id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+			setup_postdata( $GLOBALS['post'] );
+
+			$url_entry = \Automattic\MSM_Sitemap\Infrastructure\Factories\UrlEntryFactory::from_post( (int) $post_id );
+			if ( ! $url_entry ) {
+				continue;
+			}
+
 			$url = $xml->addChild( 'url' );
 			$url->addChild( 'loc', esc_url( $url_entry->loc() ) );
 
@@ -572,6 +601,11 @@ class Metro_Sitemap {
 			// TODO: add images to sitemap via <image:image> tag
 		}
 
+		$GLOBALS['post'] = $original_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		if ( $original_post instanceof WP_Post ) {
+			setup_postdata( $original_post );
+		}
+
 		// If all posts were skipped, remove the sitemap post.
 		if ( 0 === $url_count ) {
 			self::delete_sitemap_by_id( $sitemap_id );
@@ -591,7 +625,13 @@ class Metro_Sitemap {
 
 			// Touch the post to update post_modified timestamp.
 			// This ensures the sitemap index shows when sitemaps were last regenerated.
-			wp_update_post( array( 'ID' => $sitemap_id ) );
+			// Also publish sitemap posts saved with a custom status by earlier versions.
+			wp_update_post(
+				array(
+					'ID'          => $sitemap_id,
+					'post_status' => 'publish',
+				)
+			);
 
 			update_post_meta( $sitemap_id, 'msm_sitemap_xml', $generated_xml_string );
 			update_post_meta( $sitemap_id, 'msm_indexed_url_count', $url_count );
@@ -640,26 +680,62 @@ class Metro_Sitemap {
 	}
 
 	/**
-	 * Register our CPT
+	 * Clear the stored rewrite rules on activation and deactivation.
+	 *
+	 * WordPress rebuilds them on the next request, with or without the
+	 * sitemap rules, so /sitemap.xml works straight away.
+	 *
+	 * @since 1.6.0
+	 */
+	public static function clear_rewrite_rules(): void {
+		delete_option( 'rewrite_rules' );
+	}
+
+	/**
+	 * Register our CPT and its meta.
+	 *
+	 * Sitemap posts and their XML are written only by the plugin (cron and
+	 * WP-CLI, through wp_insert_post() and update_post_meta(), which do not
+	 * check capabilities). The stored XML is served as the site's sitemap, so
+	 * no user may create or edit these posts or their meta: the post type
+	 * gets its own capabilities that no role is granted, and the meta denies
+	 * every write.
 	 */
 	public static function create_post_type() {
 		register_post_type(
 			self::SITEMAP_CPT,
 			array(
-				'labels'       => array(
+				'labels'          => array(
 					'name'          => __( 'Sitemaps', 'msm-sitemap' ),
 					'singular_name' => __( 'Sitemap', 'msm-sitemap' ),
 				),
-				'public'       => false,
-				'has_archive'  => false,
-				'rewrite'      => false,
-				'show_ui'      => true,  // TODO: should probably have some sort of custom UI
-				'show_in_menu' => false, // Since we're manually adding a Sitemaps menu, no need to auto-add one through the CPT.
-				'supports'     => array(
+				'public'          => false,
+				'has_archive'     => false,
+				'rewrite'         => false,
+				'show_ui'         => false,
+				'capability_type' => self::SITEMAP_CPT,
+				'map_meta_cap'    => true,
+				'supports'        => array(
 					'title',
 				),
 			)
 		);
+
+		$meta_types = array(
+			'msm_sitemap_xml'       => 'string',
+			'msm_indexed_url_count' => 'integer',
+		);
+		foreach ( $meta_types as $meta_key => $type ) {
+			register_post_meta(
+				self::SITEMAP_CPT,
+				$meta_key,
+				array(
+					'type'          => $type,
+					'single'        => true,
+					'auth_callback' => '__return_false',
+				)
+			);
+		}
 	}
 
 	/**
@@ -677,11 +753,15 @@ class Metro_Sitemap {
 
 		$post_types_in = self::get_supported_post_types_in();
 
-		$query = $wpdb->prepare( "SELECT ID, post_date FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_status = %s AND post_modified_gmt >= %s LIMIT 1000", self::get_post_status(), $date );
+		// Oldest first, so a run that hits the limit can record where it got up to (see get_next_last_run()).
+		$query = $wpdb->prepare( "SELECT ID, post_date, post_modified_gmt FROM $wpdb->posts WHERE post_type IN ( {$post_types_in} ) AND post_status = %s AND post_modified_gmt >= %s ORDER BY post_modified_gmt ASC LIMIT %d", self::get_post_status(), $date, self::MODIFIED_POSTS_PER_RUN );
 
 		/**
 		 * Filter the query used to get the last modified posts.
 		 * $wpdb->prepare() should be used for security if a new replacement query is created in the callback.
+		 *
+		 * To let the cron carry on from where a run with 1,000 results stopped, select post_modified_gmt
+		 * and order by it, oldest first. Without it, changes beyond the first 1,000 are skipped.
 		 *
 		 * @param string $query         The query to use to get the last modified posts.
 		 * @param string $post_types_in A comma-separated list of post types to include in the query.
@@ -689,9 +769,8 @@ class Metro_Sitemap {
 		 */
 		$query = apply_filters( 'msm_pre_get_last_modified_posts', $query, $post_types_in, $date );
 
-		$modified_posts = $wpdb->get_results( $query );
-
-		return $modified_posts;
+		// An empty query, such as a filter switching this pass off, makes get_results() return null.
+		return $wpdb->get_results( $query ) ?: array();
 	}
 
 	/**
@@ -720,14 +799,16 @@ class Metro_Sitemap {
 		}
 
 		$time                = time();
+		$run_started         = $time;
+		$today               = wp_date( 'Y-m-d' );
 		$last_modified_posts = self::get_last_modified_posts();
 		$dates               = self::get_post_dates( $last_modified_posts );
 
 		foreach ( $dates as $date ) {
 			list( $year, $month, $day ) = explode( '-', $date );
 
-			// Do not allow non-existant or future dates to be queued
-			if ( false === checkdate( $month, $day, $year ) || $time <= mktime( 0, 0, 0, $month, $day, $year ) ) {
+			// Do not queue dates that don't exist or are in the future. Post dates are in the site's timezone, so compare with today there.
+			if ( false === checkdate( $month, $day, $year ) || $date > $today ) {
 				continue;
 			}
 
@@ -735,7 +816,38 @@ class Metro_Sitemap {
 
 			do_action( 'msm_update_sitemap_for_year_month_date', array( $year, $month, $day ), $time );
 		}
-		update_option( 'msm_sitemap_update_last_run', time(), false );
+		update_option( 'msm_sitemap_update_last_run', self::get_next_last_run( $last_modified_posts, $run_started ), false );
+	}
+
+	/**
+	 * Work out the last run time to record, so the next run starts where this one stopped.
+	 *
+	 * @param object[] $posts       The modified posts this run picked up.
+	 * @param int      $run_started When this run started.
+	 * @return int Timestamp.
+	 */
+	private static function get_next_last_run( array $posts, int $run_started ): int {
+		if ( count( $posts ) < self::MODIFIED_POSTS_PER_RUN ) {
+			return $run_started;
+		}
+
+		// Hit the limit, so carry on from the newest change picked up.
+		$latest = 0;
+		foreach ( $posts as $post ) {
+			if ( isset( $post->post_modified_gmt ) ) {
+				$latest = max( $latest, (int) strtotime( $post->post_modified_gmt . ' UTC' ) );
+			}
+		}
+
+		// A filtered query without post_modified_gmt can't be resumed.
+		if ( ! $latest ) {
+			return $run_started;
+		}
+
+		// A full batch modified in a single second would otherwise be picked up again forever.
+		$previous = (int) get_option( 'msm_sitemap_update_last_run' );
+
+		return max( $latest, $previous + 1 );
 	}
 
 	/**
@@ -971,6 +1083,69 @@ class Metro_Sitemap {
 			}
 		}
 
+		self::queue_sitemap_update_for_post( $post );
+	}
+
+	/**
+	 * Handle post status changes to trigger sitemap updates.
+	 *
+	 * The modified posts cron only finds posts that currently have the sitemap
+	 * status, so a post that is unpublished is never removed from its sitemap.
+	 * A scheduled post going live does not change post_modified either, so it
+	 * is never picked up. Queue the post's day whenever it enters or leaves
+	 * the sitemap status.
+	 *
+	 * @param string  $new_status The new post status.
+	 * @param string  $old_status The old post status.
+	 * @param WP_Post $post       The post object.
+	 */
+	public static function handle_post_status_transition( $new_status, $old_status, $post ) {
+		if ( $new_status === $old_status ) {
+			return;
+		}
+
+		$sitemap_status = self::get_post_status();
+		if ( $sitemap_status !== $new_status && $sitemap_status !== $old_status ) {
+			return;
+		}
+
+		self::queue_sitemap_update_for_post( $post );
+	}
+
+	/**
+	 * Handle post date changes to trigger sitemap updates.
+	 *
+	 * When a post in the sitemap is moved to another day, the old day still
+	 * lists it until that day is rebuilt. Queue the old day, and the new day
+	 * if the post is still in the sitemap.
+	 *
+	 * @param int     $post_id     The post ID.
+	 * @param WP_Post $post_after  The post object after the update.
+	 * @param WP_Post $post_before The post object before the update.
+	 */
+	public static function handle_post_date_change( $post_id, $post_after, $post_before ) {
+		$sitemap_status = self::get_post_status();
+		if ( $sitemap_status !== $post_before->post_status ) {
+			return;
+		}
+
+		if ( substr( $post_before->post_date, 0, 10 ) === substr( $post_after->post_date, 0, 10 ) ) {
+			return;
+		}
+
+		self::queue_sitemap_update_for_post( $post_before );
+
+		if ( $sitemap_status === $post_after->post_status ) {
+			self::queue_sitemap_update_for_post( $post_after );
+		}
+	}
+
+	/**
+	 * Queue a sitemap update for the day a post belongs to.
+	 *
+	 * @param WP_Post $post The post object.
+	 */
+	private static function queue_sitemap_update_for_post( $post ) {
 		// Only process supported post types
 		$supported_post_types = self::get_supported_post_types();
 		if ( ! in_array( $post->post_type, $supported_post_types ) ) {
@@ -992,7 +1167,10 @@ class Metro_Sitemap {
 		// self::generate_sitemap_for_date( $post_date );
 
 		// Queue the sitemap update to be processed by the existing cron job
-		do_action( 'msm_update_sitemap_for_year_month_date', array( $year, $month, $day ), current_time( 'timestamp' ) );
+		do_action( 'msm_update_sitemap_for_year_month_date', array( $year, $month, $day ), time() );
 	}
 }
 add_action( 'after_setup_theme', array( 'Metro_Sitemap', 'setup' ) );
+
+register_activation_hook( __FILE__, array( 'Metro_Sitemap', 'clear_rewrite_rules' ) );
+register_deactivation_hook( __FILE__, array( 'Metro_Sitemap', 'clear_rewrite_rules' ) );

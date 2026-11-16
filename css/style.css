@@ -1,7 +1,7 @@
 .stats-container {
 	background: #fff;
 	border: 1px solid #ddd;
-	color: #999;
+	color: #646970;
 	display: inline-block;
 }
 
@@ -47,7 +47,7 @@
 }
 
 #stats-graph-summary {
-	color: #999999;
+	color: #646970;
 	display: none;
 	font-style: italic;
 }
@@ -59,4 +59,7 @@
 	padding: 2px;
 	background-color: #f5f5f5;
 	opacity: 0.80;
+}
+#tooltip .content {
+	display: block;
 }

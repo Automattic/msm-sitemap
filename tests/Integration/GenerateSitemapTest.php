@@ -176,7 +176,7 @@ class GenerateSitemapTest extends TestCase {
 	}
 
 	/**
-	 * Validate that Metro Sitemap CPTs are deleted when all posts are removed for a date.
+	 * Validate that MSM Sitemap CPTs are deleted when all posts are removed for a date.
 	 */
 	public function test_delete_empty_sitemap_removes_cpt_and_updates_count(): void {
 		global $wpdb;

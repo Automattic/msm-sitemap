@@ -5,6 +5,18 @@ jQuery( document ).ready( function() {
 	// The largest value shown on the graph
 	var max = { date: '', count: -1 };
 
+	// Format numbers and dates for the admin's locale (e.g. "en-GB" from <html lang>).
+	var locale = document.documentElement.lang || undefined;
+
+	function format_number( n ) {
+		return Number( n ).toLocaleString( locale );
+	}
+
+	function format_date( ymd ) {
+		// Parse as UTC and display as UTC so the day can't shift with the browser's timezone.
+		return new Date( ymd ).toLocaleDateString( locale, { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' } );
+	}
+
 	// Move the tooltip to body
 	jQuery( '#tooltip' ).appendTo( 'body' );
 	
@@ -30,7 +42,7 @@ jQuery( document ).ready( function() {
 			hoverable: true,
 			autoHighlight: true,
 		},
-		colors: [ '#ececec' ],
+		colors: [ '#2271b1' ],
 
 	};
 
@@ -40,12 +52,12 @@ jQuery( document ).ready( function() {
 			bars: {
 				align: "center",
 				barWidth: 12 * 60 * 60 * 1000,
-				borderColor: '#ececec',
+				borderColor: '#2271b1',
 				fill: true,
-				fillColor: '#ececec',
+				fillColor: '#2271b1',
 				show: true,
 			},
-			highlightColor: '#2EA2CC',
+			highlightColor: '#135e96',
 		}
 	];
 
@@ -100,16 +112,15 @@ jQuery( document ).ready( function() {
 	}
 
 	function update_stats_maximum() {
-		jQuery( '#stats-graph-max' ).html( max.count );
-		jQuery( '#stats-graph-max-date' ).html( max.date );
-		jQuery( '#stats-graph-num-days' ).html( data[0].data.length );
+		jQuery( '#stats-graph-max' ).text( format_number( max.count ) );
+		jQuery( '#stats-graph-max-date' ).text( format_date( max.date ) );
 
 		jQuery( '#stats-graph-summary' ).fadeIn();
 	}
 
 	function show_tooltip( x, y, contents ) {
 		jQuery( '#tooltip' ).stop();
-		jQuery( '#tooltip .content' ).html( contents );
+		jQuery( '#tooltip .content' ).text( contents );
         jQuery( '#tooltip' ).css( {
             top: y + plot_options.grid.margin,
             left: x + plot_options.grid.margin,
@@ -123,17 +134,13 @@ jQuery( document ).ready( function() {
 				previous_point = item.dataIndex;
 
 				// Get and format the data values
-				var x = item.series.xaxis.tickFormatter( item.datapoint[0], item.series.xaxis );
-				var count = item.datapoint[1];
-				var y = item.series.yaxis.tickFormatter( count, item.series.yaxis );
+				var x = format_date( item.series.data[ item.dataIndex ][2] );
+				var label = jQuery( '#tooltip .url-label' );
 
-				show_tooltip( item.pageX, item.pageY, x + ': ' + y );
+				show_tooltip( item.pageX, item.pageY, x );
 
-				// Pluralize the label using data attributes for i18n
-				var label = count === 1
-					? jQuery('#tooltip .url-label').data('singular')
-					: jQuery('#tooltip .url-label').data('plural');
-				jQuery('#tooltip .url-label').text(label);
+				// The label avoids count-dependent wording, so no plural rules are needed.
+				label.text( label.data( 'template' ).replace( '%s', format_number( item.datapoint[1] ) ) );
 			}
 		} else {
 			jQuery( '#tooltip' ).stop();

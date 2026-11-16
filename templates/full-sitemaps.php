@@ -2,7 +2,7 @@
 
 use Automattic\MSM_Sitemap\Site;
 
-if ( ! Site::is_public() ) {
+if ( ! Site::are_sitemaps_enabled() ) {
 	wp_die(
 		__( 'Sorry, this site is not public so sitemaps are not available.', 'msm-sitemap' ),
 		__( 'Sitemap Not Available', 'msm-sitemap' ),

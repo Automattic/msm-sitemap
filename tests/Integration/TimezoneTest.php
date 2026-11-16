@@ -268,43 +268,28 @@ class TimezoneTest extends TestCase {
 	}
 
 	/**
-	 * Test that update_sitemap_from_modified_posts uses local timezone
+	 * Test that edits to a post dated today in the site's timezone are queued, even before that date starts in UTC.
+	 *
+	 * Kiritimati is UTC+14, so its date is ahead of UTC's from 10:00 to 24:00 UTC. A comparison made in UTC
+	 * treats today's posts as future-dated during that window, so this test can only catch it then.
 	 */
-	public function test_update_sitemap_from_modified_posts_uses_local_timezone(): void {
-		// Set timezone to Sydney (+11)
-		update_option( 'timezone_string', 'Australia/Sydney' );
-		wp_cache_flush();
+	public function test_update_sitemap_from_modified_posts_queues_todays_local_date(): void {
+		update_option( 'timezone_string', 'Pacific/Kiritimati' );
+		update_option( 'msm_sitemap_update_last_run', time() - 60, false );
+		$this->create_dummy_post( wp_date( 'Y-m-d H:i:s', time() - 30 ) );
 
-		// Create a post with current time
-		$current_time = current_datetime()->getTimestamp();
-		$post_date = wp_date( 'Y-m-d H:i:s', $current_time );
-		
-		$post_id = $this->create_dummy_post( $post_date );
-		
-		// Update the post to trigger post_modified update
-		wp_update_post( array(
-			'ID' => $post_id,
-			'post_title' => 'Updated Title',
-		) );
+		$queued_days = array();
+		add_filter(
+			'msm_update_sitemap_for_year_month_date',
+			static function ( $date ) use ( &$queued_days ) {
+				$queued_days[] = vsprintf( '%04d-%02d-%02d', $date );
+				return $date;
+			}
+		);
 
-		// Get today's date in Sydney timezone
-		$sydney_date = wp_date( 'Y-m-d' );
-		
-		// Update sitemap from modified posts (this schedules cron events)
 		Metro_Sitemap::update_sitemap_from_modified_posts();
-		
-		// Manually trigger the sitemap generation for today's date
-		Metro_Sitemap::generate_sitemap_for_date( $sydney_date );
-		
-		// Check that sitemap was created for today's date
-		list( $year, $month, $day ) = explode( '-', $sydney_date );
-		$sitemap_id = Metro_Sitemap::get_sitemap_post_id( $year, $month, $day );
-		
-		$this->assertNotFalse( $sitemap_id, 'Sitemap should be created for today in Sydney timezone' );
-		
-		// Verify the sitemap contains our post
-		$sitemap_content = get_post_meta( $sitemap_id, 'msm_sitemap_xml', true );
-		$this->assertStringContainsString( get_permalink( $post_id ), $sitemap_content );
+
+		$this->assertSame( array( wp_date( 'Y-m-d' ) ), $queued_days );
 	}
 
 	/**
@@ -315,12 +300,10 @@ class TimezoneTest extends TestCase {
 		update_option( 'timezone_string', 'Australia/Sydney' );
 		wp_cache_flush();
 
-		// Clear any existing cron jobs
+		// Start with cron disabled and nothing scheduled.
+		delete_option( Cron_Service::CRON_ENABLED_OPTION );
 		wp_clear_scheduled_hook( 'msm_cron_update_sitemap' );
-		
-		// Remove the filter that forces cron enabled so we can actually enable it
-		remove_filter( 'msm_sitemap_cron_enabled', '__return_true' );
-		
+
 		// Initialize cron
 		Cron_Service::enable_cron();
 		

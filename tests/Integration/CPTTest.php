@@ -78,7 +78,7 @@ class CPTTest extends TestCase {
 	 * filter applied
 	 */
 	public function test_cpt_included_by_filter(): void {
-		$this->add_test_filter( 'msm_sitemap_entry_post_type', array( $this, 'add_cpt_to_msm_sitemap' ) );
+		add_filter( 'msm_sitemap_entry_post_type', array( $this, 'add_cpt_to_msm_sitemap' ) );
 
 		$this->build_sitemaps();
 

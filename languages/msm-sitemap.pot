@@ -2,21 +2,21 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Metro Sitemap 1.5.6\n"
+"Project-Id-Version: MSM Sitemap 1.6.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/msm-sitemap\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-05-19T18:53:11+00:00\n"
+"POT-Creation-Date: 2026-11-16T00:48:04+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: msm-sitemap\n"
 
 #. Plugin Name of the plugin
 #: msm-sitemap.php
-msgid "Metro Sitemap"
+msgid "MSM Sitemap"
 msgstr ""
 
 #. Plugin URI of the plugin
@@ -89,11 +89,11 @@ msgstr ""
 #. translators: 1: post type, 2: WP-CLI command
 #: includes/Admin/ActionHandlers.php:112
 #, php-format
-msgid "Sitemap data reset. If you want to completely remove the data you must do so manually by deleting all posts with post type <code>%1$s</code>. The WP-CLI command to do this is: <code>%2$s</code>."
+msgid "Sitemap data reset. To also delete the sitemap posts (post type <code>%1$s</code>), run this WP-CLI command: <code>%2$s</code>."
 msgstr ""
 
 #: includes/Admin/UI.php:23
-#: msm-sitemap.php:175
+#: msm-sitemap.php:189
 msgid "You do not have sufficient permissions to access this page."
 msgstr ""
 
@@ -101,101 +101,122 @@ msgstr ""
 msgid "View XML Sitemap Index"
 msgstr ""
 
-#: includes/Admin/UI.php:55
-msgid "indexed URL"
+#: includes/Admin/UI.php:43
+msgid "(opens in a new tab)"
 msgstr ""
 
-#: includes/Admin/UI.php:56
+#. translators: %s: Number of indexed URLs. Keep the %s placeholder as-is; it is replaced in JavaScript.
 #: includes/Admin/UI.php:57
-msgid "indexed URLs"
+#, php-format
+msgid "Indexed URLs: %s"
 msgstr ""
 
-#: includes/Admin/UI.php:104
-msgid "Oops! Sitemaps are not supported on private sites. Please make your site is public and try again."
-msgstr ""
-
-#: includes/Admin/UI.php:116
-#: msm-sitemap.php:650
-msgid "Sitemaps"
+#: includes/Admin/UI.php:105
+msgid "Oops! Sitemaps are not supported on private sites. Please make your site public and try again."
 msgstr ""
 
 #: includes/Admin/UI.php:117
+#: msm-sitemap.php:709
+msgid "Sitemaps"
+msgstr ""
+
+#: includes/Admin/UI.php:118
 msgid "Indexed URLs"
 msgstr ""
 
-#: includes/Admin/UI.php:118
-msgid "Updated"
+#. translators: %s: How long ago the sitemaps were updated, for example "5 mins ago".
+#: includes/Admin/UI.php:123
+#, php-format
+msgid "Updated %s"
 msgstr ""
 
-#: includes/Admin/UI.php:118
-msgid "ago"
+#. translators: %s: Human-readable time difference, for example "5 mins".
+#: includes/Admin/UI.php:127
+#, php-format
+msgid "%s ago"
 msgstr ""
 
-#: includes/Admin/UI.php:128
+#: includes/Admin/UI.php:143
 msgid "Latest Sitemaps"
 msgstr ""
 
-#. translators: 1: max number of indexed URLs, 2: date of max indexed URLs, 3: number of days to show
-#: includes/Admin/UI.php:134
+#. translators: 1: Highest number of indexed URLs in a day, 2: Date of that day.
+#: includes/Admin/UI.php:149
 #, php-format
-msgid "Max: %1$s on %2$s. Showing the last %3$s days."
+msgid "Max: %1$s on %2$s."
 msgstr ""
 
-#: includes/Admin/UI.php:152
+#. translators: %s: Number of days shown in the graph.
+#: includes/Admin/UI.php:157
+#, php-format
+msgid "Showing the last %s day."
+msgid_plural "Showing the last %s days."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/Admin/UI.php:174
 msgid "Cron Management"
 msgstr ""
 
-#: includes/Admin/UI.php:153
+#: includes/Admin/UI.php:175
 msgid "Automatic Sitemap Updates:"
 msgstr ""
 
-#: includes/Admin/UI.php:157
+#: includes/Admin/UI.php:177
+msgid "Enabled"
+msgstr ""
+
+#: includes/Admin/UI.php:179
+msgid "Disabled"
+msgstr ""
+
+#: includes/Admin/UI.php:183
 msgid "Next Update:"
 msgstr ""
 
-#: includes/Admin/UI.php:163
+#: includes/Admin/UI.php:189
 msgid "Enable Automatic Updates"
 msgstr ""
 
-#: includes/Admin/UI.php:165
+#: includes/Admin/UI.php:191
 msgid "Disable Automatic Updates"
 msgstr ""
 
-#: includes/Admin/UI.php:185
+#: includes/Admin/UI.php:211
 msgid "Running"
 msgstr ""
 
-#: includes/Admin/UI.php:185
+#: includes/Admin/UI.php:211
 msgid "Not Running"
 msgstr ""
 
-#: includes/Admin/UI.php:192
+#: includes/Admin/UI.php:218
 msgid "Generate"
 msgstr ""
 
-#: includes/Admin/UI.php:193
+#: includes/Admin/UI.php:219
 msgid "Sitemap Creation Status:"
 msgstr ""
 
-#: includes/Admin/UI.php:196
-#: includes/Admin/UI.php:199
+#: includes/Admin/UI.php:222
+#: includes/Admin/UI.php:225
 msgid "Generate from all articles"
 msgstr ""
 
-#: includes/Admin/UI.php:197
-#: includes/Admin/UI.php:200
+#: includes/Admin/UI.php:223
+#: includes/Admin/UI.php:226
 msgid "Generate from recently modified posts"
 msgstr ""
 
-#: includes/Admin/UI.php:204
+#: includes/Admin/UI.php:230
 msgid "Halt Sitemap Generation"
 msgstr ""
 
-#: includes/Admin/UI.php:208
+#: includes/Admin/UI.php:234
 msgid "Reset Sitemap Data"
 msgstr ""
 
-#: includes/Admin/UI.php:224
+#: includes/Admin/UI.php:250
 msgid "Note: Automatic updates must be enabled to use the generate functions."
 msgstr ""
 
@@ -305,7 +326,7 @@ msgstr ""
 msgid "All collections must be SitemapIndexCollection instances."
 msgstr ""
 
-#: includes/msm-sitemap-builder-cron.php:47
+#: includes/msm-sitemap-builder-cron.php:48
 msgid "Halting"
 msgstr ""
 
@@ -315,7 +336,7 @@ msgid "XML Sitemap"
 msgstr ""
 
 #: includes/StylesheetManager.php:128
-msgid "This XML Sitemap is generated by Metro Sitemap to make your content more visible for search engines."
+msgid "This XML Sitemap is generated by MSM Sitemap to make your content more visible for search engines."
 msgstr ""
 
 #: includes/StylesheetManager.php:131
@@ -354,77 +375,89 @@ msgid "Priority"
 msgstr ""
 
 #: includes/StylesheetManager.php:244
-msgid "This XML Sitemap Index is generated by Metro Sitemap to make your content more visible for search engines."
+msgid "This XML Sitemap Index is generated by MSM Sitemap to make your content more visible for search engines."
 msgstr ""
 
 #. translators: %d is the number of sitemaps generated.
-#: includes/wp-cli.php:158
+#: includes/wp-cli.php:179
 #, php-format
 msgid "Generated %d sitemap."
 msgid_plural "Generated %d sitemaps."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/wp-cli.php:232
+#: includes/wp-cli.php:253
 msgid "You must specify either --date or --all to delete sitemaps."
 msgstr ""
 
+#: includes/wp-cli.php:261
+msgid "Are you sure you want to delete ALL sitemaps?"
+msgstr ""
+
+#. translators: %d: Number of sitemaps to delete.
+#: includes/wp-cli.php:290
+#, php-format
+msgid "Are you sure you want to delete %d sitemap for the specified date?"
+msgid_plural "Are you sure you want to delete %d sitemaps for the specified date?"
+msgstr[0] ""
+msgstr[1] ""
+
 #. translators: %d is the number of sitemaps deleted.
-#: includes/wp-cli.php:277
+#: includes/wp-cli.php:307
 #, php-format
 msgid "Deleted %d sitemap."
 msgid_plural "Deleted %d sitemaps."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/wp-cli.php:279
+#: includes/wp-cli.php:309
 msgid "No sitemaps found to delete."
 msgstr ""
 
-#: includes/wp-cli.php:322
+#: includes/wp-cli.php:352
 msgid "No sitemaps found."
 msgstr ""
 
-#: includes/wp-cli.php:381
+#: includes/wp-cli.php:412
 msgid "No ID or date provided."
 msgstr ""
 
-#: includes/wp-cli.php:389
+#: includes/wp-cli.php:420
 msgid "Sitemap not found for that ID."
 msgstr ""
 
-#: includes/wp-cli.php:412
+#: includes/wp-cli.php:443
 msgid "No sitemaps found for that date."
 msgstr ""
 
-#: includes/wp-cli.php:415
+#: includes/wp-cli.php:446
 msgid "Multiple sitemaps found for that date. Showing all."
 msgstr ""
 
-#: includes/wp-cli.php:467
+#: includes/wp-cli.php:499
 msgid "No sitemaps found to validate."
 msgstr ""
 
 #. translators: %d is the sitemap ID.
-#: includes/wp-cli.php:476
+#: includes/wp-cli.php:509
 #, php-format
 msgid "Sitemap %d has no XML."
 msgstr ""
 
 #. translators: %d is the sitemap ID.
-#: includes/wp-cli.php:484
+#: includes/wp-cli.php:517
 #, php-format
 msgid "Sitemap %d has invalid XML."
 msgstr ""
 
 #. translators: %d is the sitemap ID.
-#: includes/wp-cli.php:490
+#: includes/wp-cli.php:523
 #, php-format
 msgid "Sitemap %d has no <url> entries."
 msgstr ""
 
 #. translators: %d is the number of valid sitemaps.
-#: includes/wp-cli.php:497
+#: includes/wp-cli.php:530
 #, php-format
 msgid "%d valid sitemap."
 msgid_plural "%d valid sitemaps."
@@ -432,35 +465,35 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %d is the number of invalid sitemaps.
-#: includes/wp-cli.php:500
+#: includes/wp-cli.php:533
 #, php-format
 msgid "%d invalid sitemap."
 msgid_plural "%d invalid sitemaps."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/wp-cli.php:527
+#: includes/wp-cli.php:560
 msgid "You must specify an output directory with --output. Example: --output=/path/to/dir"
 msgstr ""
 
 #. translators: %s is the path to the export directory.
-#: includes/wp-cli.php:537
+#: includes/wp-cli.php:570
 #, php-format
 msgid "Failed to create export directory: %s"
 msgstr ""
 
-#: includes/wp-cli.php:555
+#: includes/wp-cli.php:588
 msgid "No sitemaps found to export."
 msgstr ""
 
 #. translators: %s is the path to the exported sitemap.
-#: includes/wp-cli.php:576
+#: includes/wp-cli.php:610
 #, php-format
 msgid "Failed to write file: %s"
 msgstr ""
 
 #. translators: %1$d is the number of sitemaps exported, %2$s is the path to the exported sitemaps.
-#: includes/wp-cli.php:586
+#: includes/wp-cli.php:620
 #, php-format
 msgid "Exported %1$d sitemap to %2$s."
 msgid_plural "Exported %1$d sitemaps to %2$s."
@@ -468,108 +501,108 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s is the path to the exported sitemaps.
-#: includes/wp-cli.php:591
+#: includes/wp-cli.php:625
 #, php-format
 msgid "To view the files, run: open %s"
 msgstr ""
 
 #. translators: %s is the path to the exported sitemaps.
-#: includes/wp-cli.php:594
+#: includes/wp-cli.php:628
 #, php-format
 msgid "To view the files, run: start %s"
 msgstr ""
 
 #. translators: %s is the path to the exported sitemaps.
-#: includes/wp-cli.php:597
+#: includes/wp-cli.php:631
 #, php-format
 msgid "To view the files, run: xdg-open %s"
 msgstr ""
 
-#: includes/wp-cli.php:600
+#: includes/wp-cli.php:634
 msgid "No sitemaps were exported."
 msgstr ""
 
 #. translators: %s is the total number of URLs found.
-#: includes/wp-cli.php:642
+#: includes/wp-cli.php:677
 #, php-format
 msgid "Total URLs found: %s"
 msgstr ""
 
 #. translators: %s is the total number of sitemaps found.
-#: includes/wp-cli.php:644
+#: includes/wp-cli.php:679
 #, php-format
 msgid "Number of sitemaps found: %s"
 msgstr ""
 
 #. translators: %s: The unknown subcommand name.
-#: includes/wp-cli.php:748
+#: includes/wp-cli.php:784
 #, php-format
 msgid "Unknown subcommand: %s"
 msgstr ""
 
-#: includes/wp-cli.php:759
+#: includes/wp-cli.php:795
 msgid "❌ Cannot enable cron: blog is not public."
 msgstr ""
 
-#: includes/wp-cli.php:764
+#: includes/wp-cli.php:800
 msgid "✅ Sitemap cron enabled successfully."
 msgstr ""
 
-#: includes/wp-cli.php:766
+#: includes/wp-cli.php:802
 msgid "⚠️ Cron is already enabled."
 msgstr ""
 
-#: includes/wp-cli.php:776
+#: includes/wp-cli.php:812
 msgid "✅ Sitemap cron disabled successfully."
 msgstr ""
 
-#: includes/wp-cli.php:781
+#: includes/wp-cli.php:817
 msgid "⚠️ Warning: Cron event still scheduled. This may be a WordPress cron system delay."
 msgstr ""
 
-#: includes/wp-cli.php:783
+#: includes/wp-cli.php:819
 msgid "✅ Cron events cleared successfully."
 msgstr ""
 
-#: includes/wp-cli.php:786
+#: includes/wp-cli.php:822
 msgid "⚠️ Cron is already disabled."
 msgstr ""
 
-#: includes/wp-cli.php:818
+#: includes/wp-cli.php:854
 msgid "✅ Sitemap cron reset to clean state."
 msgstr ""
 
-#: includes/wp-cli.php:819
+#: includes/wp-cli.php:855
 msgid "📝 This simulates a fresh install state."
 msgstr ""
 
-#: includes/wp-cli.php:821
+#: includes/wp-cli.php:857
 msgid "❌ Failed to reset sitemap cron."
 msgstr ""
 
-#: includes/wp-cli.php:971
+#: includes/wp-cli.php:1007
 msgid "Invalid date. Please provide a real calendar date (e.g., 2024-02-29)."
 msgstr ""
 
-#: includes/wp-cli.php:984
+#: includes/wp-cli.php:1020
 msgid "Invalid month. Please specify a month between 1 and 12."
 msgstr ""
 
-#: includes/wp-cli.php:987
-#: includes/wp-cli.php:998
+#: includes/wp-cli.php:1023
+#: includes/wp-cli.php:1034
 msgid "Invalid year. Please specify a year between 1970 and the current year."
 msgstr ""
 
-#: includes/wp-cli.php:1002
+#: includes/wp-cli.php:1038
 msgid "Invalid date format. Use YYYY, YYYY-MM, or YYYY-MM-DD."
 msgstr ""
 
-#: msm-sitemap.php:103
+#: msm-sitemap.php:117
 msgid "Every 15 minutes"
 msgstr ""
 
-#: msm-sitemap.php:144
-#: msm-sitemap.php:651
+#: msm-sitemap.php:158
+#: msm-sitemap.php:710
 msgid "Sitemap"
 msgstr ""
 
