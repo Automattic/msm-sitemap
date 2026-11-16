@@ -1,8 +1,55 @@
-# Changelog for Metro Sitemap
+# Changelog for MSM Sitemap
 
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.6.0] - 2026-11-16
+
+Sitemaps now stay up to date when posts are unpublished, scheduled posts go live or posts move to another date, and they can be served on sites that aren't public. This release also fixes many problems with sitemap generation, WP-CLI and the Tools → Sitemap screen. The minimum WordPress and PHP versions are unchanged.
+
+**If your site uses the `msm_sitemap_post_status` filter, run `wp msm-sitemap generate --all` and then `wp msm-sitemap recount` after upgrading.** From 1.5.0 to 1.5.6, daily sitemaps on those sites returned a 404 and, from 1.5.5, the index was empty too.
+
+### Added
+
+* Add the `msm_sitemap_is_enabled` filter, to generate and serve sitemaps on a site where `blog_public` isn't `1`, such as a staging site or a WordPress VIP site with `VIP_JETPACK_IS_PRIVATE` set, without overriding `blog_public` itself. It covers the admin screen, serving, generation and enabling the cron. The `Sitemap:` lines in robots.txt still only appear on a public site by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/339
+* GitHub releases now include an installable ZIP. Unlike GitHub's source archive, it includes the Flot library the Tools → Sitemap chart needs by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/366
+
+### Changed
+
+* The plugin is called MSM Sitemap again, rather than Metro Sitemap, on the Plugins screen and in the sitemap stylesheets. Class names and hooks are unchanged by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/353
+
+### Fixed
+
+* Rebuild a day's sitemap when a post on it is unpublished, a scheduled post goes live, or a published post moves to another date. Rebuilds after a post is deleted or trashed are now also scheduled at the right time, rather than hours early or late on sites outside UTC by @faisalahammad in https://github.com/Automattic/msm-sitemap/pull/328
+* `msm_sitemap_skip_post` and `msm_sitemap_entry` callbacks can use `get_post()`, `get_the_ID()` and other template tags again, as they could up to 1.5.3. Since 1.5.4 they saw no post, so a skip callback written that way skipped nothing. As before 1.5.4, `the_post` fires for each URL during generation by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/341
+* Fix sitemaps on sites that use the `msm_sitemap_post_status` filter: sitemap posts are published again, whatever status the content uses (see the upgrade note above) by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/350
+* The update cron no longer drops changes when more than 1,000 posts change between runs; it carries on from where it stopped on the next run. A site with more than 1,000 edits every 15 minutes, sustained, now falls behind rather than losing them, and Tools → Sitemap shows an older "Updated" time while it catches up by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/348
+* The update cron picks up edits made early in the day on sites ahead of UTC, which it used to treat as future-dated and miss by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/357
+* The update cron no longer fails on every run when a `msm_pre_get_last_modified_posts` callback empties its query by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/361
+* Updates to single days no longer skip or repeat days of a full sitemap generation that is running by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/345
+* A full generation whose next step is lost, for example because a large day runs out of memory, now resumes on its own within about half an hour, and a halt requested meanwhile completes. Previously it showed as running until automatic updates were disabled and enabled again by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/363
+* After a generation was halted, `wp msm-sitemap generate` for a year, month or day no longer stops straight away on every later run by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/358
+* Don't schedule sitemap rebuilds while the plugin's cron is off, as they did nothing when they ran. Changes made while the cron is off still need `wp msm-sitemap generate --all` (or "Generate from all articles") to catch up once it's on by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/362
+* A priority or change frequency of the wrong type from `msm_sitemap_priority` or `msm_sitemap_changefreq` now leaves that post out and is logged, rather than stopping the whole day's sitemap. A numeric string priority, such as `'0.8'`, is accepted by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/356
+* Generating a day's sitemap runs far fewer database queries, and a day with no posts no longer creates and then deletes a sitemap post by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/346
+* Long WP-CLI runs of `generate`, `recount`, `validate`, `export`, `list` and `get` no longer run out of memory by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/347
+* `wp msm-sitemap delete` now keeps the URL total right and fires `msm_delete_sitemap_post`, so cache purges run by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/352
+* `/sitemap.xml` works straight after activating the plugin, without saving Settings → Permalinks first by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/351
+* The buttons on Tools → Sitemap work when the admin is translated by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/349
+* Tools → Sitemap meets WCAG 2.2 AA color contrast, and screen readers announce it correctly by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/344
+* Strings on Tools → Sitemap and in WP-CLI translate properly, numbers and dates follow the admin's locale, and "Next Update" shows the site's time rather than the server's by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/365
+
+### Security
+
+* Only the plugin can now create, edit or delete sitemap posts and their stored XML, which is what the site serves as its sitemap. Previously any user who could edit posts could change them through the post editor, quick and bulk edit, admin-ajax or XML-RPC. The `msm_sitemap` post type no longer appears in the admin; use `wp msm-sitemap list`, `get` and `delete` instead by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/360
+
+### Maintenance
+
+* Test on PHP 8.4 and 8.5, and mark as tested up to WordPress 7.1 by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/340
+* Run CI on Node 24, run the integration tests when npm dependencies change, fix local code coverage runs, and make the tests check what the 1.6.0 changes do by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/326, https://github.com/Automattic/msm-sitemap/pull/333, https://github.com/Automattic/msm-sitemap/pull/359, https://github.com/Automattic/msm-sitemap/pull/355, and https://github.com/Automattic/msm-sitemap/pull/364
+* Move the developer guide into `docs/` and correct it, and add a contributing guide and a security policy by @GaryJones in https://github.com/Automattic/msm-sitemap/pull/354, https://github.com/Automattic/msm-sitemap/pull/325, https://github.com/Automattic/msm-sitemap/pull/323, and https://github.com/Automattic/msm-sitemap/pull/324
+* Update development dependencies by @dependabot
 
 ## [1.5.6] - 2026-05-19
 
@@ -236,6 +283,7 @@ Initial release.
 
 * Enable stable Composer installations from origin.
 
+[1.6.0]: https://github.com/automattic/msm-sitemap/compare/1.5.6...1.6.0
 [1.5.6]: https://github.com/automattic/msm-sitemap/compare/1.5.5...1.5.6
 [1.5.5]: https://github.com/automattic/msm-sitemap/compare/1.5.4...1.5.5
 [1.5.4]: https://github.com/automattic/msm-sitemap/compare/1.5.3...1.5.4

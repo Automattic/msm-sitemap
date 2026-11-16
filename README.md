@@ -1,6 +1,6 @@
 # MSM Sitemap
 
-Stable tag: 1.5.6  
+Stable tag: 1.6.0  
 Requires at least: 6.4  
 Tested up to: 7.1  
 Requires PHP: 7.4  
