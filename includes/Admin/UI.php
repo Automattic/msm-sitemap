@@ -53,9 +53,9 @@ class UI {
 		<div id="tooltip">
 			<strong class="content"></strong>
 			<span class="url-label"
-				data-singular="<?php esc_attr_e( 'indexed URL', 'msm-sitemap' ); ?>"
-				data-plural="<?php esc_attr_e( 'indexed URLs', 'msm-sitemap' ); ?>"
-			><?php esc_html_e( 'indexed URLs', 'msm-sitemap' ); ?></span>
+				<?php /* translators: %s: Number of indexed URLs. Keep the %s placeholder as-is; it is replaced in JavaScript. */ ?>
+				data-template="<?php esc_attr_e( 'Indexed URLs: %s', 'msm-sitemap' ); ?>"
+			></span>
 		</div>
 		<?php
 	}
@@ -114,9 +114,23 @@ class UI {
 		$sitemap_update_last_run = get_option( 'msm_sitemap_update_last_run' );
 		?>
 		<div class="stats-container">
-			<div class="stats-box"><strong id="sitemap-count"><?php echo number_format( \Metro_Sitemap::count_sitemaps() ); ?></strong><?php esc_html_e( 'Sitemaps', 'msm-sitemap' ); ?></div>
-			<div class="stats-box"><strong id="sitemap-indexed-url-count"><?php echo number_format( \Metro_Sitemap::get_total_indexed_url_count() ); ?></strong><?php esc_html_e( 'Indexed URLs', 'msm-sitemap' ); ?></div>
-			<div class="stats-footer"><span><span class="noticon noticon-time" aria-hidden="true"></span><?php esc_html_e( 'Updated', 'msm-sitemap' ); ?> <strong><?php echo human_time_diff( $sitemap_update_last_run ); ?> <?php esc_html_e( 'ago', 'msm-sitemap' ); ?></strong></span></div>
+			<div class="stats-box"><strong id="sitemap-count"><?php echo esc_html( number_format_i18n( \Metro_Sitemap::count_sitemaps() ) ); ?></strong><?php esc_html_e( 'Sitemaps', 'msm-sitemap' ); ?></div>
+			<div class="stats-box"><strong id="sitemap-indexed-url-count"><?php echo esc_html( number_format_i18n( \Metro_Sitemap::get_total_indexed_url_count() ) ); ?></strong><?php esc_html_e( 'Indexed URLs', 'msm-sitemap' ); ?></div>
+			<div class="stats-footer"><span><span class="noticon noticon-time" aria-hidden="true"></span>
+			<?php
+			printf(
+				/* translators: %s: How long ago the sitemaps were updated, for example "5 mins ago". */
+				esc_html__( 'Updated %s', 'msm-sitemap' ),
+				'<strong>' . esc_html(
+					sprintf(
+						/* translators: %s: Human-readable time difference, for example "5 mins". */
+						__( '%s ago', 'msm-sitemap' ),
+						human_time_diff( (int) $sitemap_update_last_run )
+					)
+				) . '</strong>'
+			);
+			?>
+			</span></div>
 		</div>
 		<?php
 	}
@@ -131,11 +145,18 @@ class UI {
 		<div id="stats-graph-summary">
 		<?php
 		printf(
-			/* translators: 1: max number of indexed URLs, 2: date of max indexed URLs, 3: number of days to show */
-			__( 'Max: %1$s on %2$s. Showing the last %3$s days.', 'msm-sitemap' ),
+			/* translators: 1: Highest number of indexed URLs in a day, 2: Date of that day. */
+			esc_html__( 'Max: %1$s on %2$s.', 'msm-sitemap' ),
 			'<span id="stats-graph-max"></span>',
-			'<span id="stats-graph-max-date"></span>',
-			'<span id="stats-graph-num-days"></span>',
+			'<span id="stats-graph-max-date"></span>'
+		);
+		echo ' ';
+		echo esc_html(
+			sprintf(
+				/* translators: %s: Number of days shown in the graph. */
+				_n( 'Showing the last %s day.', 'Showing the last %s days.', \Metro_Sitemap::STATS_NUM_DAYS, 'msm-sitemap' ),
+				number_format_i18n( \Metro_Sitemap::STATS_NUM_DAYS )
+			)
 		);
 		?>
 		</div>
@@ -159,7 +180,7 @@ class UI {
 			<?php endif; ?>
 		</p>
 		<?php if ( $next_scheduled ) : ?>
-			<p><strong><?php esc_html_e( 'Next Update:', 'msm-sitemap' ); ?></strong> <?php echo esc_html( date( 'Y-m-d H:i:s T', $next_scheduled ) ); ?></p>
+			<p><strong><?php esc_html_e( 'Next Update:', 'msm-sitemap' ); ?></strong> <?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $next_scheduled ) ); ?></p>
 		<?php endif; ?>
 		
 		<form action="<?php echo menu_page_url( 'metro-sitemap', false ); ?>" method="post" style="margin-bottom: 20px;">

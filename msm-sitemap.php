@@ -58,6 +58,11 @@ class Metro_Sitemap {
 	 */
 	const MODIFIED_POSTS_PER_RUN = 1000;
 
+	/**
+	 * Days of indexed URL counts shown in the admin stats graph.
+	 */
+	const STATS_NUM_DAYS = 10;
+
 	public static $index_by_year = false;
 
 	/**
@@ -169,10 +174,10 @@ class Metro_Sitemap {
 	 * @param int $num_days Number of days of stats to retrieve.
 	 * @return array
 	 */
-	public static function get_sitemap_counts_data( $num_days = 10 ) {
+	public static function get_sitemap_counts_data( $num_days = self::STATS_NUM_DAYS ) {
 		return array(
-			'total_indexed_urls'   => number_format( self::get_total_indexed_url_count() ),
-			'total_sitemaps'       => number_format( self::count_sitemaps() ),
+			'total_indexed_urls'   => number_format_i18n( self::get_total_indexed_url_count() ),
+			'total_sitemaps'       => number_format_i18n( self::count_sitemaps() ),
 			'sitemap_indexed_urls' => self::get_recent_sitemap_url_counts( $num_days ),
 		);
 	}
@@ -184,7 +189,7 @@ class Metro_Sitemap {
 			wp_die( __( 'You do not have sufficient permissions to access this page.', 'msm-sitemap' ) );
 		}
 
-		$n = 10;
+		$n = self::STATS_NUM_DAYS;
 		if ( isset( $_REQUEST['num_days'] ) ) {
 			$n = intval( $_REQUEST['num_days'] );
 		}
