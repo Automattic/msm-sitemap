@@ -125,4 +125,17 @@ class ModifiedPostsBatchTest extends TestCase {
 		$this->assertGreaterThanOrEqual( $before, $last_run );
 		$this->assertLessThanOrEqual( time(), $last_run );
 	}
+
+	/**
+	 * A filter that empties the modified posts query switches the pass off without a fatal error.
+	 */
+	public function test_empty_query_from_filter_does_not_break_the_run(): void {
+		add_filter( 'msm_pre_get_last_modified_posts', '__return_empty_string' );
+
+		$before = time();
+		Metro_Sitemap::update_sitemap_from_modified_posts();
+
+		$this->assertSame( array(), $this->queued_days );
+		$this->assertGreaterThanOrEqual( $before, (int) get_option( 'msm_sitemap_update_last_run' ) );
+	}
 }
