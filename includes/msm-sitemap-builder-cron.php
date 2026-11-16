@@ -27,6 +27,7 @@ class MSM_Sitemap_Builder_Cron {
 		add_action( 'msm_cron_generate_sitemap_for_year', array( __CLASS__, 'generate_sitemap_for_year' ) );
 		add_action( 'msm_cron_generate_sitemap_for_year_month', array( __CLASS__, 'generate_sitemap_for_year_month' ) );
 		add_action( 'msm_cron_generate_sitemap_for_year_month_day', array( __CLASS__, 'generate_sitemap_for_year_month_day' ) );
+		add_action( 'msm_cron_update_sitemap', array( __CLASS__, 'resume_stalled_generation' ) );
 
 		if ( is_admin() ) {
 			add_filter( 'msm_sitemap_create_status', array( __CLASS__, 'sitemap_create_status' ) );
@@ -102,6 +103,7 @@ class MSM_Sitemap_Builder_Cron {
 		delete_option( 'msm_years_to_process' );
 		delete_option( 'msm_stop_processing' );
 		delete_option( 'msm_sitemap_create_in_progress' );
+		delete_option( 'msm_generation_stall_check' );
 
 		// Delete stats options
 		delete_option( 'msm_sitemap_indexed_url_count' );
@@ -294,6 +296,59 @@ class MSM_Sitemap_Builder_Cron {
 		if ( self::is_next_day_to_process( $year, $month, $day ) ) {
 			self::find_next_day_to_process( $year, $month, $day );
 		}
+	}
+
+	/**
+	 * Restart a full generation whose next event has gone missing.
+	 *
+	 * The queue only moves on when the event for the step it is waiting on runs. If that event is lost,
+	 * for example because a large day ran out of memory or timed out, the generation would otherwise
+	 * show as running for good, and a halt would never complete. This runs with the 15-minute update
+	 * cron, and only reschedules a step that two runs in a row have found missing, so a step that is
+	 * still being generated isn't run twice.
+	 */
+	public static function resume_stalled_generation() {
+		if ( ! Cron_Service::is_cron_enabled() || ! get_option( 'msm_sitemap_create_in_progress' ) ) {
+			delete_option( 'msm_generation_stall_check' );
+			return;
+		}
+
+		$years  = (array) get_option( 'msm_years_to_process', array() );
+		$months = (array) get_option( 'msm_months_to_process', array() );
+		$days   = (array) get_option( 'msm_days_to_process', array() );
+
+		if ( ! $years ) {
+			// Nothing is left to process, so the generation can't still be running.
+			delete_option( 'msm_sitemap_create_in_progress' );
+			delete_option( 'msm_generation_stall_check' );
+			return;
+		}
+
+		$args = array( 'year' => (int) end( $years ) );
+		$hook = 'msm_cron_generate_sitemap_for_year';
+		if ( $months ) {
+			$args['month'] = (int) end( $months );
+			$hook          = 'msm_cron_generate_sitemap_for_year_month';
+			if ( $days ) {
+				$args['day'] = (int) end( $days );
+				$hook        = 'msm_cron_generate_sitemap_for_year_month_day';
+			}
+		}
+
+		if ( wp_next_scheduled( $hook, array( $args ) ) ) {
+			delete_option( 'msm_generation_stall_check' );
+			return;
+		}
+
+		$step = $hook . wp_json_encode( $args );
+		if ( get_option( 'msm_generation_stall_check' ) !== $step ) {
+			// The step may still be running, so only note it this time.
+			update_option( 'msm_generation_stall_check', $step, false );
+			return;
+		}
+
+		delete_option( 'msm_generation_stall_check' );
+		wp_schedule_single_event( time(), $hook, array( $args ) );
 	}
 
 	/**

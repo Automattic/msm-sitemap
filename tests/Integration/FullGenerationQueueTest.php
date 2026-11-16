@@ -128,4 +128,107 @@ class FullGenerationQueueTest extends TestCase {
 		$this->assertNotFalse( \Metro_Sitemap::get_sitemap_post_id( 2018, 2, 5 ) );
 		$this->assertFalse( get_option( 'msm_sitemap_create_in_progress' ) );
 	}
+
+	/**
+	 * A head day with no event is rescheduled, but only when a second check still finds it missing.
+	 */
+	public function test_stalled_day_is_rescheduled_on_second_check(): void {
+		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
+		$args = $this->head_day_args();
+
+		do_action( 'msm_cron_update_sitemap' );
+		$this->assertFalse( wp_next_scheduled( 'msm_cron_generate_sitemap_for_year_month_day', $args ) );
+
+		do_action( 'msm_cron_update_sitemap' );
+		$this->assertNotFalse( wp_next_scheduled( 'msm_cron_generate_sitemap_for_year_month_day', $args ) );
+	}
+
+	/**
+	 * A generation whose next event is still queued is left alone.
+	 */
+	public function test_queued_day_is_left_alone(): void {
+		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
+		$args = $this->head_day_args();
+		wp_schedule_single_event( time() + 300, 'msm_cron_generate_sitemap_for_year_month_day', $args );
+
+		MSM_Sitemap_Builder_Cron::resume_stalled_generation();
+		MSM_Sitemap_Builder_Cron::resume_stalled_generation();
+
+		$this->assertSame( time() + 300, wp_next_scheduled( 'msm_cron_generate_sitemap_for_year_month_day', $args ) );
+		$this->assertFalse( get_option( 'msm_generation_stall_check' ) );
+	}
+
+	/**
+	 * A stalled generation between months gets its month event back.
+	 */
+	public function test_stalled_month_is_rescheduled(): void {
+		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
+		delete_option( 'msm_days_to_process' );
+		$args = array(
+			array(
+				'year'  => 2020,
+				'month' => 3,
+			),
+		);
+
+		MSM_Sitemap_Builder_Cron::resume_stalled_generation();
+		MSM_Sitemap_Builder_Cron::resume_stalled_generation();
+
+		$this->assertNotFalse( wp_next_scheduled( 'msm_cron_generate_sitemap_for_year_month', $args ) );
+	}
+
+	/**
+	 * A halt requested while the generation is stalled completes once the head day runs again.
+	 */
+	public function test_halt_completes_after_stall(): void {
+		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
+		update_option( 'msm_stop_processing', true );
+
+		MSM_Sitemap_Builder_Cron::resume_stalled_generation();
+		MSM_Sitemap_Builder_Cron::resume_stalled_generation();
+		do_action( 'msm_cron_generate_sitemap_for_year_month_day', $this->head_day_args()[0] );
+
+		$this->assertFalse( get_option( 'msm_sitemap_create_in_progress' ) );
+		$this->assertFalse( get_option( 'msm_stop_processing' ) );
+		$this->assertSame( range( 1, 10 ), get_option( 'msm_days_to_process' ) );
+	}
+
+	/**
+	 * A generation marked as running with nothing left to process is marked as finished.
+	 */
+	public function test_running_with_empty_queue_is_cleared(): void {
+		add_filter( 'msm_sitemap_cron_enabled', '__return_true' );
+		delete_option( 'msm_years_to_process' );
+
+		MSM_Sitemap_Builder_Cron::resume_stalled_generation();
+
+		$this->assertFalse( get_option( 'msm_sitemap_create_in_progress' ) );
+	}
+
+	/**
+	 * Nothing is rescheduled while the plugin's cron is off.
+	 */
+	public function test_nothing_rescheduled_when_cron_disabled(): void {
+		add_filter( 'msm_sitemap_cron_enabled', '__return_false' );
+
+		MSM_Sitemap_Builder_Cron::resume_stalled_generation();
+		MSM_Sitemap_Builder_Cron::resume_stalled_generation();
+
+		$this->assertFalse( wp_next_scheduled( 'msm_cron_generate_sitemap_for_year_month_day', $this->head_day_args() ) );
+	}
+
+	/**
+	 * Cron event arguments for the day the queue in setUp() is waiting on.
+	 *
+	 * @return array<int, array<string, int>>
+	 */
+	private function head_day_args(): array {
+		return array(
+			array(
+				'year'  => 2020,
+				'month' => 3,
+				'day'   => 10,
+			),
+		);
+	}
 }
