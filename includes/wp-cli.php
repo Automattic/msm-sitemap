@@ -258,7 +258,7 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 
 		if ( $all ) {
 			// Confirm bulk delete
-			WP_CLI::confirm( 'Are you sure you want to delete ALL sitemaps?', $assoc_args );
+			WP_CLI::confirm( __( 'Are you sure you want to delete ALL sitemaps?', 'msm-sitemap' ), $assoc_args );
 			$sitemap_query = new \WP_Query(
 				array(
 					'post_type'      => 'msm_sitemap',
@@ -283,7 +283,15 @@ class Metro_Sitemap_CLI extends WP_CLI_Command {
 				$to_delete     = array_merge( $to_delete, $sitemap_query->posts );
 			}
 			if ( count( $to_delete ) > 1 ) {
-				WP_CLI::confirm( sprintf( 'Are you sure you want to delete %d sitemaps for the specified date?', count( $to_delete ) ), $assoc_args );
+				$count = count( $to_delete );
+				WP_CLI::confirm(
+					sprintf(
+						/* translators: %d: Number of sitemaps to delete. */
+						_n( 'Are you sure you want to delete %d sitemap for the specified date?', 'Are you sure you want to delete %d sitemaps for the specified date?', $count, 'msm-sitemap' ),
+						$count
+					),
+					$assoc_args
+				);
 			}
 		}
 
