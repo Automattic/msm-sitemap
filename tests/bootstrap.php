@@ -68,9 +68,6 @@ function _manually_load_plugin(): void {
 // Make sure the Composer autoload file has been generated.
 WPIntegration\check_composer_autoload_exists();
 
-// Keep the tests' tables apart from the development site's (see the file for why).
-define( 'WP_TESTS_CONFIG_FILE_PATH', __DIR__ . '/wp-tests-config.php' );
-
 // Start up the WP testing environment.
 require $_tests_dir . '/includes/bootstrap.php';
 
