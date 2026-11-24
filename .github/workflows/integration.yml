@@ -47,7 +47,7 @@ jobs:
             php: '8.5'
           # Check latest WP with the latest PHP.
           - wordpress: 'master'
-            php: '8.5'
+            php: '8.6'
 
     env:
       WP_ENV_CORE: WordPress/WordPress#${{ matrix.wordpress }}
